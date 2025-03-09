@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, ArrowUp, ArrowDown } from 'lucide-react';
@@ -8,14 +7,12 @@ import MigratingTokenList from '@/components/MigratingTokenList';
 import OpenBetsList from '@/components/OpenBetsList';
 import BetsList from '@/components/BetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
-
 const BettingDashboard = () => {
-  const { connected } = useWallet();
-
+  const {
+    connected
+  } = useWallet();
   console.log("BettingDashboard rendering, wallet connected:", connected);
-
-  return (
-    <>
+  return <>
       <OrbitingParticles />
       <Navbar />
 
@@ -30,13 +27,11 @@ const BettingDashboard = () => {
               Bet on whether tokens will go up or down after migrating from PumpFun to Raydium
             </p>
             
-            {!connected && (
-              <div className="mt-8 glass-panel inline-flex items-center gap-3 p-4">
+            {!connected && <div className="mt-8 glass-panel inline-flex items-center gap-3 p-4">
                 <Wallet className="text-dream-accent2" />
                 <span>Connect your Solana wallet to start betting</span>
                 <WalletConnectButton />
-              </div>
-            )}
+              </div>}
           </section>
 
           {/* Dashboard Sections */}
@@ -46,10 +41,7 @@ const BettingDashboard = () => {
           </div>
           
           {/* User Bets Sections */}
-          <div className="grid lg:grid-cols-2 gap-8 mb-8">
-            <BetsList title="Your Latest Bets" type="latest" />
-            <BetsList title="Your Active Bets" type="active" />
-          </div>
+          
           
           {/* How it Works Section */}
           <section className="mt-16">
@@ -105,8 +97,6 @@ const BettingDashboard = () => {
           </div>
         </div>
       </footer>
-    </>
-  );
+    </>;
 };
-
 export default BettingDashboard;
