@@ -1,34 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Send, User, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-// Mock data for comments
-const MOCK_COMMENTS = [
-  {
-    id: '1',
-    author: '3jLk...7Ujq',
-    content: 'This token is about to explode! 🚀',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    votes: 5
-  },
-  {
-    id: '2',
-    author: 'xR4t...9Pzv',
-    content: "I'm betting big on migration, the team is solid.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    votes: 3
-  },
-  {
-    id: '3',
-    author: 'q7Yz...2Wsd',
-    content: 'Looks like a classic rug pattern to me.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-    votes: -2
-  }
-];
 
 interface Comment {
   id: string;
@@ -56,9 +30,8 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenId, tokenName }) => 
   
   const loadComments = () => {
     setLoading(true);
-    // Mock API call
     setTimeout(() => {
-      setComments(MOCK_COMMENTS);
+      setComments([]);
       setLoading(false);
     }, 500);
   };
@@ -84,7 +57,6 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenId, tokenName }) => 
       return;
     }
     
-    // Mock adding a comment
     const userAddress = publicKey ? publicKey.toString() : 'Anonymous';
     const shortenedAddress = userAddress.slice(0, 4) + '...' + userAddress.slice(-4);
     
