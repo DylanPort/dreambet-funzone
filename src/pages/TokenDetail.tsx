@@ -100,7 +100,8 @@ const TokenDetail = () => {
   const [selectedPrediction, setSelectedPrediction] = useState<'moon' | 'die' | null>(null);
   
   // Calculate end time (60 minutes from now)
-  const endTime = new useState<Date>(new Date(new Date().getTime() + 60 * 60 * 1000))[0];
+  // Fix: Don't use 'new' with useState
+  const [endTime] = useState<Date>(new Date(new Date().getTime() + 60 * 60 * 1000));
   
   useEffect(() => {
     // Simulate API call
