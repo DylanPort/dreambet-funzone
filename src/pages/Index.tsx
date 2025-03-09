@@ -185,7 +185,11 @@ const Index = () => {
             
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent3/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <Shield className="h-8 w-8 text-dream-accent3" />
+                <img 
+                  src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" 
+                  alt="Solana Logo" 
+                  className="h-8 w-8 filter drop-shadow-[0_0_8px_rgba(64,224,208,0.8)] transition-transform hover:scale-110 duration-300"
+                />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">Solana Powered</h3>
               <p className="text-dream-foreground/70">
