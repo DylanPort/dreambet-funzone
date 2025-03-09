@@ -2,11 +2,31 @@ interface DexScreenerPair {
   liquidity: number;
   volume: {
     h24: number;
+    h1: number;
+    h6: number;
   };
   priceUsd: string;
   fdv: number;
   priceChange: {
     h24: number;
+    h1: number;
+    h6: number;
+  };
+  chainId: string;
+  baseToken: {
+    address: string;
+    name: string;
+    symbol: string;
+  };
+  pairCreatedAt: string;
+  pairAddress: string;
+  dexId: string;
+  url: string;
+  txns: {
+    h24: {
+      buys: number;
+      sells: number;
+    }
   };
 }
 
@@ -20,9 +40,17 @@ interface TrendingToken {
   symbol: string;
   price: number;
   priceChange: number;
+  priceChange1h: number;
+  priceChange6h: number;
   timeRemaining: number;
   volume24h: number;
   marketCap: number;
+  liquidity: number;
+  transactions: number;
+  age: string;
+  pairAddress: string;
+  dexId: string;
+  url: string;
   imageUrl?: string;
 }
 
@@ -99,8 +127,9 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       return cachedData.data;
     }
     
-    console.log("Fetching 24h trending tokens from DexScreener");
-    const response = await fetch('https://api.dexscreener.com/latest/dex/search?q=solana');
+    console.log("Fetching trending tokens from DexScreener");
+    // Use the rankBy=trendingScoreH24 parameter to get actual trending tokens
+    const response = await fetch('https://api.dexscreener.com/latest/dex/tokens/solana?rankBy=trendingScoreH24&order=desc');
     
     if (!response.ok) {
       console.error(`DexScreener API error: ${response.status} ${response.statusText}`);
@@ -114,39 +143,47 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       return [];
     }
     
-    // Filter and sort pairs by 24h volume
-    const sortedPairs = [...data.pairs]
-      .filter(pair => {
-        // Only include Solana pairs
-        if (pair.chainId !== 'solana') return false;
-        
-        // Only include pairs with significant 24h volume
-        if (!pair.volume?.h24 || pair.volume.h24 <= 0) return false;
-        
-        // Ensure there's price data
-        if (!pair.priceUsd) return false;
-        
-        return true;
-      })
-      .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
+    // Filter pairs by Solana chain and take top 20
+    const sortedPairs = data.pairs
+      .filter(pair => pair.chainId === 'solana')
       .slice(0, 20);
     
-    console.log(`Found ${sortedPairs.length} trending tokens in the last 24h`);
+    console.log(`Found ${sortedPairs.length} trending tokens on DexScreener`);
     
     const tokens = sortedPairs.map(pair => {
-      // Calculate minutes since this pair was updated
-      const pairUpdatedAt = pair.pairCreatedAt ? new Date(pair.pairCreatedAt).getTime() : now;
-      const minutesAgo = Math.floor((now - pairUpdatedAt) / (60 * 1000));
+      // Calculate time since creation for age display
+      const pairCreatedAt = pair.pairCreatedAt ? new Date(pair.pairCreatedAt).getTime() : now;
+      const minutesAgo = Math.floor((now - pairCreatedAt) / (60 * 1000));
+      const hoursAgo = Math.floor(minutesAgo / 60);
+      const daysAgo = Math.floor(hoursAgo / 24);
+      
+      // Format age string based on time elapsed
+      let age = '';
+      if (daysAgo > 0) {
+        age = `${daysAgo}d`;
+      } else if (hoursAgo > 0) {
+        age = `${hoursAgo}h`;
+      } else {
+        age = `${minutesAgo}m`;
+      }
       
       return {
         id: pair.baseToken?.address || '',
         name: pair.baseToken?.name || 'Unknown',
         symbol: pair.baseToken?.symbol || '???',
         price: parseFloat(pair.priceUsd || '0'),
-        priceChange: pair.priceChange?.h24 || 0, // Use 24h price change
-        timeRemaining: minutesAgo > 0 ? minutesAgo : 1, // Ensure at least 1 minute
+        priceChange: pair.priceChange?.h24 || 0, // 24h price change
+        priceChange1h: pair.priceChange?.h1 || 0, // 1h price change
+        priceChange6h: pair.priceChange?.h6 || 0, // 6h price change
+        timeRemaining: minutesAgo > 0 ? minutesAgo : 1,
         volume24h: pair.volume?.h24 || 0,
         marketCap: pair.fdv || 0,
+        liquidity: pair.liquidity || 0,
+        transactions: (pair.txns?.h24?.buys || 0) + (pair.txns?.h24?.sells || 0),
+        age: age,
+        pairAddress: pair.pairAddress || '',
+        dexId: pair.dexId || '',
+        url: pair.url || '',
         imageUrl: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${pair.baseToken?.address}/logo.png`
       };
     });
@@ -157,10 +194,10 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       timestamp: now
     });
     
-    console.log("24h trending tokens retrieved:", tokens.length);
+    console.log("Trending tokens retrieved:", tokens.length);
     return tokens;
   } catch (error) {
-    console.error("Error fetching 24h trending tokens:", error);
+    console.error("Error fetching trending tokens:", error);
     return [];
   }
 };

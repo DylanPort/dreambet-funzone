@@ -12,6 +12,10 @@ interface TokenCardProps {
   timeRemaining: number; // in minutes
   imageUrl?: string; // Add optional image URL
   index?: number; // Add optional index for key generation
+  liquidity?: number;
+  marketCap?: number;
+  volume24h?: number;
+  pairAddress?: string;
 }
 
 const TokenCard: React.FC<TokenCardProps> = ({
@@ -23,6 +27,10 @@ const TokenCard: React.FC<TokenCardProps> = ({
   timeRemaining,
   imageUrl,
   index,
+  liquidity,
+  marketCap,
+  volume24h,
+  pairAddress,
 }) => {
   const isPositive = priceChange >= 0;
 
@@ -42,6 +50,22 @@ const TokenCard: React.FC<TokenCardProps> = ({
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
+  };
+
+  // Format large numbers
+  const formatLargeNumber = (num: number | undefined) => {
+    if (num === undefined) return "-";
+    
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    }
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    }
+    if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    }
+    return `$${num.toFixed(2)}`;
   };
 
   // Generate a more unique key by combining id with index if provided
@@ -81,7 +105,14 @@ const TokenCard: React.FC<TokenCardProps> = ({
             <div>
               <div className="flex items-center gap-1">
                 <h3 className="font-display font-semibold text-lg">{name}</h3>
-                <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
+                <a 
+                  href={pairAddress ? `https://dexscreener.com/solana/${pairAddress}` : `https://dexscreener.com/solana/${id}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-dream-foreground/40"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
+                </a>
               </div>
               <p className="text-dream-foreground/60 text-sm">{symbol}</p>
             </div>
@@ -89,7 +120,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 h-6 px-2 rounded-md bg-dream-background/40 text-xs text-dream-foreground/60">
               <Zap className="w-3 h-3" />
-              <span>0.6</span>
+              <span>#{index !== undefined ? (index + 1) : ""}</span>
             </div>
           </div>
         </div>
@@ -99,7 +130,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
             <div className="flex items-center">
               <span className={`inline-block w-3 h-3 rounded-full mr-1.5 ${isPositive ? 'bg-green-500' : 'bg-red-500'}`}></span>
               <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                {Math.abs(priceChange).toFixed(0)}%
+                {Math.abs(priceChange).toFixed(2)}%
               </span>
             </div>
             <div className="text-xs text-dream-foreground/40 border border-dream-foreground/10 px-1.5 py-0.5 rounded">
@@ -108,23 +139,35 @@ const TokenCard: React.FC<TokenCardProps> = ({
           </div>
           <div className="text-right">
             <p className="text-sm font-medium flex items-center">
-              <span className="mr-1 text-dream-foreground/60">MC</span>
+              <span className="mr-1 text-dream-foreground/60">Price</span>
               <span className="text-dream-foreground/90">${formatPrice(price)}</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-dream-foreground/60">
+        <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+          <div className="bg-dream-foreground/5 px-2 py-1.5 rounded">
+            <div className="text-dream-foreground/50 mb-1">Volume</div>
+            <div className="font-medium">{formatLargeNumber(volume24h)}</div>
+          </div>
+          <div className="bg-dream-foreground/5 px-2 py-1.5 rounded">
+            <div className="text-dream-foreground/50 mb-1">Liquidity</div>
+            <div className="font-medium">{formatLargeNumber(liquidity)}</div>
+          </div>
+          <div className="bg-dream-foreground/5 px-2 py-1.5 rounded">
+            <div className="text-dream-foreground/50 mb-1">MCAP</div>
+            <div className="font-medium">{formatLargeNumber(marketCap)}</div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-dream-foreground/60 mb-3">
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
             <span>{formatTimeRemaining(timeRemaining)}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span>SOL {formatPrice(price / 100)}</span>
-          </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <button className="btn-moon py-1.5 flex items-center justify-center gap-1">
             <ArrowUp className="w-3.5 h-3.5" />
             <span>Moon</span>
