@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import Register from "./pages/Register";
 import TokenDetail from "./pages/TokenDetail";
 import BettingDashboard from "./pages/BettingDashboard";
 import TokenBetting from "./pages/TokenBetting";
+import MyBets from "./pages/MyBets";
 
 const queryClient = new QueryClient();
 
