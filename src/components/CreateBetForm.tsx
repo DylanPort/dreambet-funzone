@@ -12,13 +12,19 @@ interface CreateBetFormProps {
   tokenName: string;
   tokenSymbol: string;
   onBetCreated: () => void;
+  token?: any; // Optional token prop for TokenDetail page
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 const CreateBetForm: React.FC<CreateBetFormProps> = ({
   tokenId,
   tokenName,
   tokenSymbol,
-  onBetCreated
+  onBetCreated,
+  token,
+  onSuccess,
+  onCancel
 }) => {
   const [amount, setAmount] = useState<string>('0.1');
   const [prediction, setPrediction] = useState<BetPrediction | null>(null);
@@ -82,7 +88,11 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       setPrediction(null);
       
       // Notify parent component
-      onBetCreated();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        onBetCreated();
+      }
     } catch (error) {
       console.error('Error creating bet:', error);
       toast({
@@ -152,20 +162,32 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         </p>
       </div>
       
-      <Button
-        onClick={handleCreateBet}
-        disabled={!connected || isSubmitting || !prediction || !amount}
-        className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent3"
-      >
-        {isSubmitting ? (
-          <span className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-dream-foreground border-t-transparent rounded-full animate-spin"></div>
-            Creating Bet...
-          </span>
-        ) : (
-          "Create Bet"
+      <div className="flex gap-3">
+        <Button
+          onClick={handleCreateBet}
+          disabled={!connected || isSubmitting || !prediction || !amount}
+          className="flex-1 bg-gradient-to-r from-dream-accent1 to-dream-accent3"
+        >
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-dream-foreground border-t-transparent rounded-full animate-spin"></div>
+              Creating Bet...
+            </span>
+          ) : (
+            "Create Bet"
+          )}
+        </Button>
+        
+        {onCancel && (
+          <Button 
+            variant="outline" 
+            onClick={onCancel}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
         )}
-      </Button>
+      </div>
       
       {!connected && (
         <p className="text-center text-sm text-dream-foreground/70">

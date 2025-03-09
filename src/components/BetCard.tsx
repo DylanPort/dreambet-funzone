@@ -10,15 +10,24 @@ interface BetCardProps {
   connected: boolean;
   publicKeyString: string | null;
   onAcceptBet: (bet: Bet) => void;
+  onBetAccepted?: () => void; // Added for TokenDetail page
 }
 
 const BetCard: React.FC<BetCardProps> = ({ 
   bet, 
   connected, 
   publicKeyString, 
-  onAcceptBet 
+  onAcceptBet,
+  onBetAccepted
 }) => {
   const isExpiringSoon = bet.expiresAt - new Date().getTime() < 3600000; // less than 1 hour
+  
+  const handleAcceptBet = (bet: Bet) => {
+    onAcceptBet(bet);
+    if (onBetAccepted) {
+      onBetAccepted();
+    }
+  };
   
   return (
     <div key={bet.id} className="glass-panel p-4 transition-all hover:shadow-lg animate-fade-in">
@@ -77,7 +86,7 @@ const BetCard: React.FC<BetCardProps> = ({
         </div>
         
         <Button 
-          onClick={() => onAcceptBet(bet)}
+          onClick={() => handleAcceptBet(bet)}
           className={`${
             bet.prediction === 'migrate'
               ? 'bg-red-500 hover:bg-red-600'  // If they bet migrate, you bet die (red)

@@ -31,11 +31,17 @@ export const fetchMigratingTokens = async () => {
   }
 };
 
-export const fetchBetsByToken = async (tokenId: string) => {
+export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
   try {
     // Query bets by token ID from Supabase
     const openBets = await fetchSupabaseOpenBets();
-    return openBets.filter(bet => bet.tokenId === tokenId);
+    const filteredBets = openBets.filter(bet => bet.tokenId === tokenId);
+    
+    // Ensure status is of the correct type
+    return filteredBets.map(bet => ({
+      ...bet,
+      status: bet.status as "open" | "matched" | "completed" | "expired"
+    }));
   } catch (error) {
     console.error('Error fetching bets by token:', error);
     return [];
@@ -43,13 +49,13 @@ export const fetchBetsByToken = async (tokenId: string) => {
 };
 
 // Export wrapper functions that use Supabase services
-export const fetchOpenBets = async () => {
+export const fetchOpenBets = async (): Promise<Bet[]> => {
   try {
     const bets = await fetchSupabaseOpenBets();
     // Make sure the status is one of the allowed types in the Bet interface
     return bets.map(bet => ({
       ...bet,
-      status: (bet.status as any) as "open" | "matched" | "completed" | "expired"
+      status: bet.status as "open" | "matched" | "completed" | "expired"
     }));
   } catch (error) {
     console.error('Error fetching open bets:', error);
@@ -57,13 +63,13 @@ export const fetchOpenBets = async () => {
   }
 };
 
-export const fetchUserBets = async (userAddress: string) => {
+export const fetchUserBets = async (userAddress: string): Promise<Bet[]> => {
   try {
     const bets = await fetchSupabaseUserBets(userAddress);
     // Make sure the status is one of the allowed types in the Bet interface
     return bets.map(bet => ({
       ...bet,
-      status: (bet.status as any) as "open" | "matched" | "completed" | "expired"
+      status: bet.status as "open" | "matched" | "completed" | "expired"
     }));
   } catch (error) {
     console.error('Error fetching user bets:', error);
@@ -85,7 +91,7 @@ export const createBet = async (
     // Ensure the status is one of the allowed types
     return {
       ...bet,
-      status: (bet.status as any) as "open" | "matched" | "completed" | "expired"
+      status: bet.status as "open" | "matched" | "completed" | "expired"
     };
   } catch (error) {
     console.error('Error creating bet:', error);
@@ -103,7 +109,7 @@ export const acceptBet = async (
     // Ensure the status is one of the allowed types
     return {
       ...bet,
-      status: (bet.status as any) as "open" | "matched" | "completed" | "expired"
+      status: bet.status as "open" | "matched" | "completed" | "expired"
     };
   } catch (error) {
     console.error('Error accepting bet:', error);
