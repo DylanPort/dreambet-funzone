@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -177,7 +176,7 @@ const Index = () => {
                 <img 
                   src="/lovable-uploads/4cf5638c-4544-455d-baf2-37470b161dbd.png" 
                   alt="Lightning Bolt" 
-                  className="h-10 w-10 filter drop-shadow-[0_0_8px_rgba(255,61,252,0.8)] transition-transform hover:scale-110 duration-300"
+                  className="h-20 w-20 filter drop-shadow-[0_0_8px_rgba(255,61,252,0.8)] transition-transform hover:scale-110 duration-300"
                 />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">P2P Betting</h3>
