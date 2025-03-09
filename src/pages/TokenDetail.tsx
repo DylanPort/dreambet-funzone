@@ -16,6 +16,69 @@ import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScr
 import TokenMarketCap from '@/components/TokenMarketCap';
 import TokenVolume from '@/components/TokenVolume';
 
+const TokenChart = ({ tokenId, tokenName, refreshData, loading }) => {
+  const [iframeKey, setIframeKey] = useState(Date.now());
+  
+  const handleRefreshChart = () => {
+    setIframeKey(Date.now());
+    refreshData();
+  };
+  
+  return (
+    <div className="glass-panel p-6 mb-8">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-display font-bold">Price Chart</h2>
+        <div className="flex gap-2">
+          <a 
+            href={`https://dexscreener.com/solana/${tokenId}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-dream-accent2 hover:underline flex items-center text-sm"
+          >
+            <ExternalLink className="w-3 h-3 mr-1" />
+            DexScreener
+          </a>
+          <button 
+            onClick={handleRefreshChart}
+            className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm"
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+      </div>
+      
+      <div className="w-full h-[400px] bg-black/10 rounded-lg overflow-hidden relative">
+        <iframe 
+          key={iframeKey}
+          src={`https://dexscreener.com/solana/${tokenId}?embed=1&theme=dark&trades=0&info=0`} 
+          className="w-full h-full border-0"
+          title="DexScreener Chart"
+        ></iframe>
+      </div>
+      
+      <div className="mt-8 grid grid-cols-2 gap-4">
+        <Button
+          onClick={() => refreshData('up')}
+          className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800"
+        >
+          <ArrowUp className="w-4 h-4 mr-2" />
+          Bet to Migrate
+        </Button>
+        
+        <Button
+          variant="destructive"
+          onClick={() => refreshData('down')}
+        >
+          <ArrowDown className="w-4 h-4 mr-2" />
+          Bet to Die
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const TokenDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [token, setToken] = useState<any>(null);
@@ -310,7 +373,7 @@ const TokenDetail = () => {
     }
   }, [id, updateTokenPrice, updateTokenMetrics]);
   
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (betType = null) => {
     if (!id) return;
     
     try {
@@ -354,6 +417,10 @@ const TokenDetail = () => {
       
       const tokenBets = await fetchBetsByToken(id);
       setBets(tokenBets);
+      
+      if (betType) {
+        setShowCreateBet(true);
+      }
     } catch (error) {
       console.error("Error refreshing data:", error);
       toast({
@@ -428,7 +495,7 @@ const TokenDetail = () => {
       
       <main className="pt-24 min-h-screen px-4 pb-16">
         <div className="max-w-7xl mx-auto">
-          {loading ? (
+          {loading && !token ? (
             <div className="flex justify-center py-16">
               <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
             </div>
@@ -496,7 +563,7 @@ const TokenDetail = () => {
                   <div className="text-3xl font-bold relative z-10">{bets.length}</div>
                   <div className="absolute top-2 right-2 flex items-center">
                     <button 
-                      onClick={refreshData}
+                      onClick={() => refreshData()}
                       className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
                       title="Refresh Data"
                     >
@@ -507,56 +574,12 @@ const TokenDetail = () => {
                 </div>
               </div>
               
-              <div className="glass-panel p-6 mb-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-display font-bold">Price Chart</h2>
-                  <div className="flex gap-2">
-                    <a 
-                      href={`https://dexscreener.com/solana/${token.id}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-dream-accent2 hover:underline flex items-center text-sm"
-                    >
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      DexScreener
-                    </a>
-                    <button 
-                      onClick={refreshData}
-                      className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm"
-                      disabled={loading}
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-                      Refresh
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="w-full h-[400px] bg-black/10 rounded-lg overflow-hidden relative">
-                  <iframe 
-                    src={`https://dexscreener.com/solana/${token.id}?embed=1&theme=dark&trades=0&info=0`} 
-                    className="w-full h-full border-0"
-                    title="DexScreener Chart"
-                  ></iframe>
-                </div>
-                
-                <div className="mt-8 grid grid-cols-2 gap-4">
-                  <Button
-                    onClick={() => setShowCreateBet(true)}
-                    className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800"
-                  >
-                    <ArrowUp className="w-4 h-4 mr-2" />
-                    Bet to Migrate
-                  </Button>
-                  
-                  <Button
-                    variant="destructive"
-                    onClick={() => setShowCreateBet(true)}
-                  >
-                    <ArrowDown className="w-4 h-4 mr-2" />
-                    Bet to Die
-                  </Button>
-                </div>
-              </div>
+              <TokenChart 
+                tokenId={token.id}
+                tokenName={token.name}
+                refreshData={refreshData}
+                loading={loading}
+              />
               
               {showCreateBet && (
                 <div className="glass-panel p-6 mb-8">
