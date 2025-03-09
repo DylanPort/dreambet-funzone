@@ -112,23 +112,39 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       return [];
     }
     
-    // Sort pairs by volume to get the most active tokens
+    const oneHourAgo = now - 60 * 60 * 1000; // 1 hour ago in milliseconds
+    
+    // Filter and sort pairs by activity in the last hour
     const sortedPairs = [...data.pairs]
-      .filter(pair => pair.chainId === 'solana' && pair.volume?.h24 > 0)
-      .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
+      .filter(pair => {
+        // Only include Solana pairs
+        if (pair.chainId !== 'solana') return false;
+        
+        // Only include pairs with recent activity (with volume in the last hour)
+        if (!pair.volume?.h1 || pair.volume.h1 <= 0) return false;
+        
+        // Ensure there's price data
+        if (!pair.priceUsd) return false;
+        
+        return true;
+      })
+      .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
       .slice(0, 20);
     
+    console.log(`Found ${sortedPairs.length} trending tokens in the last hour`);
+    
     const tokens = sortedPairs.map(pair => {
-      // Generate a random time in the past (1-120 minutes ago)
-      const randomTime = Math.floor(Math.random() * 120) + 1;
+      // Calculate minutes since this pair was updated
+      const pairUpdatedAt = pair.pairCreatedAt ? new Date(pair.pairCreatedAt).getTime() : now;
+      const minutesAgo = Math.floor((now - pairUpdatedAt) / (60 * 1000));
       
       return {
         id: pair.baseToken?.address || '',
         name: pair.baseToken?.name || 'Unknown',
         symbol: pair.baseToken?.symbol || '???',
         price: parseFloat(pair.priceUsd || '0'),
-        priceChange: pair.priceChange?.h24 || 0,
-        timeRemaining: randomTime,
+        priceChange: pair.priceChange?.h1 || 0, // Use 1 hour price change
+        timeRemaining: minutesAgo > 0 ? minutesAgo : 1, // Ensure at least 1 minute
         volume24h: pair.volume?.h24 || 0,
         marketCap: pair.fdv || 0,
         imageUrl: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${pair.baseToken?.address}/logo.png`
