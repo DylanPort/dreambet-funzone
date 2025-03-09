@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles } from 'lucide-react';
-import { Bet } from '@/types/bet';
+import { Bet, BetPrediction } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -35,23 +35,34 @@ const BetReel: React.FC = () => {
         if (error) throw error;
         
         if (data) {
-          const formattedBets = data.map(bet => ({
-            id: bet.bet_id,
-            tokenId: bet.token_mint,
-            tokenName: bet.tokens?.token_name || 'Unknown Token',
-            tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
-            initiator: bet.creator,
-            amount: bet.sol_amount,
-            prediction: bet.prediction_bettor1 === 'up' ? 'migrate' : 
-                        bet.prediction_bettor1 === 'down' ? 'die' : 
-                        bet.prediction_bettor1,
-            timestamp: new Date(bet.created_at).getTime(),
-            expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-            status: bet.status,
-            duration: Math.floor(bet.duration / 60),
-            onChainBetId: bet.on_chain_id?.toString() || '',
-            transactionSignature: bet.transaction_signature || ''
-          }));
+          const formattedBets = data.map(bet => {
+            // Convert database prediction to BetPrediction type
+            let prediction: BetPrediction;
+            if (bet.prediction_bettor1 === 'up') {
+              prediction = 'migrate';
+            } else if (bet.prediction_bettor1 === 'down') {
+              prediction = 'die';
+            } else {
+              // Ensure we're casting to a valid BetPrediction value
+              prediction = bet.prediction_bettor1 as BetPrediction;
+            }
+
+            return {
+              id: bet.bet_id,
+              tokenId: bet.token_mint,
+              tokenName: bet.tokens?.token_name || 'Unknown Token',
+              tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
+              initiator: bet.creator,
+              amount: bet.sol_amount,
+              prediction: prediction,
+              timestamp: new Date(bet.created_at).getTime(),
+              expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
+              status: bet.status,
+              duration: Math.floor(bet.duration / 60),
+              onChainBetId: bet.on_chain_id?.toString() || '',
+              transactionSignature: bet.transaction_signature || ''
+            };
+          });
           
           setRecentBets(formattedBets);
         }
@@ -97,16 +108,25 @@ const BetReel: React.FC = () => {
             if (error) throw error;
             
             if (data) {
-              const newBet = {
+              // Convert database prediction to BetPrediction type
+              let prediction: BetPrediction;
+              if (data.prediction_bettor1 === 'up') {
+                prediction = 'migrate';
+              } else if (data.prediction_bettor1 === 'down') {
+                prediction = 'die';
+              } else {
+                // Ensure we're casting to a valid BetPrediction value
+                prediction = data.prediction_bettor1 as BetPrediction;
+              }
+              
+              const newBet: Bet = {
                 id: data.bet_id,
                 tokenId: data.token_mint,
                 tokenName: data.tokens?.token_name || 'Unknown Token',
                 tokenSymbol: data.tokens?.token_symbol || 'UNKNOWN',
                 initiator: data.creator,
                 amount: data.sol_amount,
-                prediction: data.prediction_bettor1 === 'up' ? 'migrate' : 
-                            data.prediction_bettor1 === 'down' ? 'die' : 
-                            data.prediction_bettor1,
+                prediction: prediction,
                 timestamp: new Date(data.created_at).getTime(),
                 expiresAt: new Date(data.created_at).getTime() + (data.duration * 1000),
                 status: data.status,

@@ -76,11 +76,15 @@ export const fetchOpenBets = async () => {
       
       // Map prediction values from database to our frontend format
       let predictionValue: BetPrediction;
-      if (bet.prediction_bettor1 === 'up') predictionValue = 'migrate';
-      else if (bet.prediction_bettor1 === 'down') predictionValue = 'die';
-      else predictionValue = bet.prediction_bettor1 as BetPrediction;
+      if (bet.prediction_bettor1 === 'up') {
+        predictionValue = 'migrate';
+      } else if (bet.prediction_bettor1 === 'down') {
+        predictionValue = 'die';
+      } else {
+        predictionValue = bet.prediction_bettor1 as BetPrediction;
+      }
       
-      const transformedBet = {
+      const transformedBet: Bet = {
         id: bet.bet_id,
         tokenId: bet.token_mint,
         tokenName: bet.tokens?.token_name || 'Unknown Token',
@@ -139,9 +143,13 @@ export const fetchUserBets = async (userWalletAddress: string) => {
     return data.map(bet => {
       // Map prediction values from database to our frontend format
       let predictionValue: BetPrediction;
-      if (bet.prediction_bettor1 === 'up') predictionValue = 'migrate';
-      else if (bet.prediction_bettor1 === 'down') predictionValue = 'die';
-      else predictionValue = bet.prediction_bettor1 as BetPrediction;
+      if (bet.prediction_bettor1 === 'up') {
+        predictionValue = 'migrate';
+      } else if (bet.prediction_bettor1 === 'down') {
+        predictionValue = 'die';
+      } else {
+        predictionValue = bet.prediction_bettor1 as BetPrediction;
+      }
       
       return {
         id: bet.bet_id,
