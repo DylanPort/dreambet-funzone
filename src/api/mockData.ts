@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -88,7 +89,8 @@ export const createBet = async (
   initiator: string,
   amount: number,
   prediction: BetPrediction,
-  wallet: any
+  wallet: any,
+  duration: number = 60 // Default to 60 minutes if not provided
 ): Promise<Bet> => {
   try {
     // Create bet on Solana blockchain first
@@ -96,12 +98,12 @@ export const createBet = async (
       wallet,
       tokenId,
       prediction,
-      60, // 60 minutes duration
+      duration, // Use the provided duration in minutes
       amount
     );
     
     // Then create in Supabase for our frontend
-    const bet = await createSupabaseBet(tokenId, prediction, 60, amount);
+    const bet = await createSupabaseBet(tokenId, prediction, duration, amount);
     
     // Update the bet with the on-chain betId
     return {

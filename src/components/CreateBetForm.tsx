@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock } from 'lucide-react';
 import { createBet } from '@/api/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { BetPrediction } from '@/types/bet';
+import { Slider } from '@/components/ui/slider';
 
 interface CreateBetFormProps {
   tokenId: string;
@@ -29,6 +30,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [amount, setAmount] = useState<string>('0.1');
   const [prediction, setPrediction] = useState<BetPrediction | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [duration, setDuration] = useState<number>(30); // Default to 30 minutes
   
   const { connected, publicKey, wallet } = useWallet();
   const { toast } = useToast();
@@ -36,6 +38,10 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
     setAmount(value);
+  };
+
+  const handleDurationChange = (value: number[]) => {
+    setDuration(value[0]);
   };
 
   const handleCreateBet = async () => {
@@ -76,7 +82,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         publicKey.toString(),
         amountValue,
         prediction,
-        wallet
+        wallet,
+        duration // Pass the selected duration to the createBet function
       );
       
       toast({
@@ -87,6 +94,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       // Reset form
       setAmount('0.1');
       setPrediction(null);
+      setDuration(30);
       
       // Notify parent component
       if (onSuccess) {
@@ -161,6 +169,26 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         <p className="text-xs text-dream-foreground/50 mt-1">
           Min: 0.01 SOL | Max: 10 SOL
         </p>
+      </div>
+      
+      <div>
+        <label className="flex items-center text-sm text-dream-foreground/70 mb-2">
+          <Clock className="w-4 h-4 mr-1" />
+          Bet Duration: <span className="ml-2 font-semibold">{duration} minutes</span>
+        </label>
+        <Slider
+          value={[duration]}
+          min={10}
+          max={60}
+          step={5}
+          onValueChange={handleDurationChange}
+          className="py-4"
+        />
+        <div className="flex justify-between text-xs text-dream-foreground/50 mt-1">
+          <span>10m</span>
+          <span>30m</span>
+          <span>60m</span>
+        </div>
       </div>
       
       <div className="flex gap-3">
