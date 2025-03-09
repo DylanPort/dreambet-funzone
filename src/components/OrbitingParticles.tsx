@@ -19,6 +19,7 @@ const OrbitingParticles = () => {
     'rgba(255, 61, 252, 0.7)',  // magenta
     'rgba(0, 238, 255, 0.7)',   // cyan
     'rgba(123, 97, 255, 0.7)',  // purple
+    'rgba(255, 102, 0, 0.7)',   // orange
   ];
 
   useEffect(() => {
@@ -46,15 +47,15 @@ const OrbitingParticles = () => {
     // Create particles
     const createParticles = () => {
       const particles: Particle[] = [];
-      const particleCount = Math.min(Math.floor(width * height / 15000), 50);
+      const particleCount = Math.min(Math.floor(width * height / 12000), 60);
       
       for (let i = 0; i < particleCount; i++) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          size: Math.random() * 4 + 1,
-          speedX: (Math.random() - 0.5) * 0.5,
-          speedY: (Math.random() - 0.5) * 0.5,
+          size: Math.random() * 5 + 1,
+          speedX: (Math.random() - 0.5) * 0.7,
+          speedY: (Math.random() - 0.5) * 0.7,
           color: colors[Math.floor(Math.random() * colors.length)],
           opacity: Math.random() * 0.7 + 0.3
         });
@@ -68,6 +69,13 @@ const OrbitingParticles = () => {
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
       
+      // Add a subtle gradient background
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, 'rgba(10, 10, 31, 0.05)');
+      gradient.addColorStop(1, 'rgba(26, 16, 64, 0.05)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
       particlesRef.current.forEach((particle) => {
         // Update particle position
         particle.x += particle.speedX;
@@ -79,11 +87,14 @@ const OrbitingParticles = () => {
         if (particle.y < 0) particle.y = height;
         if (particle.y > height) particle.y = 0;
         
-        // Draw particle
+        // Draw particle with glow effect
+        ctx.shadowColor = particle.color;
+        ctx.shadowBlur = 15;
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fillStyle = particle.color.replace('0.7', particle.opacity.toString());
         ctx.fill();
+        ctx.shadowBlur = 0;
         
         // Draw connecting lines
         particlesRef.current.forEach((otherParticle) => {
@@ -95,7 +106,13 @@ const OrbitingParticles = () => {
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(otherParticle.x, otherParticle.y);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${0.03 * (1 - distance / 150)})`;
+            const alpha = 0.05 * (1 - distance / 150);
+            const gradient = ctx.createLinearGradient(
+              particle.x, particle.y, otherParticle.x, otherParticle.y
+            );
+            gradient.addColorStop(0, particle.color.replace('0.7', (alpha * 0.7).toString()));
+            gradient.addColorStop(1, otherParticle.color.replace('0.7', (alpha * 0.7).toString()));
+            ctx.strokeStyle = gradient;
             ctx.lineWidth = 1;
             ctx.stroke();
           }

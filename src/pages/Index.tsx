@@ -4,17 +4,21 @@ import { ArrowRight, Shield, Clock, ExternalLink } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
+import FloatingImages from '@/components/FloatingImages';
 import AnimatedLogo from '@/components/AnimatedLogo';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -50,11 +54,14 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const cardPositions = ["top-[5%] left-[40%] shadow-neon-green animate-float", "top-0 left-[10%] shadow-neon-purple animate-float", "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed"];
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -65,6 +72,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -74,7 +82,9 @@ const Index = () => {
       
       <main className="min-h-screen overflow-hidden">
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
-          <div className="text-center mb-16 animate-fade-in">
+          <FloatingImages />
+          
+          <div className="text-center mb-16 animate-fade-in relative z-10">
             <AnimatedLogo />
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
@@ -201,4 +211,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
