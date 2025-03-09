@@ -92,7 +92,9 @@ export const createBet = async (
   duration: number = 60 // Default to 60 minutes if not provided
 ): Promise<Bet> => {
   try {
-    // Create bet on Solana blockchain
+    console.log(`Creating bet with tokenId=${tokenId}, amount=${amount}, prediction=${prediction}, duration=${duration}`);
+    
+    // Create bet on Solana blockchain first
     const { betId } = await createSolanaBet(
       wallet,
       tokenId,
@@ -101,10 +103,20 @@ export const createBet = async (
       amount
     );
     
-    // Then create in Supabase for our frontend
-    const bet = await createSupabaseBet(tokenId, prediction, duration, amount);
+    console.log(`Solana bet created with ID: ${betId}`);
     
-    // Update the bet with the on-chain betId
+    // Then create in Supabase for our frontend
+    const bet = await createSupabaseBet(
+      tokenId, 
+      prediction, 
+      duration, 
+      amount, 
+      betId.toString()
+    );
+    
+    console.log(`Supabase bet created: ${bet.id}`);
+    
+    // Return complete bet object
     return {
       ...bet,
       onChainBetId: betId.toString(),
@@ -122,13 +134,19 @@ export const acceptBet = async (
   wallet: any
 ): Promise<Bet> => {
   try {
-    // Accept on Solana blockchain
+    console.log(`Accepting bet: ${bet.id}, onChainBetId: ${bet.onChainBetId}`);
+    
+    // Accept on Solana blockchain first
     if (bet.onChainBetId) {
       await acceptSolanaBet(wallet, parseInt(bet.onChainBetId));
+      console.log(`Solana bet accepted: ${bet.onChainBetId}`);
+    } else {
+      throw new Error("Missing on-chain bet ID");
     }
     
     // Then update in Supabase for our frontend
     const updatedBet = await acceptSupabaseBet(bet.id);
+    console.log(`Supabase bet updated: ${updatedBet.id}`);
     
     // Ensure the status is one of the allowed types
     return {
@@ -146,6 +164,7 @@ export const fetchSolanaBet = async (onChainBetId: string): Promise<Bet | null> 
   if (!onChainBetId) return null;
   
   try {
+    console.log(`Fetching Solana bet data for ID: ${onChainBetId}`);
     return await getSolanaBetData(parseInt(onChainBetId));
   } catch (error) {
     console.error('Error fetching Solana bet:', error);

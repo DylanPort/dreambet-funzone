@@ -5,7 +5,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet, SolanaContractPrediction, SolanaContractStatus, BetPrediction, BetStatus } from '@/types/bet';
 
 // Constants
-// Using the real program ID provided by the user
 const PROGRAM_ID = "9Y1rKMgRMaDxhkUkUn3ib9AJJqapjkzKqFrsMKwhBVVd";
 
 // Solana connection
@@ -13,7 +12,8 @@ export const getSolanaConnection = () => {
   return new Connection(
     process.env.NODE_ENV === 'production' 
       ? 'https://api.devnet.solana.com' 
-      : 'https://api.devnet.solana.com'
+      : 'https://api.devnet.solana.com',
+    'confirmed'
   );
 };
 
@@ -71,25 +71,37 @@ export const createSolanaBet = async (
     
     const connection = getSolanaConnection();
     const programId = new PublicKey(PROGRAM_ID);
+    
+    // Generate a unique bet ID based on timestamp
     const betId = Math.floor(Date.now() / 1000);
+    console.log(`Generated betId: ${betId}`);
+    
+    // Find the bet PDA
     const betPDA = await findBetPDA(betId);
+    console.log(`Bet PDA: ${betPDA.toString()}`);
 
     // Find the counter PDA
     const [counterPDA] = await PublicKey.findProgramAddress(
       [Buffer.from("counter")],
       programId
     );
+    console.log(`Counter PDA: ${counterPDA.toString()}`);
 
     // Create transaction
     const durationSeconds = durationMinutes * 60;
     const solLamports = solAmount * web3.LAMPORTS_PER_SOL;
 
+    console.log(`Creating transaction with: duration=${durationSeconds}s, amount=${solLamports} lamports`);
+    
+    // Create instruction data
     const data = Buffer.alloc(1 + 32 + 1 + 8 + 8);
     data.writeUInt8(0, 0); // CreateBet instruction
     new PublicKey(tokenMint).toBuffer().copy(data, 1);
     data.writeUInt8(prediction === 'migrate' ? 0 : 1, 33);
     new BN(durationSeconds).toArrayLike(Buffer, 'le', 8).copy(data, 34);
     new BN(solLamports).toArrayLike(Buffer, 'le', 8).copy(data, 42);
+
+    console.log(`Instruction data created: prediction=${prediction === 'migrate' ? 0 : 1}`);
 
     const instruction = new web3.TransactionInstruction({
       keys: [
@@ -105,17 +117,29 @@ export const createSolanaBet = async (
 
     const transaction = new Transaction().add(instruction);
     transaction.feePayer = wallet.publicKey;
-    transaction.recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
+    transaction.recentBlockhash = (await connection.getLatestBlockhash('confirmed')).blockhash;
+
+    console.log(`Transaction created, getting signature from wallet`);
 
     // Sign and send transaction
     const signedTx = await wallet.signTransaction(transaction);
+    console.log(`Transaction signed, sending to network`);
+    
     const txId = await connection.sendRawTransaction(signedTx.serialize(), {
       skipPreflight: false,
       preflightCommitment: 'confirmed',
     });
-    await connection.confirmTransaction(txId, 'confirmed');
     
-    console.log(`Transaction confirmed: ${txId}`);
+    console.log(`Transaction sent with ID: ${txId}`);
+    console.log(`Waiting for confirmation...`);
+    
+    await connection.confirmTransaction({
+      blockhash: transaction.recentBlockhash,
+      lastValidBlockHeight: (await connection.getLatestBlockhash('confirmed')).lastValidBlockHeight,
+      signature: txId
+    }, 'confirmed');
+    
+    console.log(`Transaction confirmed! Bet created with ID: ${betId}`);
     return { betId };
   } catch (error) {
     console.error("Error creating bet on Solana:", error);
@@ -139,10 +163,14 @@ export const acceptSolanaBet = async (
     const programId = new PublicKey(PROGRAM_ID);
     const betPDA = await findBetPDA(betId);
 
+    console.log(`Bet PDA: ${betPDA.toString()}`);
+
     // Create transaction
     const data = Buffer.alloc(1 + 8);
     data.writeUInt8(1, 0); // CounterBet instruction
     new BN(betId).toArrayLike(Buffer, 'le', 8).copy(data, 1);
+
+    console.log(`Creating instruction for counterbet`);
 
     const instruction = new web3.TransactionInstruction({
       keys: [
@@ -157,17 +185,29 @@ export const acceptSolanaBet = async (
 
     const transaction = new Transaction().add(instruction);
     transaction.feePayer = wallet.publicKey;
-    transaction.recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
+    transaction.recentBlockhash = (await connection.getLatestBlockhash('confirmed')).blockhash;
+
+    console.log(`Transaction created, getting signature from wallet`);
 
     // Sign and send transaction
     const signedTx = await wallet.signTransaction(transaction);
+    console.log(`Transaction signed, sending to network`);
+    
     const txId = await connection.sendRawTransaction(signedTx.serialize(), {
       skipPreflight: false,
       preflightCommitment: 'confirmed',
     });
-    await connection.confirmTransaction(txId, 'confirmed');
     
-    console.log(`Transaction confirmed: ${txId}`);
+    console.log(`Transaction sent with ID: ${txId}`);
+    console.log(`Waiting for confirmation...`);
+    
+    await connection.confirmTransaction({
+      blockhash: transaction.recentBlockhash,
+      lastValidBlockHeight: (await connection.getLatestBlockhash('confirmed')).lastValidBlockHeight,
+      signature: txId
+    }, 'confirmed');
+    
+    console.log(`Transaction confirmed! Bet accepted with ID: ${betId}`);
   } catch (error) {
     console.error("Error accepting bet on Solana:", error);
     throw error;
@@ -183,11 +223,15 @@ export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
     const programId = new PublicKey(PROGRAM_ID);
     const betPDA = await findBetPDA(betId);
 
+    console.log(`Bet PDA: ${betPDA.toString()}`);
+
     const accountInfo = await connection.getAccountInfo(betPDA);
     if (!accountInfo) {
       console.log(`No account info found for bet ${betId}`);
       return null;
     }
+
+    console.log(`Account data found, deserializing...`);
 
     // Deserializing from binary data
     const data = accountInfo.data;
@@ -212,8 +256,9 @@ export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
     const solAmount = new BN(data.slice(predictionOffset + 41, predictionOffset + 49), 'le').toNumber() / web3.LAMPORTS_PER_SOL;
     const status = data[predictionOffset + 49];
 
-    // Try to get token info - in a real implementation, you might want to fetch this from your database
-    // or from a token registry
+    console.log(`Successfully deserialized bet data: token=${tokenMint}, initiator=${bettor1}, status=${status}`);
+
+    // Try to get token info
     const tokenName = "Unknown Token";
     const tokenSymbol = "UNKNOWN";
 

@@ -31,6 +31,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [prediction, setPrediction] = useState<BetPrediction | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duration, setDuration] = useState<number>(30); // Default to 30 minutes
+  const [transactionStatus, setTransactionStatus] = useState<string>('');
   
   const { connected, publicKey, wallet } = useWallet();
   const { toast } = useToast();
@@ -75,6 +76,19 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
 
     try {
       setIsSubmitting(true);
+      setTransactionStatus('Preparing transaction...');
+      
+      // Log for debugging
+      console.log(`Creating bet with: 
+        token: ${tokenId} (${tokenName})
+        wallet: ${publicKey.toString()}
+        amount: ${amountValue} SOL
+        prediction: ${prediction}
+        duration: ${duration} minutes
+      `);
+      
+      setTransactionStatus('Sending transaction to Solana...');
+      
       await createBet(
         tokenId,
         tokenName,
@@ -83,8 +97,10 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         amountValue,
         prediction,
         wallet,
-        duration // Pass the selected duration to the createBet function
+        duration
       );
+      
+      setTransactionStatus('Transaction confirmed!');
       
       toast({
         title: "Bet created successfully!",
@@ -95,6 +111,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       setAmount('0.1');
       setPrediction(null);
       setDuration(30);
+      setTransactionStatus('');
       
       // Notify parent component
       if (onSuccess) {
@@ -102,11 +119,21 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       } else {
         onBetCreated();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating bet:', error);
+      setTransactionStatus('');
+      
+      // Extract meaningful error message
+      let errorMessage = "Something went wrong with the blockchain transaction.";
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       toast({
         title: "Failed to create bet",
-        description: "Something went wrong with the blockchain transaction. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -190,6 +217,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           <span>60m</span>
         </div>
       </div>
+      
+      {transactionStatus && (
+        <div className="bg-dream-accent2/10 p-3 rounded-md">
+          <p className="flex items-center text-sm text-dream-accent2">
+            <div className="w-4 h-4 border-2 border-dream-accent2 border-t-transparent rounded-full animate-spin mr-2"></div>
+            {transactionStatus}
+          </p>
+        </div>
+      )}
       
       <div className="flex gap-3">
         <Button
