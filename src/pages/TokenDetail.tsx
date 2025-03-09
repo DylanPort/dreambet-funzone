@@ -204,13 +204,20 @@ const TokenDetail = () => {
           return [...current, newPoint].slice(-60);
         });
         
-        setTokenMetrics(current => {
-          return {
+        if (pumpPortal.tokenMetrics[id]) {
+          const metrics = pumpPortal.tokenMetrics[id];
+          setTokenMetrics(current => ({
+            ...current,
+            marketCap: metrics.market_cap,
+            volume24h: metrics.volume_24h || current.volume24h + (latestPrice * 1000 * Math.random())
+          }));
+        } else {
+          setTokenMetrics(current => ({
             ...current,
             marketCap: latestPrice * 1000000 * (0.5 + Math.random()),
             volume24h: current.volume24h + (latestPrice * 1000 * Math.random())
-          };
-        });
+          }));
+        }
         
         const lastPrice = priceData[priceData.length - 1]?.price || 0;
         if (lastPrice > 0) {
@@ -230,12 +237,14 @@ const TokenDetail = () => {
   useEffect(() => {
     if (id && pumpPortal.tokenMetrics[id]) {
       const metrics = pumpPortal.tokenMetrics[id];
+      
       setTokenMetrics({
         marketCap: metrics.market_cap,
         volume24h: metrics.volume_24h,
         liquidity: metrics.liquidity,
         holders: metrics.holders
       });
+      
       console.log("Updated token metrics from WebSocket:", metrics);
     }
   }, [id, pumpPortal.tokenMetrics]);
