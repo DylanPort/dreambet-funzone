@@ -49,9 +49,14 @@ const TokenCard: React.FC<TokenCardProps> = ({
                 alt={name} 
                 className="w-10 h-10 rounded-full object-cover"
                 onError={(e) => {
-                  // Fallback to default symbol display on image load error
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  (e.target as HTMLImageElement).nextElementSibling!.style.display = 'flex';
+                  // Properly cast the target to HTMLImageElement
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.style.display = 'none';
+                  // Find the next element sibling and make it visible
+                  const nextElement = imgElement.nextElementSibling as HTMLElement;
+                  if (nextElement) {
+                    nextElement.style.display = 'flex';
+                  }
                 }}
               />
             ) : null}
