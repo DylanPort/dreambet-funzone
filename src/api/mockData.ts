@@ -50,10 +50,12 @@ export const mockBets: Bet[] = [
     tokenSymbol: 'PUMP',
     initiator: '7XgPXKC3eVLPwMbTLdqLXg8uu9C5rQyPUFwXQ7szFKAJ',
     amount: 0.5,
-    prediction: 'up',
+    prediction: 'migrate',
     timestamp: new Date().getTime() - 30 * 60 * 1000,
     expiresAt: new Date().getTime() + 23.5 * 60 * 60 * 1000,
     status: 'open',
+    duration: 60, // 1 hour in minutes
+    initialMarketCap: 50000, // Example value
   },
   {
     id: 'bet2',
@@ -62,10 +64,12 @@ export const mockBets: Bet[] = [
     tokenSymbol: 'MOON',
     initiator: '3KNBs4dQpAdbZZv4shLTbzWcBSfH7Xw8eKvNKHVU2iej',
     amount: 1,
-    prediction: 'down',
+    prediction: 'die',
     timestamp: new Date().getTime() - 15 * 60 * 1000,
     expiresAt: new Date().getTime() + 23.75 * 60 * 60 * 1000,
     status: 'open',
+    duration: 30, // 30 minutes
+    initialMarketCap: 75000, // Example value
   },
   {
     id: 'bet3',
@@ -75,11 +79,13 @@ export const mockBets: Bet[] = [
     initiator: '7XgPXKC3eVLPwMbTLdqLXg8uu9C5rQyPUFwXQ7szFKAJ',
     counterParty: '3KNBs4dQpAdbZZv4shLTbzWcBSfH7Xw8eKvNKHVU2iej',
     amount: 2,
-    prediction: 'up',
+    prediction: 'migrate',
     timestamp: new Date().getTime() - 40 * 60 * 1000,
     expiresAt: new Date().getTime() + 20 * 60 * 1000,
     status: 'matched',
     initialPrice: 0.0115,
+    duration: 15, // 15 minutes
+    initialMarketCap: 125000, // Example value
   },
 ];
 
@@ -118,7 +124,7 @@ export const createBet = async (
   tokenSymbol: string,
   initiator: string,
   amount: number,
-  prediction: 'up' | 'down'
+  prediction: 'migrate' | 'die'
 ): Promise<Bet> => {
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 800));
@@ -134,6 +140,7 @@ export const createBet = async (
     timestamp: new Date().getTime(),
     expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000, // 24 hours from now
     status: 'open',
+    duration: 60, // Default 1 hour in minutes
   };
   
   bets = [...bets, newBet];

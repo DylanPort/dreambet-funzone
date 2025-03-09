@@ -1,5 +1,5 @@
 
-export type BetPrediction = 'up' | 'down';
+export type BetPrediction = 'migrate' | 'die';
 
 export interface Bet {
   id: string;
@@ -16,4 +16,6 @@ export interface Bet {
   winner?: string;
   initialPrice?: number;
   finalPrice?: number;
+  duration: number; // in minutes
+  initialMarketCap?: number; // needed for payout calculations
 }

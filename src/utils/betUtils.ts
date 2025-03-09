@@ -56,7 +56,7 @@ export const calculateEarlyClosurePayout = (
   const marketCapRatio = currentMarketCap / initialMarketCap;
   
   // Calculate payout based on bet prediction
-  if (bet.prediction === 'up' || bet.prediction === 'migrate') {
+  if (bet.prediction === 'migrate') {
     // Payout = initial_bet * (P_current / P_initial) * [(T - t)/T] + initial_bet * [t/T]
     return initialBet * marketCapRatio * remainingTimeRatio + initialBet * timeRatio;
   } else {

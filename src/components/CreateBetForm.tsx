@@ -45,7 +45,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     if (!prediction) {
       toast({
         title: "Select a prediction",
-        description: "Please choose whether the token will go up or down",
+        description: "Please choose whether the token will migrate or die",
         variant: "destructive",
       });
       return;
@@ -74,7 +74,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       toast({
         title: "Bet created successfully!",
-        description: `Your ${amountValue} SOL bet that ${tokenSymbol} will go ${prediction} is now live`,
+        description: `Your ${amountValue} SOL bet that ${tokenSymbol} will ${prediction} is now live`,
       });
       
       // Reset form
@@ -106,28 +106,28 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setPrediction('up')}
+            onClick={() => setPrediction('migrate')}
             className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
-              prediction === 'up'
+              prediction === 'migrate'
                 ? 'bg-green-500/20 border-green-500 text-green-400'
                 : 'border-dream-foreground/20 hover:bg-green-500/10'
             }`}
           >
             <ArrowUp size={18} />
-            <span>UP</span>
+            <span>MIGRATE 🚀</span>
           </button>
           
           <button
             type="button"
-            onClick={() => setPrediction('down')}
+            onClick={() => setPrediction('die')}
             className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
-              prediction === 'down'
+              prediction === 'die'
                 ? 'bg-red-500/20 border-red-500 text-red-400'
                 : 'border-dream-foreground/20 hover:bg-red-500/10'
             }`}
           >
             <ArrowDown size={18} />
-            <span>DOWN</span>
+            <span>DIE 💀</span>
           </button>
         </div>
       </div>
