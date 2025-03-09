@@ -12,7 +12,7 @@ import BetCard from '@/components/BetCard';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, getLatestPriceFromTrades } from '@/services/pumpPortalWebSocketService';
 import OrbitingParticles from '@/components/OrbitingParticles';
-import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
 
 const TokenDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -259,6 +259,35 @@ const TokenDetail = () => {
       console.log("Updated token metrics from WebSocket:", metrics);
     }
   }, [id, pumpPortal.tokenMetrics]);
+  
+  useEffect(() => {
+    if (id) {
+      const stopPolling = startDexScreenerPolling(id, (data) => {
+        if (data) {
+          setToken(current => {
+            if (!current) return null;
+            
+            return {
+              ...current,
+              currentPrice: data.priceUsd,
+              change24h: data.priceChange24h
+            };
+          });
+          
+          setTokenMetrics(current => ({
+            ...current,
+            marketCap: data.marketCap,
+            volume24h: data.volume24h,
+            liquidity: data.liquidity,
+          }));
+        }
+      }, 15000);
+      
+      return () => {
+        stopPolling();
+      };
+    }
+  }, [id]);
   
   const refreshData = async () => {
     if (!id) return;

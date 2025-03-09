@@ -10,7 +10,7 @@ import CreateBetForm from '@/components/CreateBetForm';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Bet } from '@/types/bet';
 import { useToast } from '@/hooks/use-toast';
-import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
 
 const TokenBetting = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,6 +72,37 @@ const TokenBetting = () => {
       loadData();
     }
   }, [id, navigate, toast]);
+
+  useEffect(() => {
+    if (id) {
+      // Start polling DexScreener for real-time data
+      const stopPolling = startDexScreenerPolling(id, (data) => {
+        if (data) {
+          // Update token metrics
+          setTokenMetrics({
+            marketCap: data.marketCap,
+            volume24h: data.volume24h,
+            liquidity: data.liquidity,
+            holders: tokenMetrics.holders
+          });
+          
+          // Update token price data
+          if (token) {
+            setToken({
+              ...token,
+              currentPrice: data.priceUsd,
+              change24h: data.priceChange24h
+            });
+          }
+        }
+      }, 15000); // Poll every 15 seconds
+      
+      return () => {
+        // Clean up polling when component unmounts
+        stopPolling();
+      };
+    }
+  }, [id, token]);
 
   const handleBetCreated = async () => {
     if (id) {
