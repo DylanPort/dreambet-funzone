@@ -36,7 +36,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <Link to="/" className="text-xl font-display font-bold text-gradient">
-            DreamBet
+            PumpXBounty
           </Link>
           
           {/* Desktop Navigation */}

@@ -98,7 +98,7 @@ const BettingDashboard = () => {
               This app allows you to bet on tokens migrating from PumpFun to Raydium. All bets are facilitated through smart contracts on the Solana blockchain.
             </p>
             <div className="mt-6 border-t border-white/10 pt-6 text-sm text-dream-foreground/40">
-              © {new Date().getFullYear()} DreamBet. All rights reserved.
+              © {new Date().getFullYear()} PumpXBounty. All rights reserved.
             </div>
           </div>
         </div>

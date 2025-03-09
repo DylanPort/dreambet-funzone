@@ -20,7 +20,7 @@ const Index = () => {
               Predict the Future<br />of Token Migrations
             </h1>
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">
-              DreamBet lets you bet on tokens migrating from PumpFun to Raydium. Predict whether they'll moon or die within the hour based on migration prices.
+              PumpXBounty lets you bet on tokens migrating from PumpFun to Raydium. Predict whether they'll moon or die within the hour based on migration prices.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
               <Link to="/betting">
@@ -140,13 +140,13 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <Link to="/" className="text-xl font-display font-bold text-gradient mb-3 inline-block">
-              DreamBet
+              PumpXBounty
             </Link>
             <p className="text-dream-foreground/60 max-w-md mx-auto text-sm">
-              DreamBet is a platform for predicting the future of tokens migrating from PumpFun to Raydium. This is for entertainment purposes only.
+              PumpXBounty is a platform for predicting the future of tokens migrating from PumpFun to Raydium. This is for entertainment purposes only.
             </p>
             <div className="mt-6 border-t border-white/10 pt-6 text-sm text-dream-foreground/40">
-              © {new Date().getFullYear()} DreamBet. All rights reserved.
+              © {new Date().getFullYear()} PumpXBounty. All rights reserved.
             </div>
           </div>
         </div>
