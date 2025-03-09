@@ -1,12 +1,45 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, TrendingUp, Shield, Clock } from 'lucide-react';
+import { ArrowRight, TrendingUp, Shield, Clock, ExternalLink } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
+import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 
 const Index = () => {
+  const [latestToken, setLatestToken] = useState<any | null>(null);
+  const pumpPortal = usePumpPortalWebSocket();
+  
+  useEffect(() => {
+    if (pumpPortal.connected) {
+      pumpPortal.subscribeToNewTokens();
+    }
+  }, [pumpPortal.connected]);
+  
+  useEffect(() => {
+    if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
+      const formattedToken = formatWebSocketTokenData(pumpPortal.recentTokens[0]);
+      setLatestToken(formattedToken);
+    } else if (pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
+      const rawToken = pumpPortal.rawTokens[0];
+      setLatestToken({
+        id: rawToken.mint,
+        name: rawToken.name || 'Unknown Token',
+        symbol: rawToken.symbol || '',
+        logo: '🪙',
+        currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / (rawToken.supply || 1000000000)).toFixed(6)) : 0,
+        change24h: 0,
+      });
+    }
+  }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
+  // Function to get token symbol display
+  const getTokenSymbol = (token: any) => {
+    if (!token) return 'T';
+    return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
+  };
+
   return (
     <>
       <OrbitingParticles />
@@ -39,6 +72,41 @@ const Index = () => {
           
           {/* Floating Cards */}
           <div className="relative max-w-5xl mx-auto h-[300px] md:h-[400px] mb-16">
+            {/* Latest PumpFun Token Card - Only show if we have a token */}
+            {latestToken && (
+              <div className="absolute glass-panel p-6 w-[280px] top-[5%] left-[40%] shadow-neon-green animate-float" style={{ animationDelay: "0.3s", zIndex: 10 }}>
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10">
+                      <span className="font-display font-bold">{getTokenSymbol(latestToken)}</span>
+                    </div>
+                    <span className="ml-2 font-semibold">{latestToken.name}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">New</span>
+                  </div>
+                </div>
+                <div className="h-[80px] bg-gradient-to-r from-green-500/20 to-green-300/10 rounded-md mb-3 flex items-center justify-center">
+                  <span className="text-green-300 font-bold">${latestToken.currentPrice?.toFixed(6) || "0.000000"}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <Link to={`/token/${latestToken.id}`}>
+                    <Button variant="outline" size="sm" className="text-xs">
+                      View Token
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => window.open('https://pump.fun', '_blank')}
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" /> Pump.fun
+                  </Button>
+                </div>
+              </div>
+            )}
+            
             <div className="absolute glass-panel p-6 w-[280px] top-0 left-[10%] shadow-neon-purple animate-float">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center">
