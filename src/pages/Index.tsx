@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Clock } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -17,19 +17,19 @@ const Index = () => {
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
           <div className="text-center mb-16 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 text-gradient">
-              Predict the Future<br />of Fun Tokens
+              Predict the Future<br />of Token Migrations
             </h1>
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">
-              DreamBet lets you predict whether tokens will moon or die within the hour based on migration prices. Enter the dreamscape where intuition meets opportunity.
+              DreamBet lets you bet on tokens migrating from PumpFun to Raydium. Predict whether they'll moon or die within the hour based on migration prices.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
-              <Link to="/dashboard">
+              <Link to="/betting">
                 <Button className="bg-gradient-to-r from-dream-accent1 to-dream-accent3 hover:shadow-neon text-white text-lg px-8 py-6">
                   Start Betting
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link to="/tokens">
+              <Link to="/betting">
                 <Button variant="outline" className="text-lg px-8 py-6 border-dream-accent2/50 hover:border-dream-accent2 hover:bg-dream-accent2/10">
                   Explore Tokens
                 </Button>
@@ -106,9 +106,9 @@ const Index = () => {
               <div className="bg-dream-accent1/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
                 <TrendingUp className="h-8 w-8 text-dream-accent1" />
               </div>
-              <h3 className="text-xl font-display font-semibold mb-3">Real-Time Data</h3>
+              <h3 className="text-xl font-display font-semibold mb-3">P2P Betting</h3>
               <p className="text-dream-foreground/70">
-                Stay updated with real-time migration prices and make informed predictions.
+                Bet directly against other users with a simple up or down position on migrating tokens.
               </p>
             </div>
             
@@ -118,7 +118,7 @@ const Index = () => {
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">One-Hour Window</h3>
               <p className="text-dream-foreground/70">
-                Quick one-hour betting windows for fast-paced and exciting predictions.
+                Quick one-hour betting windows for fast-paced and exciting predictions on token migrations.
               </p>
             </div>
             
@@ -126,9 +126,9 @@ const Index = () => {
               <div className="bg-dream-accent3/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
                 <Shield className="h-8 w-8 text-dream-accent3" />
               </div>
-              <h3 className="text-xl font-display font-semibold mb-3">Secure Platform</h3>
+              <h3 className="text-xl font-display font-semibold mb-3">Solana Powered</h3>
               <p className="text-dream-foreground/70">
-                Your data and bets are secure with our advanced encryption and authentication.
+                Fast, secure betting with low fees powered by Solana smart contracts and blockchain technology.
               </p>
             </div>
           </div>
@@ -143,7 +143,7 @@ const Index = () => {
               DreamBet
             </Link>
             <p className="text-dream-foreground/60 max-w-md mx-auto text-sm">
-              DreamBet is a platform for predicting the future of fun tokens based on migration prices. This is for entertainment purposes only.
+              DreamBet is a platform for predicting the future of tokens migrating from PumpFun to Raydium. This is for entertainment purposes only.
             </p>
             <div className="mt-6 border-t border-white/10 pt-6 text-sm text-dream-foreground/40">
               © {new Date().getFullYear()} DreamBet. All rights reserved.
