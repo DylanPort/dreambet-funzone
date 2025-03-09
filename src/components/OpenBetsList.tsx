@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { fetchOpenBets, acceptBet } from '@/api/mockData';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -7,6 +8,7 @@ import { Bet } from '@/types/bet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BetsListView from './BetsListView';
 import { getSortedBets, getExpiringBets, getPublicBets } from '@/utils/betUtils';
+import { supabase } from "@/integrations/supabase/client";
 
 const FALLBACK_BETS_KEY = 'pumpxbounty_fallback_bets';
 

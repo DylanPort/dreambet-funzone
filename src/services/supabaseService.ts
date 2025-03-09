@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet } from "@/types/bet";
 
@@ -43,8 +44,8 @@ export const fetchOpenBets = async () => {
         token_mint,
         tokens (token_name, token_symbol),
         creator,
-        prediction,
-        amount,
+        prediction_bettor1,
+        sol_amount,
         duration,
         status,
         created_at,
@@ -74,9 +75,10 @@ export const fetchOpenBets = async () => {
       }
       
       // Map prediction values from database to our frontend format
-      let predictionValue: 'migrate' | 'die' = bet.prediction as 'migrate' | 'die';
-      if (bet.prediction === 'up') predictionValue = 'migrate';
-      if (bet.prediction === 'down') predictionValue = 'die';
+      let predictionValue: BetPrediction;
+      if (bet.prediction_bettor1 === 'up') predictionValue = 'migrate';
+      else if (bet.prediction_bettor1 === 'down') predictionValue = 'die';
+      else predictionValue = bet.prediction_bettor1 as BetPrediction;
       
       const transformedBet = {
         id: bet.bet_id,
@@ -84,7 +86,7 @@ export const fetchOpenBets = async () => {
         tokenName: bet.tokens?.token_name || 'Unknown Token',
         tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
         initiator: bet.creator || 'Unknown',
-        amount: bet.amount,
+        amount: bet.sol_amount,
         prediction: predictionValue,
         timestamp: new Date(bet.created_at).getTime(),
         expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
@@ -116,8 +118,8 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         token_mint,
         tokens (token_name, token_symbol),
         creator,
-        prediction,
-        amount,
+        prediction_bettor1,
+        sol_amount,
         duration,
         status,
         created_at,
@@ -136,9 +138,10 @@ export const fetchUserBets = async (userWalletAddress: string) => {
     // Transform to match our frontend Bet type
     return data.map(bet => {
       // Map prediction values from database to our frontend format
-      let predictionValue: 'migrate' | 'die' = bet.prediction as 'migrate' | 'die';
-      if (bet.prediction === 'up') predictionValue = 'migrate';
-      if (bet.prediction === 'down') predictionValue = 'die';
+      let predictionValue: BetPrediction;
+      if (bet.prediction_bettor1 === 'up') predictionValue = 'migrate';
+      else if (bet.prediction_bettor1 === 'down') predictionValue = 'die';
+      else predictionValue = bet.prediction_bettor1 as BetPrediction;
       
       return {
         id: bet.bet_id,
@@ -146,7 +149,7 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         tokenName: bet.tokens?.token_name || 'Unknown Token',
         tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
         initiator: bet.creator,
-        amount: bet.amount,
+        amount: bet.sol_amount,
         prediction: predictionValue,
         timestamp: new Date(bet.created_at).getTime(),
         expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
@@ -164,7 +167,7 @@ export const fetchUserBets = async (userWalletAddress: string) => {
 
 export const createSupabaseBet = async (
   tokenMint: string,
-  prediction: 'migrate' | 'die',
+  prediction: BetPrediction,
   duration: number, // in minutes
   amount: number,
   creatorWalletAddress: string,
@@ -189,9 +192,10 @@ export const createSupabaseBet = async (
     console.log('Token data for bet:', tokenData);
     
     // Map frontend prediction to database format
-    let dbPrediction = prediction;
+    let dbPrediction: string;
     if (prediction === 'migrate') dbPrediction = 'up';
-    if (prediction === 'die') dbPrediction = 'down';
+    else if (prediction === 'die') dbPrediction = 'down';
+    else dbPrediction = prediction;
     
     // Insert the bet
     const { data, error } = await supabase
@@ -199,9 +203,9 @@ export const createSupabaseBet = async (
       .insert({
         token_mint: tokenMint,
         creator: creatorWalletAddress,
-        prediction: dbPrediction,
+        prediction_bettor1: dbPrediction,
         duration: durationInSeconds,
-        amount: amount,
+        sol_amount: amount,
         status: 'open',
         on_chain_id: onChainId,
         transaction_signature: transactionSignature
@@ -254,8 +258,8 @@ export const acceptBet = async (betId: string) => {
       token_mint,
       tokens (token_name, token_symbol, current_market_cap),
       creator,
-      prediction,
-      amount,
+      prediction_bettor1,
+      sol_amount,
       duration,
       created_at
     `)
@@ -297,6 +301,12 @@ export const acceptBet = async (betId: string) => {
       market_cap_at_action: betData.tokens.current_market_cap
     });
   
+  // Map prediction values from database to our frontend format
+  let predictionValue: BetPrediction;
+  if (betData.prediction_bettor1 === 'up') predictionValue = 'migrate';
+  else if (betData.prediction_bettor1 === 'down') predictionValue = 'die';
+  else predictionValue = betData.prediction_bettor1 as BetPrediction;
+  
   // Return updated bet in the format expected by our frontend
   return {
     id: data.bet_id,
@@ -305,8 +315,8 @@ export const acceptBet = async (betId: string) => {
     tokenSymbol: betData.tokens.token_symbol,
     initiator: betData.creator,
     counterParty: user.id,
-    amount: data.amount,
-    prediction: betData.prediction as 'migrate' | 'die',
+    amount: data.sol_amount,
+    prediction: predictionValue,
     timestamp: new Date(betData.created_at).getTime(),
     expiresAt: new Date(data.end_time).getTime(),
     status: 'matched',

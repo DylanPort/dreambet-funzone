@@ -3,7 +3,7 @@ import {
   fetchTokens as fetchSupabaseTokens, 
   fetchOpenBets as fetchSupabaseOpenBets, 
   fetchUserBets as fetchSupabaseUserBets, 
-  createBet as createSupabaseBet, 
+  createSupabaseBet, 
   acceptBet as acceptSupabaseBet,
   fetchTokenById
 } from '@/services/supabaseService';
