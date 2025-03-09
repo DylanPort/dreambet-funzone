@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame } from 'lucide-react';
 
 interface TokenCardProps {
   id: string;
@@ -16,6 +16,10 @@ interface TokenCardProps {
   marketCap?: number;
   volume24h?: number;
   pairAddress?: string;
+  priceChange1h?: number;
+  priceChange6h?: number;
+  transactions?: number;
+  age?: string;
 }
 
 const TokenCard: React.FC<TokenCardProps> = ({
@@ -31,8 +35,14 @@ const TokenCard: React.FC<TokenCardProps> = ({
   marketCap,
   volume24h,
   pairAddress,
+  priceChange1h,
+  priceChange6h,
+  transactions,
+  age,
 }) => {
   const isPositive = priceChange >= 0;
+  const isPositive1h = priceChange1h ? priceChange1h >= 0 : true;
+  const isPositive6h = priceChange6h ? priceChange6h >= 0 : true;
 
   // Format price with appropriate decimals
   const formatPrice = (price: number) => {
@@ -119,9 +129,15 @@ const TokenCard: React.FC<TokenCardProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 h-6 px-2 rounded-md bg-dream-background/40 text-xs text-dream-foreground/60">
-              <Zap className="w-3 h-3" />
+              <Flame className="w-3 h-3" />
               <span>#{index !== undefined ? (index + 1) : ""}</span>
             </div>
+            {age && (
+              <div className="flex items-center gap-1 h-6 px-2 rounded-md bg-dream-background/40 text-xs text-dream-foreground/60">
+                <Clock className="w-3 h-3" />
+                <span>{age}</span>
+              </div>
+            )}
           </div>
         </div>
         
@@ -160,12 +176,14 @@ const TokenCard: React.FC<TokenCardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-dream-foreground/60 mb-3">
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            <span>{formatTimeRemaining(timeRemaining)}</span>
+        {transactions && (
+          <div className="flex items-center justify-between text-xs text-dream-foreground/60 mb-3">
+            <div className="flex items-center gap-1">
+              <Zap className="w-3 h-3" />
+              <span>{transactions.toLocaleString()} transactions</span>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <button className="btn-moon py-1.5 flex items-center justify-center gap-1">

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, TrendingUp, Clock, ExternalLink, Zap } from 'lucide-react';
+import { RefreshCw, TrendingUp, Clock, ExternalLink, Zap, Flame } from 'lucide-react';
 import TokenCard from '@/components/TokenCard';
 import { fetchTrendingTokens } from '@/services/dexScreenerService';
 import { useVisibilityChange } from '@/hooks/useVisibilityChange';
@@ -90,7 +90,7 @@ const TrendingTokens: React.FC = () => {
     <div className="glass-panel p-6 relative">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-dream-accent1" />
+          <Flame className="h-5 w-5 text-dream-accent1" />
           <h2 className="text-xl font-display font-semibold">Trending Solana Tokens</h2>
           <div className="bg-dream-accent1/20 text-dream-accent1 text-xs px-2 py-0.5 rounded-full flex items-center">
             <Clock className="h-3 w-3 mr-1" />
@@ -140,6 +140,7 @@ const TrendingTokens: React.FC = () => {
                     <th className="text-right py-3 px-2 text-xs text-dream-foreground/60 font-medium">24H</th>
                     <th className="text-right py-3 px-2 text-xs text-dream-foreground/60 font-medium">LIQUIDITY</th>
                     <th className="text-right py-3 px-2 text-xs text-dream-foreground/60 font-medium">MCAP</th>
+                    <th className="text-center py-3 px-2 text-xs text-dream-foreground/60 font-medium">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -221,6 +222,16 @@ const TrendingTokens: React.FC = () => {
                       </td>
                       <td className="py-3 px-2 text-right">
                         <span className="text-sm font-medium">{formatNumber(token.marketCap, "$")}</span>
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button className="p-1.5 bg-green-500/20 text-green-400 rounded-md hover:bg-green-500/30 transition-colors">
+                            <Zap className="w-3.5 h-3.5" />
+                          </button>
+                          <button className="p-1.5 bg-red-500/20 text-red-400 rounded-md hover:bg-red-500/30 transition-colors">
+                            <Flame className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
