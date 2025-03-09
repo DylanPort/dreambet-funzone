@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap, Sparkles } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap, Sparkles, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
+import { Button } from '@/components/ui/button';
 
 const MigratingTokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
