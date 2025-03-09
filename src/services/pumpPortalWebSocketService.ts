@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 
 // Types for WebSocket messages
@@ -83,6 +82,26 @@ interface PumpPortalState {
 }
 
 let websocket: WebSocket | null = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_DELAY = 5000;
+
+// Add debounce function for state updates
+const debounce = (func: Function, wait: number) => {
+  let timeout: number | null = null;
+  return (...args: any[]) => {
+    if (timeout) window.clearTimeout(timeout);
+    timeout = window.setTimeout(() => {
+      func(...args);
+    }, wait);
+  };
+};
+
+// Store for previous data to avoid unnecessary updates
+const previousData = {
+  trades: new Map<string, string>(),
+  metrics: new Map<string, string>()
+};
 
 // Store to save console logs for debugging
 if (typeof window !== 'undefined') {
@@ -118,7 +137,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Create a Zustand store to manage WebSocket state
+// Create a Zustand store to manage WebSocket state with optimized updates
 export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
   connected: false,
   connecting: false,
@@ -141,6 +160,7 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
     websocket.onopen = () => {
       console.info('Connected to PumpPortal WebSocket');
       set({ connected: true, connecting: false });
+      reconnectAttempts = 0;
     };
 
     websocket.onclose = () => {
@@ -148,16 +168,40 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
       websocket = null;
       set({ connected: false, connecting: false });
       
-      // Attempt reconnection after 5 seconds
-      setTimeout(() => {
-        get().connect();
-      }, 5000);
+      // Attempt reconnection with exponential backoff
+      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        reconnectAttempts++;
+        const delay = RECONNECT_DELAY * Math.pow(1.5, reconnectAttempts - 1);
+        
+        setTimeout(() => {
+          get().connect();
+        }, delay);
+      }
     };
 
     websocket.onerror = (error) => {
       console.error('PumpPortal WebSocket error:', error);
       websocket?.close();
     };
+
+    // Debounced state updaters to batch updates
+    const debouncedTokenUpdate = debounce((newTokens: NewTokenEvent['data'][]) => {
+      set((state) => ({
+        recentTokens: [...newTokens, ...state.recentTokens].slice(0, 50)
+      }));
+    }, 1000);
+
+    const debouncedTradeUpdate = debounce((tokenId: string, trades: TokenTradeEvent['data'][]) => {
+      set((state) => {
+        const currentTrades = state.recentTrades[tokenId] || [];
+        return {
+          recentTrades: {
+            ...state.recentTrades,
+            [tokenId]: [...trades, ...currentTrades].slice(0, 100)
+          }
+        };
+      });
+    }, 500);
 
     websocket.onmessage = (event) => {
       try {
@@ -169,42 +213,67 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
           
           switch (message.type) {
             case 'newToken':
-              set((state) => ({
-                recentTokens: [message.data, ...state.recentTokens].slice(0, 50)
-              }));
+              debouncedTokenUpdate([message.data]);
               break;
               
-            case 'tokenTrade':
-              set((state) => {
-                const tokenId = message.data.token_mint;
-                const currentTrades = state.recentTrades[tokenId] || [];
-                
-                return {
-                  recentTrades: {
-                    ...state.recentTrades,
-                    [tokenId]: [message.data, ...currentTrades].slice(0, 100)
-                  }
-                };
-              });
+            case 'tokenTrade': {
+              const tokenId = message.data.token_mint;
+              const tradeKey = `${tokenId}-${message.data.timestamp}-${message.data.price}`;
+              
+              // Skip if we've already processed this exact trade
+              if (previousData.trades.has(tradeKey)) {
+                break;
+              }
+              
+              previousData.trades.set(tradeKey, Date.now().toString());
+              // Limit cache size
+              if (previousData.trades.size > 1000) {
+                const oldestKey = Array.from(previousData.trades.keys())[0];
+                previousData.trades.delete(oldestKey);
+              }
+              
+              debouncedTradeUpdate(tokenId, [message.data]);
               break;
+            }
               
             case 'raydiumLiquidity':
-              set((state) => ({
-                recentLiquidity: {
-                  ...state.recentLiquidity,
-                  [message.data.token_mint]: message.data
-                }
-              }));
+              // Only update if changed to avoid re-renders
+              const currentLiquidity = get().recentLiquidity[message.data.token_mint];
+              if (!currentLiquidity || 
+                  currentLiquidity.liquidity_amount !== message.data.liquidity_amount) {
+                set((state) => ({
+                  recentLiquidity: {
+                    ...state.recentLiquidity,
+                    [message.data.token_mint]: message.data
+                  }
+                }));
+              }
               break;
               
-            case 'tokenMetrics':
+            case 'tokenMetrics': {
+              const tokenId = message.data.token_mint;
+              const metricKey = `${tokenId}-${message.data.timestamp}`;
+              
+              // Skip if we've already processed this update
+              if (previousData.metrics.has(metricKey)) {
+                break;
+              }
+              
+              previousData.metrics.set(metricKey, Date.now().toString());
+              // Limit cache size
+              if (previousData.metrics.size > 500) {
+                const oldestKey = Array.from(previousData.metrics.keys())[0];
+                previousData.metrics.delete(oldestKey);
+              }
+              
               set((state) => ({
                 tokenMetrics: {
                   ...state.tokenMetrics,
-                  [message.data.token_mint]: message.data
+                  [tokenId]: message.data
                 }
               }));
               break;
+            }
               
             default:
               console.info('Unknown message type:', message);
@@ -273,12 +342,16 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
 
   subscribeToToken: (tokenId: string) => {
     if (websocket && get().connected) {
-      const payload = {
-        method: "subscribeTokenTrade",
-        keys: [tokenId]
-      };
-      websocket.send(JSON.stringify(payload));
-      console.log(`Subscribed to token trades for ${tokenId}`);
+      // Check if we're already subscribed to avoid duplicate subscriptions
+      const hasTrades = get().recentTrades[tokenId] !== undefined;
+      if (!hasTrades) {
+        const payload = {
+          method: "subscribeTokenTrade",
+          keys: [tokenId]
+        };
+        websocket.send(JSON.stringify(payload));
+        console.log(`Subscribed to token trades for ${tokenId}`);
+      }
       
       // Also fetch metrics for this token
       get().fetchTokenMetrics(tokenId);

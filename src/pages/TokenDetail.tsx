@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
@@ -30,6 +30,36 @@ const TokenDetail = () => {
     liquidity: null,
     holders: 0
   });
+  
+  const lastPriceUpdateRef = useRef<number>(0);
+  const lastMetricsUpdateRef = useRef<number>(0);
+  const dexScreenerCleanupRef = useRef<Function | null>(null);
+  
+  const updateTokenPrice = useCallback((price: number, change24h: number) => {
+    const now = Date.now();
+    if (now - lastPriceUpdateRef.current > 2000) {
+      lastPriceUpdateRef.current = now;
+      setToken(current => {
+        if (!current) return null;
+        return {
+          ...current,
+          currentPrice: price,
+          change24h: change24h
+        };
+      });
+    }
+  }, []);
+  
+  const updateTokenMetrics = useCallback((newMetrics: any) => {
+    const now = Date.now();
+    if (now - lastMetricsUpdateRef.current > 2000) {
+      lastMetricsUpdateRef.current = now;
+      setTokenMetrics(current => ({
+        ...current,
+        ...newMetrics
+      }));
+    }
+  }, []);
   
   useEffect(() => {
     const loadToken = async () => {
@@ -192,42 +222,35 @@ const TokenDetail = () => {
       if (trades.length > 0) {
         const latestPrice = getLatestPriceFromTrades(trades);
         
-        setToken(current => {
-          if (!current) return null;
-          
-          const priceChange = current.currentPrice > 0 
-            ? ((latestPrice - current.currentPrice) / current.currentPrice) * 100 
+        const currentPrice = token?.currentPrice || 0;
+        
+        if (Math.abs(latestPrice - currentPrice) / (currentPrice || 1) > 0.001) {
+          const priceChange = currentPrice > 0 
+            ? ((latestPrice - currentPrice) / currentPrice) * 100 
             : 0;
             
-          return {
-            ...current,
-            currentPrice: latestPrice,
-            change24h: priceChange
-          };
-        });
-        
-        setPriceData(current => {
-          const newPoint = {
-            time: new Date().toISOString(),
-            price: latestPrice
-          };
+          updateTokenPrice(latestPrice, priceChange);
           
-          return [...current, newPoint].slice(-60);
-        });
+          setPriceData(current => {
+            const newPoint = {
+              time: new Date().toISOString(),
+              price: latestPrice
+            };
+            
+            return [...current, newPoint].slice(-60);
+          });
+        }
         
-        if (pumpPortal.tokenMetrics[id]) {
-          const metrics = pumpPortal.tokenMetrics[id];
-          setTokenMetrics(current => ({
-            ...current,
-            marketCap: metrics.market_cap,
-            volume24h: metrics.volume_24h || current.volume24h + (latestPrice * 1000 * Math.random())
-          }));
-        } else {
-          setTokenMetrics(current => ({
-            ...current,
-            marketCap: latestPrice * 1000000 * (0.5 + Math.random()),
-            volume24h: current.volume24h + (latestPrice * 1000 * Math.random())
-          }));
+        if (Date.now() - lastMetricsUpdateRef.current > 5000) {
+          if (pumpPortal.tokenMetrics[id]) {
+            const metrics = pumpPortal.tokenMetrics[id];
+            updateTokenMetrics({
+              marketCap: metrics.market_cap,
+              volume24h: metrics.volume_24h,
+              liquidity: metrics.liquidity,
+              holders: metrics.holders
+            });
+          }
         }
         
         const lastPrice = priceData[priceData.length - 1]?.price || 0;
@@ -243,13 +266,13 @@ const TokenDetail = () => {
         }
       }
     }
-  }, [id, pumpPortal.recentTrades, toast]);
+  }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
   
   useEffect(() => {
     if (id && pumpPortal.tokenMetrics[id]) {
       const metrics = pumpPortal.tokenMetrics[id];
       
-      setTokenMetrics({
+      updateTokenMetrics({
         marketCap: metrics.market_cap,
         volume24h: metrics.volume_24h,
         liquidity: metrics.liquidity,
@@ -258,38 +281,34 @@ const TokenDetail = () => {
       
       console.log("Updated token metrics from WebSocket:", metrics);
     }
-  }, [id, pumpPortal.tokenMetrics]);
+  }, [id, pumpPortal.tokenMetrics, updateTokenMetrics]);
   
   useEffect(() => {
     if (id) {
       const stopPolling = startDexScreenerPolling(id, (data) => {
         if (data) {
-          setToken(current => {
-            if (!current) return null;
-            
-            return {
-              ...current,
-              currentPrice: data.priceUsd,
-              change24h: data.priceChange24h
-            };
-          });
+          updateTokenPrice(data.priceUsd, data.priceChange24h);
           
-          setTokenMetrics(current => ({
-            ...current,
+          updateTokenMetrics({
             marketCap: data.marketCap,
             volume24h: data.volume24h,
             liquidity: data.liquidity,
-          }));
+          });
         }
-      }, 15000);
+      }, 30000);
+      
+      dexScreenerCleanupRef.current = stopPolling;
       
       return () => {
-        stopPolling();
+        if (dexScreenerCleanupRef.current) {
+          dexScreenerCleanupRef.current();
+          dexScreenerCleanupRef.current = null;
+        }
       };
     }
-  }, [id]);
+  }, [id, updateTokenPrice, updateTokenMetrics]);
   
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     if (!id) return;
     
     try {
@@ -322,12 +341,11 @@ const TokenDetail = () => {
       const dexScreenerData = await fetchDexScreenerData(id);
       if (dexScreenerData) {
         console.log("Refreshed DexScreener data:", dexScreenerData);
-        setTokenMetrics(current => ({
-          ...current,
+        updateTokenMetrics({
           marketCap: dexScreenerData.marketCap,
           volume24h: dexScreenerData.volume24h,
           liquidity: dexScreenerData.liquidity
-        }));
+        });
       } else if (pumpPortal.connected) {
         pumpPortal.fetchTokenMetrics(id);
       }
@@ -344,7 +362,7 @@ const TokenDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, pumpPortal, toast, updateTokenMetrics]);
 
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
@@ -628,4 +646,3 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
-

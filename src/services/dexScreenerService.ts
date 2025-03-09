@@ -15,6 +15,12 @@ interface DexScreenerTokenData {
   pairs: DexScreenerPair[];
 }
 
+const CACHE_EXPIRY_TIME = 30000; // 30 seconds
+const tokenDataCache = new Map<string, {
+  data: any;
+  timestamp: number;
+}>();
+
 export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
   marketCap: number;
   volume24h: number;
@@ -23,6 +29,13 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
   priceChange24h: number;
 } | null> => {
   try {
+    // Check cache first
+    const cachedData = tokenDataCache.get(tokenAddress);
+    const now = Date.now();
+    if (cachedData && (now - cachedData.timestamp) < CACHE_EXPIRY_TIME) {
+      return cachedData.data;
+    }
+    
     console.log("Fetching DexScreener data for token:", tokenAddress);
     const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`);
     
@@ -42,48 +55,76 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
     const sortedPairs = [...data.pairs].sort((a, b) => (b.liquidity || 0) - (a.liquidity || 0));
     const pair = sortedPairs[0];
     
-    console.log("DexScreener data retrieved successfully:", {
-      marketCap: pair.fdv,
-      volume24h: pair.volume?.h24,
-      liquidity: pair.liquidity,
-      priceUsd: parseFloat(pair.priceUsd || '0'),
-      priceChange24h: pair.priceChange?.h24 || 0
-    });
-    
-    return {
+    const result = {
       marketCap: pair.fdv || 0,
       volume24h: pair.volume?.h24 || 0,
       liquidity: pair.liquidity || 0,
       priceUsd: parseFloat(pair.priceUsd || '0'),
       priceChange24h: pair.priceChange?.h24 || 0
     };
+    
+    // Save to cache
+    tokenDataCache.set(tokenAddress, {
+      data: result,
+      timestamp: now
+    });
+    
+    console.log("DexScreener data retrieved successfully:", result);
+    return result;
   } catch (error) {
     console.error("Error fetching DexScreener data:", error);
     return null;
   }
 };
 
-// Add a polling function to continuously fetch updated data
+// Add a polling function with better performance
+let activePollingTokens = new Set<string>();
+let pollingIntervalId: number | null = null;
+
+const pollAllActiveTokens = async () => {
+  const tokens = Array.from(activePollingTokens);
+  for (const token of tokens) {
+    const data = await fetchDexScreenerData(token);
+    const callbackFn = tokenCallbacks.get(token);
+    if (data && callbackFn) {
+      callbackFn(data);
+    }
+  }
+};
+
+// Store callbacks for each token
+const tokenCallbacks = new Map<string, Function>();
+
 export const startDexScreenerPolling = (
   tokenAddress: string, 
   onData: (data: ReturnType<typeof fetchDexScreenerData> extends Promise<infer T> ? T : never) => void,
-  interval = 30000 // Default 30 seconds
+  interval = 30000 // Default 30 seconds (increased from 15s)
 ) => {
-  let timeoutId: number;
+  // Save the callback
+  tokenCallbacks.set(tokenAddress, onData);
   
-  const fetchData = async () => {
-    const data = await fetchDexScreenerData(tokenAddress);
-    if (data) {
-      onData(data);
-    }
-    timeoutId = window.setTimeout(fetchData, interval);
-  };
+  // Add token to active polling list
+  activePollingTokens.add(tokenAddress);
   
-  // Initial fetch
-  fetchData();
+  // Fetch immediately
+  fetchDexScreenerData(tokenAddress).then(data => {
+    if (data) onData(data);
+  });
+  
+  // Start global polling interval if not already running
+  if (!pollingIntervalId) {
+    pollingIntervalId = window.setInterval(pollAllActiveTokens, interval);
+  }
   
   // Return cleanup function
   return () => {
-    window.clearTimeout(timeoutId);
+    activePollingTokens.delete(tokenAddress);
+    tokenCallbacks.delete(tokenAddress);
+    
+    // If no more tokens, clear the interval
+    if (activePollingTokens.size === 0 && pollingIntervalId) {
+      window.clearInterval(pollingIntervalId);
+      pollingIntervalId = null;
+    }
   };
 };
