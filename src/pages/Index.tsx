@@ -6,20 +6,17 @@ import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
-  
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-  
   useEffect(() => {
     const tokens = [];
-    
+
     // Process formatted tokens
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
       for (let i = 0; i < Math.min(3, pumpPortal.recentTokens.length); i++) {
@@ -27,7 +24,7 @@ const Index = () => {
         tokens.push(formattedToken);
       }
     }
-    
+
     // Process raw tokens if we need more
     if (tokens.length < 3 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
       for (let i = 0; i < Math.min(3 - tokens.length, pumpPortal.rawTokens.length); i++) {
@@ -37,13 +34,14 @@ const Index = () => {
           name: rawToken.name || 'Unknown Token',
           symbol: rawToken.symbol || '',
           logo: '🪙',
-          imageUrl: rawToken.uri || '', // Include URI from raw token as the image URL
+          imageUrl: rawToken.uri || '',
+          // Include URI from raw token as the image URL
           currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
-          change24h: Math.random() * 40 - 20, // Random change between -20% and +20% for demonstration
+          change24h: Math.random() * 40 - 20 // Random change between -20% and +20% for demonstration
         });
       }
     }
-    
+
     // Fill with placeholders if needed
     while (tokens.length < 3) {
       tokens.push({
@@ -51,12 +49,12 @@ const Index = () => {
         name: `Token ${tokens.length + 1}`,
         symbol: `T${tokens.length + 1}`,
         logo: '🪙',
-        imageUrl: '', // No image for placeholder tokens
-        currentPrice: (Math.random() * 0.1),
-        change24h: Math.random() * 40 - 20, // Random change between -20% and +20%
+        imageUrl: '',
+        // No image for placeholder tokens
+        currentPrice: Math.random() * 0.1,
+        change24h: Math.random() * 40 - 20 // Random change between -20% and +20%
       });
     }
-    
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
 
@@ -67,29 +65,30 @@ const Index = () => {
   };
 
   // Card styles to position the 3 cards
-  const cardPositions = [
-    "top-[5%] left-[40%] shadow-neon-green animate-float", // Style for first card
-    "top-0 left-[10%] shadow-neon-purple animate-float", // Style for second card
-    "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed", // Style for third card
+  const cardPositions = ["top-[5%] left-[40%] shadow-neon-green animate-float",
+  // Style for first card
+  "top-0 left-[10%] shadow-neon-purple animate-float",
+  // Style for second card
+  "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed" // Style for third card
   ];
 
   // Format price with appropriate decimals based on value
   const formatPrice = (price: number | string) => {
     // Ensure price is a number
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    
+
     // Check if it's a valid number
     if (isNaN(numPrice)) return "0.000000";
-    
+
     // Format based on value
     if (numPrice < 0.01) return numPrice.toFixed(6);
     if (numPrice < 1) return numPrice.toFixed(4);
     if (numPrice < 1000) return numPrice.toFixed(2);
-    return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    return numPrice.toLocaleString('en-US', {
+      maximumFractionDigits: 2
+    });
   };
-
-  return (
-    <>
+  return <>
       <OrbitingParticles />
       <Navbar />
       <BetReel />
@@ -103,9 +102,7 @@ const Index = () => {
             <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 text-gradient">
               Predict the Future<br />of Token Migrations
             </h1>
-            <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">
-              PumpXBounty lets you bet on tokens migrating from PumpFun to Raydium. Predict whether they'll moon or die within the hour based on migration prices.
-            </p>
+            <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
               <Link to="/betting">
                 <Button className="bg-gradient-to-r from-dream-accent1 to-dream-accent3 hover:shadow-neon text-white text-lg px-8 py-6">
@@ -124,32 +121,21 @@ const Index = () => {
           {/* Floating Cards */}
           <div className="relative max-w-5xl mx-auto h-[300px] md:h-[400px] mb-16">
             {/* Generate token cards using the latest tokens */}
-            {latestTokens.map((token, index) => (
-              <div 
-                key={token.id || `token-${index}`} 
-                className={`absolute glass-panel p-6 w-[280px] ${cardPositions[index]}`} 
-                style={{ animationDelay: `${index * 0.3}s`, zIndex: 10 - index }}
-              >
+            {latestTokens.map((token, index) => <div key={token.id || `token-${index}`} className={`absolute glass-panel p-6 w-[280px] ${cardPositions[index]}`} style={{
+            animationDelay: `${index * 0.3}s`,
+            zIndex: 10 - index
+          }}>
                 <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center">
-                    {token.imageUrl ? (
-                      <img 
-                        src={token.imageUrl} 
-                        alt={token.name} 
-                        className="w-8 h-8 rounded-full object-cover"
-                        onError={(e) => {
-                          const imgElement = e.target as HTMLImageElement;
-                          imgElement.style.display = 'none';
-                          const nextElement = imgElement.nextElementSibling as HTMLElement;
-                          if (nextElement) {
-                            nextElement.style.display = 'flex';
-                          }
-                        }}
-                      />
-                    ) : null}
-                    <div 
-                      className={`w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}
-                    >
+                    {token.imageUrl ? <img src={token.imageUrl} alt={token.name} className="w-8 h-8 rounded-full object-cover" onError={e => {
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.style.display = 'none';
+                  const nextElement = imgElement.nextElementSibling as HTMLElement;
+                  if (nextElement) {
+                    nextElement.style.display = 'flex';
+                  }
+                }} /> : null}
+                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}>
                       <span className="font-display font-bold">{getTokenSymbol(token)}</span>
                     </div>
                     <span className="ml-2 font-semibold">{token.name}</span>
@@ -173,17 +159,11 @@ const Index = () => {
                       View Token
                     </Button>
                   </Link>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => window.open('https://pump.fun', '_blank')}
-                  >
+                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => window.open('https://pump.fun', '_blank')}>
                     <ExternalLink className="w-3 h-3 mr-1" /> Pump.fun
                   </Button>
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
           
           {/* Features Section */}
@@ -237,8 +217,6 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </>
-  );
+    </>;
 };
-
 export default Index;
