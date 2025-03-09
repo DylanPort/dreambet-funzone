@@ -17,7 +17,7 @@ const MOCK_COMMENTS = [
   {
     id: '2',
     author: 'xR4t...9Pzv',
-    content: 'I'm betting big on migration, the team is solid.',
+    content: "I'm betting big on migration, the team is solid.",
     timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     votes: 3
   },
