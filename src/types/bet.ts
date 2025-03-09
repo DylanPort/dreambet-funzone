@@ -18,8 +18,8 @@ export interface Bet {
   initialMarketCap?: number;
   duration: number;
   winner?: string;
-  onChainBetId?: string; // For tracking on-chain bet ID
-  transactionSignature?: string; // For tracking transaction signature
+  onChainBetId: string; // Changed from optional to required
+  transactionSignature: string; // Changed from optional to required
 }
 
 // Smart contract state types to match the Rust program

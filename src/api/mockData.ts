@@ -43,7 +43,11 @@ const getFallbackBets = (): Bet[] => {
       const bets: Bet[] = JSON.parse(storedBets);
       
       const now = Date.now();
-      return bets.filter(bet => bet.expiresAt > now);
+      return bets.filter(bet => bet.expiresAt > now).map(bet => ({
+        ...bet,
+        onChainBetId: bet.onChainBetId || '',
+        transactionSignature: bet.transactionSignature || ''
+      }));
     }
   } catch (error) {
     console.error("Error getting fallback bets:", error);
@@ -180,7 +184,7 @@ export const createBet = async (
       walletPublicKeyString: walletPublicKey?.toString()
     });
     
-    const effectivePublicKey = walletPublicKey || adapterPublicKey;
+    const effectivePublicKey = wallet.publicKey || wallet.adapter?.publicKey;
     
     if (!effectivePublicKey) {
       console.error("No public key found in wallet or adapter");
@@ -227,8 +231,8 @@ export const createBet = async (
       expiresAt: Date.now() + (duration * 60 * 1000),
       status: "open",
       duration,
-      onChainBetId: betId.toString(),
-      transactionSignature: txSignature
+      onChainBetId: betId?.toString() || '',
+      transactionSignature: txSignature || ''
     };
     
     storeFallbackBet(fallbackBet);
@@ -257,7 +261,7 @@ export const createBet = async (
         duration, 
         amount,
         effectivePublicKey.toString(),
-        betId.toString(),
+        betId?.toString(),
         txSignature
       );
       
@@ -265,8 +269,8 @@ export const createBet = async (
       
       return {
         ...bet,
-        onChainBetId: betId.toString(),
-        transactionSignature: txSignature,
+        onChainBetId: betId?.toString() || '',
+        transactionSignature: txSignature || '',
         status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
       };
     } catch (supabaseError) {

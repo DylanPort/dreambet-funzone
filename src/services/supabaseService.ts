@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Bet } from "@/types/bet";
+import { Bet, BetPrediction } from "@/types/bet";
 
 // User related functions
 export const getCurrentUser = async () => {
@@ -49,8 +49,8 @@ export const fetchOpenBets = async () => {
         duration,
         status,
         created_at,
-        transaction_signature,
-        on_chain_id
+        on_chain_id,
+        transaction_signature
       `)
       .eq('status', 'open')
       .order('created_at', { ascending: false });
@@ -92,8 +92,8 @@ export const fetchOpenBets = async () => {
         expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
         status: bet.status,
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
-        onChainBetId: bet.on_chain_id,
-        transactionSignature: bet.transaction_signature
+        onChainBetId: bet.on_chain_id?.toString() || '',
+        transactionSignature: bet.transaction_signature || ''
       };
       
       console.log('Transformed bet:', transformedBet);
@@ -123,8 +123,8 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         duration,
         status,
         created_at,
-        transaction_signature,
-        on_chain_id
+        on_chain_id,
+        transaction_signature
       `)
       .eq('creator', userWalletAddress)
       .order('created_at', { ascending: false });
@@ -155,8 +155,8 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
         status: bet.status,
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
-        onChainBetId: bet.on_chain_id,
-        transactionSignature: bet.transaction_signature
+        onChainBetId: bet.on_chain_id?.toString() || '',
+        transactionSignature: bet.transaction_signature || ''
       };
     });
   } catch (error) {
@@ -203,6 +203,7 @@ export const createSupabaseBet = async (
       .insert({
         token_mint: tokenMint,
         creator: creatorWalletAddress,
+        bettor1_id: creatorWalletAddress,
         prediction_bettor1: dbPrediction,
         duration: durationInSeconds,
         sol_amount: amount,
@@ -233,8 +234,8 @@ export const createSupabaseBet = async (
       expiresAt: new Date(data.created_at).getTime() + (durationInSeconds * 1000),
       status: 'open',
       duration: duration,
-      onChainBetId: onChainId,
-      transactionSignature: transactionSignature
+      onChainBetId: onChainId || '',
+      transactionSignature: transactionSignature || ''
     };
     
     console.log('Returning new bet:', newBet);
@@ -321,6 +322,8 @@ export const acceptBet = async (betId: string) => {
     expiresAt: new Date(data.end_time).getTime(),
     status: 'matched',
     initialMarketCap: data.initial_market_cap,
-    duration: Math.floor(betData.duration / 60) // Convert seconds to minutes
+    duration: Math.floor(betData.duration / 60), // Convert seconds to minutes
+    onChainBetId: data.on_chain_id || '',
+    transactionSignature: data.transaction_signature || ''
   };
 };
