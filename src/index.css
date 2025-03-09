@@ -228,6 +228,40 @@
   .bet-button:hover::after {
     transform: translateX(250%);
   }
+  
+  .animate-scroll {
+    animation: scroll 20s linear infinite;
+  }
+  
+  @keyframes entrance {
+    0% {
+      transform: translateY(-10px);
+      background-color: rgba(80, 255, 170, 0.3);
+      border-color: rgba(80, 255, 170, 0.5);
+    }
+    20% {
+      transform: translateY(0);
+      background-color: rgba(80, 255, 170, 0.3);
+      border-color: rgba(80, 255, 170, 0.5);
+    }
+    80% {
+      background-color: rgba(80, 255, 170, 0.2);
+      border-color: rgba(80, 255, 170, 0.3);
+    }
+    100% {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+  
+  @keyframes scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
 }
 
 :root {

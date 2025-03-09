@@ -252,6 +252,13 @@ export const createSupabaseBet = async (
     };
     
     console.log('Returning new bet:', newBet);
+    
+    // Dispatch a custom event for the BetReel to pick up
+    const newBetCreatedEvent = new CustomEvent('newBetCreated', {
+      detail: { bet: newBet }
+    });
+    window.dispatchEvent(newBetCreatedEvent);
+    
     return newBet;
   } catch (error) {
     console.error('Error in createSupabaseBet:', error);
