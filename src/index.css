@@ -100,6 +100,23 @@
   }
 }
 
+/* New futuristic animations */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(138, 75, 255, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(138, 75, 255, 0.8); }
+}
+
+@keyframes border-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
 @layer utilities {
   .animate-float {
     animation: float 6s ease-in-out infinite;
@@ -149,6 +166,34 @@
   
   .btn-die {
     @apply bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors border border-red-500/30;
+  }
+  
+  /* New futuristic UI elements */
+  .token-card {
+    @apply transform transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_25px_rgba(0,238,255,0.3)];
+  }
+  
+  .bet-button {
+    @apply relative overflow-hidden bg-gradient-to-r from-dream-accent1/60 to-dream-accent3/60 rounded-md font-medium text-white transition-all duration-300;
+  }
+  
+  .bet-button::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-dream-accent1 to-dream-accent3 opacity-0 transition-opacity duration-300;
+  }
+  
+  .bet-button:hover::before {
+    @apply opacity-100;
+  }
+  
+  .bet-button::after {
+    content: '';
+    @apply absolute top-0 left-0 h-full w-20 bg-white/20 skew-x-[-45deg] transform translate-x-[-150%];
+    transition: 0.75s;
+  }
+  
+  .bet-button:hover::after {
+    transform: translateX(250%);
   }
 }
 

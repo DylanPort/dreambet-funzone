@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap, Sparkles, ExternalLink } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap, Sparkles, ExternalLink, Rocket, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
@@ -207,24 +207,39 @@ const MigratingTokenList = () => {
     );
   };
 
+  const formatPrice = (price: number | string) => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    
+    if (isNaN(numPrice)) return "0.000000";
+    
+    if (numPrice < 0.01) return numPrice.toFixed(6);
+    if (numPrice < 1) return numPrice.toFixed(4);
+    if (numPrice < 1000) return numPrice.toFixed(2);
+    return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-display font-bold text-dream-foreground">
-          Migrating Tokens
+        <h2 className="text-2xl font-display font-bold text-dream-foreground relative">
+          <span className="relative z-10">Migrating Tokens</span>
+          <span className="absolute -left-2 bottom-0 w-[120%] h-2 bg-gradient-to-r from-dream-accent1 to-transparent opacity-30"></span>
         </h2>
         
-        <div className="flex items-center text-sm">
+        <div className="flex items-center text-sm bg-dream-background/30 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent2/20">
           <span className={`flex items-center gap-1 ${pumpPortal.connected ? 'text-green-400' : 'text-yellow-400'}`}>
             <Zap className="w-4 h-4" />
-            {pumpPortal.connected ? 'Live' : 'Connecting...'}
+            {pumpPortal.connected ? 'Live Feed' : 'Connecting...'}
           </span>
         </div>
       </div>
       
       {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="w-8 h-8 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
+        <div className="flex justify-center py-12">
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-dream-accent2/30 border-t-dream-accent2 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-dream-accent1/50 rounded-full animate-pulse"></div>
+          </div>
         </div>
       ) : tokens.length === 0 ? (
         <div className="glass-panel p-6">
@@ -293,47 +308,85 @@ const MigratingTokenList = () => {
           )}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {tokens.map(token => (
             <Link
               key={token.id}
               to={`/token/${token.id}`}
-              className="glass-panel p-4 hover:shadow-neon transition-all duration-300"
+              className="token-card group relative overflow-hidden"
             >
-              <div className="flex justify-between items-start">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-xl border border-white/10">
-                    {getTokenIcon(token.symbol)}
-                  </div>
-                  <div className="ml-2">
-                    <h3 className="font-display font-semibold">{token.name || 'Unknown Token'}</h3>
-                    <p className="text-sm text-dream-foreground/70">{token.symbol || '???'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Clock className="w-3 h-3 mr-1 text-dream-foreground/70" />
-                  <span className="text-dream-foreground/70">
-                    {formatTimeSince(token.migrationTime)}
-                  </span>
-                </div>
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
               
-              <div className="flex items-center mt-3 justify-between">
-                <div>
-                  <div className="text-lg font-bold">${token.currentPrice.toFixed(6)}</div>
-                  <div className={`text-sm flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {token.change24h >= 0 ? (
-                      <ArrowUpRight className="w-3 h-3 mr-1" />
-                    ) : (
-                      <ArrowDownRight className="w-3 h-3 mr-1" />
-                    )}
-                    {Math.abs(token.change24h || 0).toFixed(1)}%
+              <div className="absolute -right-12 -top-12 w-24 h-24 bg-dream-accent2/10 blur-xl rounded-full group-hover:bg-dream-accent2/20 transition-all"></div>
+              <div className="absolute -left-12 -bottom-12 w-24 h-24 bg-dream-accent1/10 blur-xl rounded-full group-hover:bg-dream-accent1/20 transition-all"></div>
+              
+              <div className="glass-panel p-5 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300 h-full">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center">
+                    {token.imageUrl ? (
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/10 to-dream-accent3/10 rounded-full animate-pulse"></div>
+                        <img 
+                          src={token.imageUrl} 
+                          alt={token.name} 
+                          className="w-10 h-10 rounded-full object-cover relative z-10"
+                          onError={(e) => {
+                            const imgElement = e.target as HTMLImageElement;
+                            imgElement.style.display = 'none';
+                            const nextElement = imgElement.nextElementSibling as HTMLElement;
+                            if (nextElement) {
+                              nextElement.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                    <div
+                      className={`w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}
+                    >
+                      <span className="font-display font-bold">{getTokenIcon(token.symbol)}</span>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="font-display font-semibold group-hover:text-dream-accent2 transition-colors duration-300">{token.name || 'Unknown Token'}</h3>
+                      <p className="text-sm text-dream-foreground/70">{token.symbol || '???'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-sm bg-dream-background/50 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                    <Clock className="w-3 h-3 mr-1 text-dream-foreground/70" />
+                    <span className="text-dream-foreground/70">
+                      {formatTimeSince(token.migrationTime)}
+                    </span>
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <button className="bg-dream-accent1/20 hover:bg-dream-accent1/40 px-3 py-1 rounded text-sm transition-colors">
-                    Bet
+                <div className="flex items-center mt-4 p-3 bg-gradient-to-r from-dream-background/40 to-dream-background/20 backdrop-blur-sm rounded-md border border-white/5 group-hover:border-white/10 transition-all">
+                  <div className="flex-1">
+                    <div className="text-lg font-bold group-hover:text-dream-accent2 transition-colors">${formatPrice(token.currentPrice)}</div>
+                    <div className={`text-sm flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {token.change24h >= 0 ? (
+                        <ArrowUpRight className="w-3 h-3 mr-1" />
+                      ) : (
+                        <ArrowDownRight className="w-3 h-3 mr-1" />
+                      )}
+                      {Math.abs(token.change24h || 0).toFixed(1)}%
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3 items-center justify-end">
+                    <div className="hover:scale-110 transition-transform">
+                      <Rocket className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div className="hover:scale-110 transition-transform">
+                      <ShieldAlert className="w-4 h-4 text-red-400" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-4 flex justify-center">
+                  <button className="bet-button w-full py-2 text-sm font-semibold">
+                    <span className="z-10 relative">Place Prediction</span>
                   </button>
                 </div>
               </div>
