@@ -51,7 +51,7 @@ export const fetchOpenBets = async () => {
         on_chain_id,
         transaction_signature
       `)
-      .eq('status', 'open')
+      .or('status.eq.open,status.eq.matched,status.eq.expired')
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -59,10 +59,10 @@ export const fetchOpenBets = async () => {
       throw error;
     }
     
-    console.log('Raw open bets data from Supabase:', data);
+    console.log('Raw bets data from Supabase:', data);
     
     if (!data || data.length === 0) {
-      console.log('No open bets found in database');
+      console.log('No bets found in database');
       return [];
     }
     
