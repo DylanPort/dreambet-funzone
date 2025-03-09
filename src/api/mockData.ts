@@ -106,12 +106,12 @@ export const createBet = async (
     console.log(`Solana bet created with ID: ${betId}`);
     
     // Then create in Supabase for our frontend
+    // Notice: createSupabaseBet expects 4 arguments, but we were passing 5
     const bet = await createSupabaseBet(
       tokenId, 
       prediction, 
       duration, 
-      amount, 
-      betId.toString()
+      amount
     );
     
     console.log(`Supabase bet created: ${bet.id}`);
