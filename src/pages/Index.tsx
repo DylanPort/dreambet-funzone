@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -8,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 
 const Index = () => {
-  const [latestToken, setLatestToken] = useState<any | null>(null);
+  const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
   
   useEffect(() => {
@@ -18,20 +17,44 @@ const Index = () => {
   }, [pumpPortal.connected]);
   
   useEffect(() => {
+    const tokens = [];
+    
+    // Process formatted tokens
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
-      const formattedToken = formatWebSocketTokenData(pumpPortal.recentTokens[0]);
-      setLatestToken(formattedToken);
-    } else if (pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
-      const rawToken = pumpPortal.rawTokens[0];
-      setLatestToken({
-        id: rawToken.mint,
-        name: rawToken.name || 'Unknown Token',
-        symbol: rawToken.symbol || '',
+      for (let i = 0; i < Math.min(4, pumpPortal.recentTokens.length); i++) {
+        const formattedToken = formatWebSocketTokenData(pumpPortal.recentTokens[i]);
+        tokens.push(formattedToken);
+      }
+    }
+    
+    // Process raw tokens if we need more
+    if (tokens.length < 4 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
+      for (let i = 0; i < Math.min(4 - tokens.length, pumpPortal.rawTokens.length); i++) {
+        const rawToken = pumpPortal.rawTokens[i];
+        tokens.push({
+          id: rawToken.mint,
+          name: rawToken.name || 'Unknown Token',
+          symbol: rawToken.symbol || '',
+          logo: '🪙',
+          currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
+          change24h: Math.random() * 40 - 20, // Random change between -20% and +20% for demonstration
+        });
+      }
+    }
+    
+    // Fill with placeholders if needed
+    while (tokens.length < 4) {
+      tokens.push({
+        id: `placeholder-${tokens.length}`,
+        name: `Token ${tokens.length + 1}`,
+        symbol: `T${tokens.length + 1}`,
         logo: '🪙',
-        currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
-        change24h: 0,
+        currentPrice: (Math.random() * 0.1).toFixed(6),
+        change24h: Math.random() * 40 - 20, // Random change between -20% and +20%
       });
     }
+    
+    setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
 
   // Function to get token symbol display
@@ -39,6 +62,14 @@ const Index = () => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
+  // Card styles to position the 4 cards
+  const cardPositions = [
+    "top-[5%] left-[40%] shadow-neon-green animate-float", // Style for first card
+    "top-0 left-[10%] shadow-neon-purple animate-float", // Style for second card
+    "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed", // Style for third card
+    "bottom-0 left-[30%] shadow-neon animate-float-delayed-2" // Style for fourth card
+  ];
 
   return (
     <>
@@ -72,25 +103,35 @@ const Index = () => {
           
           {/* Floating Cards */}
           <div className="relative max-w-5xl mx-auto h-[300px] md:h-[400px] mb-16">
-            {/* Latest PumpFun Token Card - Only show if we have a token */}
-            {latestToken && (
-              <div className="absolute glass-panel p-6 w-[280px] top-[5%] left-[40%] shadow-neon-green animate-float" style={{ animationDelay: "0.3s", zIndex: 10 }}>
+            {/* Generate token cards using the latest tokens */}
+            {latestTokens.map((token, index) => (
+              <div 
+                key={token.id || `token-${index}`} 
+                className={`absolute glass-panel p-6 w-[280px] ${cardPositions[index]}`} 
+                style={{ animationDelay: `${index * 0.3}s`, zIndex: 10 - index }}
+              >
                 <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10">
-                      <span className="font-display font-bold">{getTokenSymbol(latestToken)}</span>
+                      <span className="font-display font-bold">{getTokenSymbol(token)}</span>
                     </div>
-                    <span className="ml-2 font-semibold">{latestToken.name}</span>
+                    <span className="ml-2 font-semibold">{token.name}</span>
                   </div>
                   <div className="flex items-center">
-                    <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">New</span>
+                    <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">PumpFun</span>
                   </div>
                 </div>
                 <div className="h-[80px] bg-gradient-to-r from-green-500/20 to-green-300/10 rounded-md mb-3 flex items-center justify-center">
-                  <span className="text-green-300 font-bold">${latestToken.currentPrice?.toFixed(6) || "0.000000"}</span>
+                  <span className={`font-bold ${token.change24h >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                    ${token.currentPrice?.toFixed(6) || "0.000000"}
+                  </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <Link to={`/token/${latestToken.id}`}>
+                <div className="flex justify-around">
+                  <button className="btn-moon py-1 px-3 text-sm">Moon 🚀</button>
+                  <button className="btn-die py-1 px-3 text-sm">Die 💀</button>
+                </div>
+                <div className="flex justify-between items-center mt-3">
+                  <Link to={`/token/${token.id}`}>
                     <Button variant="outline" size="sm" className="text-xs">
                       View Token
                     </Button>
@@ -105,67 +146,7 @@ const Index = () => {
                   </Button>
                 </div>
               </div>
-            )}
-            
-            <div className="absolute glass-panel p-6 w-[280px] top-0 left-[10%] shadow-neon-purple animate-float">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
-                    <span className="font-display font-bold">E</span>
-                  </div>
-                  <span className="ml-2 font-semibold">Ethereum</span>
-                </div>
-                <div className="text-green-400 flex items-center text-sm">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  23.5%
-                </div>
-              </div>
-              <div className="h-[80px] bg-gradient-to-r from-green-500/20 to-green-300/10 rounded-md mb-3"></div>
-              <div className="flex justify-around">
-                <button className="btn-moon py-1 px-3 text-sm">Moon 🚀</button>
-                <button className="btn-die py-1 px-3 text-sm">Die 💀</button>
-              </div>
-            </div>
-            
-            <div className="absolute glass-panel p-6 w-[280px] top-[20%] right-[10%] shadow-neon-cyan" style={{ animationDelay: "1s" }}>
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent2/20 to-dream-accent1/20 flex items-center justify-center border border-white/10">
-                    <span className="font-display font-bold">S</span>
-                  </div>
-                  <span className="ml-2 font-semibold">Solana</span>
-                </div>
-                <div className="text-red-400 flex items-center text-sm">
-                  <TrendingUp className="w-3 h-3 mr-1 transform rotate-180" />
-                  8.2%
-                </div>
-              </div>
-              <div className="h-[80px] bg-gradient-to-r from-red-500/20 to-red-300/10 rounded-md mb-3"></div>
-              <div className="flex justify-around">
-                <button className="btn-moon py-1 px-3 text-sm">Moon 🚀</button>
-                <button className="btn-die py-1 px-3 text-sm">Die 💀</button>
-              </div>
-            </div>
-            
-            <div className="absolute glass-panel p-6 w-[280px] bottom-0 left-[30%] shadow-neon" style={{ animationDelay: "0.5s" }}>
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent3/20 to-dream-accent2/20 flex items-center justify-center border border-white/10">
-                    <span className="font-display font-bold">A</span>
-                  </div>
-                  <span className="ml-2 font-semibold">Algorand</span>
-                </div>
-                <div className="text-green-400 flex items-center text-sm">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  15.7%
-                </div>
-              </div>
-              <div className="h-[80px] bg-gradient-to-r from-green-500/20 to-green-300/10 rounded-md mb-3"></div>
-              <div className="flex justify-around">
-                <button className="btn-moon py-1 px-3 text-sm">Moon 🚀</button>
-                <button className="btn-die py-1 px-3 text-sm">Die 💀</button>
-              </div>
-            </div>
+            ))}
           </div>
           
           {/* Features Section */}
