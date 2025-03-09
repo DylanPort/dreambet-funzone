@@ -63,8 +63,20 @@ export const createSolanaBet = async (
   solAmount: number
 ): Promise<{ betId: number }> => {
   try {
-    if (!wallet.publicKey) {
-      throw new Error("Wallet not connected");
+    // Improved wallet validation to handle both types of wallet objects
+    const walletAdapter = wallet?.adapter;
+    const publicKey = wallet?.publicKey || walletAdapter?.publicKey;
+    const isAdapterConnected = walletAdapter?.connected || false;
+    
+    console.log("Wallet state in createSolanaBet:", {
+      hasPublicKey: !!publicKey,
+      publicKeyString: publicKey?.toString(),
+      hasAdapter: !!walletAdapter,
+      adapterConnected: isAdapterConnected,
+    });
+    
+    if (!publicKey) {
+      throw new Error("Wallet not connected - no public key found");
     }
     
     console.log(`Creating bet on Solana (Devnet): token=${tokenMint}, prediction=${prediction}, duration=${durationMinutes}min, amount=${solAmount}SOL`);
@@ -105,7 +117,7 @@ export const createSolanaBet = async (
 
     const instruction = new web3.TransactionInstruction({
       keys: [
-        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: publicKey, isSigner: true, isWritable: true },
         { pubkey: betPDA, isSigner: false, isWritable: true },
         { pubkey: counterPDA, isSigner: false, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
@@ -116,7 +128,7 @@ export const createSolanaBet = async (
     });
 
     const transaction = new Transaction().add(instruction);
-    transaction.feePayer = wallet.publicKey;
+    transaction.feePayer = publicKey;
     
     // Get recent blockhash with a connection configured with 'confirmed' commitment
     const blockhashObj = await connection.getLatestBlockhash('confirmed');
@@ -125,9 +137,18 @@ export const createSolanaBet = async (
 
     console.log(`Transaction created, getting signature from wallet`);
 
+    // Determine which signing method to use based on what's available
+    // First try adapter's signTransaction, then wallet's signTransaction
+    const signTransaction = walletAdapter?.signTransaction || wallet?.signTransaction;
+    
+    if (!signTransaction) {
+      throw new Error("Wallet does not support signTransaction method");
+    }
+
     // Sign and send transaction
     try {
-      const signedTx = await wallet.signTransaction(transaction);
+      console.log("Using signTransaction method:", !!signTransaction);
+      const signedTx = await signTransaction(transaction);
       console.log(`Transaction signed, sending to Devnet`);
       
       const txId = await connection.sendRawTransaction(signedTx.serialize(), {
