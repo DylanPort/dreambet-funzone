@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, BarChart2, Wallet, Award } from 'lucide-react';
+import { Menu, X, BarChart2, Award } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 import ProfileButton from './ProfileButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
@@ -53,7 +52,13 @@ const Navbar = () => {
               <span>Betting</span>
             </Link>
             <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <Wallet size={18} />
+              <div className="w-5 h-5 flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" 
+                  alt="My Bets" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
               <span>My Bets</span>
             </Link>
             
@@ -61,7 +66,13 @@ const Navbar = () => {
             
             {balance !== null && (
               <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-green-400">
-                <Wallet size={16} />
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <img 
+                    src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" 
+                    alt="Wallet" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
                 <span>{balance.toFixed(2)} SOL</span>
               </div>
             )}
@@ -92,11 +103,17 @@ const Navbar = () => {
               <span>Betting</span>
             </Link>
             <Link to="/betting/my-bets" className={`py-2 flex items-center gap-2 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
-              <Wallet size={18} />
+              <div className="w-5 h-5 flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" 
+                  alt="My Bets" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
               <span>My Bets</span>
             </Link>
             <Link to="/profile" className={`py-2 flex items-center gap-2 ${location.pathname === '/profile' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
-              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-400 to-blue-500 flex items-center justify-center overflow-hidden">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden">
                 <img 
                   src="/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png" 
                   alt="Profile" 
@@ -108,7 +125,13 @@ const Navbar = () => {
             
             {balance !== null && (
               <div className="py-2 flex items-center gap-2 text-green-400">
-                <Wallet size={18} />
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <img 
+                    src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" 
+                    alt="Wallet" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
                 <span>{balance.toFixed(2)} SOL</span>
               </div>
             )}
