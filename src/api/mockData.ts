@@ -13,6 +13,7 @@ import {
   acceptSolanaBet,
   getSolanaBetData
 } from '@/services/solanaBetService';
+import { toast } from '@/hooks/use-toast';
 
 // API functions that now directly use Supabase services
 export const fetchMigratingTokens = async () => {
@@ -140,6 +141,12 @@ export const createBet = async (
       );
       betId = result.betId;
       console.log(`Solana bet created with ID: ${betId}`);
+      
+      // Display a notification for the new bet creation
+      toast({
+        title: `New ${prediction.toUpperCase()} Bet Created!`,
+        description: `${amount} SOL bet on ${tokenSymbol || 'token'} is now active for ${duration} minutes`,
+      });
     } catch (solanaBetError: any) {
       console.error("Error creating bet on Solana:", solanaBetError);
       // If this is the 'emit' error, provide a more helpful message
@@ -228,6 +235,12 @@ export const acceptBet = async (
     if (bet.onChainBetId) {
       await acceptSolanaBet(wallet, parseInt(bet.onChainBetId));
       console.log(`Solana bet accepted: ${bet.onChainBetId}`);
+      
+      // Display a global notification for the bet acceptance
+      toast({
+        title: "Bet Accepted!",
+        description: `A ${bet.amount} SOL bet on ${bet.tokenSymbol || 'a token'} is now active!`,
+      });
     } else {
       throw new Error("Missing on-chain bet ID");
     }

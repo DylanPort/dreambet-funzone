@@ -2,6 +2,7 @@
 import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { BetPrediction, Bet } from '@/types/bet';
+import { toast } from '@/hooks/use-toast';
 
 // Mock PDA (Program Derived Address) for bet contract
 const BET_PROGRAM_ID = new PublicKey('BETh1cV519tFPhe6GWzGJmcfdshugH7XAi3iNGnXx5z');
@@ -106,6 +107,13 @@ export const createSolanaBet = async (
 
     console.log(`Bet created on-chain with ID: ${betId}, tx: ${txSignature}`);
 
+    // Display a global toast notification for everyone about the new bet
+    toast({
+      title: "New Bet Created!",
+      description: `A new bet of ${solAmount} SOL has been placed on token predicting it will ${prediction}`,
+      variant: "default",
+    });
+
     return {
       betId,
       txSignature,
@@ -180,6 +188,13 @@ export const acceptSolanaBet = async (
     const txSignature = 'accept_' + Math.random().toString(36).substring(2, 15);
 
     console.log(`Bet accepted on-chain, tx: ${txSignature}`);
+
+    // Display a toast notification when a bet is accepted
+    toast({
+      title: "Bet Accepted!",
+      description: `Bet #${betId} has been accepted and is now active.`,
+      variant: "default",
+    });
 
     return {
       txSignature,

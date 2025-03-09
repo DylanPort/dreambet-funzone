@@ -87,6 +87,8 @@ const TokenDetail = () => {
   const [loading, setLoading] = useState(true);
   const [priceData, setPriceData] = useState<{ time: string; price: number }[]>([]);
   const [showCreateBet, setShowCreateBet] = useState(false);
+  const [newActiveBet, setNewActiveBet] = useState<Bet | null>(null);
+  const [activeBetsCount, setActiveBetsCount] = useState(0);
   const { toast } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
   const { connected, publicKey, wallet } = useWallet();
@@ -374,6 +376,30 @@ const TokenDetail = () => {
     }
   }, [id, updateTokenPrice, updateTokenMetrics]);
   
+  useEffect(() => {
+    if (bets.length > 0) {
+      const activeBets = bets.filter(bet => 
+        bet.status === 'open' || bet.status === 'matched'
+      );
+      
+      if (activeBets.length > activeBetsCount) {
+        const latestBet = [...activeBets].sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )[0];
+        
+        setNewActiveBet(latestBet);
+        
+        toast({
+          title: "New Active Bet!",
+          description: `A ${latestBet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`,
+          variant: "default",
+        });
+      }
+      
+      setActiveBetsCount(activeBets.length);
+    }
+  }, [bets, activeBetsCount, toast, token]);
+  
   const refreshData = useCallback(async (betType = null) => {
     if (!id) return;
     
@@ -450,6 +476,14 @@ const TokenDetail = () => {
         title: "Bet accepted!",
         description: `You've successfully accepted the bet on ${bet.tokenSymbol}`,
       });
+      
+      setNewActiveBet(bet);
+      
+      toast({
+        title: "New Active Bet!",
+        description: `A ${bet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`,
+      });
+      
       await refreshData();
     } catch (error) {
       console.error("Error accepting bet:", error);
@@ -489,6 +523,32 @@ const TokenDetail = () => {
 
   const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
   
+  const renderActiveBetBanner = () => {
+    if (!newActiveBet) return null;
+    
+    return (
+      <div className="bg-gradient-to-r from-dream-accent1/20 to-dream-accent3/20 border border-dream-accent2/30 rounded-md p-3 mb-4 animate-pulse-slow">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="w-2 h-2 bg-dream-accent2 rounded-full mr-2 animate-pulse"></div>
+            <span className="text-dream-accent2 font-semibold">New Active Bet!</span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setNewActiveBet(null)}
+            className="h-6 w-6 p-0"
+          >
+            ×
+          </Button>
+        </div>
+        <p className="text-sm mt-1">
+          A {newActiveBet.amount} SOL bet that this token will {newActiveBet.prediction} is now active!
+        </p>
+      </div>
+    );
+  };
+  
   return (
     <>
       <OrbitingParticles />
@@ -514,7 +574,9 @@ const TokenDetail = () => {
                 <ChevronLeft size={20} />
                 <span>Back to Tokens</span>
               </Link>
-            
+              
+              {renderActiveBetBanner()}
+              
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div className="flex items-center">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-3xl border border-white/10 mr-4">
