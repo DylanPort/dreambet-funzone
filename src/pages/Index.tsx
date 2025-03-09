@@ -4,16 +4,20 @@ import { ArrowRight, TrendingUp, Shield, Clock, ExternalLink } from 'lucide-reac
 import Navbar from '@/components/Navbar';
 import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
+import AnimatedLogo from '@/components/AnimatedLogo';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
 
@@ -88,6 +92,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -99,9 +104,7 @@ const Index = () => {
         {/* Hero Section */}
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
           <div className="text-center mb-16 animate-fade-in">
-            <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 text-gradient">
-              Predict the Future<br />of Token Migrations
-            </h1>
+            <AnimatedLogo />
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
               <Link to="/betting">
@@ -219,4 +222,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
