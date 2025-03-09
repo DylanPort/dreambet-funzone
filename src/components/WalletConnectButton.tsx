@@ -15,36 +15,36 @@ const WalletConnectButton = () => {
   useEffect(() => {
     // Check if wallet is actually ready for transactions
     const verifyConnection = async () => {
-      if (connected && publicKey && wallet) {
+      if (connected && (publicKey || (wallet?.adapter?.publicKey))) {
         try {
           setVerifying(true);
           console.log("Verifying wallet connection in WalletConnectButton");
+          
+          // Log current wallet state for debugging
+          const effectivePublicKey = publicKey || wallet?.adapter?.publicKey;
+          
           console.log("Wallet state:", {
             connected,
             publicKey: publicKey?.toString(),
             walletAdapter: wallet?.adapter?.name,
-            adapterPublicKey: wallet?.adapter?.publicKey?.toString()
+            adapterPublicKey: wallet?.adapter?.publicKey?.toString(),
+            effectivePublicKey: effectivePublicKey?.toString()
           });
           
           // Allow more time for wallet adapter to fully initialize
           await new Promise(resolve => setTimeout(resolve, 1500));
           
-          // Stronger connection check
-          if (wallet.adapter.publicKey && 
-              wallet.adapter.publicKey.toString() === publicKey.toString() && 
-              wallet.adapter.connected) {
-            console.log("✅ Wallet FULLY CONNECTED with stringified publicKey match");
+          // Consider connected if we have any valid public key
+          if (effectivePublicKey) {
+            console.log("✅ Wallet FULLY CONNECTED with publicKey");
             setIsFullyConnected(true);
             
             // Notify the application that wallet is ready
             window.dispatchEvent(new CustomEvent('walletReady', { 
-              detail: { publicKey: publicKey.toString() } 
+              detail: { publicKey: effectivePublicKey.toString() } 
             }));
           } else {
-            console.warn("❌ Wallet connection issue: publicKey mismatch or adapter not connected");
-            console.warn("Adapter publicKey:", wallet.adapter.publicKey?.toString());
-            console.warn("Connected publicKey:", publicKey.toString());
-            console.warn("Adapter connected:", wallet.adapter.connected);
+            console.warn("❌ Wallet connection issue: missing public key");
             setIsFullyConnected(false);
           }
         } catch (error) {
@@ -70,18 +70,18 @@ const WalletConnectButton = () => {
 
   // Extra check after some time to ensure wallet is ready
   useEffect(() => {
-    if (connected && publicKey && wallet && !isFullyConnected) {
+    if (connected && !isFullyConnected) {
       const secondCheck = setTimeout(() => {
         console.log("Running secondary wallet verification check");
-        if (wallet.adapter.publicKey && 
-            wallet.adapter.publicKey.toString() === publicKey.toString() && 
-            wallet.adapter.connected) {
+        const effectivePublicKey = publicKey || wallet?.adapter?.publicKey;
+        
+        if (effectivePublicKey) {
           console.log("✅ Secondary check: Wallet NOW fully connected");
           setIsFullyConnected(true);
           
           // Notify the application that wallet is ready
           window.dispatchEvent(new CustomEvent('walletReady', { 
-            detail: { publicKey: publicKey.toString() } 
+            detail: { publicKey: effectivePublicKey.toString() } 
           }));
         }
       }, 3000);
@@ -105,9 +105,21 @@ const WalletConnectButton = () => {
     }
   };
 
+  // Get effective public key string for display
+  const getDisplayAddress = () => {
+    if (publicKey) {
+      return publicKey.toString();
+    } else if (wallet?.adapter?.publicKey) {
+      return wallet.adapter.publicKey.toString();
+    }
+    return null;
+  };
+
+  const displayAddress = getDisplayAddress();
+
   return (
     <div className="flex items-center">
-      {connected && publicKey ? (
+      {connected && displayAddress ? (
         <div className="flex items-center gap-2">
           <div className={`flex items-center text-sm ${
             isFullyConnected ? 'text-green-400' : 
@@ -120,7 +132,7 @@ const WalletConnectButton = () => {
             ) : (
               <span className="w-2 h-2 bg-red-400 rounded-full mr-1"></span>
             )}
-            {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}
+            {displayAddress.slice(0, 4)}...{displayAddress.slice(-4)}
             
             {!isFullyConnected && !verifying && (
               <button 

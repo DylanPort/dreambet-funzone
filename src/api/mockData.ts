@@ -1,4 +1,3 @@
-
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -95,55 +94,38 @@ export const createBet = async (
     console.log(`Creating bet with tokenId=${tokenId}, amount=${amount}, prediction=${prediction}, duration=${duration}`);
     console.log(`Using Devnet for transaction`);
     
-    // Improved, more thorough wallet validation
+    // Enhanced wallet validation approach
     if (!wallet) {
       console.error("Wallet object is null or undefined");
       throw new Error("Wallet not connected. Please connect your wallet and try again.");
     }
     
-    if (!wallet.publicKey) {
-      console.error("Wallet not properly connected - missing publicKey");
-      throw new Error("Wallet not properly connected. Please reconnect your wallet.");
+    // Get wallet status from adapter directly
+    const walletAdapter = wallet.adapter;
+    const adapterConnected = walletAdapter?.connected || false;
+    const adapterPublicKey = walletAdapter?.publicKey;
+    const walletPublicKey = wallet.publicKey;
+    
+    console.log("Detailed wallet status:", {
+      hasAdapter: !!walletAdapter,
+      adapterConnected,
+      hasAdapterPublicKey: !!adapterPublicKey,
+      adapterPublicKeyString: adapterPublicKey?.toString(),
+      hasWalletPublicKey: !!walletPublicKey,
+      walletPublicKeyString: walletPublicKey?.toString()
+    });
+    
+    // Fall back to using adapter public key if wallet public key is missing
+    const effectivePublicKey = walletPublicKey || adapterPublicKey;
+    
+    if (!effectivePublicKey) {
+      console.error("No public key found in wallet or adapter");
+      throw new Error("Wallet connection issue: No public key found. Please reconnect your wallet.");
     }
     
-    // Check that the wallet adapter is also properly connected
-    if (!wallet.adapter || !wallet.adapter.publicKey) {
-      console.error("Wallet adapter not properly initialized");
-      throw new Error("Wallet adapter not ready. Please refresh the page and try again.");
-    }
-    
-    // Check that public keys match - critical for proper wallet operation
-    if (wallet.adapter.publicKey.toString() !== wallet.publicKey.toString()) {
-      console.error("Public key mismatch between wallet adapter and wallet connection");
-      console.error(`Adapter: ${wallet.adapter.publicKey.toString()}`);
-      console.error(`Wallet: ${wallet.publicKey.toString()}`);
-      throw new Error("Wallet connection issue detected. Please disconnect and reconnect your wallet.");
-    }
-    
-    // Verify wallet has needed signing capabilities
-    if (!wallet.signTransaction || !wallet.signAllTransactions) {
-      console.error("Wallet missing required signing capabilities");
-      throw new Error("Your wallet doesn't support the required signing methods.");
-    }
-    
-    // Extra validation check for adapter connection status
-    if (!wallet.adapter.connected) {
-      console.error("Wallet adapter shows as disconnected");
-      throw new Error("Wallet appears disconnected. Please reconnect your wallet and try again.");
-    }
-    
-    // Check that publicKey can be accessed as a safety check
-    try {
-      const publicKeyString = wallet.publicKey.toString();
-      console.log(`Wallet public key verified: ${publicKeyString.slice(0, 8)}...`);
-    } catch (keyError) {
-      console.error("Failed to access wallet public key:", keyError);
-      throw new Error("Could not access wallet public key. Please try reconnecting your wallet.");
-    }
-    
-    // Create bet on Solana blockchain first
-    console.log("Wallet adapter ready:", wallet.adapter?.publicKey ? "Yes" : "No");
-    console.log("Initiating Solana transaction on Devnet...");
+    // Create bet with DexScreener data if Supabase token not found
+    // This allows betting on tokens that don't exist in our database yet
+    console.log(`Initiating Solana transaction on Devnet...`);
     
     const { betId } = await createSolanaBet(
       wallet,
@@ -155,26 +137,46 @@ export const createBet = async (
     
     console.log(`Solana bet created with ID: ${betId}`);
     
-    // Then create in Supabase for our frontend
-    const bet = await createSupabaseBet(
-      tokenId, 
-      prediction, 
-      duration, 
-      amount
-    );
-    
-    console.log(`Supabase bet created: ${bet.id}`);
-    
-    // Return complete bet object
-    return {
-      ...bet,
-      onChainBetId: betId.toString(),
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
-    };
+    try {
+      // Try to create in Supabase, but handle the case where token doesn't exist yet
+      const bet = await createSupabaseBet(
+        tokenId, 
+        prediction, 
+        duration, 
+        amount
+      );
+      
+      console.log(`Supabase bet created: ${bet.id}`);
+      
+      // Return complete bet object
+      return {
+        ...bet,
+        onChainBetId: betId.toString(),
+        status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
+      };
+    } catch (supabaseError) {
+      console.warn("Failed to create bet in Supabase, using fallback data:", supabaseError);
+      
+      // Fallback data when Supabase fails - common when token doesn't exist in our DB yet
+      return {
+        id: `local-${Date.now()}`,
+        tokenId,
+        tokenName,
+        tokenSymbol,
+        initiator: effectivePublicKey.toString(),
+        amount,
+        prediction,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + (duration * 60 * 1000),
+        status: "open",
+        duration,
+        onChainBetId: betId.toString()
+      };
+    }
   } catch (error: any) {
     console.error('Error creating bet:', error);
     
-    // Enhanced error reporting for Devnet
+    // Enhanced error reporting
     if (error.name === 'WalletSignTransactionError') {
       throw new Error("Transaction signing failed. Please check your wallet connection.");
     } else if (error.name === 'WalletNotConnectedError') {

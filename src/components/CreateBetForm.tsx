@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -36,11 +35,28 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [walletCheckingInProgress, setWalletCheckingInProgress] = useState(false);
   const [checkAttempts, setCheckAttempts] = useState(0);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [tokenData, setTokenData] = useState<any>({
+    name: tokenName || "Unknown Token",
+    symbol: tokenSymbol || "UNKNOWN"
+  });
   
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { toast } = useToast();
 
-  // Listen for custom walletReady event from WalletConnectButton
+  useEffect(() => {
+    if (token) {
+      setTokenData({
+        name: token.name || tokenName,
+        symbol: token.symbol || tokenSymbol
+      });
+    } else if (tokenId) {
+      setTokenData({
+        name: tokenName || "Unknown Token",
+        symbol: tokenSymbol || "UNKNOWN"
+      });
+    }
+  }, [token, tokenId, tokenName, tokenSymbol]);
+
   useEffect(() => {
     const handleWalletReady = (event: CustomEvent) => {
       console.log("Received walletReady event", event.detail);
@@ -56,7 +72,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     };
   }, [publicKey]);
 
-  // Check if wallet is actually ready for transactions with improved reliability
   const verifyWalletConnection = useCallback(async () => {
     if (connected && publicKey && wallet) {
       try {
@@ -64,10 +79,14 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         setLastError(null);
         console.log("Verifying wallet connection in CreateBetForm...");
         
-        // Add a longer delay to ensure adapter is fully initialized
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Log wallet state for debugging
+        const adapterState = {
+          connected: wallet?.adapter?.connected,
+          publicKey: wallet?.adapter?.publicKey?.toString(), 
+          name: wallet?.adapter?.name
+        };
+        
         console.log("Wallet state:", {
           connected,
           publicKey: publicKey?.toString(),
@@ -76,7 +95,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           adapterConnected: wallet?.adapter?.connected
         });
         
-        // Stronger check - verify adapter is connected and publicKeys match
         if (wallet.adapter.publicKey && 
             wallet.adapter.publicKey.toString() === publicKey.toString() &&
             wallet.adapter.connected) {
@@ -85,22 +103,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           setIsWalletReady(true);
           return true;
         } else {
-          // Detailed logging of what's wrong
           console.warn("⚠️ Wallet not fully ready");
-          
-          if (!wallet.adapter.publicKey) {
-            console.warn("❌ Adapter publicKey is missing");
-            setLastError("Wallet adapter publicKey is missing");
-          } else if (wallet.adapter.publicKey.toString() !== publicKey.toString()) {
-            console.warn("❌ PublicKey mismatch between adapter and connection");
-            console.warn(`Adapter: ${wallet.adapter.publicKey.toString()}`);
-            console.warn(`Connection: ${publicKey.toString()}`);
-            setLastError("PublicKey mismatch between adapter and wallet");
-          } else if (!wallet.adapter.connected) {
-            console.warn("❌ Adapter shows as disconnected");
-            setLastError("Wallet adapter shows as disconnected");
-          }
-          
+          setLastError("Wallet missing public key");
           setIsWalletReady(false);
           return false;
         }
@@ -113,7 +117,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         setWalletCheckingInProgress(false);
       }
     } else {
-      // Log what's missing for debugging
       console.log("Wallet not ready, missing basics:", {
         connected,
         hasPublicKey: !!publicKey,
@@ -124,10 +127,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       return false;
     }
   }, [connected, publicKey, wallet]);
-  
-  // Always verify wallet when connection state changes
+
   useEffect(() => {
-    // Add a larger delay to give the wallet adapter time to fully connect
     const timeoutId = setTimeout(() => {
       verifyWalletConnection();
     }, 1000);
@@ -135,9 +136,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     return () => clearTimeout(timeoutId);
   }, [verifyWalletConnection, connected, publicKey, wallet, checkAttempts]);
 
-  // Re-check wallet connection on token detail page load
   useEffect(() => {
-    // One extra check on component mount
     const initialCheckTimeout = setTimeout(() => {
       if (connected && publicKey && !isWalletReady) {
         console.log("Performing initial wallet verification check on page load");
@@ -145,8 +144,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       }
     }, 2000);
     
-    // Add additional verification with extra-long delay
-    // This helps with slow wallet adapters that take time to fully initialize
     const secondaryCheckTimeout = setTimeout(() => {
       if (connected && publicKey && !isWalletReady) {
         console.log("Performing secondary wallet verification check with longer delay");
@@ -191,14 +188,23 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       description: "Verifying your wallet connection status...",
     });
     
-    // Force an immediate recheck
     setTimeout(() => {
-      verifyWalletConnection();
+      const forcedCheck = async () => {
+        if (wallet && wallet.adapter) {
+          try {
+            await wallet.adapter.connect();
+            console.log("Forced wallet adapter reconnect");
+          } catch (err) {
+            console.warn("Failed to force reconnect, continuing with verification", err);
+          }
+        }
+        verifyWalletConnection();
+      };
+      forcedCheck();
     }, 300);
   };
 
   const handleCreateBet = async () => {
-    // Force a final wallet connection verification
     const isWalletVerified = await verifyWalletConnection();
     
     if (!isWalletVerified) {
@@ -233,9 +239,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       setIsSubmitting(true);
       setTransactionStatus('Preparing transaction...');
       
-      // More detailed logging for debugging
       console.log(`Creating bet with: 
-        token: ${tokenId} (${tokenName})
+        token: ${tokenId} (${tokenData.name})
         wallet: ${publicKey?.toString()}
         wallet connected: ${connected}
         wallet adapter ready: ${wallet?.adapter?.publicKey ? 'Yes' : 'No'}
@@ -252,11 +257,17 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         throw new Error("Wallet instance is not available");
       }
       
+      const effectivePublicKey = publicKey?.toString() || wallet.adapter?.publicKey?.toString();
+      
+      if (!effectivePublicKey) {
+        throw new Error("Cannot determine wallet public key. Please reconnect your wallet.");
+      }
+      
       await createBet(
         tokenId,
-        tokenName,
-        tokenSymbol,
-        publicKey!.toString(),
+        tokenData.name,
+        tokenData.symbol,
+        effectivePublicKey,
         parseFloat(amount),
         prediction!,
         wallet,
@@ -267,16 +278,14 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       toast({
         title: "Bet created successfully!",
-        description: `Your ${parseFloat(amount)} SOL bet that ${tokenSymbol} will ${prediction} is now live on-chain`,
+        description: `Your ${parseFloat(amount)} SOL bet that ${tokenData.symbol} will ${prediction} is now live on-chain`,
       });
       
-      // Reset form
       setAmount('0.1');
       setPrediction(null);
       setDuration(30);
       setTransactionStatus('');
       
-      // Notify parent component
       if (onSuccess) {
         onSuccess();
       } else {
@@ -286,7 +295,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       console.error('Error creating bet:', error);
       setTransactionStatus('');
       
-      // Extract meaningful error message
       let errorMessage = "Something went wrong with the blockchain transaction.";
       if (error.message) {
         errorMessage = error.message;
@@ -304,14 +312,12 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }
   };
 
-  // Condition to show a prominent "Check wallet again" button if all appears okay but wallet is not ready
   const showExtraWalletReconnectOption = connected && publicKey && wallet && !isWalletReady && !walletCheckingInProgress;
 
   return (
     <div className="glass-panel p-6 space-y-4">
       <h3 className="text-xl font-display font-semibold">Create a New Bet</h3>
       
-      {/* Add prominent reconnection button at the top if needed */}
       {showExtraWalletReconnectOption && (
         <div className="p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-md">
           <div className="flex flex-col items-center text-sm">
@@ -384,7 +390,10 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           <input
             type="text"
             value={amount}
-            onChange={handleAmountChange}
+            onChange={(e) => {
+              const value = e.target.value.replace(/[^0-9.]/g, '');
+              setAmount(value);
+            }}
             className="w-full p-3 bg-dream-surface border border-dream-foreground/20 rounded-md focus:outline-none focus:border-dream-accent2"
           />
           <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dream-foreground/50">
@@ -406,7 +415,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           min={10}
           max={60}
           step={5}
-          onValueChange={handleDurationChange}
+          onValueChange={(val) => setDuration(val[0])}
           className="py-4"
         />
         <div className="flex justify-between text-xs text-dream-foreground/50 mt-1">
