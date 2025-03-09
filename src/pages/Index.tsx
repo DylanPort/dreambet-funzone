@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -22,7 +21,6 @@ const Index = () => {
   useEffect(() => {
     const tokens = [];
 
-    // Process formatted tokens
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
       for (let i = 0; i < Math.min(3, pumpPortal.recentTokens.length); i++) {
         const formattedToken = formatWebSocketTokenData(pumpPortal.recentTokens[i]);
@@ -30,7 +28,6 @@ const Index = () => {
       }
     }
 
-    // Process raw tokens if we need more
     if (tokens.length < 3 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
       for (let i = 0; i < Math.min(3 - tokens.length, pumpPortal.rawTokens.length); i++) {
         const rawToken = pumpPortal.rawTokens[i];
@@ -40,14 +37,12 @@ const Index = () => {
           symbol: rawToken.symbol || '',
           logo: '🪙',
           imageUrl: rawToken.uri || '',
-          // Include URI from raw token as the image URL
           currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
-          change24h: Math.random() * 40 - 20 // Random change between -20% and +20% for demonstration
+          change24h: Math.random() * 40 - 20
         });
       }
     }
 
-    // Fill with placeholders if needed
     while (tokens.length < 3) {
       tokens.push({
         id: `placeholder-${tokens.length}`,
@@ -55,37 +50,29 @@ const Index = () => {
         symbol: `T${tokens.length + 1}`,
         logo: '🪙',
         imageUrl: '',
-        // No image for placeholder tokens
         currentPrice: Math.random() * 0.1,
-        change24h: Math.random() * 40 - 20 // Random change between -20% and +20%
+        change24h: Math.random() * 40 - 20
       });
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
 
-  // Function to get token symbol display
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
 
-  // Card styles to position the 3 cards
-  const cardPositions = ["top-[5%] left-[40%] shadow-neon-green animate-float",
-  // Style for first card
-  "top-0 left-[10%] shadow-neon-purple animate-float",
-  // Style for second card
-  "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed" // Style for third card
+  const cardPositions = [
+    "top-[5%] left-[40%] shadow-neon-green animate-float",
+    "top-0 left-[10%] shadow-neon-purple animate-float",
+    "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed"
   ];
 
-  // Format price with appropriate decimals based on value
   const formatPrice = (price: number | string) => {
-    // Ensure price is a number
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
 
-    // Check if it's a valid number
     if (isNaN(numPrice)) return "0.000000";
 
-    // Format based on value
     if (numPrice < 0.01) return numPrice.toFixed(6);
     if (numPrice < 1) return numPrice.toFixed(4);
     if (numPrice < 1000) return numPrice.toFixed(2);
@@ -99,10 +86,9 @@ const Index = () => {
       <Navbar />
       <BetReel />
       
-      <div className="h-24"></div> {/* Increased height for better spacing */}
+      <div className="h-24"></div>
       
       <main className="min-h-screen overflow-hidden">
-        {/* Hero Section */}
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
           <div className="text-center mb-16 animate-fade-in">
             <AnimatedLogo />
@@ -122,9 +108,7 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Floating Cards */}
           <div className="relative max-w-5xl mx-auto h-[300px] md:h-[400px] mb-16">
-            {/* Generate token cards using the latest tokens */}
             {latestTokens.map((token, index) => <div key={token.id || `token-${index}`} className={`absolute glass-panel p-6 w-[280px] ${cardPositions[index]}`} style={{
             animationDelay: `${index * 0.3}s`,
             zIndex: 10 - index
@@ -170,7 +154,6 @@ const Index = () => {
               </div>)}
           </div>
           
-          {/* Features Section */}
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent1/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
@@ -188,7 +171,11 @@ const Index = () => {
             
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent2/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <Clock className="h-8 w-8 text-dream-accent2" />
+                <img 
+                  src="/lovable-uploads/996f7a3a-2e7a-4c12-bcd7-8af762f1087a.png" 
+                  alt="One-Hour Window Icon" 
+                  className="h-8 w-8 filter drop-shadow-[0_0_8px_rgba(0,255,240,0.8)] transition-transform hover:scale-110 duration-300"
+                />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">One-Hour Window</h3>
               <p className="text-dream-foreground/70">
@@ -209,7 +196,6 @@ const Index = () => {
         </section>
       </main>
       
-      {/* Footer */}
       <footer className="glass-panel mt-20 px-6 py-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
