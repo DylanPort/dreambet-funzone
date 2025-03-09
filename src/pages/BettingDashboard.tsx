@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, ArrowUp, ArrowDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import MigratingTokenList from '@/components/MigratingTokenList';
 import OpenBetsList from '@/components/OpenBetsList';
+import BetsList from '@/components/BetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
 
 const BettingDashboard = () => {
@@ -37,9 +38,15 @@ const BettingDashboard = () => {
           </section>
 
           {/* Dashboard Sections */}
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-2 gap-8 mb-8">
             <MigratingTokenList />
             <OpenBetsList />
+          </div>
+          
+          {/* User Bets Sections */}
+          <div className="grid lg:grid-cols-2 gap-8 mb-8">
+            <BetsList title="Your Latest Bets" type="latest" />
+            <BetsList title="Your Active Bets" type="active" />
           </div>
           
           {/* How it Works Section */}
