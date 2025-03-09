@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
@@ -14,6 +15,13 @@ export function Toaster() {
   return (
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
+        // Only show toasts that are related to bet creation
+        const isBetCreationToast = 
+          (title && title.toString().toLowerCase().includes("bet")) || 
+          (description && description.toString().toLowerCase().includes("bet"));
+
+        if (!isBetCreationToast) return null;
+
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
