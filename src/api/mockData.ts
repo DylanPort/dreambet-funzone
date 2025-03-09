@@ -31,7 +31,6 @@ export const fetchMigratingTokens = async () => {
     }));
   } catch (error) {
     console.error('Error fetching tokens:', error);
-    // Return empty array instead of fallback to mock data
     return [];
   }
 };
@@ -93,12 +92,12 @@ export const createBet = async (
   duration: number = 60 // Default to 60 minutes if not provided
 ): Promise<Bet> => {
   try {
-    // Create bet on Solana blockchain first
+    // Create bet on Solana blockchain
     const { betId } = await createSolanaBet(
       wallet,
       tokenId,
       prediction,
-      duration, // Use the provided duration in minutes
+      duration,
       amount
     );
     
@@ -123,12 +122,12 @@ export const acceptBet = async (
   wallet: any
 ): Promise<Bet> => {
   try {
-    // If we have the on-chain betId, accept on Solana blockchain first
+    // Accept on Solana blockchain
     if (bet.onChainBetId) {
       await acceptSolanaBet(wallet, parseInt(bet.onChainBetId));
     }
     
-    // Then accept in Supabase for our frontend
+    // Then update in Supabase for our frontend
     const updatedBet = await acceptSupabaseBet(bet.id);
     
     // Ensure the status is one of the allowed types
@@ -142,7 +141,7 @@ export const acceptBet = async (
   }
 };
 
-// New function to get bet details from Solana blockchain
+// Fetch bet details from Solana blockchain
 export const fetchSolanaBet = async (onChainBetId: string): Promise<Bet | null> => {
   if (!onChainBetId) return null;
   
