@@ -11,6 +11,7 @@ interface TokenCardProps {
   priceChange: number;
   timeRemaining: number; // in minutes
   imageUrl?: string; // Add optional image URL
+  index?: number; // Add optional index for key generation
 }
 
 const TokenCard: React.FC<TokenCardProps> = ({
@@ -21,6 +22,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
   priceChange,
   timeRemaining,
   imageUrl,
+  index,
 }) => {
   const isPositive = priceChange >= 0;
 
@@ -37,6 +39,9 @@ const TokenCard: React.FC<TokenCardProps> = ({
     if (minutes < 1) return 'Less than a minute';
     return `${minutes} min`;
   };
+
+  // Generate a more unique key by combining id with index if provided
+  const uniqueId = index !== undefined ? `${id}-${index}` : id;
 
   return (
     <div className="glass-panel overflow-hidden transition-all duration-300 hover:shadow-neon hover:scale-[1.02]">

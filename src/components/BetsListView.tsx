@@ -30,9 +30,9 @@ const BetsListView: React.FC<BetsListViewProps> = ({
   
   return (
     <div className="space-y-4">
-      {topBets.map(bet => (
+      {topBets.map((bet, index) => (
         <BetCard
-          key={bet.id}
+          key={`${bet.id}-${index}`}
           bet={bet}
           connected={connected}
           publicKeyString={publicKeyString}

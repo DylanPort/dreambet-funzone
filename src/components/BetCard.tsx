@@ -34,8 +34,9 @@ const BetCard: React.FC<BetCardProps> = ({
     }
   };
   
+  // Ensure we're not using bet.id directly as a key in parent components
   return (
-    <div key={bet.id} className="glass-panel p-4 transition-all hover:shadow-lg animate-fade-in">
+    <div className="glass-panel p-4 transition-all hover:shadow-lg animate-fade-in">
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="font-display font-semibold flex items-center gap-2">
