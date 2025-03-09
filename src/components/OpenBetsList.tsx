@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { fetchOpenBets, acceptBet } from '@/api/mockData';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -39,7 +38,7 @@ const OpenBetsList = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleAcceptBet = async (bet: Bet) => {
+  const handleAcceptBet = async (bet: Bet, walletInstance: any) => {
     if (!connected || !publicKey) {
       toast({
         title: "Wallet not connected",
@@ -58,7 +57,7 @@ const OpenBetsList = () => {
     }
     try {
       setLoading(true);
-      await acceptBet(bet.id, publicKey.toString(), wallet, bet.onChainBetId);
+      await acceptBet(bet, publicKey.toString(), walletInstance);
       toast({
         title: "Bet accepted!",
         description: `You've accepted a ${bet.amount} SOL bet on ${bet.tokenName}`

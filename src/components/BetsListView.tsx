@@ -7,7 +7,7 @@ interface BetsListViewProps {
   bets: Bet[];
   connected: boolean;
   publicKeyString: string | null;
-  onAcceptBet: (bet: Bet) => void;
+  onAcceptBet: (bet: Bet, wallet: any) => void;
 }
 
 const BetsListView: React.FC<BetsListViewProps> = ({ 

@@ -1,4 +1,3 @@
-
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -117,24 +116,23 @@ export const createBet = async (
 };
 
 export const acceptBet = async (
-  betId: string,
+  bet: Bet,
   counterParty: string,
-  wallet: any,
-  onChainBetId?: string
+  wallet: any
 ): Promise<Bet> => {
   try {
     // If we have the on-chain betId, accept on Solana blockchain first
-    if (onChainBetId) {
-      await acceptSolanaBet(wallet, parseInt(onChainBetId));
+    if (bet.onChainBetId) {
+      await acceptSolanaBet(wallet, parseInt(bet.onChainBetId));
     }
     
     // Then accept in Supabase for our frontend
-    const bet = await acceptSupabaseBet(betId);
+    const updatedBet = await acceptSupabaseBet(bet.id);
     
     // Ensure the status is one of the allowed types
     return {
-      ...bet,
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
+      ...updatedBet,
+      status: updatedBet.status as "open" | "matched" | "completed" | "expired" | "closed"
     };
   } catch (error) {
     console.error('Error accepting bet:', error);

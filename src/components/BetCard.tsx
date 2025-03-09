@@ -10,7 +10,7 @@ interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
-  onAcceptBet: (bet: Bet) => void;
+  onAcceptBet: (bet: Bet, wallet: any) => void;
   onBetAccepted?: () => void; // Added for TokenDetail page
 }
 
@@ -26,10 +26,7 @@ const BetCard: React.FC<BetCardProps> = ({
   
   const handleAcceptBet = async (bet: Bet) => {
     try {
-      await onAcceptBet({
-        ...bet,
-        wallet: wallet // Pass the wallet instance to the accept function
-      });
+      await onAcceptBet(bet, wallet);
       
       if (onBetAccepted) {
         onBetAccepted();
