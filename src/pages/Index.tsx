@@ -174,7 +174,7 @@ const Index = () => {
                 <img 
                   src="/lovable-uploads/996f7a3a-2e7a-4c12-bcd7-8af762f1087a.png" 
                   alt="One-Hour Window Icon" 
-                  className="h-8 w-8 filter drop-shadow-[0_0_8px_rgba(0,255,240,0.8)] transition-transform hover:scale-110 duration-300"
+                  className="h-16 w-16 filter drop-shadow-[0_0_8px_rgba(0,255,240,0.8)] transition-transform hover:scale-110 duration-300"
                 />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">One-Hour Window</h3>
