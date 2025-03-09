@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Home, BarChart2, Wallet, User, Award } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 
 const Navbar = () => {
@@ -41,11 +41,25 @@ const Navbar = () => {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8 items-center">
-            <Link to="/" className={`nav-link ${location.pathname === '/' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              Home
+            <Link to="/" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+              <Home size={18} />
+              <span>Home</span>
             </Link>
-            <Link to="/betting" className={`nav-link ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              Betting
+            <Link to="/dashboard" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+              <BarChart2 size={18} />
+              <span>Dashboard</span>
+            </Link>
+            <Link to="/betting" className={`nav-link flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+              <Award size={18} />
+              <span>Betting</span>
+            </Link>
+            <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+              <Wallet size={18} />
+              <span>My Bets</span>
+            </Link>
+            <Link to="/profile" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/profile' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+              <User size={18} />
+              <span>Profile</span>
             </Link>
             <WalletConnectButton />
           </nav>
@@ -64,11 +78,25 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden glass-panel p-4">
           <nav className="flex flex-col space-y-4">
-            <Link to="/" className={`py-2 ${location.pathname === '/' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
-              Home
+            <Link to="/" className={`py-2 flex items-center gap-2 ${location.pathname === '/' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
+              <Home size={18} />
+              <span>Home</span>
             </Link>
-            <Link to="/betting" className={`py-2 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
-              Betting
+            <Link to="/dashboard" className={`py-2 flex items-center gap-2 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
+              <BarChart2 size={18} />
+              <span>Dashboard</span>
+            </Link>
+            <Link to="/betting" className={`py-2 flex items-center gap-2 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
+              <Award size={18} />
+              <span>Betting</span>
+            </Link>
+            <Link to="/betting/my-bets" className={`py-2 flex items-center gap-2 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
+              <Wallet size={18} />
+              <span>My Bets</span>
+            </Link>
+            <Link to="/profile" className={`py-2 flex items-center gap-2 ${location.pathname === '/profile' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
+              <User size={18} />
+              <span>Profile</span>
             </Link>
             <div className="py-2">
               <WalletConnectButton />
