@@ -218,11 +218,15 @@ const MigratingTokenList = () => {
     return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
 
+  const getTop20Tokens = (allTokens: any[]) => {
+    return allTokens.slice(0, 20);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-display font-bold text-dream-foreground relative">
-          <span className="relative z-10">Migrating Tokens</span>
+          <span className="relative z-10">Top 20 Migrating Tokens</span>
           <span className="absolute -left-2 bottom-0 w-[120%] h-2 bg-gradient-to-r from-dream-accent1 to-transparent opacity-30"></span>
         </h2>
         
@@ -309,7 +313,7 @@ const MigratingTokenList = () => {
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {tokens.map(token => (
+          {getTop20Tokens(tokens).map(token => (
             <Link
               key={token.id}
               to={`/token/${token.id}`}
