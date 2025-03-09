@@ -1,75 +1,38 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
+import { fetchOpenBets } from "@/services/supabaseService";
 
 const BetReel: React.FC = () => {
-  const [recentBets, setRecentBets] = useState<Bet[]>([]);
+  const [activeBets, setActiveBets] = useState<Bet[]>([]);
   const [animateIndex, setAnimateIndex] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchInitialBets = async () => {
+    const fetchBets = async () => {
       try {
-        const { data, error } = await supabase
-          .from('bets')
-          .select(`
-            bet_id,
-            token_mint,
-            tokens (token_name, token_symbol),
-            creator,
-            prediction_bettor1,
-            sol_amount,
-            created_at,
-            status,
-            duration,
-            on_chain_id,
-            transaction_signature
-          `)
-          .order('created_at', { ascending: false })
-          .limit(5);
+        setLoading(true);
+        const bets = await fetchOpenBets();
         
-        if (error) throw error;
+        // Get only open or matched bets
+        const active = bets.filter(bet => 
+          bet.status === 'open' || bet.status === 'matched'
+        );
         
-        if (data) {
-          const formattedBets = data.map(bet => {
-            let prediction: BetPrediction;
-            if (bet.prediction_bettor1 === 'up') {
-              prediction = 'migrate';
-            } else if (bet.prediction_bettor1 === 'down') {
-              prediction = 'die';
-            } else {
-              prediction = bet.prediction_bettor1 as BetPrediction;
-            }
-
-            const status = bet.status as BetStatus;
-
-            return {
-              id: bet.bet_id,
-              tokenId: bet.token_mint,
-              tokenName: bet.tokens?.token_name || 'Unknown Token',
-              tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
-              initiator: bet.creator,
-              amount: bet.sol_amount,
-              prediction: prediction,
-              timestamp: new Date(bet.created_at).getTime(),
-              expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-              status: status,
-              duration: Math.floor(bet.duration / 60),
-              onChainBetId: bet.on_chain_id?.toString() || '',
-              transactionSignature: bet.transaction_signature || ''
-            };
-          });
-          
-          setRecentBets(formattedBets);
-        }
+        console.log('Active bets for reel:', active);
+        setActiveBets(active);
       } catch (error) {
-        console.error('Error fetching initial bets:', error);
+        console.error('Error fetching active bets for reel:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchInitialBets();
+    fetchBets();
 
     const channel = supabase
       .channel('public:bets')
@@ -103,7 +66,7 @@ const BetReel: React.FC = () => {
             
             if (error) throw error;
             
-            if (data) {
+            if (data && (data.status === 'open' || data.status === 'matched')) {
               let prediction: BetPrediction;
               if (data.prediction_bettor1 === 'up') {
                 prediction = 'migrate';
@@ -131,7 +94,7 @@ const BetReel: React.FC = () => {
                 transactionSignature: data.transaction_signature || ''
               };
               
-              setRecentBets(prev => {
+              setActiveBets(prev => {
                 const newBets = [newBet, ...prev.slice(0, 4)];
                 return newBets;
               });
@@ -147,6 +110,27 @@ const BetReel: React.FC = () => {
           }
         }
       )
+      .on('postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bets'
+        },
+        (payload) => {
+          console.log('Bet updated in reel:', payload);
+          
+          // If status changed, update or remove the bet from our list
+          if (payload.new.status !== payload.old.status) {
+            if (payload.new.status === 'open' || payload.new.status === 'matched') {
+              // Refresh the bets list to include this updated bet
+              fetchBets();
+            } else {
+              // Remove the bet from our list if it's no longer active
+              setActiveBets(prev => prev.filter(bet => bet.id !== payload.new.bet_id));
+            }
+          }
+        }
+      )
       .subscribe();
     
     const handleNewBet = (event: CustomEvent) => {
@@ -154,8 +138,8 @@ const BetReel: React.FC = () => {
       
       const { bet } = event.detail;
       
-      if (bet) {
-        setRecentBets(prev => {
+      if (bet && (bet.status === 'open' || bet.status === 'matched')) {
+        setActiveBets(prev => {
           const exists = prev.some(existingBet => existingBet.id === bet.id);
           if (!exists) {
             const newBets = [bet, ...prev.slice(0, 4)];
@@ -181,7 +165,24 @@ const BetReel: React.FC = () => {
     };
   }, []);
 
-  if (recentBets.length === 0) {
+  // Show loading state while fetching bets
+  if (loading) {
+    return (
+      <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
+        <div className="flex items-center">
+          <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
+            <Sparkles className="h-4 w-4 text-dream-accent1 mr-2" />
+            <span className="text-sm font-semibold">Live Bets</span>
+          </div>
+          <div className="overflow-hidden mx-4 flex-1">
+            <div className="text-sm text-gray-400">Loading active bets...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeBets.length === 0) {
     return (
       <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
         <div className="flex items-center">
@@ -207,7 +208,7 @@ const BetReel: React.FC = () => {
         
         <div className="overflow-hidden mx-4 flex-1">
           <div className="flex gap-6 items-center animate-scroll">
-            {recentBets.map((bet, index) => (
+            {activeBets.map((bet, index) => (
               <Link
                 key={`${bet.id}-${index}`}
                 to={`/betting/token/${bet.tokenId}`}
@@ -228,6 +229,10 @@ const BetReel: React.FC = () => {
                   <div className="flex items-center text-xs">
                     <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
                     <span className="font-semibold">{bet.amount} SOL</span>
+                  </div>
+                  <div className="ml-2 flex items-center text-xs">
+                    <Clock className="h-3 w-3 mr-1 text-dream-accent3" />
+                    <span className="text-gray-300">{formatTimeRemaining(bet.expiresAt)}</span>
                   </div>
                 </div>
               </Link>
