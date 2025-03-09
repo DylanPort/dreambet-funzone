@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
 import TokenCard from './TokenCard';
+
 const MigratingTokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,11 +16,13 @@ const MigratingTokenList = () => {
     toast
   } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const loadTokens = async () => {
       try {
@@ -40,6 +43,7 @@ const MigratingTokenList = () => {
     const interval = setInterval(loadTokens, 120000);
     return () => clearInterval(interval);
   }, [toast]);
+
   const processRawWebSocketData = (data: any) => {
     if (!data) return null;
     if (data.txType === 'create' && data.mint) {
@@ -55,6 +59,7 @@ const MigratingTokenList = () => {
     }
     return null;
   };
+
   useEffect(() => {
     if (pumpPortal.recentTokens.length > 0) {
       const newTokens = pumpPortal.recentTokens.map(formatWebSocketTokenData).filter(token => token);
@@ -75,6 +80,7 @@ const MigratingTokenList = () => {
       }
     }
   }, [pumpPortal.recentTokens, loading, toast]);
+
   useEffect(() => {
     const handleRawWebSocketMessages = () => {
       const logs = console.__logs || [];
@@ -112,6 +118,7 @@ const MigratingTokenList = () => {
     const interval = setInterval(handleRawWebSocketMessages, 5000);
     return () => clearInterval(interval);
   }, [loading, toast]);
+
   const formatTimeSince = (timestamp: number) => {
     const now = new Date().getTime();
     const diffMs = now - timestamp;
@@ -124,10 +131,12 @@ const MigratingTokenList = () => {
       return `${hours}h ${mins}m ago`;
     }
   };
+
   const getTokenIcon = (symbol: string) => {
     if (!symbol) return '🪙';
     return symbol.charAt(0);
   };
+
   const getRawTokensForDisplay = () => {
     const logs = console.__logs || [];
     const rawMessages = logs.filter((log: any) => log.message && typeof log.message === 'string' && log.message.includes('Unknown message type:')).slice(-10);
@@ -149,6 +158,7 @@ const MigratingTokenList = () => {
       }
     }).filter(token => token);
   };
+
   const getTokensForEmptyState = () => {
     const standardTokens = pumpPortal.recentTokens || [];
     const rawTokens = getRawTokensForDisplay();
@@ -156,6 +166,7 @@ const MigratingTokenList = () => {
     const uniqueTokens = Array.from(new Map(allTokens.map(token => [token.token_mint, token])).values());
     return uniqueTokens.sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime());
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -166,6 +177,7 @@ const MigratingTokenList = () => {
       maximumFractionDigits: 2
     });
   };
+
   const getTokensForDisplay = () => {
     let displayTokens = [];
     if (loading) {
@@ -228,9 +240,11 @@ const MigratingTokenList = () => {
     }
     return displayTokens;
   };
+
   const sortTokens = (tokensToSort: any[]) => {
     const tokens = [...tokensToSort];
-    switch (sortBy) {
+    
+    switch(sortBy) {
       case 'newest':
         return tokens.sort((a, b) => (b.migrationTime || 0) - (a.migrationTime || 0));
       case 'oldest':
@@ -247,8 +261,11 @@ const MigratingTokenList = () => {
         return tokens;
     }
   };
+
   const displayTokens = sortTokens(getTokensForDisplay());
-  return <div className="space-y-5">
+
+  return (
+    <div className="space-y-5">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
           <span>NEWLY CREATED</span>
@@ -256,41 +273,53 @@ const MigratingTokenList = () => {
         
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} className="text-xs gap-1.5 h-8">
-              {viewMode === 'grid' ? <>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="text-xs gap-1.5 h-8"
+            >
+              {viewMode === 'grid' ? (
+                <>
                   <Zap className="w-3.5 h-3.5" />
                   <span>List View</span>
-                </> : <>
+                </>
+              ) : (
+                <>
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Grid View</span>
-                </>}
+                </>
+              )}
             </Button>
             
             <div className="relative">
-              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs gap-1.5 h-8"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                <span>Sort By: {sortBy.replace('-', ' ')}</span>
+                <ChevronDown className="w-3.5 h-3.5 ml-1" />
+              </Button>
               <div className="absolute right-0 top-full mt-1 w-40 bg-dream-background/95 backdrop-blur-md border border-dream-accent1/20 rounded-md shadow-lg z-20 overflow-hidden">
                 <div className="py-1">
-                  {[{
-                  value: 'newest',
-                  label: 'Newest First'
-                }, {
-                  value: 'oldest',
-                  label: 'Oldest First'
-                }, {
-                  value: 'price-high',
-                  label: 'Price: High to Low'
-                }, {
-                  value: 'price-low',
-                  label: 'Price: Low to High'
-                }, {
-                  value: 'change-high',
-                  label: 'Change: High to Low'
-                }, {
-                  value: 'change-low',
-                  label: 'Change: Low to High'
-                }].map(option => <button key={option.value} className={`block w-full text-left px-4 py-2 text-xs hover:bg-dream-accent1/10 transition-colors ${sortBy === option.value ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`} onClick={() => setSortBy(option.value)}>
+                  {[
+                    {value: 'newest', label: 'Newest First'},
+                    {value: 'oldest', label: 'Oldest First'},
+                    {value: 'price-high', label: 'Price: High to Low'},
+                    {value: 'price-low', label: 'Price: Low to High'},
+                    {value: 'change-high', label: 'Change: High to Low'},
+                    {value: 'change-low', label: 'Change: Low to High'},
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      className={`block w-full text-left px-4 py-2 text-xs hover:bg-dream-accent1/10 transition-colors ${sortBy === option.value ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                      onClick={() => setSortBy(option.value)}
+                    >
                       {option.label}
-                    </button>)}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -310,8 +339,14 @@ const MigratingTokenList = () => {
         </div>
       </div>
       
-      {viewMode === 'grid' ? <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {displayTokens.map((token, index) => <Link key={token.id || `token-${index}`} to={token.isPlaceholder ? '#' : `/token/${token.id}`} className={`token-card group relative overflow-hidden ${token.isPlaceholder ? 'opacity-60 pointer-events-none' : ''}`}>
+      {viewMode === 'grid' ? (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {displayTokens.map((token, index) => (
+            <Link 
+              key={token.id || `token-${index}`} 
+              to={token.isPlaceholder ? '#' : `/token/${token.id}`} 
+              className={`token-card group relative overflow-hidden ${token.isPlaceholder ? 'opacity-60 pointer-events-none' : ''}`}
+            >
               <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
               <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
               <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
@@ -374,8 +409,11 @@ const MigratingTokenList = () => {
                   </button>
                 </div>
               </div>
-            </Link>)}
-        </div> : <div className="rounded-lg overflow-hidden border border-dream-accent1/20">
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-lg overflow-hidden border border-dream-accent1/20">
           <table className="min-w-full">
             <thead className="bg-dream-background/50 backdrop-blur-sm">
               <tr>
@@ -387,7 +425,11 @@ const MigratingTokenList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-dream-accent1/10">
-              {displayTokens.map((token, index) => <tr key={token.id || `token-${index}`} className={`hover:bg-dream-accent1/5 transition-colors ${token.isPlaceholder ? 'opacity-60' : ''}`}>
+              {displayTokens.map((token, index) => (
+                <tr 
+                  key={token.id || `token-${index}`} 
+                  className={`hover:bg-dream-accent1/5 transition-colors ${token.isPlaceholder ? 'opacity-60' : ''}`}
+                >
                   <td className="py-3 px-4">
                     <Link to={token.isPlaceholder ? '#' : `/token/${token.id}`} className="flex items-center">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
@@ -423,10 +465,14 @@ const MigratingTokenList = () => {
                       </button>
                     </div>
                   </td>
-                </tr>)}
+                </tr>
+              ))}
             </tbody>
           </table>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
+
 export default MigratingTokenList;
