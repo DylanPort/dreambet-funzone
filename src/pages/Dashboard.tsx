@@ -4,22 +4,63 @@ import Navbar from '@/components/Navbar';
 import { Search, SlidersHorizontal, Filter, Zap, Clock, ArrowUp, ArrowDown, Wallet, ExternalLink } from 'lucide-react';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { useQuery } from '@tanstack/react-query';
-import { fetchOpenBets } from '@/services/supabaseService';
+import { fetchOpenBets, fetchUserBets } from '@/services/supabaseService';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import CountdownTimer from '@/components/CountdownTimer';
 import { cn } from '@/lib/utils';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const { connected, publicKey } = useWallet();
+  const [localBets, setLocalBets] = useState<Bet[]>([]);
   
   // Fetch all open bets
-  const { data: allBets = [], isLoading, error } = useQuery({
+  const { data: supabaseBets = [], isLoading, error, refetch } = useQuery({
     queryKey: ['openBets'],
     queryFn: fetchOpenBets,
   });
+  
+  // Fetch user's bets if wallet is connected
+  const { data: userBets = [] } = useQuery({
+    queryKey: ['userBets', publicKey?.toString()],
+    queryFn: () => publicKey ? fetchUserBets(publicKey.toString()) : Promise.resolve([]),
+    enabled: !!connected && !!publicKey,
+  });
+  
+  // Load local bets from localStorage
+  useEffect(() => {
+    try {
+      const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
+      const fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+      
+      // Filter out bets that already exist in supabaseBets
+      const filteredLocalBets = fallbackBets.filter(localBet => {
+        return !supabaseBets.some(
+          bet => bet.id === localBet.id || 
+          (bet.onChainBetId && localBet.onChainBetId && bet.onChainBetId === localBet.onChainBetId)
+        );
+      });
+      
+      setLocalBets(filteredLocalBets);
+      console.log('Combined local bets with Supabase bets:', {supabaseBets, fallbackBets, filteredLocalBets});
+    } catch (error) {
+      console.error('Error loading local bets:', error);
+      setLocalBets([]);
+    }
+  }, [supabaseBets]);
+  
+  // Combine all bets from different sources
+  const allBets = [...supabaseBets, ...localBets, ...userBets];
+  
+  // Remove duplicates from combined bets
+  const uniqueBets = allBets.filter((bet, index, self) => 
+    index === self.findIndex((b) => b.id === bet.id)
+  );
   
   // Filter and categorize bets
   const getFilteredBets = () => {
@@ -27,8 +68,8 @@ const Dashboard = () => {
     
     // First filter by search query if present
     const searchFiltered = searchQuery.trim() === '' 
-      ? allBets 
-      : allBets.filter(bet => 
+      ? uniqueBets 
+      : uniqueBets.filter(bet => 
           bet.tokenName.toLowerCase().includes(searchQuery.toLowerCase()) || 
           bet.tokenSymbol.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -51,8 +92,47 @@ const Dashboard = () => {
   
   const { newlyCreated, expiring, expired } = getFilteredBets();
   
+  // Force refresh when component is visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Dashboard became visible, refreshing bets data');
+        refetch();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refetch]);
+  
+  // Listen for new bet events
+  useEffect(() => {
+    const handleNewBet = () => {
+      console.log("New bet created event received in Dashboard");
+      refetch();
+    };
+
+    window.addEventListener('newBetCreated', handleNewBet as EventListener);
+    
+    return () => {
+      window.removeEventListener('newBetCreated', handleNewBet as EventListener);
+    };
+  }, [refetch]);
+  
+  const handleRefresh = () => {
+    toast.info("Refreshing bets data...");
+    refetch();
+  };
+  
   // Render a bet card
   const renderBetCard = (bet: Bet) => {
+    const now = new Date().getTime();
+    const isExpired = bet.expiresAt < now;
+    const isExpiringSoon = !isExpired && (bet.expiresAt - now) < 1000 * 60 * 60; // Within an hour
+    const isNew = (now - bet.timestamp) < 1000 * 60 * 60; // Created within last hour
+    
     return (
       <Link 
         key={bet.id} 
@@ -60,13 +140,44 @@ const Dashboard = () => {
         className="token-card relative overflow-hidden group mb-4"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
+        
+        {/* Status indicators */}
+        {isNew && !isExpired && !isExpiringSoon && (
+          <div className="absolute -left-2 -top-2 w-24 h-24">
+            <div className="absolute left-2 top-2 bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full flex items-center">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1 animate-pulse"></span>
+              New
+            </div>
+          </div>
+        )}
+        
+        {isExpiringSoon && !isExpired && (
+          <div className="absolute -left-2 -top-2 w-24 h-24">
+            <div className="absolute left-2 top-2 bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded-full flex items-center">
+              <Clock className="w-3 h-3 mr-1 animate-pulse" />
+              Expiring Soon
+            </div>
+          </div>
+        )}
+        
+        {isExpired && (
+          <div className="absolute -left-2 -top-2 w-24 h-24">
+            <div className="absolute left-2 top-2 bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full flex items-center">
+              <Clock className="w-3 h-3 mr-1" />
+              Expired
+            </div>
+          </div>
+        )}
+        
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
         
         <div className="absolute -right-12 -top-12 w-24 h-24 bg-dream-accent2/10 blur-xl rounded-full group-hover:bg-dream-accent2/20 transition-all"></div>
         <div className="absolute -left-12 -bottom-12 w-24 h-24 bg-dream-accent1/10 blur-xl rounded-full group-hover:bg-dream-accent1/20 transition-all"></div>
         
-        <div className="glass-panel p-4 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300">
+        <div className={`glass-panel p-4 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300 ${
+          isExpired ? 'opacity-70' : (isExpiringSoon ? 'border-yellow-400/30' : '')
+        }`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
@@ -107,7 +218,9 @@ const Dashboard = () => {
           <div className="flex items-center justify-between text-xs text-dream-foreground/60 mb-3">
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              <span>{formatTimeRemaining(bet.expiresAt)}</span>
+              <span className={isExpiringSoon && !isExpired ? 'text-yellow-400' : (isExpired ? 'text-red-400' : '')}>
+                {isExpired ? 'Expired' : formatTimeRemaining(bet.expiresAt)}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span>Created by {bet.initiator.substring(0, 4)}...{bet.initiator.substring(bet.initiator.length - 4)}</span>
@@ -115,7 +228,9 @@ const Dashboard = () => {
           </div>
 
           <button className="bet-button w-full py-2 text-sm font-semibold">
-            <span className="z-10 relative">Accept Bet</span>
+            <span className="z-10 relative">
+              {isExpired ? 'View Details' : 'Accept Bet'}
+            </span>
           </button>
         </div>
       </Link>
@@ -128,18 +243,19 @@ const Dashboard = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-display font-bold text-dream-foreground flex items-center gap-1">
             {title}
+            <span className="bg-dream-accent1/20 text-dream-accent1 text-xs px-2 py-0.5 rounded-full ml-2">
+              {bets.length}
+            </span>
           </h2>
           
           <div className="flex items-center gap-2">
-            <div className="flex items-center text-xs bg-dream-background/50 backdrop-blur-sm px-2 py-1 rounded-full border border-dream-accent1/30">
-              <Filter className="w-3 h-3 mr-1 text-dream-accent1" />
-              <span className="font-medium">{bets.length}</span>
-            </div>
-            
-            <div className="flex items-center text-xs bg-dream-background/30 backdrop-blur-sm px-2 py-1 rounded-full border border-dream-accent2/20">
-              <Zap className="w-3.5 h-3.5 text-dream-accent2" />
-              <span>0.6</span>
-            </div>
+            <button 
+              onClick={handleRefresh}
+              className="p-1.5 rounded-full bg-dream-background/40 text-dream-foreground/60 hover:text-dream-foreground transition-colors"
+              title="Refresh"
+            >
+              <Clock className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
         
@@ -187,9 +303,12 @@ const Dashboard = () => {
             />
           </div>
           
-          <button className="glass-panel flex items-center px-4 py-2">
+          <button 
+            onClick={handleRefresh}
+            className="glass-panel flex items-center px-4 py-2"
+          >
             <SlidersHorizontal className="w-4 h-4 mr-2" />
-            <span>Filters</span>
+            <span>Refresh</span>
           </button>
         </div>
         
