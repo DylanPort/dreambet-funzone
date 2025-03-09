@@ -1,6 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { Bet, BetPrediction } from "@/types/bet";
+import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 
 // User related functions
 export const getCurrentUser = async () => {
@@ -84,6 +83,9 @@ export const fetchOpenBets = async () => {
         predictionValue = bet.prediction_bettor1 as BetPrediction;
       }
       
+      // Convert status string to BetStatus type
+      const status = bet.status as BetStatus;
+      
       const transformedBet: Bet = {
         id: bet.bet_id,
         tokenId: bet.token_mint,
@@ -94,7 +96,7 @@ export const fetchOpenBets = async () => {
         prediction: predictionValue,
         timestamp: new Date(bet.created_at).getTime(),
         expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-        status: bet.status,
+        status: status,
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
         transactionSignature: bet.transaction_signature || ''
@@ -151,6 +153,9 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         predictionValue = bet.prediction_bettor1 as BetPrediction;
       }
       
+      // Convert status string to BetStatus type
+      const status = bet.status as BetStatus;
+      
       return {
         id: bet.bet_id,
         tokenId: bet.token_mint,
@@ -161,7 +166,7 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         prediction: predictionValue,
         timestamp: new Date(bet.created_at).getTime(),
         expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-        status: bet.status,
+        status: status,
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
         transactionSignature: bet.transaction_signature || ''
@@ -240,7 +245,7 @@ export const createSupabaseBet = async (
       prediction: prediction,
       timestamp: new Date(data.created_at).getTime(),
       expiresAt: new Date(data.created_at).getTime() + (durationInSeconds * 1000),
-      status: 'open',
+      status: 'open' as BetStatus,
       duration: duration,
       onChainBetId: onChainId || '',
       transactionSignature: transactionSignature || ''
@@ -316,6 +321,9 @@ export const acceptBet = async (betId: string) => {
   else if (betData.prediction_bettor1 === 'down') predictionValue = 'die';
   else predictionValue = betData.prediction_bettor1 as BetPrediction;
   
+  // Convert status string to BetStatus type
+  const status = 'matched' as BetStatus;
+  
   // Return updated bet in the format expected by our frontend
   return {
     id: data.bet_id,
@@ -328,7 +336,7 @@ export const acceptBet = async (betId: string) => {
     prediction: predictionValue,
     timestamp: new Date(betData.created_at).getTime(),
     expiresAt: new Date(data.end_time).getTime(),
-    status: 'matched',
+    status: status,
     initialMarketCap: data.initial_market_cap,
     duration: Math.floor(betData.duration / 60), // Convert seconds to minutes
     onChainBetId: data.on_chain_id || '',

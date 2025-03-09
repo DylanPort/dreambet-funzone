@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles } from 'lucide-react';
-import { Bet, BetPrediction } from '@/types/bet';
+import { Bet, BetPrediction, BetStatus } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,9 @@ const BetReel: React.FC = () => {
               prediction = bet.prediction_bettor1 as BetPrediction;
             }
 
+            // Convert status string to BetStatus type
+            const status = bet.status as BetStatus;
+
             return {
               id: bet.bet_id,
               tokenId: bet.token_mint,
@@ -57,7 +60,7 @@ const BetReel: React.FC = () => {
               prediction: prediction,
               timestamp: new Date(bet.created_at).getTime(),
               expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-              status: bet.status,
+              status: status,
               duration: Math.floor(bet.duration / 60),
               onChainBetId: bet.on_chain_id?.toString() || '',
               transactionSignature: bet.transaction_signature || ''
@@ -119,6 +122,9 @@ const BetReel: React.FC = () => {
                 prediction = data.prediction_bettor1 as BetPrediction;
               }
               
+              // Convert status string to BetStatus type
+              const status = data.status as BetStatus;
+              
               const newBet: Bet = {
                 id: data.bet_id,
                 tokenId: data.token_mint,
@@ -129,7 +135,7 @@ const BetReel: React.FC = () => {
                 prediction: prediction,
                 timestamp: new Date(data.created_at).getTime(),
                 expiresAt: new Date(data.created_at).getTime() + (data.duration * 1000),
-                status: data.status,
+                status: status,
                 duration: Math.floor(data.duration / 60),
                 onChainBetId: data.on_chain_id?.toString() || '',
                 transactionSignature: data.transaction_signature || ''
