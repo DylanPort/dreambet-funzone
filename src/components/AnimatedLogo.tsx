@@ -1,10 +1,9 @@
-
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 const AnimatedLogo = () => {
   return (
-    <div className="flex justify-center items-center w-full">
+    <div className="flex justify-center items-center w-full my-8 mx-auto">
       <motion.div
         className="relative w-[300px] md:w-[400px] h-[150px] md:h-[200px]"
         initial={{ opacity: 0 }}
