@@ -35,15 +35,22 @@ const BetsListView: React.FC<BetsListViewProps> = ({
   
   return (
     <div className="space-y-4">
-      {topBets.map((bet, index) => (
-        <BetCard
-          key={`${bet.id || bet.onChainBetId || index}-${index}`}
-          bet={bet}
-          connected={connected}
-          publicKeyString={publicKeyString}
-          onAcceptBet={onAcceptBet}
-        />
-      ))}
+      {topBets.map((bet, index) => {
+        // Generate a unique key combining multiple identifiers
+        const uniqueKey = `${bet.id || 'unknown'}-${bet.onChainBetId || 'nochain'}-${
+          bet.transactionSignature ? bet.transactionSignature.substring(0, 8) : ''
+        }-${index}`;
+        
+        return (
+          <BetCard
+            key={uniqueKey}
+            bet={bet}
+            connected={connected}
+            publicKeyString={publicKeyString}
+            onAcceptBet={onAcceptBet}
+          />
+        );
+      })}
       
       {validBets.length > 10 && (
         <div className="text-center mt-4 text-sm text-dream-foreground/70">

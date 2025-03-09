@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { fetchOpenBets, acceptBet } from '@/api/mockData';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -29,7 +28,6 @@ const OpenBetsList = () => {
   } = useToast();
   const [sortBy, setSortBy] = useState<'newest' | 'expiring' | 'amount'>('newest');
 
-  // Function to load fallback bets from localStorage
   const loadFallbackBets = useCallback(() => {
     try {
       const storedBets = localStorage.getItem(FALLBACK_BETS_KEY);
@@ -37,11 +35,9 @@ const OpenBetsList = () => {
         const parsedBets = JSON.parse(storedBets) as Bet[];
         console.log("Loaded fallback bets from localStorage:", parsedBets);
         
-        // Filter out expired bets
         const now = Date.now();
         const validBets = parsedBets.filter(bet => bet.expiresAt > now);
         
-        // Update localStorage with only valid bets
         if (validBets.length !== parsedBets.length) {
           localStorage.setItem(FALLBACK_BETS_KEY, JSON.stringify(validBets));
         }
@@ -55,12 +51,10 @@ const OpenBetsList = () => {
     return [];
   }, []);
 
-  // Function to save a fallback bet to localStorage
   const saveFallbackBet = useCallback((bet: Bet) => {
     try {
       const existingBets = loadFallbackBets();
       
-      // Check if bet already exists to avoid duplicates
       const betExists = existingBets.some(
         existingBet => existingBet.onChainBetId === bet.onChainBetId || 
                         existingBet.id === bet.id
@@ -83,26 +77,28 @@ const OpenBetsList = () => {
       const data = await fetchOpenBets();
       console.log("Fetched open bets:", data);
       
-      // Load fallback bets from localStorage
       const fallbacks = loadFallbackBets();
       
-      // Combine database bets with fallback bets
       let combinedBets: Bet[] = [];
       
       if (data && Array.isArray(data)) {
-        // Create a map of existing bet IDs to avoid duplicates
         const existingBetIds = new Set(data.map(bet => bet.id));
         const existingOnChainIds = new Set(
           data
             .filter(bet => bet.onChainBetId)
             .map(bet => bet.onChainBetId)
         );
+        const existingTxSignatures = new Set(
+          data
+            .filter(bet => bet.transactionSignature)
+            .map(bet => bet.transactionSignature)
+        );
         
-        // Add fallback bets that don't exist in database
         const uniqueFallbacks = fallbacks.filter(
           fallbackBet => 
             !existingBetIds.has(fallbackBet.id) && 
-            (!fallbackBet.onChainBetId || !existingOnChainIds.has(fallbackBet.onChainBetId))
+            (!fallbackBet.onChainBetId || !existingOnChainIds.has(fallbackBet.onChainBetId)) &&
+            (!fallbackBet.transactionSignature || !existingTxSignatures.has(fallbackBet.transactionSignature))
         );
         
         combinedBets = [...data, ...uniqueFallbacks];
@@ -115,7 +111,6 @@ const OpenBetsList = () => {
       setBets(combinedBets);
     } catch (error) {
       console.error('Error loading bets:', error);
-      // On error, at least show fallback bets
       const fallbacks = loadFallbackBets();
       setBets(fallbacks);
     } finally {
@@ -126,26 +121,51 @@ const OpenBetsList = () => {
   useEffect(() => {
     console.log("OpenBetsList component mounted, loading bets...");
     loadBets();
-    // Refresh every 30 seconds
     const interval = setInterval(loadBets, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Listen for new bet created or accepted events
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:bets')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'bets' 
+        }, 
+        (payload) => {
+          console.log('New bet inserted:', payload);
+          loadBets();
+          
+          setNewBetNotification({
+            visible: true,
+            message: `New bet created in the network!`
+          });
+          
+          setTimeout(() => {
+            setNewBetNotification(prev => ({ ...prev, visible: false }));
+          }, 5000);
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in OpenBetsList:", event.detail);
       
       const { amount, prediction, tokenId, tokenName, tokenSymbol, bet } = event.detail;
       
-      // If the complete bet object was provided in the event
       if (bet) {
         console.log("Adding new bet to fallback storage:", bet);
         saveFallbackBet(bet);
         
-        // Add to current bets list
         setBets(prevBets => {
-          // Check if bet already exists
           const exists = prevBets.some(
             existingBet => 
               existingBet.id === bet.id || 
@@ -164,18 +184,15 @@ const OpenBetsList = () => {
         message: `New ${amount} SOL bet created predicting token will ${prediction}!`
       });
       
-      // Automatically hide the notification after 5 seconds
       setTimeout(() => {
         setNewBetNotification(prev => ({ ...prev, visible: false }));
       }, 5000);
       
-      // Refresh the bets list immediately
       loadBets();
     };
 
     const handleBetAccepted = (event: CustomEvent) => {
       console.log("Bet accepted event received in OpenBetsList:", event.detail);
-      // Immediately refresh the bets when one is accepted
       loadBets();
     };
 
@@ -207,14 +224,12 @@ const OpenBetsList = () => {
     }
     try {
       setLoading(true);
-      // Pass the wallet instance here
       await acceptBet(bet, publicKey.toString(), wallet);
       toast({
         title: "Bet accepted!",
         description: `You've accepted a ${bet.amount} SOL bet on ${bet.tokenName}`
       });
 
-      // Refresh bets
       loadBets();
     } catch (error) {
       console.error('Error accepting bet:', error);
@@ -231,7 +246,6 @@ const OpenBetsList = () => {
   const publicKeyString = publicKey ? publicKey.toString() : null;
   
   useEffect(() => {
-    // Debug logging
     console.log("Current bets in OpenBetsList:", bets);
   }, [bets]);
 

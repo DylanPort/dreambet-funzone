@@ -60,6 +60,7 @@ export type Database = {
           bettor1_id: string
           bettor2_id: string | null
           created_at: string
+          creator: string
           duration: number
           end_time: string | null
           initial_market_cap: number | null
@@ -74,6 +75,7 @@ export type Database = {
           bettor1_id: string
           bettor2_id?: string | null
           created_at?: string
+          creator: string
           duration: number
           end_time?: string | null
           initial_market_cap?: number | null
@@ -88,6 +90,7 @@ export type Database = {
           bettor1_id?: string
           bettor2_id?: string | null
           created_at?: string
+          creator?: string
           duration?: number
           end_time?: string | null
           initial_market_cap?: number | null

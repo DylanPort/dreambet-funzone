@@ -1,14 +1,24 @@
 
 import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
-import { useConnection } from '@solana/wallet-adapter-react';
 import { BetPrediction, Bet } from '@/types/bet';
 import { toast } from '@/hooks/use-toast';
 
 // Mock PDA (Program Derived Address) for bet contract
 const BET_PROGRAM_ID = new PublicKey('BETh1cV519tFPhe6GWzGJmcfdshugH7XAi3iNGnXx5z');
 
-// This is a simplified mock implementation for demo purposes
-// In a real app, you would interact with an actual on-chain program
+// Map BetPrediction to SolanaContractPrediction values
+const getPredictionValue = (prediction: BetPrediction): number => {
+  switch (prediction) {
+    case 'migrate':
+    case 'up':
+      return 1;
+    case 'die':
+    case 'down':
+      return 0;
+    default:
+      throw new Error(`Invalid prediction: ${prediction}`);
+  }
+};
 
 // Function to create a bet on Solana blockchain
 export const createSolanaBet = async (
@@ -56,7 +66,7 @@ export const createSolanaBet = async (
     });
 
     // Simplified: In a real app, this would be an actual program instruction
-    const predictionValue = prediction === 'migrate' ? 1 : 0;
+    const predictionValue = getPredictionValue(prediction);
     const mockInstruction = new TransactionInstruction({
       keys: [
         { pubkey: publicKey, isSigner: true, isWritable: true },
@@ -120,7 +130,8 @@ export const createSolanaBet = async (
         betId,
         tokenId: tokenMint,
         amount: solAmount,
-        prediction
+        prediction,
+        txSignature
       } 
     });
     window.dispatchEvent(newBetEvent);
@@ -209,7 +220,7 @@ export const acceptSolanaBet = async (
 
     // Broadcast a custom event to notify all components about the accepted bet
     const betAcceptedEvent = new CustomEvent('betAccepted', { 
-      detail: { betId } 
+      detail: { betId, txSignature } 
     });
     window.dispatchEvent(betAcceptedEvent);
 
@@ -243,12 +254,13 @@ export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
     tokenSymbol: 'MOCK',
     initiator: '7FzXBBPjzrNJbm9MrZKZcyvP3ojVeYPUG2hTuzV892Fj',
     amount: 0.1,
-    prediction: Math.random() > 0.5 ? 'migrate' : 'die',
+    prediction: Math.random() > 0.5 ? 'up' : 'down',
     timestamp: Date.now() - 3600000, // 1 hour ago
     expiresAt: Date.now() + 3600000, // 1 hour from now
     status: 'open',
     duration: 60,
-    onChainBetId: betId.toString()
+    onChainBetId: betId.toString(),
+    transactionSignature: 'mock_tx_' + Math.random().toString(36).substring(2, 15)
   };
   
   return mockBet;

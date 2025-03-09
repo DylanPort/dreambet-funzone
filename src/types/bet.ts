@@ -1,5 +1,5 @@
 
-export type BetPrediction = 'migrate' | 'die';
+export type BetPrediction = 'migrate' | 'die' | 'up' | 'down';
 
 export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed';
 
@@ -18,13 +18,16 @@ export interface Bet {
   initialMarketCap?: number;
   duration: number;
   winner?: string;
-  onChainBetId?: string; // Added to track on-chain bet ID
+  onChainBetId?: string; // For tracking on-chain bet ID
+  transactionSignature?: string; // For tracking transaction signature
 }
 
 // Smart contract state types to match the Rust program
 export enum SolanaContractPrediction {
   Migrate = 0,
   Die = 1,
+  Up = 2,
+  Down = 3,
 }
 
 export enum SolanaContractStatus {

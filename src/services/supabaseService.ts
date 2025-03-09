@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Bet } from "@/types/bet";
 
@@ -43,13 +42,14 @@ export const fetchOpenBets = async () => {
         bet_id,
         token_mint,
         tokens (token_name, token_symbol),
-        bettor1_id,
-        users!bets_bettor1_id_fkey (wallet_address),
-        prediction_bettor1,
+        creator,
+        prediction,
+        amount,
         duration,
-        sol_amount,
+        status,
         created_at,
-        status
+        transaction_signature,
+        on_chain_id
       `)
       .eq('status', 'open')
       .order('created_at', { ascending: false });
@@ -69,22 +69,29 @@ export const fetchOpenBets = async () => {
     // Transform to match our frontend Bet type with more detailed logging
     const transformedBets = data.map(bet => {
       // Ensure we have all required data
-      if (!bet.tokens || !bet.users) {
+      if (!bet.tokens) {
         console.warn('Missing related data for bet:', bet.bet_id);
       }
+      
+      // Map prediction values from database to our frontend format
+      let predictionValue: 'migrate' | 'die' = bet.prediction as 'migrate' | 'die';
+      if (bet.prediction === 'up') predictionValue = 'migrate';
+      if (bet.prediction === 'down') predictionValue = 'die';
       
       const transformedBet = {
         id: bet.bet_id,
         tokenId: bet.token_mint,
         tokenName: bet.tokens?.token_name || 'Unknown Token',
         tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
-        initiator: bet.users?.wallet_address || 'Unknown',
-        amount: bet.sol_amount,
-        prediction: bet.prediction_bettor1 as 'migrate' | 'die',
+        initiator: bet.creator || 'Unknown',
+        amount: bet.amount,
+        prediction: predictionValue,
         timestamp: new Date(bet.created_at).getTime(),
         expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
         status: bet.status,
-        duration: Math.floor(bet.duration / 60) // Convert seconds to minutes
+        duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
+        onChainBetId: bet.on_chain_id,
+        transactionSignature: bet.transaction_signature
       };
       
       console.log('Transformed bet:', transformedBet);
@@ -100,74 +107,72 @@ export const fetchOpenBets = async () => {
 };
 
 export const fetchUserBets = async (userWalletAddress: string) => {
-  // First get the user id from the wallet address
-  const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('id')
-    .eq('wallet_address', userWalletAddress)
-    .single();
-  
-  if (userError) throw userError;
-  
-  // Then fetch all bets where user is either bettor1 or bettor2
-  const { data, error } = await supabase
-    .from('bets')
-    .select(`
-      bet_id,
-      token_mint,
-      tokens (token_name, token_symbol),
-      bettor1_id,
-      bettor2_id,
-      users!bets_bettor1_id_fkey (wallet_address),
-      prediction_bettor1,
-      duration,
-      sol_amount,
-      start_time,
-      end_time,
-      initial_market_cap,
-      status,
-      created_at
-    `)
-    .or(`bettor1_id.eq.${userData.id},bettor2_id.eq.${userData.id}`)
-    .order('created_at', { ascending: false });
-  
-  if (error) throw error;
-  
-  // Transform to match our frontend Bet type
-  return data.map(bet => {
-    const isBettor1 = bet.bettor1_id === userData.id;
-    const prediction = isBettor1 ? bet.prediction_bettor1 : (bet.prediction_bettor1 === 'migrate' ? 'die' : 'migrate');
+  try {
+    // Fetch all bets where user is the creator
+    const { data, error } = await supabase
+      .from('bets')
+      .select(`
+        bet_id,
+        token_mint,
+        tokens (token_name, token_symbol),
+        creator,
+        prediction,
+        amount,
+        duration,
+        status,
+        created_at,
+        transaction_signature,
+        on_chain_id
+      `)
+      .eq('creator', userWalletAddress)
+      .order('created_at', { ascending: false });
     
-    return {
-      id: bet.bet_id,
-      tokenId: bet.token_mint,
-      tokenName: bet.tokens.token_name,
-      tokenSymbol: bet.tokens.token_symbol,
-      initiator: bet.users.wallet_address,
-      counterParty: bet.bettor2_id ? 'Opponent' : undefined, // Simplified for now
-      amount: bet.sol_amount,
-      prediction: prediction as 'migrate' | 'die',
-      timestamp: new Date(bet.created_at).getTime(),
-      expiresAt: bet.end_time ? new Date(bet.end_time).getTime() : new Date(bet.created_at).getTime() + (bet.duration * 1000),
-      status: bet.status,
-      initialMarketCap: bet.initial_market_cap,
-      duration: Math.floor(bet.duration / 60) // Convert seconds to minutes
-    };
-  });
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      return [];
+    }
+    
+    // Transform to match our frontend Bet type
+    return data.map(bet => {
+      // Map prediction values from database to our frontend format
+      let predictionValue: 'migrate' | 'die' = bet.prediction as 'migrate' | 'die';
+      if (bet.prediction === 'up') predictionValue = 'migrate';
+      if (bet.prediction === 'down') predictionValue = 'die';
+      
+      return {
+        id: bet.bet_id,
+        tokenId: bet.token_mint,
+        tokenName: bet.tokens?.token_name || 'Unknown Token',
+        tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
+        initiator: bet.creator,
+        amount: bet.amount,
+        prediction: predictionValue,
+        timestamp: new Date(bet.created_at).getTime(),
+        expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
+        status: bet.status,
+        duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
+        onChainBetId: bet.on_chain_id,
+        transactionSignature: bet.transaction_signature
+      };
+    });
+  } catch (error) {
+    console.error('Error in fetchUserBets:', error);
+    throw error;
+  }
 };
 
-export const createBet = async (
+export const createSupabaseBet = async (
   tokenMint: string,
   prediction: 'migrate' | 'die',
   duration: number, // in minutes
-  solAmount: number
+  amount: number,
+  creatorWalletAddress: string,
+  onChainId?: string,
+  transactionSignature?: string
 ) => {
   try {
-    console.log(`Creating bet: tokenMint=${tokenMint}, prediction=${prediction}, duration=${duration}, amount=${solAmount}`);
-    
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    console.log(`Creating bet in Supabase: tokenMint=${tokenMint}, prediction=${prediction}, duration=${duration}, amount=${amount}, creator=${creatorWalletAddress}`);
     
     // Convert duration to seconds for database
     const durationInSeconds = duration * 60;
@@ -183,17 +188,23 @@ export const createBet = async (
     
     console.log('Token data for bet:', tokenData);
     
+    // Map frontend prediction to database format
+    let dbPrediction = prediction;
+    if (prediction === 'migrate') dbPrediction = 'up';
+    if (prediction === 'die') dbPrediction = 'down';
+    
     // Insert the bet
     const { data, error } = await supabase
       .from('bets')
       .insert({
         token_mint: tokenMint,
-        bettor1_id: user.id,
-        prediction_bettor1: prediction,
+        creator: creatorWalletAddress,
+        prediction: dbPrediction,
         duration: durationInSeconds,
-        sol_amount: solAmount,
-        initial_market_cap: tokenData.current_market_cap,
-        status: 'open'
+        amount: amount,
+        status: 'open',
+        on_chain_id: onChainId,
+        transaction_signature: transactionSignature
       })
       .select('bet_id, created_at')
       .single();
@@ -203,18 +214,7 @@ export const createBet = async (
       throw error;
     }
     
-    console.log('Bet created successfully:', data);
-    
-    // Create a history record
-    await supabase
-      .from('bet_history')
-      .insert({
-        bet_id: data.bet_id,
-        action: 'created',
-        user_id: user.id,
-        details: { prediction, duration: durationInSeconds, sol_amount: solAmount },
-        market_cap_at_action: tokenData.current_market_cap
-      });
+    console.log('Bet created successfully in Supabase:', data);
     
     // Return in the format expected by our frontend
     const newBet = {
@@ -222,19 +222,21 @@ export const createBet = async (
       tokenId: tokenMint,
       tokenName: tokenData.token_name,
       tokenSymbol: tokenData.token_symbol,
-      initiator: user.id,
-      amount: solAmount,
+      initiator: creatorWalletAddress,
+      amount: amount,
       prediction: prediction,
       timestamp: new Date(data.created_at).getTime(),
       expiresAt: new Date(data.created_at).getTime() + (durationInSeconds * 1000),
       status: 'open',
-      duration: duration
+      duration: duration,
+      onChainBetId: onChainId,
+      transactionSignature: transactionSignature
     };
     
     console.log('Returning new bet:', newBet);
     return newBet;
   } catch (error) {
-    console.error('Error in createBet:', error);
+    console.error('Error in createSupabaseBet:', error);
     throw error;
   }
 };
@@ -251,10 +253,10 @@ export const acceptBet = async (betId: string) => {
       bet_id,
       token_mint,
       tokens (token_name, token_symbol, current_market_cap),
-      bettor1_id,
-      prediction_bettor1,
+      creator,
+      prediction,
+      amount,
       duration,
-      sol_amount,
       created_at
     `)
     .eq('bet_id', betId)
@@ -262,7 +264,7 @@ export const acceptBet = async (betId: string) => {
     .single();
   
   if (betError) throw betError;
-  if (betData.bettor1_id === user.id) throw new Error('Cannot accept your own bet');
+  if (betData.creator === user.id) throw new Error('Cannot accept your own bet');
   
   // Calculate start and end times
   const now = new Date();
@@ -301,10 +303,10 @@ export const acceptBet = async (betId: string) => {
     tokenId: data.token_mint,
     tokenName: betData.tokens.token_name,
     tokenSymbol: betData.tokens.token_symbol,
-    initiator: betData.bettor1_id,
+    initiator: betData.creator,
     counterParty: user.id,
-    amount: data.sol_amount,
-    prediction: betData.prediction_bettor1 as 'migrate' | 'die',
+    amount: data.amount,
+    prediction: betData.prediction as 'migrate' | 'die',
     timestamp: new Date(betData.created_at).getTime(),
     expiresAt: new Date(data.end_time).getTime(),
     status: 'matched',

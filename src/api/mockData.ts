@@ -190,6 +190,7 @@ export const createBet = async (
     console.log(`Initiating Solana transaction on Devnet...`);
     
     let betId;
+    let txSignature;
     try {
       const result = await createSolanaBet(
         wallet,
@@ -199,7 +200,8 @@ export const createBet = async (
         amount
       );
       betId = result.betId;
-      console.log(`Solana bet created with ID: ${betId}`);
+      txSignature = result.txSignature;
+      console.log(`Solana bet created with ID: ${betId}, transaction: ${txSignature}`);
       
       toast({
         title: `New ${prediction.toUpperCase()} Bet Created!`,
@@ -225,7 +227,8 @@ export const createBet = async (
       expiresAt: Date.now() + (duration * 60 * 1000),
       status: "open",
       duration,
-      onChainBetId: betId.toString()
+      onChainBetId: betId.toString(),
+      transactionSignature: txSignature
     };
     
     storeFallbackBet(fallbackBet);
@@ -252,7 +255,10 @@ export const createBet = async (
         tokenId, 
         prediction, 
         duration, 
-        amount
+        amount,
+        effectivePublicKey.toString(),
+        betId.toString(),
+        txSignature
       );
       
       console.log(`Supabase bet created: ${bet.id}`);
@@ -260,6 +266,7 @@ export const createBet = async (
       return {
         ...bet,
         onChainBetId: betId.toString(),
+        transactionSignature: txSignature,
         status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
       };
     } catch (supabaseError) {
