@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOpenBets } from '@/services/supabaseService';
@@ -9,6 +8,7 @@ import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import BetCard from './BetCard';
 
 const OpenBetsList = () => {
   const { toast } = useToast();
@@ -89,7 +89,8 @@ const OpenBetsList = () => {
             </div>
           </div>
         </div>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        
+        <div className="space-y-4">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="glass-panel p-4 animate-pulse">
               <div className="h-5 w-32 bg-gray-700/50 rounded mb-2"></div>
@@ -185,7 +186,7 @@ const OpenBetsList = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="space-y-4">
           <AnimatePresence>
             {filteredBets.map((bet) => (
               <motion.div
@@ -197,17 +198,14 @@ const OpenBetsList = () => {
               >
                 <Link 
                   to={`/betting/token/${bet.tokenId}`}
-                  className="token-card relative overflow-hidden group"
+                  className="block w-full"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
-                  <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
-                  <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
-                  
-                  <div className="absolute -right-12 -top-12 w-24 h-24 bg-dream-accent2/10 blur-xl rounded-full group-hover:bg-dream-accent2/20 transition-all"></div>
-                  <div className="absolute -left-12 -bottom-12 w-24 h-24 bg-dream-accent1/10 blur-xl rounded-full group-hover:bg-dream-accent1/20 transition-all"></div>
-                  
-                  <div className="glass-panel p-4 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
+                    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
+                    
+                    <div className="flex items-center justify-between gap-4 relative z-10">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
                           <span className="font-display font-bold text-lg">{bet.tokenSymbol.charAt(0)}</span>
@@ -220,43 +218,31 @@ const OpenBetsList = () => {
                           <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 h-6 px-2 rounded-md bg-dream-background/40 text-xs text-dream-foreground/60">
-                          <Zap className="w-3 h-3" />
-                          <span>{bet.amount}</span>
-                        </div>
+                      
+                      <div className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm
+                        ${bet.prediction === 'migrate' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {bet.prediction === 'migrate' 
+                          ? <ArrowUp className="h-3.5 w-3.5 mr-1" /> 
+                          : <ArrowDown className="h-3.5 w-3.5 mr-1" />}
+                        <span>{bet.prediction === 'migrate' ? 'Moon' : 'Die'}</span>
                       </div>
-                    </div>
-                    
-                    <div className="flex justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm
-                          ${bet.prediction === 'migrate' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                          {bet.prediction === 'migrate' 
-                            ? <ArrowUp className="h-3.5 w-3.5 mr-1" /> 
-                            : <ArrowDown className="h-3.5 w-3.5 mr-1" />}
-                          <span>{bet.prediction === 'migrate' ? 'Moon' : 'Die'}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center text-sm bg-dream-accent2/10 px-2 py-1 rounded-lg">
+                      
+                      <div className="flex items-center text-sm bg-dream-accent2/10 px-3 py-1 rounded-lg">
                         <Wallet className="h-3.5 w-3.5 mr-1.5 text-dream-accent2" />
                         <span className="font-semibold">{bet.amount} SOL</span>
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs text-dream-foreground/60 mb-3">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                      
+                      <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
+                        <Clock className="w-3 h-3 mr-1" />
                         <span>{formatTimeRemaining(bet.expiresAt)}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span>Created by {bet.initiator.substring(0, 4)}...{bet.initiator.substring(bet.initiator.length - 4)}</span>
+                      
+                      <div className="ml-auto">
+                        <button className="px-4 py-2 rounded-lg bg-dream-accent1/10 hover:bg-dream-accent1/20 text-dream-accent1 text-sm font-medium transition-colors">
+                          Accept Bet
+                        </button>
                       </div>
                     </div>
-
-                    <button className="bet-button w-full py-2 text-sm font-semibold">
-                      <span className="z-10 relative">Accept Bet</span>
-                    </button>
                   </div>
                 </Link>
               </motion.div>
