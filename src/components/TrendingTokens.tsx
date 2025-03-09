@@ -82,7 +82,7 @@ const TrendingTokens: React.FC = () => {
           <h2 className="text-xl font-display font-semibold">Trending Solana Tokens</h2>
           <div className="bg-dream-accent1/20 text-dream-accent1 text-xs px-2 py-0.5 rounded-full flex items-center">
             <Clock className="h-3 w-3 mr-1" />
-            Real-time
+            24h Trend
           </div>
         </div>
         <div className="flex items-center gap-3">

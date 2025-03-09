@@ -99,7 +99,7 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       return cachedData.data;
     }
     
-    console.log("Fetching real-time trending tokens from DexScreener");
+    console.log("Fetching 24h trending tokens from DexScreener");
     const response = await fetch('https://api.dexscreener.com/latest/dex/search?q=solana');
     
     if (!response.ok) {
@@ -114,26 +114,24 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       return [];
     }
     
-    const oneHourAgo = now - 60 * 60 * 1000; // 1 hour ago in milliseconds
-    
-    // Filter and sort pairs by activity in the last hour
+    // Filter and sort pairs by 24h volume
     const sortedPairs = [...data.pairs]
       .filter(pair => {
         // Only include Solana pairs
         if (pair.chainId !== 'solana') return false;
         
-        // Only include pairs with recent activity (with volume in the last hour)
-        if (!pair.volume?.h1 || pair.volume.h1 <= 0) return false;
+        // Only include pairs with significant 24h volume
+        if (!pair.volume?.h24 || pair.volume.h24 <= 0) return false;
         
         // Ensure there's price data
         if (!pair.priceUsd) return false;
         
         return true;
       })
-      .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
+      .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
       .slice(0, 20);
     
-    console.log(`Found ${sortedPairs.length} real-time trending tokens`);
+    console.log(`Found ${sortedPairs.length} trending tokens in the last 24h`);
     
     const tokens = sortedPairs.map(pair => {
       // Calculate minutes since this pair was updated
@@ -145,7 +143,7 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
         name: pair.baseToken?.name || 'Unknown',
         symbol: pair.baseToken?.symbol || '???',
         price: parseFloat(pair.priceUsd || '0'),
-        priceChange: pair.priceChange?.h1 || 0, // Use 1 hour price change
+        priceChange: pair.priceChange?.h24 || 0, // Use 24h price change
         timeRemaining: minutesAgo > 0 ? minutesAgo : 1, // Ensure at least 1 minute
         volume24h: pair.volume?.h24 || 0,
         marketCap: pair.fdv || 0,
@@ -159,10 +157,10 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       timestamp: now
     });
     
-    console.log("Real-time trending tokens retrieved:", tokens.length);
+    console.log("24h trending tokens retrieved:", tokens.length);
     return tokens;
   } catch (error) {
-    console.error("Error fetching real-time trending tokens:", error);
+    console.error("Error fetching 24h trending tokens:", error);
     return [];
   }
 };
