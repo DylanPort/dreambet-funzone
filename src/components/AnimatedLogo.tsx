@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 
 const AnimatedLogo = () => {
@@ -11,91 +11,25 @@ const AnimatedLogo = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        {/* Pump text */}
-        <motion.div
-          className="absolute top-0 left-1/2 transform -translate-x-1/2"
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ 
-            delay: 0.3, 
-            duration: 0.8, 
-            type: "spring",
-            stiffness: 100
-          }}
-        >
-          <motion.span 
-            className="text-5xl md:text-6xl lg:text-7xl font-bold text-[#33C3F0]"
-            animate={{ 
-              color: ["#33C3F0", "#0EA5E9", "#33C3F0"],
-              textShadow: [
-                "0 0 5px rgba(51, 195, 240, 0.3)",
-                "0 0 20px rgba(14, 165, 233, 0.6)",
-                "0 0 5px rgba(51, 195, 240, 0.3)"
-              ]
-            }}
-            transition={{ 
-              duration: 3,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          >
-            Pump
-          </motion.span>
-        </motion.div>
-        
-        {/* Bounty text */}
-        <motion.div
-          className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ 
-            delay: 0.6, 
-            duration: 0.8, 
-            type: "spring",
-            stiffness: 100
-          }}
-        >
-          <motion.span 
-            className="text-5xl md:text-6xl lg:text-7xl font-bold text-[#33C3F0]"
-            animate={{ 
-              color: ["#33C3F0", "#0EA5E9", "#33C3F0"],
-              textShadow: [
-                "0 0 5px rgba(51, 195, 240, 0.3)",
-                "0 0 20px rgba(14, 165, 233, 0.6)",
-                "0 0 5px rgba(51, 195, 240, 0.3)"
-              ]
-            }}
-            transition={{ 
-              duration: 3,
-              repeat: Infinity,
-              repeatType: "reverse",
-              delay: 0.5
-            }}
-          >
-            Bounty
-          </motion.span>
-        </motion.div>
-        
-        {/* The X line */}
-        <motion.div 
-          className="absolute top-1/2 left-1/2 w-[150px] md:w-[200px] h-[4px] bg-[#33C3F0] rounded-full"
-          style={{ originX: 0.5, originY: 0.5 }}
-          initial={{ opacity: 0, scale: 0, rotate: 0 }}
+        <motion.img
+          src="/lovable-uploads/cacd6344-a731-4fcf-8ae1-de6fc1aee605.png"
+          alt="Pump X Bounty Logo"
+          className="w-full h-full object-contain"
+          initial={{ opacity: 0, scale: 0.8 }}
           animate={{ 
             opacity: 1, 
-            scale: 1, 
-            rotate: 45,
-            boxShadow: [
-              "0 0 5px rgba(51, 195, 240, 0.5)",
-              "0 0 15px rgba(14, 165, 233, 0.8)",
-              "0 0 5px rgba(51, 195, 240, 0.5)"
+            scale: 1,
+            filter: [
+              "drop-shadow(0 0 5px rgba(51, 195, 240, 0.3))",
+              "drop-shadow(0 0 20px rgba(14, 165, 233, 0.6))",
+              "drop-shadow(0 0 5px rgba(51, 195, 240, 0.3))"
             ]
           }}
           transition={{ 
-            delay: 1.2, 
-            duration: 0.8,
-            boxShadow: {
-              duration: 2,
+            duration: 1.2,
+            delay: 0.3,
+            filter: {
+              duration: 3,
               repeat: Infinity,
               repeatType: "reverse"
             }
