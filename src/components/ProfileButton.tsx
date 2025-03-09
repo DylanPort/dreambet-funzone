@@ -12,9 +12,9 @@ const ProfileButton = () => {
       >
         <div className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden">
           <img 
-            src="/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png" 
+            src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" 
             alt="Profile" 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         </div>
         <span>Profile</span>

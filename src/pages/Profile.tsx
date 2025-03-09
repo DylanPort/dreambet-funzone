@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
-import { UserCircle, Clock, TrendingUp, TrendingDown, Settings, History, Wallet as WalletIcon, Activity, Filter, RefreshCw } from 'lucide-react';
+import { Clock, TrendingUp, TrendingDown, Settings, History, Wallet as WalletIcon, Activity, Filter, RefreshCw } from 'lucide-react';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
 import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile, UserBet, UserStats } from '@/services/userService';
@@ -66,7 +65,6 @@ const Profile = () => {
     loadUserData();
   }, [connected, publicKey]);
 
-  // Load active bets from Supabase and localStorage
   useEffect(() => {
     const loadActiveBets = async () => {
       setIsActiveBetsLoading(true);
@@ -79,7 +77,6 @@ const Profile = () => {
       try {
         const walletAddress = publicKey.toString();
         
-        // Fetch active bets from Supabase
         const { data: supabaseBets, error } = await supabase
           .from('bets')
           .select(`
@@ -103,11 +100,9 @@ const Profile = () => {
           return;
         }
         
-        // Also check localStorage for any pending bets
         const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
         let localBets: any[] = storedBets ? JSON.parse(storedBets) : [];
         
-        // Filter out expired local bets and only include ones from this user
         const now = Date.now();
         localBets = localBets.filter((bet: any) => 
           bet.expiresAt > now && 
@@ -115,13 +110,10 @@ const Profile = () => {
           bet.initiator === walletAddress
         );
         
-        // Map Supabase bets to our UserBet format
         const mappedSupabaseBets = supabaseBets.map(bet => {
-          // Calculate expiry time (created_at + duration in ms)
           const createdDate = new Date(bet.created_at);
           const expiryTime = new Date(createdDate.getTime() + (bet.duration * 60 * 60 * 1000));
           
-          // Map prediction values
           let prediction: 'moon' | 'die';
           if (bet.prediction_bettor1 === 'up' || bet.prediction_bettor1 === 'migrate') {
             prediction = 'moon';
@@ -143,7 +135,6 @@ const Profile = () => {
           } as UserBet;
         });
         
-        // Map local bets to our UserBet format
         const mappedLocalBets = localBets.map((bet: any) => {
           return {
             id: bet.id,
@@ -159,7 +150,6 @@ const Profile = () => {
           } as UserBet;
         });
         
-        // Combine both sources, avoiding duplicates
         const allActiveBets: UserBet[] = [...mappedSupabaseBets];
         for (const localBet of mappedLocalBets) {
           const exists = allActiveBets.some(existingBet => existingBet.id === localBet.id);
@@ -178,7 +168,6 @@ const Profile = () => {
     };
     
     loadActiveBets();
-    // Set up an interval to refresh active bets every 30 seconds
     const interval = setInterval(loadActiveBets, 30000);
     return () => clearInterval(interval);
   }, [connected, publicKey]);
@@ -229,7 +218,6 @@ const Profile = () => {
       const userStats = calculateUserStats(bettingHistory);
       setStats(userStats);
       
-      // The active bets will be refreshed by the useEffect
     }).catch(error => {
       console.error("Error refreshing data:", error);
       toast.error("Failed to refresh data");
@@ -238,7 +226,6 @@ const Profile = () => {
     });
   };
   
-  // Combined bets based on filter
   const filteredBets = betsFilter === 'all' 
     ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id))]
     : betsFilter === 'active'
@@ -252,7 +239,7 @@ const Profile = () => {
         <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center">
           <div className="glass-panel p-10 flex flex-col items-center">
             <div className="w-20 h-20 mb-6 bg-dream-foreground/10 rounded-full flex items-center justify-center">
-              <UserCircle className="w-12 h-12 text-dream-foreground/80" />
+              <img src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" alt="Profile" className="w-12 h-12" />
             </div>
             <h2 className="text-xl font-display font-bold mb-4">Connect Your Wallet</h2>
             <p className="text-dream-foreground/70 text-center mb-6">You need to connect your wallet to access your profile.</p>
@@ -284,7 +271,7 @@ const Profile = () => {
         <div className="glass-panel p-6 mb-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
-              <UserCircle className="w-12 h-12 text-dream-foreground/80" />
+              <img src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" alt="Profile" className="w-16 h-16" />
             </div>
             
             <div className="text-center md:text-left">
