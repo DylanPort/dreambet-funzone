@@ -484,8 +484,9 @@ const TokenDetail = () => {
                       <BetCard 
                         key={bet.id}
                         bet={bet}
-                        onAccept={() => handleAcceptBet(bet)}
-                        showToken={false}
+                        connected={connected}
+                        publicKeyString={publicKey ? publicKey.toString() : null}
+                        onAcceptBet={() => handleAcceptBet(bet)}
                       />
                     ))}
                   </div>
