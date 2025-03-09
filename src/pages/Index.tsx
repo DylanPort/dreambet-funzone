@@ -28,7 +28,7 @@ const Index = () => {
         name: rawToken.name || 'Unknown Token',
         symbol: rawToken.symbol || '',
         logo: '🪙',
-        currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / (rawToken.supply || 1000000000)).toFixed(6)) : 0,
+        currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
         change24h: 0,
       });
     }
