@@ -18,6 +18,8 @@ export interface UserBet {
   result: 'win' | 'loss' | 'pending';
   date: string;
   profit: number;
+  isActive?: boolean;
+  expiresAt?: number;
 }
 
 export interface UserStats {
