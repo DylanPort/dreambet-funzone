@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [prediction, setPrediction] = useState<BetPrediction | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, wallet } = useWallet();
   const { toast } = useToast();
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,12 +75,13 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         tokenSymbol,
         publicKey.toString(),
         amountValue,
-        prediction
+        prediction,
+        wallet
       );
       
       toast({
         title: "Bet created successfully!",
-        description: `Your ${amountValue} SOL bet that ${tokenSymbol} will ${prediction} is now live`,
+        description: `Your ${amountValue} SOL bet that ${tokenSymbol} will ${prediction} is now live on-chain`,
       });
       
       // Reset form
@@ -96,7 +98,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       console.error('Error creating bet:', error);
       toast({
         title: "Failed to create bet",
-        description: "Something went wrong. Please try again.",
+        description: "Something went wrong with the blockchain transaction. Please try again.",
         variant: "destructive",
       });
     } finally {

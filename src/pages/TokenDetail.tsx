@@ -89,7 +89,7 @@ const TokenDetail = () => {
   const [showCreateBet, setShowCreateBet] = useState(false);
   const { toast } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, wallet } = useWallet();
   const [tokenMetrics, setTokenMetrics] = useState({
     marketCap: null,
     volume24h: null,
@@ -445,7 +445,7 @@ const TokenDetail = () => {
     }
     
     try {
-      await acceptBet(bet.id, publicKey.toString());
+      await acceptBet(bet.id, publicKey.toString(), wallet, bet.onChainBetId);
       toast({
         title: "Bet accepted!",
         description: `You've successfully accepted the bet on ${bet.tokenSymbol}`,
@@ -455,7 +455,7 @@ const TokenDetail = () => {
       console.error("Error accepting bet:", error);
       toast({
         title: "Failed to accept bet",
-        description: "There was an error accepting the bet",
+        description: "There was an error processing the blockchain transaction",
         variant: "destructive",
       });
     }
@@ -615,7 +615,7 @@ const TokenDetail = () => {
                         bet={bet}
                         connected={connected}
                         publicKeyString={publicKey ? publicKey.toString() : null}
-                        onAcceptBet={() => handleAcceptBet(bet)}
+                        onAcceptBet={handleAcceptBet}
                       />
                     ))}
                   </div>

@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer } from '
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 interface BetCardProps {
   bet: Bet;
@@ -21,11 +22,20 @@ const BetCard: React.FC<BetCardProps> = ({
   onBetAccepted
 }) => {
   const isExpiringSoon = bet.expiresAt - new Date().getTime() < 3600000; // less than 1 hour
+  const { wallet } = useWallet();
   
-  const handleAcceptBet = (bet: Bet) => {
-    onAcceptBet(bet);
-    if (onBetAccepted) {
-      onBetAccepted();
+  const handleAcceptBet = async (bet: Bet) => {
+    try {
+      await onAcceptBet({
+        ...bet,
+        wallet: wallet // Pass the wallet instance to the accept function
+      });
+      
+      if (onBetAccepted) {
+        onBetAccepted();
+      }
+    } catch (error) {
+      console.error("Error accepting bet:", error);
     }
   };
   

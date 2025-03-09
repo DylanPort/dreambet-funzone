@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { fetchOpenBets, acceptBet } from '@/api/mockData';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -13,7 +14,8 @@ const OpenBetsList = () => {
   const [loading, setLoading] = useState(true);
   const {
     connected,
-    publicKey
+    publicKey,
+    wallet
   } = useWallet();
   const {
     toast
@@ -56,7 +58,7 @@ const OpenBetsList = () => {
     }
     try {
       setLoading(true);
-      await acceptBet(bet.id, publicKey.toString());
+      await acceptBet(bet.id, publicKey.toString(), wallet, bet.onChainBetId);
       toast({
         title: "Bet accepted!",
         description: `You've accepted a ${bet.amount} SOL bet on ${bet.tokenName}`
@@ -69,7 +71,7 @@ const OpenBetsList = () => {
       console.error('Error accepting bet:', error);
       toast({
         title: "Failed to accept bet",
-        description: "Something went wrong. Please try again.",
+        description: "Something went wrong with the blockchain transaction. Please try again.",
         variant: "destructive"
       });
     } finally {

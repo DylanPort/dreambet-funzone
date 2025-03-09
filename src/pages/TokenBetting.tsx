@@ -75,10 +75,8 @@ const TokenBetting = () => {
 
   useEffect(() => {
     if (id) {
-      // Start polling DexScreener for real-time data
       const stopPolling = startDexScreenerPolling(id, (data) => {
         if (data) {
-          // Update token metrics
           setTokenMetrics({
             marketCap: data.marketCap,
             volume24h: data.volume24h,
@@ -86,7 +84,6 @@ const TokenBetting = () => {
             holders: tokenMetrics.holders
           });
           
-          // Update token price data
           if (token) {
             setToken({
               ...token,
@@ -95,10 +92,9 @@ const TokenBetting = () => {
             });
           }
         }
-      }, 15000); // Poll every 15 seconds
+      }, 15000);
       
       return () => {
-        // Clean up polling when component unmounts
         stopPolling();
       };
     }
@@ -108,6 +104,11 @@ const TokenBetting = () => {
     if (id) {
       const tokenBets = await fetchBetsByToken(id);
       setBets(tokenBets);
+      
+      toast({
+        title: "On-chain bet created",
+        description: "Your bet has been successfully recorded on the Solana blockchain",
+      });
     }
   };
 
@@ -387,6 +388,13 @@ const TokenBetting = () => {
                           </div>
                         )}
                       </div>
+                      
+                      {bet.onChainBetId && (
+                        <div className="mt-2 text-xs bg-dream-accent2/10 p-1 rounded text-dream-accent2 inline-flex items-center">
+                          <span className="w-2 h-2 bg-dream-accent2 rounded-full animate-pulse mr-1"></span>
+                          On-chain Bet #{bet.onChainBetId}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
