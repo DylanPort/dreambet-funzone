@@ -153,45 +153,10 @@ const WalletConnectButton = () => {
     }
   };
 
-  // Get effective public key string for display
-  const getDisplayAddress = () => {
-    if (publicKey) {
-      return publicKey.toString();
-    } else if (wallet?.adapter?.publicKey) {
-      return wallet.adapter.publicKey.toString();
-    }
-    return null;
-  };
-
-  const displayAddress = getDisplayAddress();
-
   return (
     <div className="flex items-center">
-      {connected && displayAddress ? (
+      {connected ? (
         <div className="flex items-center gap-2">
-          <div className={`flex items-center text-sm ${
-            isFullyConnected ? 'text-green-400' : 
-            verifying ? 'text-yellow-400' : 'text-red-400'
-          }`}>
-            {isFullyConnected ? (
-              <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
-            ) : verifying ? (
-              <span className="w-2 h-2 bg-yellow-400 rounded-full mr-1 animate-pulse"></span>
-            ) : (
-              <span className="w-2 h-2 bg-red-400 rounded-full mr-1"></span>
-            )}
-            {displayAddress.slice(0, 4)}...{displayAddress.slice(-4)}
-            
-            {!isFullyConnected && !verifying && (
-              <button 
-                onClick={handleForceReconnect}
-                className="ml-1 text-dream-accent2"
-                title="Reconnect wallet"
-              >
-                <RefreshCw size={12} className="animate-spin-slow" />
-              </button>
-            )}
-          </div>
           <WalletMultiButton className="!bg-dream-accent1 !hover:bg-dream-accent1/80" />
         </div>
       ) : connecting ? (

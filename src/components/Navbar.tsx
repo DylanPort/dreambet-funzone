@@ -61,7 +61,7 @@ const Navbar = () => {
             </Link>
             
             {balance !== null && (
-              <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-dream-accent1">
+              <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-green-400">
                 <Wallet size={16} />
                 <span>{balance.toFixed(2)} SOL</span>
               </div>
@@ -102,7 +102,7 @@ const Navbar = () => {
             </Link>
             
             {balance !== null && (
-              <div className="py-2 flex items-center gap-2 text-dream-accent1">
+              <div className="py-2 flex items-center gap-2 text-green-400">
                 <Wallet size={18} />
                 <span>{balance.toFixed(2)} SOL</span>
               </div>
