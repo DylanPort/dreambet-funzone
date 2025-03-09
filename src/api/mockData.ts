@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -94,15 +95,41 @@ export const createBet = async (
     console.log(`Creating bet with tokenId=${tokenId}, amount=${amount}, prediction=${prediction}, duration=${duration}`);
     console.log(`Using Devnet for transaction`);
     
-    // Enhanced wallet validation
-    if (!wallet || !wallet.publicKey) {
+    // Improved, more thorough wallet validation
+    if (!wallet) {
+      console.error("Wallet object is null or undefined");
+      throw new Error("Wallet not connected. Please connect your wallet and try again.");
+    }
+    
+    if (!wallet.publicKey) {
       console.error("Wallet not properly connected - missing publicKey");
       throw new Error("Wallet not properly connected. Please reconnect your wallet.");
     }
     
+    // Check that the wallet adapter is also properly connected
+    if (!wallet.adapter || !wallet.adapter.publicKey) {
+      console.error("Wallet adapter not properly initialized");
+      throw new Error("Wallet adapter not ready. Please refresh the page and try again.");
+    }
+    
+    // Check that public keys match - critical for proper wallet operation
+    if (wallet.adapter.publicKey.toString() !== wallet.publicKey.toString()) {
+      console.error("Public key mismatch between wallet adapter and wallet connection");
+      console.error(`Adapter: ${wallet.adapter.publicKey.toString()}`);
+      console.error(`Wallet: ${wallet.publicKey.toString()}`);
+      throw new Error("Wallet connection issue detected. Please disconnect and reconnect your wallet.");
+    }
+    
+    // Verify wallet has needed signing capabilities
     if (!wallet.signTransaction || !wallet.signAllTransactions) {
       console.error("Wallet missing required signing capabilities");
       throw new Error("Your wallet doesn't support the required signing methods.");
+    }
+    
+    // Extra validation check for adapter connection status
+    if (!wallet.adapter.connected) {
+      console.error("Wallet adapter shows as disconnected");
+      throw new Error("Wallet appears disconnected. Please reconnect your wallet and try again.");
     }
     
     // Check that publicKey can be accessed as a safety check

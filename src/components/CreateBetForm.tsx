@@ -35,54 +35,92 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [isWalletReady, setIsWalletReady] = useState(false);
   const [walletCheckingInProgress, setWalletCheckingInProgress] = useState(false);
   const [checkAttempts, setCheckAttempts] = useState(0);
+  const [lastError, setLastError] = useState<string | null>(null);
   
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { toast } = useToast();
+
+  // Listen for custom walletReady event from WalletConnectButton
+  useEffect(() => {
+    const handleWalletReady = (event: CustomEvent) => {
+      console.log("Received walletReady event", event.detail);
+      if (event.detail?.publicKey && publicKey?.toString() === event.detail.publicKey) {
+        console.log("✅ Setting wallet as ready from external event");
+        setIsWalletReady(true);
+      }
+    };
+
+    window.addEventListener('walletReady', handleWalletReady as EventListener);
+    return () => {
+      window.removeEventListener('walletReady', handleWalletReady as EventListener);
+    };
+  }, [publicKey]);
 
   // Check if wallet is actually ready for transactions with improved reliability
   const verifyWalletConnection = useCallback(async () => {
     if (connected && publicKey && wallet) {
       try {
         setWalletCheckingInProgress(true);
+        setLastError(null);
         console.log("Verifying wallet connection in CreateBetForm...");
         
-        // Add a short delay to ensure adapter is fully initialized
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Add a longer delay to ensure adapter is fully initialized
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
         // Log wallet state for debugging
         console.log("Wallet state:", {
           connected,
           publicKey: publicKey?.toString(),
           walletAdapter: wallet?.adapter?.name,
-          adapterPublicKey: wallet?.adapter?.publicKey?.toString()
+          adapterPublicKey: wallet?.adapter?.publicKey?.toString(),
+          adapterConnected: wallet?.adapter?.connected
         });
         
-        // Simple check - if publicKeys match, wallet is considered connected
-        if (wallet.adapter.publicKey && wallet.adapter.publicKey.equals(publicKey)) {
+        // Stronger check - verify adapter is connected and publicKeys match
+        if (wallet.adapter.publicKey && 
+            wallet.adapter.publicKey.toString() === publicKey.toString() &&
+            wallet.adapter.connected) {
+            
           console.log("✅ Wallet successfully verified - Ready for transactions");
           setIsWalletReady(true);
           return true;
         } else {
-          console.warn("⚠️ Wallet adapter publicKey doesn't match connected publicKey");
+          // Detailed logging of what's wrong
+          console.warn("⚠️ Wallet not fully ready");
+          
+          if (!wallet.adapter.publicKey) {
+            console.warn("❌ Adapter publicKey is missing");
+            setLastError("Wallet adapter publicKey is missing");
+          } else if (wallet.adapter.publicKey.toString() !== publicKey.toString()) {
+            console.warn("❌ PublicKey mismatch between adapter and connection");
+            console.warn(`Adapter: ${wallet.adapter.publicKey.toString()}`);
+            console.warn(`Connection: ${publicKey.toString()}`);
+            setLastError("PublicKey mismatch between adapter and wallet");
+          } else if (!wallet.adapter.connected) {
+            console.warn("❌ Adapter shows as disconnected");
+            setLastError("Wallet adapter shows as disconnected");
+          }
+          
           setIsWalletReady(false);
           return false;
         }
       } catch (error) {
         console.error("Error verifying wallet:", error);
         setIsWalletReady(false);
+        setLastError("Error checking wallet status");
         return false;
       } finally {
         setWalletCheckingInProgress(false);
       }
     } else {
       // Log what's missing for debugging
-      console.log("Wallet not ready:", {
+      console.log("Wallet not ready, missing basics:", {
         connected,
         hasPublicKey: !!publicKey,
-        hasWallet: !!wallet,
-        hasWalletPublicKey: !!wallet?.adapter?.publicKey
+        hasWallet: !!wallet
       });
       setIsWalletReady(false);
+      setLastError(connected ? "Wallet missing required properties" : "Wallet not connected");
       return false;
     }
   }, [connected, publicKey, wallet]);
@@ -107,8 +145,20 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       }
     }, 2000);
     
-    return () => clearTimeout(initialCheckTimeout);
-  }, []);
+    // Add additional verification with extra-long delay
+    // This helps with slow wallet adapters that take time to fully initialize
+    const secondaryCheckTimeout = setTimeout(() => {
+      if (connected && publicKey && !isWalletReady) {
+        console.log("Performing secondary wallet verification check with longer delay");
+        verifyWalletConnection();
+      }
+    }, 5000);
+    
+    return () => {
+      clearTimeout(initialCheckTimeout);
+      clearTimeout(secondaryCheckTimeout);
+    };
+  }, [connected, publicKey, isWalletReady, verifyWalletConnection]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
@@ -154,7 +204,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     if (!isWalletVerified) {
       toast({
         title: "Wallet not connected properly",
-        description: "Please ensure your wallet is fully connected and try again",
+        description: lastError || "Please ensure your wallet is fully connected and try again",
         variant: "destructive",
       });
       return;
@@ -183,20 +233,20 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       setIsSubmitting(true);
       setTransactionStatus('Preparing transaction...');
       
-      // Log for debugging
+      // More detailed logging for debugging
       console.log(`Creating bet with: 
         token: ${tokenId} (${tokenName})
         wallet: ${publicKey?.toString()}
         wallet connected: ${connected}
         wallet adapter ready: ${wallet?.adapter?.publicKey ? 'Yes' : 'No'}
+        wallet adapter connected: ${wallet?.adapter?.connected ? 'Yes' : 'No'}
         wallet verified: ${isWalletReady ? 'Yes' : 'No'}
         amount: ${parseFloat(amount)} SOL
         prediction: ${prediction}
         duration: ${duration} minutes
-        RPC endpoint: ${(wallet?.adapter as any)?.connection?.rpcEndpoint || 'Not available'}
       `);
       
-      setTransactionStatus('Sending transaction to Solana...');
+      setTransactionStatus('Sending transaction to Solana Devnet...');
       
       if (!wallet) {
         throw new Error("Wallet instance is not available");
@@ -268,6 +318,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             <p className="text-yellow-400 flex items-center mb-2">
               <span className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
               Wallet appears connected but not ready for transactions
+              {lastError && <span className="ml-1 opacity-70">({lastError})</span>}
             </p>
             <div className="flex gap-2">
               <Button 
@@ -420,6 +471,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
               <p className="text-red-400 flex items-center mb-2">
                 <span className="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
                 Wallet not properly connected
+                {lastError && <span className="ml-1 opacity-70">({lastError})</span>}
               </p>
               <div className="flex gap-2">
                 <Button 

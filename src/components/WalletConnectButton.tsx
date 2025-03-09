@@ -19,16 +19,32 @@ const WalletConnectButton = () => {
         try {
           setVerifying(true);
           console.log("Verifying wallet connection in WalletConnectButton");
+          console.log("Wallet state:", {
+            connected,
+            publicKey: publicKey?.toString(),
+            walletAdapter: wallet?.adapter?.name,
+            adapterPublicKey: wallet?.adapter?.publicKey?.toString()
+          });
           
           // Allow more time for wallet adapter to fully initialize
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
-          // Simple check - if the wallet adapter has a matching publicKey, consider it fully connected
-          if (wallet.adapter.publicKey && wallet.adapter.publicKey.equals(publicKey)) {
-            console.log("Wallet verified with publicKey check - FULLY CONNECTED");
+          // Stronger connection check
+          if (wallet.adapter.publicKey && 
+              wallet.adapter.publicKey.toString() === publicKey.toString() && 
+              wallet.adapter.connected) {
+            console.log("✅ Wallet FULLY CONNECTED with stringified publicKey match");
             setIsFullyConnected(true);
+            
+            // Notify the application that wallet is ready
+            window.dispatchEvent(new CustomEvent('walletReady', { 
+              detail: { publicKey: publicKey.toString() } 
+            }));
           } else {
-            console.warn("Wallet connection issue: publicKey mismatch");
+            console.warn("❌ Wallet connection issue: publicKey mismatch or adapter not connected");
+            console.warn("Adapter publicKey:", wallet.adapter.publicKey?.toString());
+            console.warn("Connected publicKey:", publicKey.toString());
+            console.warn("Adapter connected:", wallet.adapter.connected);
             setIsFullyConnected(false);
           }
         } catch (error) {
@@ -47,10 +63,32 @@ const WalletConnectButton = () => {
     // Add a longer delay to allow wallet adapter to fully initialize
     const timeoutId = setTimeout(() => {
       verifyConnection();
-    }, 800);
+    }, 1200);
 
     return () => clearTimeout(timeoutId);
   }, [connected, publicKey, wallet]);
+
+  // Extra check after some time to ensure wallet is ready
+  useEffect(() => {
+    if (connected && publicKey && wallet && !isFullyConnected) {
+      const secondCheck = setTimeout(() => {
+        console.log("Running secondary wallet verification check");
+        if (wallet.adapter.publicKey && 
+            wallet.adapter.publicKey.toString() === publicKey.toString() && 
+            wallet.adapter.connected) {
+          console.log("✅ Secondary check: Wallet NOW fully connected");
+          setIsFullyConnected(true);
+          
+          // Notify the application that wallet is ready
+          window.dispatchEvent(new CustomEvent('walletReady', { 
+            detail: { publicKey: publicKey.toString() } 
+          }));
+        }
+      }, 3000);
+      
+      return () => clearTimeout(secondCheck);
+    }
+  }, [connected, publicKey, wallet, isFullyConnected]);
 
   const handleForceReconnect = async () => {
     try {
