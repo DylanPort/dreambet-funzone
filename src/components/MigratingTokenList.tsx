@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap, Sparkles, ExternalLink, Rocket, ShieldAlert } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap, Sparkles, ExternalLink, Rocket, ShieldAlert, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
@@ -357,25 +357,21 @@ const MigratingTokenList = () => {
               </div>
               
               <div className="flex items-center mt-4 p-3 bg-gradient-to-r from-dream-background/40 to-dream-background/20 backdrop-blur-sm rounded-md border border-white/5 group-hover:border-white/10 transition-all">
-                <div className="flex-1">
-                  <div className="text-lg font-bold group-hover:text-dream-accent2 transition-colors">${formatPrice(token.currentPrice)}</div>
-                  <div className={`text-sm flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {token.change24h >= 0 ? (
-                      <ArrowUpRight className="w-3 h-3 mr-1" />
-                    ) : (
-                      <ArrowDownRight className="w-3 h-3 mr-1" />
-                    )}
-                    {Math.abs(token.change24h || 0).toFixed(1)}%
-                  </div>
-                </div>
-                
-                <div className="flex gap-3 items-center justify-end">
-                  <div className="hover:scale-110 transition-transform">
-                    <Rocket className="w-4 h-4 text-green-400" />
-                  </div>
-                  <div className="hover:scale-110 transition-transform">
-                    <ShieldAlert className="w-4 h-4 text-red-400" />
-                  </div>
+                <div className="grid grid-cols-2 gap-3 w-full">
+                  <button 
+                    className="btn-moon py-1.5 flex items-center justify-center gap-1.5"
+                    disabled={token.isPlaceholder}
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                    <span>Moon 🚀</span>
+                  </button>
+                  <button 
+                    className="btn-die py-1.5 flex items-center justify-center gap-1.5"
+                    disabled={token.isPlaceholder}
+                  >
+                    <ThumbsDown className="w-3.5 h-3.5" />
+                    <span>Die 💀</span>
+                  </button>
                 </div>
               </div>
               
