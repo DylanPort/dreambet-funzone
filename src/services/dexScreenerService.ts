@@ -81,23 +81,39 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
 let activePollingTokens = new Set<string>();
 let pollingIntervalId: number | null = null;
 
+// Store callbacks for each token
+const tokenCallbacks = new Map<string, Function>();
+
+// Add separate callback maps for specific metrics
+const marketCapCallbacks = new Map<string, Function>();
+const volumeCallbacks = new Map<string, Function>();
+
+// Define the unified polling function that handles all callback types
 const pollAllActiveTokens = async () => {
   const tokens = Array.from(activePollingTokens);
   for (const token of tokens) {
     const data = await fetchDexScreenerData(token);
+    
+    // Call the main callback
     const callbackFn = tokenCallbacks.get(token);
     if (data && callbackFn) {
       callbackFn(data);
     }
+    
+    // Call specific metric callbacks
+    if (data) {
+      const marketCapFn = marketCapCallbacks.get(token);
+      if (marketCapFn) {
+        marketCapFn(data.marketCap);
+      }
+      
+      const volumeFn = volumeCallbacks.get(token);
+      if (volumeFn) {
+        volumeFn(data.volume24h);
+      }
+    }
   }
 };
-
-// Store callbacks for each token
-const tokenCallbacks = new Map<string, Function>();
-
-// New: Add separate callback maps for specific metrics
-const marketCapCallbacks = new Map<string, Function>();
-const volumeCallbacks = new Map<string, Function>();
 
 export const startDexScreenerPolling = (
   tokenAddress: string, 
@@ -135,7 +151,7 @@ export const startDexScreenerPolling = (
   };
 };
 
-// New function to only poll for market cap updates
+// Function to only poll for market cap updates
 export const subscribeToMarketCap = (
   tokenAddress: string,
   onMarketCapUpdate: (marketCap: number) => void
@@ -164,7 +180,7 @@ export const subscribeToMarketCap = (
   };
 };
 
-// New function to only poll for volume updates
+// Function to only poll for volume updates
 export const subscribeToVolume = (
   tokenAddress: string,
   onVolumeUpdate: (volume24h: number) => void
@@ -191,32 +207,4 @@ export const subscribeToVolume = (
   return () => {
     volumeCallbacks.delete(tokenAddress);
   };
-};
-
-// Modify the poll function to also call specific metric callbacks
-const originalPollAllActiveTokens = pollAllActiveTokens;
-const pollAllActiveTokens = async () => {
-  const tokens = Array.from(activePollingTokens);
-  for (const token of tokens) {
-    const data = await fetchDexScreenerData(token);
-    
-    // Call the main callback
-    const callbackFn = tokenCallbacks.get(token);
-    if (data && callbackFn) {
-      callbackFn(data);
-    }
-    
-    // Call specific metric callbacks
-    if (data) {
-      const marketCapFn = marketCapCallbacks.get(token);
-      if (marketCapFn) {
-        marketCapFn(data.marketCap);
-      }
-      
-      const volumeFn = volumeCallbacks.get(token);
-      if (volumeFn) {
-        volumeFn(data.volume24h);
-      }
-    }
-  }
 };
