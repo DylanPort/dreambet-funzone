@@ -1,13 +1,75 @@
 
-import React, { useMemo } from 'react';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { PhantomWalletAdapter, SolflareWalletAdapter, TorusWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { 
+  PhantomWalletAdapter, 
+  SolflareWalletAdapter, 
+  TorusWalletAdapter,
+  BackpackWalletAdapter,
+  GlowWalletAdapter,
+  CoinbaseWalletAdapter,
+  SlopeWalletAdapter,
+  LedgerWalletAdapter
+} from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { clusterApiUrl } from '@solana/web3.js';
+import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
+import { useToast } from '@/hooks/use-toast';
 
 // Import the CSS for the wallet adapter
 import '@solana/wallet-adapter-react-ui/styles.css';
+
+// Create a wrapper to monitor wallet connection
+const WalletConnectionMonitor = ({ children }: { children: React.ReactNode }) => {
+  const { connected, publicKey, wallet, connecting } = useWallet();
+  const { toast } = useToast();
+  const [connectionChecked, setConnectionChecked] = useState(false);
+
+  useEffect(() => {
+    const verifyWalletConnection = async () => {
+      if (connected && publicKey && wallet && wallet.adapter.publicKey) {
+        try {
+          // Try to use the wallet to verify it's really connected
+          const signature = await wallet.adapter.signMessage?.(
+            new TextEncoder().encode('Connection verification')
+          );
+          
+          if (signature) {
+            console.log("Wallet successfully verified with signature");
+            if (!connectionChecked) {
+              toast({
+                title: "Wallet Connected",
+                description: `Connected to ${publicKey.toString().slice(0, 4)}...${publicKey.toString().slice(-4)}`,
+              });
+              setConnectionChecked(true);
+            }
+          } else {
+            console.warn("Wallet appears connected but couldn't sign message");
+            if (connectionChecked) {
+              setConnectionChecked(false);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to verify wallet connection:", error);
+          if (connectionChecked) {
+            setConnectionChecked(false);
+            toast({
+              title: "Wallet Connection Issue",
+              description: "Please disconnect and reconnect your wallet",
+              variant: "destructive",
+            });
+          }
+        }
+      } else if (!connected && connectionChecked) {
+        setConnectionChecked(false);
+      }
+    };
+
+    verifyWalletConnection();
+  }, [connected, publicKey, wallet, connecting, connectionChecked, toast]);
+
+  return <>{children}</>;
+};
 
 const SolanaWalletProvider = ({ children }: { children: React.ReactNode }) => {
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
@@ -26,6 +88,11 @@ const SolanaWalletProvider = ({ children }: { children: React.ReactNode }) => {
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
       new TorusWalletAdapter(),
+      new BackpackWalletAdapter(),
+      new GlowWalletAdapter(),
+      new CoinbaseWalletAdapter(),
+      new SlopeWalletAdapter(),
+      new LedgerWalletAdapter(),
     ],
     [network]
   );
@@ -33,7 +100,11 @@ const SolanaWalletProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <ConnectionProvider endpoint={endpoint} config={{ commitment: 'confirmed' }}>
       <WalletProvider wallets={wallets} autoConnect={true}>
-        <WalletModalProvider>{children}</WalletModalProvider>
+        <WalletModalProvider>
+          <WalletConnectionMonitor>
+            {children}
+          </WalletConnectionMonitor>
+        </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
   );

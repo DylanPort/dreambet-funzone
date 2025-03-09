@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown, Clock } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, RefreshCw } from 'lucide-react';
 import { createBet } from '@/api/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { BetPrediction } from '@/types/bet';
@@ -33,22 +33,73 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [duration, setDuration] = useState<number>(30); // Default to 30 minutes
   const [transactionStatus, setTransactionStatus] = useState<string>('');
   const [isWalletReady, setIsWalletReady] = useState(false);
+  const [walletCheckingInProgress, setWalletCheckingInProgress] = useState(false);
+  const [walletRetryCount, setWalletRetryCount] = useState(0);
   
-  const { connected, publicKey, wallet, connecting } = useWallet();
+  const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { toast } = useToast();
 
   // Check if wallet is actually ready for transactions
-  useEffect(() => {
-    const checkWalletReady = async () => {
-      if (connected && publicKey && wallet && wallet.adapter.publicKey) {
-        setIsWalletReady(true);
-      } else {
+  const verifyWalletConnection = useCallback(async () => {
+    if (connected && publicKey && wallet && wallet.adapter.publicKey) {
+      try {
+        setWalletCheckingInProgress(true);
+        console.log("Verifying wallet connection...");
+        
+        // Try to use the wallet adapter to verify it's really connected
+        if (wallet.adapter.signMessage) {
+          try {
+            const message = new TextEncoder().encode('Connection Check');
+            const signature = await wallet.adapter.signMessage(message);
+            
+            if (signature) {
+              console.log("Wallet successfully verified with signature");
+              setIsWalletReady(true);
+              setWalletRetryCount(0);
+              return true;
+            } else {
+              console.warn("Wallet couldn't sign verification message");
+              setIsWalletReady(false);
+              return false;
+            }
+          } catch (err) {
+            console.error("Error during wallet signature verification:", err);
+            setIsWalletReady(false);
+            return false;
+          }
+        } else {
+          // If the wallet doesn't support signMessage
+          console.warn("This wallet doesn't support signMessage for verification, checking publicKey");
+          
+          // Check if the publicKey is consistent
+          if (wallet.adapter.publicKey && wallet.adapter.publicKey.equals(publicKey)) {
+            console.log("Wallet verified via publicKey check");
+            setIsWalletReady(true);
+            setWalletRetryCount(0);
+            return true;
+          } else {
+            console.warn("Wallet publicKey mismatch");
+            setIsWalletReady(false);
+            return false;
+          }
+        }
+      } catch (error) {
+        console.error("Error verifying wallet:", error);
         setIsWalletReady(false);
+        return false;
+      } finally {
+        setWalletCheckingInProgress(false);
       }
-    };
-    
-    checkWalletReady();
+    } else {
+      console.log("Wallet not connected or missing required properties");
+      setIsWalletReady(false);
+      return false;
+    }
   }, [connected, publicKey, wallet]);
+  
+  useEffect(() => {
+    verifyWalletConnection();
+  }, [verifyWalletConnection, connected, publicKey, wallet, walletRetryCount]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
@@ -59,8 +110,29 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     setDuration(value[0]);
   };
 
+  const handleRetryWalletConnection = async () => {
+    try {
+      if (disconnect) {
+        await disconnect();
+        toast({
+          title: "Reconnect wallet",
+          description: "Please reconnect your wallet to continue",
+        });
+      }
+    } catch (error) {
+      console.error("Error disconnecting wallet:", error);
+    }
+  };
+
+  const handleCheckWalletAgain = () => {
+    setWalletRetryCount(prev => prev + 1);
+  };
+
   const handleCreateBet = async () => {
-    if (!isWalletReady) {
+    // Verify wallet connection one more time before proceeding
+    const isWalletVerified = await verifyWalletConnection();
+    
+    if (!isWalletVerified) {
       toast({
         title: "Wallet not connected properly",
         description: "Please ensure your wallet is fully connected and try again",
@@ -98,6 +170,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         wallet: ${publicKey?.toString()}
         wallet connected: ${connected}
         wallet adapter ready: ${wallet?.adapter?.publicKey ? 'Yes' : 'No'}
+        wallet verified: ${isWalletReady ? 'Yes' : 'No'}
         amount: ${amountValue} SOL
         prediction: ${prediction}
         duration: ${duration} minutes
@@ -250,7 +323,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       <div className="flex gap-3">
         <Button
           onClick={handleCreateBet}
-          disabled={!isWalletReady || isSubmitting || !prediction || !amount}
+          disabled={!isWalletReady || isSubmitting || !prediction || !amount || walletCheckingInProgress}
           className="flex-1 bg-gradient-to-r from-dream-accent1 to-dream-accent3"
         >
           {isSubmitting ? (
@@ -275,13 +348,45 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       </div>
       
       {!isWalletReady && (
-        <div className="text-center text-sm">
+        <div className="flex flex-col items-center text-sm p-3 bg-dream-surface/30 rounded-md">
           {connecting ? (
-            <p className="text-yellow-400">Connecting wallet...</p>
+            <p className="text-yellow-400 flex items-center">
+              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse mr-2"></span>
+              Connecting wallet...
+            </p>
           ) : !connected ? (
             <p className="text-dream-foreground/70">Connect your wallet to create bets</p>
+          ) : walletCheckingInProgress ? (
+            <p className="text-yellow-400 flex items-center">
+              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse mr-2"></span>
+              Verifying wallet connection...
+            </p>
           ) : (
-            <p className="text-yellow-400">Waiting for wallet to be ready...</p>
+            <>
+              <p className="text-red-400 flex items-center mb-2">
+                <span className="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
+                Wallet not properly connected
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleRetryWalletConnection}
+                  className="text-xs"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Reconnect Wallet
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={handleCheckWalletAgain}
+                  className="text-xs"
+                >
+                  Check Again
+                </Button>
+              </div>
+            </>
           )}
         </div>
       )}

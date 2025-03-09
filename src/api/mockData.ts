@@ -94,9 +94,30 @@ export const createBet = async (
   try {
     console.log(`Creating bet with tokenId=${tokenId}, amount=${amount}, prediction=${prediction}, duration=${duration}`);
     
-    // Validate wallet connection
+    // Enhanced wallet validation
     if (!wallet || !wallet.publicKey) {
+      console.error("Wallet not properly connected - missing publicKey");
       throw new Error("Wallet not properly connected. Please reconnect your wallet.");
+    }
+    
+    if (!wallet.signTransaction || !wallet.signAllTransactions) {
+      console.error("Wallet missing required signing capabilities");
+      throw new Error("Your wallet doesn't support the required signing methods.");
+    }
+    
+    // Verify wallet readiness with a small check
+    try {
+      if (wallet.adapter && wallet.adapter.signMessage) {
+        const testMsg = new TextEncoder().encode('Test before bet creation');
+        const sig = await wallet.adapter.signMessage(testMsg);
+        if (!sig) {
+          throw new Error("Failed to get test signature from wallet");
+        }
+        console.log("Wallet signature check passed before bet creation");
+      }
+    } catch (walletError) {
+      console.error("Wallet verification failed before creating bet:", walletError);
+      throw new Error("Wallet connection verification failed. Please reconnect your wallet and try again.");
     }
     
     // Create bet on Solana blockchain first
@@ -114,7 +135,6 @@ export const createBet = async (
     console.log(`Solana bet created with ID: ${betId}`);
     
     // Then create in Supabase for our frontend
-    // Notice: createSupabaseBet expects 4 arguments, but we were passing 5
     const bet = await createSupabaseBet(
       tokenId, 
       prediction, 
@@ -132,6 +152,18 @@ export const createBet = async (
     };
   } catch (error: any) {
     console.error('Error creating bet:', error);
+    
+    // Enhanced error reporting
+    if (error.name === 'WalletSignTransactionError') {
+      throw new Error("Transaction signing failed. Please check your wallet connection.");
+    } else if (error.name === 'WalletNotConnectedError') {
+      throw new Error("Wallet not connected. Please reconnect your wallet.");
+    } else if (error.message?.includes('User rejected')) {
+      throw new Error("Transaction rejected. Please approve the transaction in your wallet.");
+    } else if (error.message?.includes('Blockhash not found')) {
+      throw new Error("Network error: Blockhash not found. Please try again.");
+    }
+    
     throw error;
   }
 };
@@ -144,9 +176,15 @@ export const acceptBet = async (
   try {
     console.log(`Accepting bet: ${bet.id}, onChainBetId: ${bet.onChainBetId}`);
     
-    // Validate wallet connection
+    // Enhanced wallet validation
     if (!wallet || !wallet.publicKey) {
+      console.error("Wallet not properly connected - missing publicKey");
       throw new Error("Wallet not properly connected. Please reconnect your wallet.");
+    }
+    
+    if (!wallet.signTransaction || !wallet.signAllTransactions) {
+      console.error("Wallet missing required signing capabilities");
+      throw new Error("Your wallet doesn't support the required signing methods.");
     }
     
     // Accept on Solana blockchain first
