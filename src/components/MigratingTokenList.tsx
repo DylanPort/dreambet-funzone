@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
@@ -290,7 +291,12 @@ const MigratingTokenList = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-display font-bold text-dream-foreground relative">
+        <h2 className="text-2xl font-display font-bold text-dream-foreground relative flex items-center gap-2">
+          <img 
+            src="/lovable-uploads/24e94b9d-6b95-4cee-9dbc-c78f440e3f68.png" 
+            alt="Pill Logo" 
+            className="w-8 h-8"
+          />
           <span className="relative z-10">Top 20 Migrating Tokens</span>
           <span className="absolute -left-2 bottom-0 w-[120%] h-2 bg-gradient-to-r from-dream-accent1 to-transparent opacity-30"></span>
         </h2>
