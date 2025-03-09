@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -147,6 +148,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         amount: ${parseFloat(amount)} SOL
         prediction: ${prediction}
         duration: ${duration} minutes
+        RPC endpoint: ${(wallet?.adapter as any)?.connection?.rpcEndpoint || 'Not available'}
       `);
       
       setTransactionStatus('Sending transaction to Solana...');

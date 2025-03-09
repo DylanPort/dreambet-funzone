@@ -71,11 +71,13 @@ const SolanaWalletProvider = ({ children }: { children: React.ReactNode }) => {
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
   const network = WalletAdapterNetwork.Devnet;
 
-  // You can also provide a custom RPC endpoint
+  // Set custom RPC endpoint with configurable commitment level
   const endpoint = useMemo(() => {
-    // Use a more reliable endpoint with configurable commitment level
-    return clusterApiUrl(network);
-  }, [network]);
+    // Always use Devnet for testing
+    return "https://api.devnet.solana.com";
+  }, []);
+
+  console.log("Using Solana RPC endpoint:", endpoint);
 
   // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking --
   // Only the wallets you configure here will be compiled into your application
@@ -90,7 +92,7 @@ const SolanaWalletProvider = ({ children }: { children: React.ReactNode }) => {
       new CoinbaseWalletAdapter(),
       new LedgerWalletAdapter(),
     ],
-    [network]
+    []
   );
 
   return (

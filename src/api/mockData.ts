@@ -1,4 +1,3 @@
-
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -93,6 +92,7 @@ export const createBet = async (
 ): Promise<Bet> => {
   try {
     console.log(`Creating bet with tokenId=${tokenId}, amount=${amount}, prediction=${prediction}, duration=${duration}`);
+    console.log(`Using Devnet for transaction`);
     
     // Enhanced wallet validation
     if (!wallet || !wallet.publicKey) {
@@ -105,24 +105,18 @@ export const createBet = async (
       throw new Error("Your wallet doesn't support the required signing methods.");
     }
     
-    // Verify wallet readiness with a small check
+    // Check that publicKey can be accessed as a safety check
     try {
-      if (wallet.adapter && wallet.adapter.signMessage) {
-        const testMsg = new TextEncoder().encode('Test before bet creation');
-        const sig = await wallet.adapter.signMessage(testMsg);
-        if (!sig) {
-          throw new Error("Failed to get test signature from wallet");
-        }
-        console.log("Wallet signature check passed before bet creation");
-      }
-    } catch (walletError) {
-      console.error("Wallet verification failed before creating bet:", walletError);
-      throw new Error("Wallet connection verification failed. Please reconnect your wallet and try again.");
+      const publicKeyString = wallet.publicKey.toString();
+      console.log(`Wallet public key verified: ${publicKeyString.slice(0, 8)}...`);
+    } catch (keyError) {
+      console.error("Failed to access wallet public key:", keyError);
+      throw new Error("Could not access wallet public key. Please try reconnecting your wallet.");
     }
     
     // Create bet on Solana blockchain first
     console.log("Wallet adapter ready:", wallet.adapter?.publicKey ? "Yes" : "No");
-    console.log("Initiating Solana transaction...");
+    console.log("Initiating Solana transaction on Devnet...");
     
     const { betId } = await createSolanaBet(
       wallet,
@@ -153,7 +147,7 @@ export const createBet = async (
   } catch (error: any) {
     console.error('Error creating bet:', error);
     
-    // Enhanced error reporting
+    // Enhanced error reporting for Devnet
     if (error.name === 'WalletSignTransactionError') {
       throw new Error("Transaction signing failed. Please check your wallet connection.");
     } else if (error.name === 'WalletNotConnectedError') {
@@ -161,7 +155,9 @@ export const createBet = async (
     } else if (error.message?.includes('User rejected')) {
       throw new Error("Transaction rejected. Please approve the transaction in your wallet.");
     } else if (error.message?.includes('Blockhash not found')) {
-      throw new Error("Network error: Blockhash not found. Please try again.");
+      throw new Error("Network error: Blockhash not found. Devnet may be experiencing issues, please try again.");
+    } else if (error.message?.includes('insufficient funds')) {
+      throw new Error("Insufficient funds in your Devnet wallet. Please request SOL from the Devnet faucet.");
     }
     
     throw error;

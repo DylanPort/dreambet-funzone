@@ -6,13 +6,13 @@ import { Bet, SolanaContractPrediction, SolanaContractStatus, BetPrediction, Bet
 
 // Constants
 const PROGRAM_ID = "9Y1rKMgRMaDxhkUkUn3ib9AJJqapjkzKqFrsMKwhBVVd";
+const DEVNET_RPC_URL = "https://api.devnet.solana.com";
 
 // Solana connection
 export const getSolanaConnection = () => {
+  console.log("Creating Solana connection to:", DEVNET_RPC_URL);
   return new Connection(
-    process.env.NODE_ENV === 'production' 
-      ? 'https://api.devnet.solana.com' 
-      : 'https://api.devnet.solana.com',
+    DEVNET_RPC_URL,
     'confirmed'
   );
 };
@@ -67,7 +67,7 @@ export const createSolanaBet = async (
       throw new Error("Wallet not connected");
     }
     
-    console.log(`Creating bet on Solana: token=${tokenMint}, prediction=${prediction}, duration=${durationMinutes}min, amount=${solAmount}SOL`);
+    console.log(`Creating bet on Solana (Devnet): token=${tokenMint}, prediction=${prediction}, duration=${durationMinutes}min, amount=${solAmount}SOL`);
     
     const connection = getSolanaConnection();
     const programId = new PublicKey(PROGRAM_ID);
@@ -117,30 +117,44 @@ export const createSolanaBet = async (
 
     const transaction = new Transaction().add(instruction);
     transaction.feePayer = wallet.publicKey;
-    transaction.recentBlockhash = (await connection.getLatestBlockhash('confirmed')).blockhash;
+    
+    // Get recent blockhash with a connection configured with 'confirmed' commitment
+    const blockhashObj = await connection.getLatestBlockhash('confirmed');
+    transaction.recentBlockhash = blockhashObj.blockhash;
+    console.log(`Got blockhash: ${blockhashObj.blockhash}`);
 
     console.log(`Transaction created, getting signature from wallet`);
 
     // Sign and send transaction
-    const signedTx = await wallet.signTransaction(transaction);
-    console.log(`Transaction signed, sending to network`);
-    
-    const txId = await connection.sendRawTransaction(signedTx.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: 'confirmed',
-    });
-    
-    console.log(`Transaction sent with ID: ${txId}`);
-    console.log(`Waiting for confirmation...`);
-    
-    await connection.confirmTransaction({
-      blockhash: transaction.recentBlockhash,
-      lastValidBlockHeight: (await connection.getLatestBlockhash('confirmed')).lastValidBlockHeight,
-      signature: txId
-    }, 'confirmed');
-    
-    console.log(`Transaction confirmed! Bet created with ID: ${betId}`);
-    return { betId };
+    try {
+      const signedTx = await wallet.signTransaction(transaction);
+      console.log(`Transaction signed, sending to Devnet`);
+      
+      const txId = await connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      });
+      
+      console.log(`Transaction sent to Devnet with ID: ${txId}`);
+      console.log(`Waiting for confirmation...`);
+      
+      const confirmation = await connection.confirmTransaction({
+        blockhash: transaction.recentBlockhash,
+        lastValidBlockHeight: blockhashObj.lastValidBlockHeight,
+        signature: txId
+      }, 'confirmed');
+      
+      if (confirmation.value.err) {
+        console.error("Transaction confirmed but with error:", confirmation.value.err);
+        throw new Error(`Transaction error: ${JSON.stringify(confirmation.value.err)}`);
+      }
+      
+      console.log(`Transaction confirmed! Bet created with ID: ${betId}`);
+      return { betId };
+    } catch (signError) {
+      console.error("Error signing or sending transaction:", signError);
+      throw signError;
+    }
   } catch (error) {
     console.error("Error creating bet on Solana:", error);
     throw error;
