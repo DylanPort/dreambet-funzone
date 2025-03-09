@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 
@@ -115,12 +115,46 @@ const MigratingTokenList = () => {
         </div>
       ) : tokens.length === 0 ? (
         <div className="glass-panel p-8 text-center">
-          <AlertCircle className="w-12 h-12 text-dream-accent2/70 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No Tokens Found</h3>
-          <p className="text-dream-foreground/70">
-            No migrating tokens from Pump.fun are currently available.
-            Check back soon for updates.
-          </p>
+          {pumpPortal.connected && pumpPortal.recentTokens.length > 0 ? (
+            <>
+              <Sparkles className="w-12 h-12 text-dream-accent2/70 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">New Pump.fun Tokens</h3>
+              <div className="space-y-4 mt-4">
+                {pumpPortal.recentTokens.slice(0, 5).map((token, index) => (
+                  <div key={token.token_mint} className="glass-panel p-3 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-lg border border-white/10">
+                        {token.token_symbol ? token.token_symbol.charAt(0) : '🪙'}
+                      </div>
+                      <div className="ml-2">
+                        <h4 className="font-semibold">{token.token_name || 'Unknown Token'}</h4>
+                        <p className="text-xs text-dream-foreground/70">{token.token_symbol || '???'}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-dream-foreground/70 flex items-center">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {formatTimeSince(new Date(token.created_time).getTime())}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <Button 
+                className="mt-4 bg-dream-accent1/20 hover:bg-dream-accent1/40 px-3 py-1 text-sm transition-colors"
+                onClick={() => window.open('https://pump.fun', '_blank')}
+              >
+                Visit Pump.fun <ExternalLink className="w-3 h-3 ml-1" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="w-12 h-12 text-dream-accent2/70 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No Tokens Found</h3>
+              <p className="text-dream-foreground/70">
+                No migrating tokens from Pump.fun are currently available.
+                Check back soon for updates.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
