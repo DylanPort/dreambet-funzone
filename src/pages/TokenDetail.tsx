@@ -15,6 +15,7 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
 import TokenMarketCap from '@/components/TokenMarketCap';
 import TokenVolume from '@/components/TokenVolume';
+import TokenComments from '@/components/TokenComments';
 
 const TokenChart = ({ tokenId, tokenName, refreshData, loading }) => {
   const [iframeKey, setIframeKey] = useState(Date.now());
@@ -619,6 +620,13 @@ const TokenDetail = () => {
                     ))}
                   </div>
                 )}
+              </div>
+              
+              <div className="glass-panel p-6 mt-8">
+                <TokenComments 
+                  tokenId={token.id}
+                  tokenName={token.name}
+                />
               </div>
             </>
           )}
