@@ -157,18 +157,64 @@ const WalletConnectButton = () => {
     <div className="flex items-center">
       {connected ? (
         <div className="flex items-center gap-2">
-          <WalletMultiButton className="!bg-dream-accent1 !hover:bg-dream-accent1/80" />
+          <WalletMultiButton className="
+            !bg-gradient-to-r !from-[#8B5CF6] !to-[#D946EF] 
+            !border !border-white/20 !backdrop-blur-md 
+            !p-2 !px-4 !rounded-xl !shadow-lg
+            !transition-all !duration-300
+            !text-white
+            hover:!shadow-[0_0_15px_rgba(217,70,239,0.5)]
+            hover:!scale-[1.02] 
+            !relative !overflow-hidden
+            before:!content-[''] before:!absolute before:!inset-0 before:!bg-white/10 before:!rounded-xl 
+            before:!opacity-0 before:!transition-opacity before:!duration-300
+            hover:before:!opacity-100
+            after:!content-[''] after:!absolute after:!inset-[-10px] after:!bg-gradient-to-r 
+            after:!from-[#8B5CF6]/0 after:!to-[#D946EF]/40 after:!blur-md after:!opacity-0 
+            after:!transition-opacity after:!duration-300
+            hover:after:!opacity-50
+          " />
         </div>
       ) : connecting ? (
         <div className="flex items-center gap-2">
-          <div className="animate-pulse text-yellow-400 text-sm">
-            <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block mr-1"></span>
+          <div className="animate-pulse text-[#0EA5E9] font-medium text-sm px-3 py-1 bg-[#0EA5E9]/10 rounded-full backdrop-blur-sm border border-[#0EA5E9]/30">
+            <span className="inline-block w-2 h-2 bg-[#0EA5E9] rounded-full mr-2 animate-ping"></span>
             Connecting...
           </div>
-          <WalletMultiButton className="!bg-dream-accent1 !hover:bg-dream-accent1/80" />
+          <WalletMultiButton className="
+            !bg-gradient-to-r !from-[#8B5CF6] !to-[#D946EF] 
+            !border !border-white/20 !backdrop-blur-md 
+            !p-2 !px-4 !rounded-xl !shadow-lg
+            !transition-all !duration-300
+            !text-white
+            hover:!shadow-[0_0_15px_rgba(217,70,239,0.5)]
+            hover:!scale-[1.02] 
+            !relative !overflow-hidden
+            before:!content-[''] before:!absolute before:!inset-0 before:!bg-white/10 before:!rounded-xl 
+            before:!opacity-0 before:!transition-opacity before:!duration-300
+            hover:before:!opacity-100
+            after:!content-[''] after:!absolute after:!inset-[-10px] after:!bg-gradient-to-r 
+            after:!from-[#8B5CF6]/0 after:!to-[#D946EF]/40 after:!blur-md after:!opacity-0 
+            after:!transition-opacity after:!duration-300
+            hover:after:!opacity-50
+          " />
         </div>
       ) : (
-        <WalletMultiButton className="!bg-dream-accent1 !hover:bg-dream-accent1/80" />
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8B5CF6] to-[#D946EF] rounded-xl blur-md opacity-60 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+          <WalletMultiButton className="
+            !relative
+            !bg-gradient-to-r !from-[#0EA5E9]/70 !to-[#1EAEDB]/70
+            !border !border-white/20 !backdrop-blur-md 
+            !p-2 !px-4 !rounded-xl 
+            !transition-all !duration-300
+            !text-white !font-medium
+            group-hover:!from-[#8B5CF6] group-hover:!to-[#D946EF]
+            !z-10
+            !shadow-[0_0_20px_rgba(14,165,233,0.3)]
+            group-hover:!shadow-[0_0_20px_rgba(217,70,239,0.5)]
+          " />
+        </div>
       )}
     </div>
   );
