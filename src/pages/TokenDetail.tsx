@@ -12,6 +12,7 @@ import BetCard from '@/components/BetCard';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, getLatestPriceFromTrades } from '@/services/pumpPortalWebSocketService';
 import OrbitingParticles from '@/components/OrbitingParticles';
+import { fetchDexScreenerData } from '@/services/dexScreenerService';
 
 const TokenDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -77,12 +78,23 @@ const TokenDetail = () => {
             migrationTime: new Date(tokenData.last_updated_time).getTime(),
           });
           
-          setTokenMetrics({
-            marketCap: (tokenData.last_trade_price || 0.001) * 1000000 * (0.5 + Math.random()),
-            volume24h: (tokenData.last_trade_price || 0.001) * 50000 * (0.5 + Math.random()),
-            liquidity: (tokenData.last_trade_price || 0.001) * 20000 * (0.5 + Math.random()),
-            holders: Math.floor(100 + Math.random() * 900)
-          });
+          const dexScreenerData = await fetchDexScreenerData(tokenData.token_mint);
+          if (dexScreenerData) {
+            console.log("Got DexScreener data:", dexScreenerData);
+            setTokenMetrics({
+              marketCap: dexScreenerData.marketCap,
+              volume24h: dexScreenerData.volume24h,
+              liquidity: dexScreenerData.liquidity,
+              holders: tokenMetrics.holders
+            });
+          } else {
+            setTokenMetrics({
+              marketCap: (tokenData.last_trade_price || 0.001) * 1000000 * (0.5 + Math.random()),
+              volume24h: (tokenData.last_trade_price || 0.001) * 50000 * (0.5 + Math.random()),
+              liquidity: (tokenData.last_trade_price || 0.001) * 20000 * (0.5 + Math.random()),
+              holders: Math.floor(100 + Math.random() * 900)
+            });
+          }
           
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(id);
@@ -278,7 +290,16 @@ const TokenDetail = () => {
         }
       }
       
-      if (pumpPortal.connected) {
+      const dexScreenerData = await fetchDexScreenerData(id);
+      if (dexScreenerData) {
+        console.log("Refreshed DexScreener data:", dexScreenerData);
+        setTokenMetrics(current => ({
+          ...current,
+          marketCap: dexScreenerData.marketCap,
+          volume24h: dexScreenerData.volume24h,
+          liquidity: dexScreenerData.liquidity
+        }));
+      } else if (pumpPortal.connected) {
         pumpPortal.fetchTokenMetrics(id);
       }
       
@@ -417,9 +438,17 @@ const TokenDetail = () => {
                     <span className="text-sm">Market Cap</span>
                   </div>
                   <div className="text-xl font-bold">{formatLargeNumber(tokenMetrics.marketCap)}</div>
-                  {pumpPortal.tokenMetrics[id!] && (
-                    <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" title="Live data"></div>
-                  )}
+                  <div className="absolute top-1 right-1 flex items-center">
+                    <a 
+                      href={`https://dexscreener.com/solana/${token.id}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-dream-accent2 hover:text-dream-accent2/80"
+                      title="View on DexScreener"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
                 
                 <div className="glass-panel p-4 relative">
@@ -428,9 +457,17 @@ const TokenDetail = () => {
                     <span className="text-sm">24h Volume</span>
                   </div>
                   <div className="text-xl font-bold">{formatLargeNumber(tokenMetrics.volume24h)}</div>
-                  {pumpPortal.tokenMetrics[id!] && (
-                    <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" title="Live data"></div>
-                  )}
+                  <div className="absolute top-1 right-1 flex items-center">
+                    <a 
+                      href={`https://dexscreener.com/solana/${token.id}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-dream-accent2 hover:text-dream-accent2/80"
+                      title="View on DexScreener"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
                 
                 <div className="glass-panel p-4 relative">
@@ -439,9 +476,17 @@ const TokenDetail = () => {
                     <span className="text-sm">Liquidity</span>
                   </div>
                   <div className="text-xl font-bold">{formatLargeNumber(tokenMetrics.liquidity)}</div>
-                  {pumpPortal.tokenMetrics[id!] && (
-                    <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" title="Live data"></div>
-                  )}
+                  <div className="absolute top-1 right-1 flex items-center">
+                    <a 
+                      href={`https://dexscreener.com/solana/${token.id}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-dream-accent2 hover:text-dream-accent2/80"
+                      title="View on DexScreener"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
                 
                 <div className="glass-panel p-4 relative">
@@ -450,9 +495,15 @@ const TokenDetail = () => {
                     <span className="text-sm">Holders</span>
                   </div>
                   <div className="text-xl font-bold">{tokenMetrics.holders}</div>
-                  {pumpPortal.tokenMetrics[id!] && (
-                    <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" title="Live data"></div>
-                  )}
+                  <div className="absolute top-1 right-1 flex items-center">
+                    <button 
+                      onClick={refreshData}
+                      className="text-dream-accent2 hover:text-dream-accent2/80"
+                      title="Refresh Data"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               </div>
               
