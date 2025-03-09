@@ -98,7 +98,7 @@ const Index = () => {
       <Navbar />
       <BetReel />
       
-      <div className="h-16"></div> {/* Adjusted height for spacing */}
+      <div className="h-24"></div> {/* Increased height for better spacing */}
       
       <main className="min-h-screen overflow-hidden">
         {/* Hero Section */}
