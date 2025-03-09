@@ -2,80 +2,53 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import { UserCircle, Clock, TrendingUp, TrendingDown, Settings, History, Wallet } from 'lucide-react';
+import { UserCircle, Clock, TrendingUp, TrendingDown, Settings, History } from 'lucide-react';
 import OrbitingParticles from '@/components/OrbitingParticles';
-
-// Mock user data
-const mockUser = {
-  username: 'DreamPredictor',
-  email: 'user@example.com',
-  joinDate: '2023-09-15',
-  balance: 2500,
-  bets: [
-    {
-      id: '1',
-      tokenName: 'Ethereum',
-      tokenSymbol: 'ETH',
-      amount: 100,
-      prediction: 'moon',
-      result: 'win',
-      date: '2023-12-01T14:30:00',
-      profit: 95,
-    },
-    {
-      id: '2',
-      tokenName: 'Solana',
-      tokenSymbol: 'SOL',
-      amount: 50,
-      prediction: 'die',
-      result: 'loss',
-      date: '2023-11-28T10:15:00',
-      profit: -50,
-    },
-    {
-      id: '3',
-      tokenName: 'Algorand',
-      tokenSymbol: 'ALGO',
-      amount: 75,
-      prediction: 'moon',
-      result: 'win',
-      date: '2023-11-25T16:45:00',
-      profit: 71.25,
-    },
-    {
-      id: '4',
-      tokenName: 'Cardano',
-      tokenSymbol: 'ADA',
-      amount: 120,
-      prediction: 'die',
-      result: 'win',
-      date: '2023-11-20T09:30:00',
-      profit: 114,
-    },
-    {
-      id: '5',
-      tokenName: 'Polkadot',
-      tokenSymbol: 'DOT',
-      amount: 60,
-      prediction: 'moon',
-      result: 'loss',
-      date: '2023-11-15T11:20:00',
-      profit: -60,
-    },
-  ],
-};
+import { Button } from '@/components/ui/button';
+import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile, UserBet, UserStats } from '@/services/userService';
+import { toast } from 'sonner';
 
 const Profile = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [bets, setBets] = useState<UserBet[]>([]);
+  const [stats, setStats] = useState<UserStats>({
+    totalBets: 0,
+    winRate: 0,
+    totalProfit: 0,
+    balance: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'history' | 'settings'>('history');
+  const [usernameInput, setUsernameInput] = useState('');
   
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setUser(mockUser);
-      setIsLoading(false);
-    }, 1000);
+    const loadUserData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch user profile
+        const profileData = await fetchUserProfile();
+        setUser(profileData);
+        
+        if (profileData) {
+          setUsernameInput(profileData.username || '');
+        }
+        
+        // Fetch user's betting history
+        const bettingHistory = await fetchUserBettingHistory();
+        setBets(bettingHistory);
+        
+        // Calculate stats from betting history
+        const userStats = calculateUserStats(bettingHistory);
+        setStats(userStats);
+      } catch (error) {
+        console.error("Error loading user data:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadUserData();
   }, []);
   
   const formatDate = (dateString: string) => {
@@ -83,17 +56,19 @@ const Profile = () => {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
   
-  const calculateWinRate = () => {
-    if (!user?.bets?.length) return 0;
+  const handleUpdateProfile = async () => {
+    if (!usernameInput.trim()) {
+      toast.error("Username cannot be empty");
+      return;
+    }
     
-    const wins = user.bets.filter((bet: any) => bet.result === 'win').length;
-    return Math.round((wins / user.bets.length) * 100);
-  };
-  
-  const calculateTotalProfit = () => {
-    if (!user?.bets?.length) return 0;
-    
-    return user.bets.reduce((acc: number, bet: any) => acc + bet.profit, 0);
+    const success = await updateUsername(usernameInput);
+    if (success && user) {
+      setUser({
+        ...user,
+        username: usernameInput
+      });
+    }
   };
   
   if (isLoading) {
@@ -123,17 +98,17 @@ const Profile = () => {
             </div>
             
             <div className="text-center md:text-left">
-              <h1 className="text-2xl md:text-3xl font-display font-bold">{user.username}</h1>
-              <p className="text-dream-foreground/60">{user.email}</p>
+              <h1 className="text-2xl md:text-3xl font-display font-bold">{user?.username || user?.wallet_address?.substring(0, 8) || 'DreamPredictor'}</h1>
+              <p className="text-dream-foreground/60">{user?.wallet_address || 'Connect your wallet'}</p>
               <p className="text-dream-foreground/60 text-sm mt-1">
                 <Clock className="inline w-3 h-3 mr-1" />
-                Joined {formatDate(user.joinDate)}
+                Joined {user?.created_at ? formatDate(user.created_at) : 'Unknown'}
               </p>
             </div>
             
             <div className="ml-auto glass-panel p-4 text-center">
               <p className="text-dream-foreground/60 text-sm">Balance</p>
-              <p className="text-2xl font-display font-bold text-gradient">${user.balance.toLocaleString()}</p>
+              <p className="text-2xl font-display font-bold text-gradient">${stats.balance.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -142,20 +117,20 @@ const Profile = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="glass-panel p-6 text-center">
             <p className="text-dream-foreground/60 mb-2">Total Bets</p>
-            <p className="text-3xl font-display font-bold">{user.bets.length}</p>
+            <p className="text-3xl font-display font-bold">{stats.totalBets}</p>
           </div>
           
           <div className="glass-panel p-6 text-center">
             <p className="text-dream-foreground/60 mb-2">Win Rate</p>
-            <p className="text-3xl font-display font-bold">{calculateWinRate()}%</p>
+            <p className="text-3xl font-display font-bold">{stats.winRate}%</p>
           </div>
           
           <div className="glass-panel p-6 text-center">
             <p className="text-dream-foreground/60 mb-2">Total Profit</p>
             <p className={`text-3xl font-display font-bold ${
-              calculateTotalProfit() >= 0 ? 'text-green-400' : 'text-red-400'
+              stats.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'
             }`}>
-              {calculateTotalProfit() >= 0 ? '+' : ''}${calculateTotalProfit().toLocaleString()}
+              {stats.totalProfit >= 0 ? '+' : ''}${stats.totalProfit.toLocaleString()}
             </p>
           </div>
         </div>
@@ -193,72 +168,85 @@ const Profile = () => {
             <div className="mt-6">
               <h2 className="text-xl font-display font-semibold mb-4">Recent Bets</h2>
               
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="px-4 py-3 text-left text-dream-foreground/60">Token</th>
-                      <th className="px-4 py-3 text-left text-dream-foreground/60">Date</th>
-                      <th className="px-4 py-3 text-left text-dream-foreground/60">Prediction</th>
-                      <th className="px-4 py-3 text-left text-dream-foreground/60">Amount</th>
-                      <th className="px-4 py-3 text-left text-dream-foreground/60">Result</th>
-                      <th className="px-4 py-3 text-left text-dream-foreground/60">Profit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {user.bets.map((bet: any) => (
-                      <tr key={bet.id} className="border-b border-white/5 hover:bg-white/5">
-                        <td className="px-4 py-4">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
-                              <span className="font-display font-bold text-sm">{bet.tokenSymbol.charAt(0)}</span>
-                            </div>
-                            <div>
-                              <p className="font-medium">{bet.tokenName}</p>
-                              <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-dream-foreground/80">{formatDate(bet.date)}</td>
-                        <td className="px-4 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            bet.prediction === 'moon'
-                              ? 'bg-dream-accent1/20 text-dream-accent1'
-                              : 'bg-dream-accent2/20 text-dream-accent2'
-                          }`}>
-                            {bet.prediction === 'moon' ? (
-                              <>
-                                <TrendingUp className="w-3 h-3 mr-1" />
-                                Moon
-                              </>
-                            ) : (
-                              <>
-                                <TrendingDown className="w-3 h-3 mr-1" />
-                                Die
-                              </>
-                            )}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-dream-foreground/80">${bet.amount}</td>
-                        <td className="px-4 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            bet.result === 'win'
-                              ? 'bg-green-500/20 text-green-500'
-                              : 'bg-red-500/20 text-red-500'
-                          }`}>
-                            {bet.result === 'win' ? 'Win' : 'Loss'}
-                          </span>
-                        </td>
-                        <td className={`px-4 py-4 font-medium ${
-                          bet.profit >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {bet.profit >= 0 ? '+' : ''}${bet.profit.toFixed(2)}
-                        </td>
+              {bets.length === 0 ? (
+                <div className="text-center py-10 text-dream-foreground/60">
+                  <p>You haven't made any bets yet.</p>
+                  <Link to="/betting" className="mt-4 inline-block">
+                    <Button className="bg-dream-accent1 hover:bg-dream-accent1/80">
+                      Place Your First Bet
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="px-4 py-3 text-left text-dream-foreground/60">Token</th>
+                        <th className="px-4 py-3 text-left text-dream-foreground/60">Date</th>
+                        <th className="px-4 py-3 text-left text-dream-foreground/60">Prediction</th>
+                        <th className="px-4 py-3 text-left text-dream-foreground/60">Amount</th>
+                        <th className="px-4 py-3 text-left text-dream-foreground/60">Result</th>
+                        <th className="px-4 py-3 text-left text-dream-foreground/60">Profit</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {bets.map((bet) => (
+                        <tr key={bet.id} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="px-4 py-4">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
+                                <span className="font-display font-bold text-sm">{bet.tokenSymbol.charAt(0)}</span>
+                              </div>
+                              <div>
+                                <p className="font-medium">{bet.tokenName}</p>
+                                <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-dream-foreground/80">{formatDate(bet.date)}</td>
+                          <td className="px-4 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              bet.prediction === 'moon'
+                                ? 'bg-dream-accent1/20 text-dream-accent1'
+                                : 'bg-dream-accent2/20 text-dream-accent2'
+                            }`}>
+                              {bet.prediction === 'moon' ? (
+                                <>
+                                  <TrendingUp className="w-3 h-3 mr-1" />
+                                  Moon
+                                </>
+                              ) : (
+                                <>
+                                  <TrendingDown className="w-3 h-3 mr-1" />
+                                  Die
+                                </>
+                              )}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-dream-foreground/80">${bet.amount}</td>
+                          <td className="px-4 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              bet.result === 'win'
+                                ? 'bg-green-500/20 text-green-500'
+                                : bet.result === 'loss'
+                                ? 'bg-red-500/20 text-red-500'
+                                : 'bg-yellow-500/20 text-yellow-500'
+                            }`}>
+                              {bet.result === 'win' ? 'Win' : bet.result === 'loss' ? 'Loss' : 'Pending'}
+                            </span>
+                          </td>
+                          <td className={`px-4 py-4 font-medium ${
+                            bet.profit >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {bet.profit >= 0 ? '+' : ''}${Math.abs(bet.profit).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
           
@@ -267,97 +255,42 @@ const Profile = () => {
             <div className="mt-6">
               <h2 className="text-xl font-display font-semibold mb-4">Account Settings</h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="glass-panel p-6">
-                  <h3 className="text-lg font-medium mb-4 flex items-center">
-                    <UserCircle className="w-5 h-5 mr-2 text-dream-accent1" />
-                    Profile Information
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-dream-foreground/60 mb-2">Username</label>
-                      <input
-                        type="text"
-                        className="input-dream w-full"
-                        defaultValue={user.username}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-dream-foreground/60 mb-2">Email</label>
-                      <input
-                        type="email"
-                        className="input-dream w-full"
-                        defaultValue={user.email}
-                      />
-                    </div>
-                    
-                    <button className="btn-primary w-full mt-4">
-                      Update Profile
-                    </button>
-                  </div>
-                </div>
+              <div className="glass-panel p-6">
+                <h3 className="text-lg font-medium mb-4 flex items-center">
+                  <UserCircle className="w-5 h-5 mr-2 text-dream-accent1" />
+                  Profile Information
+                </h3>
                 
-                <div className="glass-panel p-6">
-                  <h3 className="text-lg font-medium mb-4 flex items-center">
-                    <Wallet className="w-5 h-5 mr-2 text-dream-accent2" />
-                    Payment Methods
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <div className="glass-panel p-4 flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">Credit Card</p>
-                        <p className="text-dream-foreground/60 text-sm">**** **** **** 4242</p>
-                      </div>
-                      <span className="text-xs bg-dream-accent3/20 text-dream-accent3 px-2 py-1 rounded">Default</span>
-                    </div>
-                    
-                    <button className="btn-secondary w-full">
-                      Add Payment Method
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="glass-panel p-6 md:col-span-2">
-                  <h3 className="text-lg font-medium mb-4 flex items-center">
-                    <Settings className="w-5 h-5 mr-2 text-dream-accent3" />
-                    Password
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-dream-foreground/60 mb-2">Current Password</label>
-                      <input
-                        type="password"
-                        className="input-dream w-full"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-dream-foreground/60 mb-2">New Password</label>
-                      <input
-                        type="password"
-                        className="input-dream w-full"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <label className="block text-dream-foreground/60 mb-2">Confirm New Password</label>
-                      <input
-                        type="password"
-                        className="input-dream w-full"
-                        placeholder="••••••••"
-                      />
-                    </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-dream-foreground/60 mb-2">Wallet Address</label>
+                    <input
+                      type="text"
+                      className="input-dream w-full bg-gray-900/50"
+                      value={user?.wallet_address || ''}
+                      disabled
+                      readOnly
+                    />
+                    <p className="text-xs text-dream-foreground/40 mt-1">Your wallet address cannot be changed</p>
                   </div>
                   
-                  <button className="btn-primary mt-4">
-                    Change Password
-                  </button>
+                  <div>
+                    <label className="block text-dream-foreground/60 mb-2">Username</label>
+                    <input
+                      type="text"
+                      className="input-dream w-full"
+                      value={usernameInput}
+                      onChange={(e) => setUsernameInput(e.target.value)}
+                      placeholder="Enter a display name"
+                    />
+                  </div>
+                  
+                  <Button 
+                    className="mt-4 bg-dream-accent1 hover:bg-dream-accent1/80 text-white"
+                    onClick={handleUpdateProfile}
+                  >
+                    Update Profile
+                  </Button>
                 </div>
               </div>
             </div>
