@@ -101,9 +101,9 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
                       <div>
                         <h3 className="font-display font-semibold">{bet.tokenName} ({bet.tokenSymbol})</h3>
                         <div className="flex items-center text-sm">
-                          <span className={`${bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'} flex items-center`}>
-                            {bet.prediction === 'up' ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
-                            {bet.prediction === 'up' ? 'UP' : 'DOWN'}
+                          <span className={`${bet.prediction === 'migrate' ? 'text-green-400' : 'text-red-400'} flex items-center`}>
+                            {bet.prediction === 'migrate' ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
+                            {bet.prediction === 'migrate' ? 'MIGRATE' : 'DIE'}
                           </span>
                           <span className="mx-2 text-dream-foreground/50">•</span>
                           <span>{bet.amount} SOL</span>

@@ -215,11 +215,11 @@ const TokenBetting = () => {
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center">
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${
-                            bet.prediction === 'up' 
+                            bet.prediction === 'migrate' 
                               ? 'bg-green-500/20 text-green-400' 
                               : 'bg-red-500/20 text-red-400'
                           }`}>
-                            {bet.prediction === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                            {bet.prediction === 'migrate' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                           </div>
                           <span className="font-semibold">
                             {bet.amount} SOL
