@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
@@ -7,19 +6,18 @@ import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
 import TokenCard from './TokenCard';
-
 const MigratingTokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
-  
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const loadTokens = async () => {
       try {
@@ -36,15 +34,12 @@ const MigratingTokenList = () => {
         setLoading(false);
       }
     };
-
     loadTokens();
     const interval = setInterval(loadTokens, 120000);
     return () => clearInterval(interval);
   }, [toast]);
-  
   const processRawWebSocketData = (data: any) => {
     if (!data) return null;
-    
     if (data.txType === 'create' && data.mint) {
       return {
         id: data.mint,
@@ -53,23 +48,17 @@ const MigratingTokenList = () => {
         logo: '🪙',
         currentPrice: data.marketCapSol ? parseFloat((data.marketCapSol / data.supply || 0).toFixed(6)) : 0,
         change24h: 0,
-        migrationTime: new Date().getTime(),
+        migrationTime: new Date().getTime()
       };
     }
-    
     return null;
   };
-  
   useEffect(() => {
     if (pumpPortal.recentTokens.length > 0) {
-      const newTokens = pumpPortal.recentTokens
-        .map(formatWebSocketTokenData)
-        .filter(token => token);
-      
+      const newTokens = pumpPortal.recentTokens.map(formatWebSocketTokenData).filter(token => token);
       setTokens(currentTokens => {
         const existingIds = new Set(currentTokens.map(t => t.id));
         const newUniqueTokens = newTokens.filter(t => !existingIds.has(t.id));
-        
         if (newUniqueTokens.length > 0) {
           toast({
             title: "New tokens created!",
@@ -77,48 +66,32 @@ const MigratingTokenList = () => {
             variant: "default"
           });
         }
-        
         return [...newUniqueTokens, ...currentTokens];
       });
-      
       if (loading) {
         setLoading(false);
       }
     }
   }, [pumpPortal.recentTokens, loading, toast]);
-  
   useEffect(() => {
     const handleRawWebSocketMessages = () => {
       const logs = console.__logs || [];
-      const rawMessages = logs
-        .filter((log: any) => 
-          log.message && 
-          typeof log.message === 'string' && 
-          log.message.includes('Unknown message type:')
-        )
-        .slice(-10);
-        
+      const rawMessages = logs.filter((log: any) => log.message && typeof log.message === 'string' && log.message.includes('Unknown message type:')).slice(-10);
       if (rawMessages.length === 0) return;
-      
-      const processedTokens = rawMessages
-        .map((log: any) => {
-          try {
-            const match = log.message.match(/Unknown message type: (.+)/);
-            if (!match || !match[1]) return null;
-            
-            const data = JSON.parse(match[1]);
-            return processRawWebSocketData(data);
-          } catch (e) {
-            return null;
-          }
-        })
-        .filter(token => token);
-      
+      const processedTokens = rawMessages.map((log: any) => {
+        try {
+          const match = log.message.match(/Unknown message type: (.+)/);
+          if (!match || !match[1]) return null;
+          const data = JSON.parse(match[1]);
+          return processRawWebSocketData(data);
+        } catch (e) {
+          return null;
+        }
+      }).filter(token => token);
       if (processedTokens.length > 0) {
         setTokens(currentTokens => {
           const existingIds = new Set(currentTokens.map(t => t.id));
           const newUniqueTokens = processedTokens.filter(t => !existingIds.has(t.id));
-          
           if (newUniqueTokens.length > 0) {
             toast({
               title: "New tokens detected!",
@@ -126,27 +99,21 @@ const MigratingTokenList = () => {
               variant: "default"
             });
           }
-          
           return [...newUniqueTokens, ...currentTokens];
         });
-        
         if (loading) {
           setLoading(false);
         }
       }
     };
-    
     handleRawWebSocketMessages();
-    
     const interval = setInterval(handleRawWebSocketMessages, 5000);
     return () => clearInterval(interval);
   }, [loading, toast]);
-
   const formatTimeSince = (timestamp: number) => {
     const now = new Date().getTime();
     const diffMs = now - timestamp;
     const diffMins = Math.floor(diffMs / (1000 * 60));
-    
     if (diffMins < 60) {
       return `${diffMins}m ago`;
     } else {
@@ -155,74 +122,50 @@ const MigratingTokenList = () => {
       return `${hours}h ${mins}m ago`;
     }
   };
-
   const getTokenIcon = (symbol: string) => {
     if (!symbol) return '🪙';
     return symbol.charAt(0);
   };
-
   const getRawTokensForDisplay = () => {
     const logs = console.__logs || [];
-    const rawMessages = logs
-      .filter((log: any) => 
-        log.message && 
-        typeof log.message === 'string' && 
-        log.message.includes('Unknown message type:')
-      )
-      .slice(-10);
-    
+    const rawMessages = logs.filter((log: any) => log.message && typeof log.message === 'string' && log.message.includes('Unknown message type:')).slice(-10);
     if (rawMessages.length === 0) return [];
-    
-    return rawMessages
-      .map((log: any) => {
-        try {
-          const match = log.message.match(/Unknown message type: (.+)/);
-          if (!match || !match[1]) return null;
-          
-          const data = JSON.parse(match[1]);
-          if (!data.txType || data.txType !== 'create' || !data.mint) return null;
-          
-          return {
-            token_mint: data.mint,
-            token_name: data.name || 'Unknown Token',
-            token_symbol: data.symbol || '',
-            created_time: new Date().toISOString()
-          };
-        } catch (e) {
-          return null;
-        }
-      })
-      .filter(token => token);
+    return rawMessages.map((log: any) => {
+      try {
+        const match = log.message.match(/Unknown message type: (.+)/);
+        if (!match || !match[1]) return null;
+        const data = JSON.parse(match[1]);
+        if (!data.txType || data.txType !== 'create' || !data.mint) return null;
+        return {
+          token_mint: data.mint,
+          token_name: data.name || 'Unknown Token',
+          token_symbol: data.symbol || '',
+          created_time: new Date().toISOString()
+        };
+      } catch (e) {
+        return null;
+      }
+    }).filter(token => token);
   };
-
   const getTokensForEmptyState = () => {
     const standardTokens = pumpPortal.recentTokens || [];
     const rawTokens = getRawTokensForDisplay();
-    
     const allTokens = [...standardTokens, ...rawTokens];
-    const uniqueTokens = Array.from(
-      new Map(allTokens.map(token => [token.token_mint, token])).values()
-    );
-    
-    return uniqueTokens.sort((a, b) => 
-      new Date(b.created_time).getTime() - new Date(a.created_time).getTime()
-    );
+    const uniqueTokens = Array.from(new Map(allTokens.map(token => [token.token_mint, token])).values());
+    return uniqueTokens.sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime());
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    
     if (isNaN(numPrice)) return "0.000000";
-    
     if (numPrice < 0.01) return numPrice.toFixed(6);
     if (numPrice < 1) return numPrice.toFixed(4);
     if (numPrice < 1000) return numPrice.toFixed(2);
-    return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    return numPrice.toLocaleString('en-US', {
+      maximumFractionDigits: 2
+    });
   };
-
   const getTokensForDisplay = () => {
     let displayTokens = [];
-    
     if (loading) {
       for (let i = 0; i < 20; i++) {
         displayTokens.push({
@@ -238,7 +181,6 @@ const MigratingTokenList = () => {
       }
     } else if (tokens.length === 0) {
       const wsTokens = getTokensForEmptyState();
-      
       if (wsTokens.length > 0) {
         displayTokens = wsTokens.slice(0, 20).map(token => ({
           id: token.token_mint,
@@ -251,7 +193,6 @@ const MigratingTokenList = () => {
           fromWebSocket: true
         }));
       }
-      
       if (displayTokens.length < 20) {
         for (let i = displayTokens.length; i < 20; i++) {
           displayTokens.push({
@@ -268,7 +209,6 @@ const MigratingTokenList = () => {
       }
     } else {
       displayTokens = tokens.slice(0, 20);
-      
       if (displayTokens.length < 20) {
         for (let i = displayTokens.length; i < 20; i++) {
           displayTokens.push({
@@ -284,20 +224,13 @@ const MigratingTokenList = () => {
         }
       }
     }
-    
     return displayTokens;
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-display font-bold text-dream-foreground relative flex items-center gap-2">
-          <img 
-            src="/lovable-uploads/24e94b9d-6b95-4cee-9dbc-c78f440e3f68.png" 
-            alt="Pill Logo" 
-            className="w-8 h-8"
-          />
-          <span className="relative z-10">Top 20 Migrating Tokens</span>
+          <img src="/lovable-uploads/24e94b9d-6b95-4cee-9dbc-c78f440e3f68.png" alt="Pill Logo" className="w-8 h-8" />
+          <span className="relative z-10">Newly Created Tokens</span>
           <span className="absolute -left-2 bottom-0 w-[120%] h-2 bg-gradient-to-r from-dream-accent1 to-transparent opacity-30"></span>
         </h2>
         
@@ -310,12 +243,7 @@ const MigratingTokenList = () => {
       </div>
       
       <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {getTokensForDisplay().map(token => (
-          <Link
-            key={token.id}
-            to={token.isPlaceholder ? '#' : `/token/${token.id}`}
-            className={`token-card group relative overflow-hidden ${token.isPlaceholder ? 'pointer-events-none' : ''}`}
-          >
+        {getTokensForDisplay().map(token => <Link key={token.id} to={token.isPlaceholder ? '#' : `/token/${token.id}`} className={`token-card group relative overflow-hidden ${token.isPlaceholder ? 'pointer-events-none' : ''}`}>
             <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
             <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
@@ -326,27 +254,18 @@ const MigratingTokenList = () => {
             <div className={`glass-panel p-5 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300 h-full ${token.isPlaceholder ? 'animate-pulse' : ''}`}>
               <div className="flex justify-between items-start">
                 <div className="flex items-center">
-                  {token.imageUrl && !token.isPlaceholder ? (
-                    <div className="relative">
+                  {token.imageUrl && !token.isPlaceholder ? <div className="relative">
                       <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/10 to-dream-accent3/10 rounded-full animate-pulse"></div>
-                      <img 
-                        src={token.imageUrl} 
-                        alt={token.name} 
-                        className="w-10 h-10 rounded-full object-cover relative z-10"
-                        onError={(e) => {
-                          const imgElement = e.target as HTMLImageElement;
-                          imgElement.style.display = 'none';
-                          const nextElement = imgElement.nextElementSibling as HTMLElement;
-                          if (nextElement) {
-                            nextElement.style.display = 'flex';
-                          }
-                        }}
-                      />
-                    </div>
-                  ) : null}
-                  <div
-                    className={`w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 ${token.imageUrl && !token.isPlaceholder ? 'hidden' : ''}`}
-                  >
+                      <img src={token.imageUrl} alt={token.name} className="w-10 h-10 rounded-full object-cover relative z-10" onError={e => {
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.style.display = 'none';
+                  const nextElement = imgElement.nextElementSibling as HTMLElement;
+                  if (nextElement) {
+                    nextElement.style.display = 'flex';
+                  }
+                }} />
+                    </div> : null}
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 ${token.imageUrl && !token.isPlaceholder ? 'hidden' : ''}`}>
                     <span className="font-display font-bold">{getTokenIcon(token.symbol)}</span>
                   </div>
                   <div className="ml-3">
@@ -364,17 +283,11 @@ const MigratingTokenList = () => {
               
               <div className="flex items-center mt-4 p-3 bg-gradient-to-r from-dream-background/40 to-dream-background/20 backdrop-blur-sm rounded-md border border-white/5 group-hover:border-white/10 transition-all">
                 <div className="grid grid-cols-2 gap-3 w-full">
-                  <button 
-                    className="btn-moon py-1.5 flex items-center justify-center gap-1.5"
-                    disabled={token.isPlaceholder}
-                  >
+                  <button className="btn-moon py-1.5 flex items-center justify-center gap-1.5" disabled={token.isPlaceholder}>
                     <ThumbsUp className="w-3.5 h-3.5" />
                     <span>Moon 🚀</span>
                   </button>
-                  <button 
-                    className="btn-die py-1.5 flex items-center justify-center gap-1.5"
-                    disabled={token.isPlaceholder}
-                  >
+                  <button className="btn-die py-1.5 flex items-center justify-center gap-1.5" disabled={token.isPlaceholder}>
                     <ThumbsDown className="w-3.5 h-3.5" />
                     <span>Die 💀</span>
                   </button>
@@ -382,19 +295,13 @@ const MigratingTokenList = () => {
               </div>
               
               <div className="mt-4 flex justify-center">
-                <button 
-                  className={`bet-button w-full py-2 text-sm font-semibold ${token.isPlaceholder ? 'opacity-50' : ''}`}
-                  disabled={token.isPlaceholder}
-                >
+                <button className={`bet-button w-full py-2 text-sm font-semibold ${token.isPlaceholder ? 'opacity-50' : ''}`} disabled={token.isPlaceholder}>
                   <span className="z-10 relative">Place Prediction</span>
                 </button>
               </div>
             </div>
-          </Link>
-        ))}
+          </Link>)}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default MigratingTokenList;
