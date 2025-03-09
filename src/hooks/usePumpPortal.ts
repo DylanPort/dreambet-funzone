@@ -26,9 +26,11 @@ export const usePumpPortal = (tokenId?: string) => {
   
   // Get token creation events from console logs
   const getRawTokensFromLogs = () => {
-    if (typeof console === 'undefined' || !console.__logs) return [];
+    if (typeof console === 'undefined') return [];
     
-    return console.__logs
+    const logs = console.__logs || [];
+    
+    return logs
       .filter((log: any) => 
         log.message && 
         typeof log.message === 'string' && 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
@@ -13,14 +12,12 @@ const MigratingTokenList = () => {
   const { toast } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
   
-  // Subscribe to new token events
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
 
-  // Initial load from Supabase
   useEffect(() => {
     const loadTokens = async () => {
       try {
@@ -39,16 +36,13 @@ const MigratingTokenList = () => {
     };
 
     loadTokens();
-    // Refresh data every 2 minutes from Supabase as a fallback
     const interval = setInterval(loadTokens, 120000);
     return () => clearInterval(interval);
   }, [toast]);
   
-  // Process raw websocket messages that come in different format
   const processRawWebSocketData = (data: any) => {
     if (!data) return null;
     
-    // Handle create token event
     if (data.txType === 'create' && data.mint) {
       return {
         id: data.mint,
@@ -64,20 +58,16 @@ const MigratingTokenList = () => {
     return null;
   };
   
-  // Listen for real-time token updates from standard format data
   useEffect(() => {
     if (pumpPortal.recentTokens.length > 0) {
-      // Convert WebSocket token data to our format and merge with existing tokens
       const newTokens = pumpPortal.recentTokens
         .map(formatWebSocketTokenData)
-        .filter(token => token); // Filter out any null results
+        .filter(token => token);
       
-      // Merge with existing tokens, avoiding duplicates
       setTokens(currentTokens => {
         const existingIds = new Set(currentTokens.map(t => t.id));
         const newUniqueTokens = newTokens.filter(t => !existingIds.has(t.id));
         
-        // Show toast for new tokens if any
         if (newUniqueTokens.length > 0) {
           toast({
             title: "New tokens created!",
@@ -89,18 +79,16 @@ const MigratingTokenList = () => {
         return [...newUniqueTokens, ...currentTokens];
       });
       
-      // If we were in loading state, exit it
       if (loading) {
         setLoading(false);
       }
     }
   }, [pumpPortal.recentTokens, loading, toast]);
   
-  // Also watch for raw websocket messages
   useEffect(() => {
     const handleRawWebSocketMessages = () => {
-      // Get the last 10 unknown messages from console logs
-      const rawMessages = (console.__logs || [])
+      const logs = console.__logs || [];
+      const rawMessages = logs
         .filter((log: any) => 
           log.message && 
           typeof log.message === 'string' && 
@@ -110,25 +98,21 @@ const MigratingTokenList = () => {
         
       if (rawMessages.length === 0) return;
       
-      // Process each message to extract token data
       const processedTokens = rawMessages
         .map((log: any) => {
           try {
-            // Extract the JSON from the log message
             const match = log.message.match(/Unknown message type: (.+)/);
             if (!match || !match[1]) return null;
             
-            // Parse the JSON data
             const data = JSON.parse(match[1]);
             return processRawWebSocketData(data);
           } catch (e) {
             return null;
           }
         })
-        .filter(token => token); // Remove nulls
-        
+        .filter(token => token);
+      
       if (processedTokens.length > 0) {
-        // Merge with existing tokens, avoiding duplicates
         setTokens(currentTokens => {
           const existingIds = new Set(currentTokens.map(t => t.id));
           const newUniqueTokens = processedTokens.filter(t => !existingIds.has(t.id));
@@ -144,22 +128,18 @@ const MigratingTokenList = () => {
           return [...newUniqueTokens, ...currentTokens];
         });
         
-        // If we were in loading state, exit it
         if (loading) {
           setLoading(false);
         }
       }
     };
     
-    // Run once immediately
     handleRawWebSocketMessages();
     
-    // And set up an interval to check for new messages
     const interval = setInterval(handleRawWebSocketMessages, 5000);
     return () => clearInterval(interval);
   }, [loading, toast]);
 
-  // Function to format time since migration
   const formatTimeSince = (timestamp: number) => {
     const now = new Date().getTime();
     const diffMs = now - timestamp;
@@ -174,15 +154,14 @@ const MigratingTokenList = () => {
     }
   };
 
-  // Get tokenSymbol first letter or emoji for display
   const getTokenIcon = (symbol: string) => {
     if (!symbol) return '🪙';
     return symbol.charAt(0);
   };
 
-  // Process data from unknown format messages for display
   const getRawTokensForDisplay = () => {
-    const rawMessages = (console.__logs || [])
+    const logs = console.__logs || [];
+    const rawMessages = logs
       .filter((log: any) => 
         log.message && 
         typeof log.message === 'string' && 
@@ -214,18 +193,15 @@ const MigratingTokenList = () => {
       .filter(token => token);
   };
 
-  // Combine tokens from both sources for display in the empty state
   const getTokensForEmptyState = () => {
     const standardTokens = pumpPortal.recentTokens || [];
     const rawTokens = getRawTokensForDisplay();
     
-    // Combine and deduplicate
     const allTokens = [...standardTokens, ...rawTokens];
     const uniqueTokens = Array.from(
       new Map(allTokens.map(token => [token.token_mint, token])).values()
     );
     
-    // Sort by most recent first (assuming created_time is an ISO string)
     return uniqueTokens.sort((a, b) => 
       new Date(b.created_time).getTime() - new Date(a.created_time).getTime()
     );

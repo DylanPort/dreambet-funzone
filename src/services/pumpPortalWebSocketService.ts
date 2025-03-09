@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 
 // Types for WebSocket messages
@@ -68,31 +67,37 @@ interface PumpPortalState {
 let websocket: WebSocket | null = null;
 
 // Store to save console logs for debugging
-if (typeof window !== 'undefined' && !console.__logs) {
-  console.__logs = [];
-  const oldConsoleLog = console.log;
-  console.log = function(...args) {
-    console.__logs.push({ 
-      time: new Date().toISOString(),
-      message: args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ') 
-    });
-    if (console.__logs.length > 100) console.__logs.shift();
-    oldConsoleLog.apply(console, args);
-  };
-  
-  const oldConsoleInfo = console.info;
-  console.info = function(...args) {
-    console.__logs.push({ 
-      time: new Date().toISOString(),
-      message: args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ') 
-    });
-    if (console.__logs.length > 100) console.__logs.shift();
-    oldConsoleInfo.apply(console, args);
-  };
+if (typeof window !== 'undefined') {
+  if (!('__logs' in console)) {
+    console.__logs = [];
+    const oldConsoleLog = console.log;
+    console.log = function(...args) {
+      if (console.__logs) {
+        console.__logs.push({ 
+          time: new Date().toISOString(),
+          message: args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+          ).join(' ') 
+        });
+        if (console.__logs.length > 100) console.__logs.shift();
+      }
+      oldConsoleLog.apply(console, args);
+    };
+    
+    const oldConsoleInfo = console.info;
+    console.info = function(...args) {
+      if (console.__logs) {
+        console.__logs.push({ 
+          time: new Date().toISOString(),
+          message: args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+          ).join(' ') 
+        });
+        if (console.__logs.length > 100) console.__logs.shift();
+      }
+      oldConsoleInfo.apply(console, args);
+    };
+  }
 }
 
 // Create a Zustand store to manage WebSocket state
