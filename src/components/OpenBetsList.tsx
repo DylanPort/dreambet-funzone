@@ -2,16 +2,19 @@
 import React, { useState, useEffect } from 'react';
 import { fetchOpenBets, acceptBet } from '@/api/mockData';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { ArrowUp, ArrowDown, Clock } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, SortAsc, SortDesc, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Bet } from '@/types/bet';
+import CountdownTimer from './CountdownTimer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const OpenBetsList = () => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const { connected, publicKey } = useWallet();
   const { toast } = useToast();
+  const [sortBy, setSortBy] = useState<'newest' | 'expiring' | 'amount'>('newest');
 
   useEffect(() => {
     const loadBets = async () => {
@@ -84,76 +87,178 @@ const OpenBetsList = () => {
     }
   };
 
+  const getSortedBets = () => {
+    switch(sortBy) {
+      case 'newest':
+        return [...bets].sort((a, b) => b.timestamp - a.timestamp);
+      case 'expiring':
+        return [...bets].sort((a, b) => a.expiresAt - b.expiresAt);
+      case 'amount':
+        return [...bets].sort((a, b) => b.amount - a.amount);
+      default:
+        return bets;
+    }
+  };
+
+  const getExpiringBets = () => {
+    const oneHourFromNow = new Date().getTime() + 60 * 60 * 1000;
+    return getSortedBets().filter(bet => bet.expiresAt < oneHourFromNow);
+  };
+
+  const getPublicBets = () => {
+    return getSortedBets().filter(bet => !publicKey || bet.initiator !== publicKey.toString());
+  };
+
+  const formatAddress = (address: string) => {
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
+
+  const renderBetsList = (betsToRender: Bet[]) => {
+    if (betsToRender.length === 0) {
+      return (
+        <div className="glass-panel p-6 text-center">
+          <p className="text-dream-foreground/70">No bets available in this category.</p>
+          <p className="text-sm mt-2">Check back soon or create your own bet!</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {betsToRender.map(bet => (
+          <div key={bet.id} className="glass-panel p-4 transition-all hover:shadow-lg animate-fade-in">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h3 className="font-display font-semibold flex items-center gap-2">
+                  {bet.tokenName} <span className="text-sm font-normal text-dream-foreground/60">({bet.tokenSymbol})</span>
+                </h3>
+                <div className="flex items-center text-sm text-dream-foreground/70 mt-1">
+                  <Users className="w-3 h-3 mr-1" />
+                  <span className="truncate">
+                    Created by: {formatAddress(bet.initiator)}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-end text-sm">
+                <div className="flex items-center mb-1">
+                  <Clock className="w-3 h-3 mr-1 text-dream-foreground/70" />
+                  <span className={`${bet.expiresAt - new Date().getTime() < 3600000 ? 'text-red-400 font-semibold' : 'text-dream-foreground/70'}`}>
+                    {formatTimeRemaining(bet.expiresAt)}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <Timer className="w-3 h-3 mr-1 text-dream-foreground/70" />
+                  <span className="text-dream-foreground/70">
+                    {new Date(bet.timestamp).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center mt-3 justify-between">
+              <div className="flex items-center">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full mr-2 ${
+                  bet.prediction === 'up' 
+                    ? 'bg-green-500/20 text-green-400' 
+                    : 'bg-red-500/20 text-red-400'
+                }`}>
+                  {bet.prediction === 'up' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+                </div>
+                <div>
+                  <div className="font-semibold flex items-center">
+                    Betting {bet.prediction === 'up' ? 'UP ↑' : 'DOWN ↓'}
+                    {bet.expiresAt - new Date().getTime() < 3600000 && (
+                      <AlertTriangle className="ml-2 w-4 h-4 text-orange-400" />
+                    )}
+                  </div>
+                  <div className="flex items-center text-sm text-dream-foreground/70">
+                    <Wallet className="w-3 h-3 mr-1" />
+                    <span>{bet.amount} SOL</span>
+                    <span className="mx-1">•</span>
+                    <span>Potential win: {bet.amount * 2} SOL</span>
+                  </div>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={() => handleAcceptBet(bet)}
+                className={`${
+                  bet.prediction === 'up'
+                    ? 'bg-red-500 hover:bg-red-600'  // If they bet up, you bet down (red)
+                    : 'bg-green-500 hover:bg-green-600'  // If they bet down, you bet up (green)
+                }`}
+                disabled={!connected || bet.initiator === publicKey?.toString()}
+              >
+                Take {bet.prediction === 'up' ? 'DOWN' : 'UP'} Position
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-display font-bold text-dream-foreground">
-        Open Bets
-      </h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-display font-bold text-dream-foreground">
+          Open Bets
+        </h2>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-dream-foreground/70">Sort by:</span>
+          <div className="flex border rounded overflow-hidden">
+            <button 
+              className={`px-2 py-1 text-xs flex items-center ${sortBy === 'newest' ? 'bg-dream-accent2/30 text-dream-accent2' : 'bg-dream-accent1/10 text-dream-foreground/70'}`}
+              onClick={() => setSortBy('newest')}
+            >
+              <SortDesc className="w-3 h-3 mr-1" /> Newest
+            </button>
+            <button 
+              className={`px-2 py-1 text-xs flex items-center border-l ${sortBy === 'expiring' ? 'bg-dream-accent2/30 text-dream-accent2' : 'bg-dream-accent1/10 text-dream-foreground/70'}`}
+              onClick={() => setSortBy('expiring')}
+            >
+              <Clock className="w-3 h-3 mr-1" /> Expiring
+            </button>
+            <button 
+              className={`px-2 py-1 text-xs flex items-center border-l ${sortBy === 'amount' ? 'bg-dream-accent2/30 text-dream-accent2' : 'bg-dream-accent1/10 text-dream-foreground/70'}`}
+              onClick={() => setSortBy('amount')}
+            >
+              <Wallet className="w-3 h-3 mr-1" /> Amount
+            </button>
+          </div>
+        </div>
+      </div>
       
-      {loading ? (
+      {loading && bets.length === 0 ? (
         <div className="flex justify-center py-8">
           <div className="w-8 h-8 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {bets.length === 0 ? (
-            <div className="glass-panel p-6 text-center">
-              <p className="text-dream-foreground/70">No open bets available right now.</p>
-              <p className="text-sm mt-2">Be the first to create a bet on a migrating token!</p>
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="w-full flex mb-4">
+            <TabsTrigger value="all" className="flex-1">All Open Bets</TabsTrigger>
+            <TabsTrigger value="public" className="flex-1">Public Bets</TabsTrigger>
+            <TabsTrigger value="expiring" className="flex-1">Expiring Soon</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="all">
+            {renderBetsList(getSortedBets())}
+          </TabsContent>
+          
+          <TabsContent value="public">
+            {renderBetsList(getPublicBets())}
+          </TabsContent>
+          
+          <TabsContent value="expiring">
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2 mb-4 flex items-center">
+              <AlertTriangle className="text-orange-400 mr-2" />
+              <p className="text-sm">These bets will expire within the next hour!</p>
             </div>
-          ) : (
-            bets.map(bet => (
-              <div key={bet.id} className="glass-panel p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-display font-semibold">{bet.tokenName} ({bet.tokenSymbol})</h3>
-                    <p className="text-sm text-dream-foreground/70 truncate">
-                      Initiator: {bet.initiator.slice(0, 4)}...{bet.initiator.slice(-4)}
-                    </p>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <Clock className="w-3 h-3 mr-1 text-dream-foreground/70" />
-                    <span className="text-dream-foreground/70">
-                      {formatTimeRemaining(bet.expiresAt)}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center mt-3 justify-between">
-                  <div className="flex items-center">
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full mr-2 ${
-                      bet.prediction === 'up' 
-                        ? 'bg-green-500/20 text-green-400' 
-                        : 'bg-red-500/20 text-red-400'
-                    }`}>
-                      {bet.prediction === 'up' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
-                    </div>
-                    <div>
-                      <div className="font-semibold">
-                        Betting {bet.prediction === 'up' ? 'UP ↑' : 'DOWN ↓'}
-                      </div>
-                      <div className="text-sm text-dream-foreground/70">
-                        {bet.amount} SOL
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    onClick={() => handleAcceptBet(bet)}
-                    className={`${
-                      bet.prediction === 'up'
-                        ? 'bg-red-500 hover:bg-red-600'  // If they bet up, you bet down (red)
-                        : 'bg-green-500 hover:bg-green-600'  // If they bet down, you bet up (green)
-                    }`}
-                    disabled={!connected || bet.initiator === publicKey?.toString()}
-                  >
-                    Take {bet.prediction === 'up' ? 'DOWN' : 'UP'} Position
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+            {renderBetsList(getExpiringBets())}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
