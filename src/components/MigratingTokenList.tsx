@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
@@ -12,6 +13,7 @@ const MigratingTokenList = () => {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState('grid');
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const {
     toast
   } = useToast();
@@ -264,6 +266,25 @@ const MigratingTokenList = () => {
 
   const displayTokens = sortTokens(getTokensForDisplay());
 
+  // Toggle sort menu visibility
+  const toggleSortMenu = () => {
+    setSortMenuOpen(!sortMenuOpen);
+  };
+
+  // Close sort menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (sortMenuOpen) {
+        setSortMenuOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [sortMenuOpen]);
+
   return (
     <div className="space-y-5">
       <div className="flex justify-between items-center">
@@ -297,31 +318,37 @@ const MigratingTokenList = () => {
                 variant="outline" 
                 size="sm" 
                 className="text-xs gap-1.5 h-8"
+                onClick={toggleSortMenu}
               >
                 <ArrowUpDown className="w-3.5 h-3.5" />
                 <span>Sort By: {sortBy.replace('-', ' ')}</span>
                 <ChevronDown className="w-3.5 h-3.5 ml-1" />
               </Button>
-              <div className="absolute right-0 top-full mt-1 w-40 bg-dream-background/95 backdrop-blur-md border border-dream-accent1/20 rounded-md shadow-lg z-20 overflow-hidden">
-                <div className="py-1">
-                  {[
-                    {value: 'newest', label: 'Newest First'},
-                    {value: 'oldest', label: 'Oldest First'},
-                    {value: 'price-high', label: 'Price: High to Low'},
-                    {value: 'price-low', label: 'Price: Low to High'},
-                    {value: 'change-high', label: 'Change: High to Low'},
-                    {value: 'change-low', label: 'Change: Low to High'},
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      className={`block w-full text-left px-4 py-2 text-xs hover:bg-dream-accent1/10 transition-colors ${sortBy === option.value ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
-                      onClick={() => setSortBy(option.value)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+              {sortMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-40 bg-dream-background/95 backdrop-blur-md border border-dream-accent1/20 rounded-md shadow-lg z-20 overflow-hidden">
+                  <div className="py-1">
+                    {[
+                      {value: 'newest', label: 'Newest First'},
+                      {value: 'oldest', label: 'Oldest First'},
+                      {value: 'price-high', label: 'Price: High to Low'},
+                      {value: 'price-low', label: 'Price: Low to High'},
+                      {value: 'change-high', label: 'Change: High to Low'},
+                      {value: 'change-low', label: 'Change: Low to High'},
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        className={`block w-full text-left px-4 py-2 text-xs hover:bg-dream-accent1/10 transition-colors ${sortBy === option.value ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                        onClick={() => {
+                          setSortBy(option.value);
+                          setSortMenuOpen(false);
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
           
