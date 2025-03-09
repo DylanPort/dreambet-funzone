@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
 import PriceChart from '@/components/PriceChart';
 import { fetchTokenById } from '@/services/supabaseService';
-import { fetchBetsByToken } from '@/api/mockData';
+import { fetchBetsByToken, acceptBet } from '@/api/mockData';
 import { Bet } from '@/types/bet';
 import { ArrowUp, ArrowDown, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,6 +24,7 @@ const TokenDetail = () => {
   const [showCreateBet, setShowCreateBet] = useState(false);
   const { toast } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
+  const { connected, publicKey } = useWallet();
   
   useEffect(() => {
     const loadToken = async () => {
@@ -174,6 +177,34 @@ const TokenDetail = () => {
     }
   };
 
+  // Handler for accepting a bet
+  const handleAcceptBet = async (bet: Bet) => {
+    if (!connected || !publicKey) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to accept a bet",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      await acceptBet(bet.id, publicKey.toString());
+      toast({
+        title: "Bet accepted!",
+        description: `You've successfully accepted the bet on ${bet.tokenSymbol}`,
+      });
+      await refreshData();
+    } catch (error) {
+      console.error("Error accepting bet:", error);
+      toast({
+        title: "Failed to accept bet",
+        description: "There was an error accepting the bet",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Check if WebSocket connection is active
   const isLive = pumpPortal.connected && tokenId && pumpPortal.recentTrades[tokenId];
   
@@ -274,6 +305,10 @@ const TokenDetail = () => {
                 <div className="glass-panel p-6 mb-8">
                   <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
                   <CreateBetForm 
+                    tokenId={token.id}
+                    tokenName={token.name}
+                    tokenSymbol={token.symbol}
+                    onBetCreated={refreshData}
                     token={token}
                     onSuccess={() => {
                       setShowCreateBet(false);
@@ -298,7 +333,10 @@ const TokenDetail = () => {
                     {bets.map(bet => (
                       <BetCard 
                         key={bet.id} 
-                        bet={bet} 
+                        bet={bet}
+                        connected={connected}
+                        publicKeyString={publicKey ? publicKey.toString() : null}
+                        onAcceptBet={handleAcceptBet}
                         onBetAccepted={refreshData}
                       />
                     ))}
