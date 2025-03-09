@@ -36,20 +36,26 @@ const TokenCard: React.FC<TokenCardProps> = ({
 
   // Format time remaining
   const formatTimeRemaining = (minutes: number) => {
-    if (minutes < 1) return 'Less than a minute';
+    if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
     
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}h ${mins}m ago`;
+    return `${hours}h ${mins}m`;
   };
 
   // Generate a more unique key by combining id with index if provided
   const uniqueId = index !== undefined ? `${id}-${index}` : id;
 
   return (
-    <div className="glass-panel overflow-hidden transition-all duration-300 hover:shadow-neon hover:scale-[1.02]">
-      <Link to={`/token/${id}`} className="block p-4">
+    <div className="relative overflow-hidden group">
+      <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
+      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
+      <div className="absolute -right-12 -top-12 w-24 h-24 bg-dream-accent2/10 blur-xl rounded-full group-hover:bg-dream-accent2/20 transition-all"></div>
+      <div className="absolute -left-12 -bottom-12 w-24 h-24 bg-dream-accent1/10 blur-xl rounded-full group-hover:bg-dream-accent1/20 transition-all"></div>
+      
+      <Link to={`/token/${id}`} className="block glass-panel p-4 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             {imageUrl ? (
@@ -111,7 +117,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
         <div className="flex items-center justify-between text-xs text-dream-foreground/60">
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            <span>Just now</span>
+            <span>{formatTimeRemaining(timeRemaining)}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span>SOL {formatPrice(price / 100)}</span>
