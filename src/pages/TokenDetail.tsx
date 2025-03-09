@@ -39,11 +39,9 @@ const TokenDetail = () => {
         setLoading(true);
         console.log("Loading token with ID:", id);
         
-        // First check if the token exists in the PumpPortal service
         let tokenData = null;
         let isWebSocketToken = false;
         
-        // Check recent tokens from WebSocket
         const recentTokens = pumpPortal.recentTokens || [];
         const webSocketToken = recentTokens.find(t => t.token_mint === id);
         
@@ -54,12 +52,11 @@ const TokenDetail = () => {
             token_mint: webSocketToken.token_mint,
             token_name: webSocketToken.token_name,
             token_symbol: webSocketToken.token_symbol || '',
-            last_trade_price: 0, // New tokens may not have a price yet
+            last_trade_price: 0,
             last_updated_time: webSocketToken.created_time,
           };
         }
         
-        // If not found in WebSocket, check Supabase
         if (!tokenData) {
           console.log("Checking Supabase for token");
           const supabaseTokenData = await fetchTokenById(id);
@@ -77,11 +74,10 @@ const TokenDetail = () => {
             symbol: tokenData.token_symbol || '',
             logo: '🪙',
             currentPrice: tokenData.last_trade_price || 0,
-            change24h: 0, // We don't have historical data yet
+            change24h: 0,
             migrationTime: new Date(tokenData.last_updated_time).getTime(),
           });
           
-          // Generate mock metrics for this token
           setTokenMetrics({
             marketCap: (tokenData.last_trade_price || 0.001) * 1000000 * (0.5 + Math.random()),
             volume24h: (tokenData.last_trade_price || 0.001) * 50000 * (0.5 + Math.random()),
@@ -89,12 +85,10 @@ const TokenDetail = () => {
             holders: Math.floor(100 + Math.random() * 900)
           });
           
-          // Subscribe to real-time trades for this token
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(id);
           }
           
-          // Create some initial price data
           const now = new Date();
           const initialData = [];
           
@@ -110,7 +104,6 @@ const TokenDetail = () => {
           
           setPriceData(initialData);
           
-          // Load bets for this token
           const tokenBets = await fetchBetsByToken(id);
           setBets(tokenBets);
         } else if (id) {
@@ -125,7 +118,6 @@ const TokenDetail = () => {
             migrationTime: new Date().getTime(),
           });
           
-          // Generate mock metrics for this token
           setTokenMetrics({
             marketCap: 10000 * (0.5 + Math.random()),
             volume24h: 5000 * (0.5 + Math.random()),
@@ -133,12 +125,10 @@ const TokenDetail = () => {
             holders: Math.floor(50 + Math.random() * 150)
           });
           
-          // Subscribe to real-time trades for this token
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(id);
           }
           
-          // Create some initial price data
           const now = new Date();
           const initialData = [];
           
@@ -154,7 +144,6 @@ const TokenDetail = () => {
           
           setPriceData(initialData);
           
-          // Still try to load bets
           const tokenBets = await fetchBetsByToken(id);
           setBets(tokenBets);
           
@@ -464,5 +453,50 @@ const TokenDetail = () => {
                 </div>
               </div>
               
-              {
+              {showCreateBet && (
+                <div className="glass-panel p-6 mb-8">
+                  <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
+                  <CreateBetForm 
+                    tokenId={token.id}
+                    tokenName={token.name}
+                    tokenSymbol={token.symbol || ''}
+                    onBetCreated={async () => {
+                      setShowCreateBet(false);
+                      await refreshData();
+                    }}
+                  />
+                </div>
+              )}
+              
+              <div className="glass-panel p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-display font-bold">Active Bets</h2>
+                  <div className="text-sm text-dream-foreground/70">{bets.length} bets</div>
+                </div>
+                
+                {bets.length === 0 ? (
+                  <div className="text-center py-8 text-dream-foreground/70">
+                    No active bets for this token yet.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bets.map(bet => (
+                      <BetCard 
+                        key={bet.id}
+                        bet={bet}
+                        onAccept={() => handleAcceptBet(bet)}
+                        showToken={false}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </>
+  );
+};
 
+export default TokenDetail;
