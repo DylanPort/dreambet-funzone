@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -38,20 +39,31 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { toast } = useToast();
 
-  // Check if wallet is actually ready for transactions
+  // Check if wallet is actually ready for transactions with improved reliability
   const verifyWalletConnection = useCallback(async () => {
-    if (connected && publicKey && wallet && wallet.adapter.publicKey) {
+    if (connected && publicKey && wallet) {
       try {
         setWalletCheckingInProgress(true);
         console.log("Verifying wallet connection in CreateBetForm...");
         
+        // Add a short delay to ensure adapter is fully initialized
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Log wallet state for debugging
+        console.log("Wallet state:", {
+          connected,
+          publicKey: publicKey?.toString(),
+          walletAdapter: wallet?.adapter?.name,
+          adapterPublicKey: wallet?.adapter?.publicKey?.toString()
+        });
+        
         // Simple check - if publicKeys match, wallet is considered connected
-        if (wallet.adapter.publicKey.equals(publicKey)) {
-          console.log("Wallet successfully verified - Ready for transactions");
+        if (wallet.adapter.publicKey && wallet.adapter.publicKey.equals(publicKey)) {
+          console.log("✅ Wallet successfully verified - Ready for transactions");
           setIsWalletReady(true);
           return true;
         } else {
-          console.warn("Wallet adapter publicKey doesn't match connected publicKey");
+          console.warn("⚠️ Wallet adapter publicKey doesn't match connected publicKey");
           setIsWalletReady(false);
           return false;
         }
@@ -77,13 +89,26 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   
   // Always verify wallet when connection state changes
   useEffect(() => {
-    // Add a small delay to give the wallet adapter time to fully connect
+    // Add a larger delay to give the wallet adapter time to fully connect
     const timeoutId = setTimeout(() => {
       verifyWalletConnection();
-    }, 500);
+    }, 1000);
     
     return () => clearTimeout(timeoutId);
   }, [verifyWalletConnection, connected, publicKey, wallet, checkAttempts]);
+
+  // Re-check wallet connection on token detail page load
+  useEffect(() => {
+    // One extra check on component mount
+    const initialCheckTimeout = setTimeout(() => {
+      if (connected && publicKey && !isWalletReady) {
+        console.log("Performing initial wallet verification check on page load");
+        verifyWalletConnection();
+      }
+    }, 2000);
+    
+    return () => clearTimeout(initialCheckTimeout);
+  }, []);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
@@ -96,6 +121,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
 
   const handleRetryWalletConnection = async () => {
     try {
+      console.log("Forcing wallet disconnect/reconnect");
       if (disconnect) {
         await disconnect();
         toast({
@@ -114,10 +140,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       title: "Checking wallet connection",
       description: "Verifying your wallet connection status...",
     });
+    
+    // Force an immediate recheck
+    setTimeout(() => {
+      verifyWalletConnection();
+    }, 300);
   };
 
   const handleCreateBet = async () => {
-    // Verify wallet connection one more time before proceeding
+    // Force a final wallet connection verification
     const isWalletVerified = await verifyWalletConnection();
     
     if (!isWalletVerified) {
@@ -223,9 +254,43 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }
   };
 
+  // Condition to show a prominent "Check wallet again" button if all appears okay but wallet is not ready
+  const showExtraWalletReconnectOption = connected && publicKey && wallet && !isWalletReady && !walletCheckingInProgress;
+
   return (
     <div className="glass-panel p-6 space-y-4">
       <h3 className="text-xl font-display font-semibold">Create a New Bet</h3>
+      
+      {/* Add prominent reconnection button at the top if needed */}
+      {showExtraWalletReconnectOption && (
+        <div className="p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-md">
+          <div className="flex flex-col items-center text-sm">
+            <p className="text-yellow-400 flex items-center mb-2">
+              <span className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
+              Wallet appears connected but not ready for transactions
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleRetryWalletConnection}
+                className="text-xs"
+              >
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Reconnect Wallet
+              </Button>
+              <Button 
+                size="sm" 
+                variant="secondary" 
+                onClick={handleCheckWalletAgain}
+                className="text-xs"
+              >
+                Check Again
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div>
         <label className="block text-sm text-dream-foreground/70 mb-1">

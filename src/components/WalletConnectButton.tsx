@@ -20,8 +20,10 @@ const WalletConnectButton = () => {
           setVerifying(true);
           console.log("Verifying wallet connection in WalletConnectButton");
           
+          // Allow more time for wallet adapter to fully initialize
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           // Simple check - if the wallet adapter has a matching publicKey, consider it fully connected
-          // This is more reliable than using signMessage which might not be available in all wallets
           if (wallet.adapter.publicKey && wallet.adapter.publicKey.equals(publicKey)) {
             console.log("Wallet verified with publicKey check - FULLY CONNECTED");
             setIsFullyConnected(true);
@@ -42,16 +44,17 @@ const WalletConnectButton = () => {
       }
     };
     
-    // Add a small delay to allow wallet adapter to fully initialize
+    // Add a longer delay to allow wallet adapter to fully initialize
     const timeoutId = setTimeout(() => {
       verifyConnection();
-    }, 300);
+    }, 800);
 
     return () => clearTimeout(timeoutId);
   }, [connected, publicKey, wallet]);
 
   const handleForceReconnect = async () => {
     try {
+      console.log("Force reconnecting wallet...");
       if (disconnect) {
         await disconnect();
         toast({
