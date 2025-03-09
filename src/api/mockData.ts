@@ -1,4 +1,3 @@
-
 import { Bet } from '@/types/bet';
 import { 
   fetchTokens, 
@@ -133,7 +132,7 @@ export const fetchBetsByToken = async (tokenId: string) => {
   }
 };
 
-// These functions now use Supabase
+// These functions now use Supabase but should be properly exported
 export const fetchOpenBetsWrapper = async () => {
   try {
     return await fetchOpenBets();
@@ -213,3 +212,9 @@ export const acceptBetWrapper = async (
     return updatedBet;
   }
 };
+
+// Export these functions to fix import errors in components
+export const fetchOpenBets = fetchOpenBetsWrapper;
+export const fetchUserBets = fetchUserBetsWrapper;
+export const createBet = createBetWrapper;
+export const acceptBet = acceptBetWrapper;
