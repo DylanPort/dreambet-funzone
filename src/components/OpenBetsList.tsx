@@ -39,7 +39,7 @@ const OpenBetsList = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleAcceptBet = async (bet: Bet, walletInstance: any) => {
+  const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
       toast({
         title: "Wallet not connected",
@@ -58,7 +58,8 @@ const OpenBetsList = () => {
     }
     try {
       setLoading(true);
-      await acceptBet(bet, publicKey.toString(), walletInstance);
+      // Pass the wallet instance here
+      await acceptBet(bet, publicKey.toString(), wallet);
       toast({
         title: "Bet accepted!",
         description: `You've accepted a ${bet.amount} SOL bet on ${bet.tokenName}`
@@ -81,7 +82,8 @@ const OpenBetsList = () => {
 
   const publicKeyString = publicKey ? publicKey.toString() : null;
 
-  return <div className="space-y-6">
+  return (
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-display font-bold text-dream-foreground">
           Open Bets
@@ -103,9 +105,12 @@ const OpenBetsList = () => {
         </div>
       </div>
       
-      {loading && bets.length === 0 ? <div className="flex justify-center py-8">
+      {loading && bets.length === 0 ? (
+        <div className="flex justify-center py-8">
           <div className="w-8 h-8 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
-        </div> : <Tabs defaultValue="all" className="w-full">
+        </div>
+      ) : (
+        <Tabs defaultValue="all" className="w-full">
           <TabsList className="w-full flex mb-4">
             <TabsTrigger value="all" className="flex-1">All Open Bets</TabsTrigger>
             <TabsTrigger value="public" className="flex-1">Recent Bets</TabsTrigger>
@@ -113,11 +118,21 @@ const OpenBetsList = () => {
           </TabsList>
           
           <TabsContent value="all">
-            <BetsListView bets={getSortedBets(bets, sortBy).slice(0, 10)} connected={connected} publicKeyString={publicKeyString} onAcceptBet={handleAcceptBet} />
+            <BetsListView 
+              bets={getSortedBets(bets, sortBy).slice(0, 10)} 
+              connected={connected} 
+              publicKeyString={publicKeyString} 
+              onAcceptBet={handleAcceptBet} 
+            />
           </TabsContent>
           
           <TabsContent value="public">
-            <BetsListView bets={getPublicBets(bets, sortBy, publicKeyString)} connected={connected} publicKeyString={publicKeyString} onAcceptBet={handleAcceptBet} />
+            <BetsListView 
+              bets={getPublicBets(bets, sortBy, publicKeyString)} 
+              connected={connected} 
+              publicKeyString={publicKeyString} 
+              onAcceptBet={handleAcceptBet} 
+            />
           </TabsContent>
           
           <TabsContent value="expiring">
@@ -125,10 +140,17 @@ const OpenBetsList = () => {
               <AlertTriangle className="text-orange-400 mr-2" />
               <p className="text-sm">These bets will expire within the next 10 minutes!</p>
             </div>
-            <BetsListView bets={getExpiringBets(bets, sortBy)} connected={connected} publicKeyString={publicKeyString} onAcceptBet={handleAcceptBet} />
+            <BetsListView 
+              bets={getExpiringBets(bets, sortBy)} 
+              connected={connected} 
+              publicKeyString={publicKeyString} 
+              onAcceptBet={handleAcceptBet} 
+            />
           </TabsContent>
-        </Tabs>}
-    </div>;
+        </Tabs>
+      )}
+    </div>
+  );
 };
 
 export default OpenBetsList;

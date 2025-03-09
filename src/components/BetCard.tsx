@@ -4,13 +4,12 @@ import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer } from '
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
-import { useWallet } from '@solana/wallet-adapter-react';
 
 interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
-  onAcceptBet: (bet: Bet, wallet: any) => void;
+  onAcceptBet: (bet: Bet) => void;
   onBetAccepted?: () => void; // Added for TokenDetail page
 }
 
@@ -22,11 +21,10 @@ const BetCard: React.FC<BetCardProps> = ({
   onBetAccepted
 }) => {
   const isExpiringSoon = bet.expiresAt - new Date().getTime() < 3600000; // less than 1 hour
-  const { wallet } = useWallet();
   
-  const handleAcceptBet = async (bet: Bet) => {
+  const handleAcceptBet = async () => {
     try {
-      await onAcceptBet(bet, wallet);
+      await onAcceptBet(bet);
       
       if (onBetAccepted) {
         onBetAccepted();
@@ -93,7 +91,7 @@ const BetCard: React.FC<BetCardProps> = ({
         </div>
         
         <Button 
-          onClick={() => handleAcceptBet(bet)}
+          onClick={handleAcceptBet}
           className={`${
             bet.prediction === 'migrate'
               ? 'bg-red-500 hover:bg-red-600'  // If they bet migrate, you bet die (red)
