@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap, Sparkles, ExternalLink, Rocket, ShieldAlert, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, AlertCircle, Zap, Sparkles, ExternalLink, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
 import TokenCard from './TokenCard';
+
 const MigratingTokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,11 +14,13 @@ const MigratingTokenList = () => {
     toast
   } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const loadTokens = async () => {
       try {
@@ -38,6 +41,7 @@ const MigratingTokenList = () => {
     const interval = setInterval(loadTokens, 120000);
     return () => clearInterval(interval);
   }, [toast]);
+
   const processRawWebSocketData = (data: any) => {
     if (!data) return null;
     if (data.txType === 'create' && data.mint) {
@@ -53,6 +57,7 @@ const MigratingTokenList = () => {
     }
     return null;
   };
+
   useEffect(() => {
     if (pumpPortal.recentTokens.length > 0) {
       const newTokens = pumpPortal.recentTokens.map(formatWebSocketTokenData).filter(token => token);
@@ -73,6 +78,7 @@ const MigratingTokenList = () => {
       }
     }
   }, [pumpPortal.recentTokens, loading, toast]);
+
   useEffect(() => {
     const handleRawWebSocketMessages = () => {
       const logs = console.__logs || [];
@@ -110,6 +116,7 @@ const MigratingTokenList = () => {
     const interval = setInterval(handleRawWebSocketMessages, 5000);
     return () => clearInterval(interval);
   }, [loading, toast]);
+
   const formatTimeSince = (timestamp: number) => {
     const now = new Date().getTime();
     const diffMs = now - timestamp;
@@ -122,10 +129,12 @@ const MigratingTokenList = () => {
       return `${hours}h ${mins}m ago`;
     }
   };
+
   const getTokenIcon = (symbol: string) => {
     if (!symbol) return '🪙';
     return symbol.charAt(0);
   };
+
   const getRawTokensForDisplay = () => {
     const logs = console.__logs || [];
     const rawMessages = logs.filter((log: any) => log.message && typeof log.message === 'string' && log.message.includes('Unknown message type:')).slice(-10);
@@ -147,6 +156,7 @@ const MigratingTokenList = () => {
       }
     }).filter(token => token);
   };
+
   const getTokensForEmptyState = () => {
     const standardTokens = pumpPortal.recentTokens || [];
     const rawTokens = getRawTokensForDisplay();
@@ -154,6 +164,7 @@ const MigratingTokenList = () => {
     const uniqueTokens = Array.from(new Map(allTokens.map(token => [token.token_mint, token])).values());
     return uniqueTokens.sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime());
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -164,6 +175,7 @@ const MigratingTokenList = () => {
       maximumFractionDigits: 2
     });
   };
+
   const getTokensForDisplay = () => {
     let displayTokens = [];
     if (loading) {
@@ -226,82 +238,116 @@ const MigratingTokenList = () => {
     }
     return displayTokens;
   };
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-5">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-display font-bold text-dream-foreground relative flex items-center gap-2">
-          <img src="/lovable-uploads/24e94b9d-6b95-4cee-9dbc-c78f440e3f68.png" alt="Pill Logo" className="w-8 h-8" />
-          <span className="relative z-10">Newly Created Tokens</span>
-          <span className="absolute -left-2 bottom-0 w-[120%] h-2 bg-gradient-to-r from-dream-accent1 to-transparent opacity-30"></span>
+        <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
+          <span>NEWLY CREATED</span>
         </h2>
         
-        <div className="flex items-center text-sm bg-dream-background/30 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent2/20">
-          <span className={`flex items-center gap-1 ${pumpPortal.connected ? 'text-green-400' : 'text-yellow-400'}`}>
-            <Zap className="w-4 h-4" />
-            {pumpPortal.connected ? 'Live Feed' : 'Connecting...'}
-          </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center text-sm bg-dream-background/50 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent1/30">
+            <Filter className="w-3.5 h-3.5 mr-1.5 text-dream-accent1" />
+            <span className="font-medium">Filter 3</span>
+          </div>
+          
+          <div className="flex items-center text-sm bg-dream-background/30 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent2/20">
+            <span className={`flex items-center gap-1 ${pumpPortal.connected ? 'text-green-400' : 'text-yellow-400'}`}>
+              <Zap className="w-4 h-4" />
+              <span>0.6</span>
+            </span>
+          </div>
         </div>
       </div>
       
-      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {getTokensForDisplay().map(token => <Link key={token.id} to={token.isPlaceholder ? '#' : `/token/${token.id}`} className={`token-card group relative overflow-hidden ${token.isPlaceholder ? 'pointer-events-none' : ''}`}>
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {getTokensForDisplay().map((token, index) => (
+          <Link 
+            key={token.id || `token-${index}`} 
+            to={token.isPlaceholder ? '#' : `/token/${token.id}`} 
+            className={`token-card group relative overflow-hidden ${token.isPlaceholder ? 'opacity-60 pointer-events-none' : ''}`}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
+            <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
             
             <div className="absolute -right-12 -top-12 w-24 h-24 bg-dream-accent2/10 blur-xl rounded-full group-hover:bg-dream-accent2/20 transition-all"></div>
             <div className="absolute -left-12 -bottom-12 w-24 h-24 bg-dream-accent1/10 blur-xl rounded-full group-hover:bg-dream-accent1/20 transition-all"></div>
             
-            <div className={`glass-panel p-5 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300 h-full ${token.isPlaceholder ? 'animate-pulse' : ''}`}>
-              <div className="flex justify-between items-start">
-                <div className="flex items-center">
-                  {token.imageUrl && !token.isPlaceholder ? <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/10 to-dream-accent3/10 rounded-full animate-pulse"></div>
-                      <img src={token.imageUrl} alt={token.name} className="w-10 h-10 rounded-full object-cover relative z-10" onError={e => {
-                  const imgElement = e.target as HTMLImageElement;
-                  imgElement.style.display = 'none';
-                  const nextElement = imgElement.nextElementSibling as HTMLElement;
-                  if (nextElement) {
-                    nextElement.style.display = 'flex';
-                  }
-                }} />
-                    </div> : null}
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 ${token.imageUrl && !token.isPlaceholder ? 'hidden' : ''}`}>
-                    <span className="font-display font-bold">{getTokenIcon(token.symbol)}</span>
+            <div className={`glass-panel p-4 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300 h-full ${token.isPlaceholder ? 'animate-pulse' : ''}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
+                    <span className="font-display font-bold text-lg">{token.symbol?.charAt(0) || '?'}</span>
                   </div>
-                  <div className="ml-3">
-                    <h3 className="font-display font-semibold group-hover:text-dream-accent2 transition-colors duration-300">{token.name || 'Unknown Token'}</h3>
-                    <p className="text-sm text-dream-foreground/70">{token.symbol || '???'}</p>
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <h3 className="font-display font-semibold text-lg">{token.name || 'Unknown'}</h3>
+                      <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
+                    </div>
+                    <p className="text-dream-foreground/60 text-sm">{token.symbol || '???'}</p>
                   </div>
                 </div>
-                <div className="flex items-center text-sm bg-dream-background/50 backdrop-blur-sm px-2 py-0.5 rounded-full">
-                  <Clock className="w-3 h-3 mr-1 text-dream-foreground/70" />
-                  <span className="text-dream-foreground/70">
-                    {formatTimeSince(token.migrationTime)}
-                  </span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
+                    <span className="inline-block w-3 h-3 rounded-full mr-1.5 bg-green-500"></span>
+                    <span className="text-sm text-green-400">
+                      {token.change24h || 0}%
+                    </span>
+                  </div>
+                  <div className="text-xs text-dream-foreground/40 border border-dream-foreground/10 px-1.5 py-0.5 rounded">
+                    +0%
+                  </div>
                 </div>
               </div>
               
-              <div className="flex items-center mt-4 p-3 bg-gradient-to-r from-dream-background/40 to-dream-background/20 backdrop-blur-sm rounded-md border border-white/5 group-hover:border-white/10 transition-all">
-                <div className="grid grid-cols-2 gap-3 w-full">
-                  <button className="btn-moon py-1.5 flex items-center justify-center gap-1.5" disabled={token.isPlaceholder}>
-                    <ThumbsUp className="w-3.5 h-3.5" />
-                    <span>Moon 🚀</span>
-                  </button>
-                  <button className="btn-die py-1.5 flex items-center justify-center gap-1.5" disabled={token.isPlaceholder}>
-                    <ThumbsDown className="w-3.5 h-3.5" />
-                    <span>Die 💀</span>
-                  </button>
+              <div className="flex justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
+                    <span className="inline-block w-3 h-3 rounded-full mr-1.5 bg-green-500"></span>
+                    <span className="text-sm text-green-400">
+                      {token.change24h || 0}%
+                    </span>
+                  </div>
+                  <div className="text-xs text-dream-foreground/40 border border-dream-foreground/10 px-1.5 py-0.5 rounded">
+                    +0%
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium flex items-center">
+                    <span className="mr-1 text-dream-foreground/60">MC</span>
+                    <span className="text-dream-foreground/90">${formatPrice(token.currentPrice || 0)}</span>
+                  </p>
                 </div>
               </div>
-              
-              <div className="mt-4 flex justify-center">
-                <button className={`bet-button w-full py-2 text-sm font-semibold ${token.isPlaceholder ? 'opacity-50' : ''}`} disabled={token.isPlaceholder}>
-                  <span className="z-10 relative">Place Prediction</span>
+
+              <div className="flex items-center justify-between text-xs text-dream-foreground/60">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  <span>Just now</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span>SOL {formatPrice((token.currentPrice || 0) / 100)}</span>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <button className="btn-moon py-1.5 flex items-center justify-center gap-1.5" disabled={token.isPlaceholder}>
+                  <ArrowUp className="w-3.5 h-3.5" />
+                  <span>Moon</span>
+                </button>
+                <button className="btn-die py-1.5 flex items-center justify-center gap-1.5" disabled={token.isPlaceholder}>
+                  <ArrowDown className="w-3.5 h-3.5" />
+                  <span>Die</span>
                 </button>
               </div>
             </div>
-          </Link>)}
+          </Link>
+        ))}
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default MigratingTokenList;

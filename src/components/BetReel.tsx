@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles } from 'lucide-react';
+import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
@@ -172,7 +172,7 @@ const BetReel: React.FC = () => {
         <div className="flex items-center">
           <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
             <Sparkles className="h-4 w-4 text-dream-accent1 mr-2" />
-            <span className="text-sm font-semibold">Live Bets</span>
+            <span className="text-sm font-semibold">ABOUT TO GRADUATE</span>
           </div>
           <div className="overflow-hidden mx-4 flex-1">
             <div className="text-sm text-gray-400">Loading active bets...</div>
@@ -188,7 +188,7 @@ const BetReel: React.FC = () => {
         <div className="flex items-center">
           <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
             <Sparkles className="h-4 w-4 text-dream-accent1 mr-2" />
-            <span className="text-sm font-semibold">Live Bets</span>
+            <span className="text-sm font-semibold">ABOUT TO GRADUATE</span>
           </div>
           <div className="overflow-hidden mx-4 flex-1">
             <div className="text-sm text-gray-400 italic">No active bets at the moment</div>
@@ -203,36 +203,57 @@ const BetReel: React.FC = () => {
       <div className="flex items-center">
         <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
           <Sparkles className="h-4 w-4 text-dream-accent1 mr-2" />
-          <span className="text-sm font-semibold">Live Bets</span>
+          <span className="text-sm font-semibold">ABOUT TO GRADUATE</span>
         </div>
         
-        <div className="overflow-hidden mx-4 flex-1">
+        <div className="flex items-center ml-auto mr-4">
+          <div className="flex items-center gap-1 h-6 px-2 rounded-md bg-dream-background/40 text-xs text-dream-foreground/60">
+            <Zap className="w-3 h-3" />
+            <span>0.6</span>
+          </div>
+        </div>
+        
+        <div className="overflow-hidden mr-4 flex-1">
           <div className="flex gap-6 items-center animate-scroll">
             {activeBets.map((bet, index) => (
               <Link
                 key={`${bet.id}-${index}`}
                 to={`/betting/token/${bet.tokenId}`}
-                className={`flex-shrink-0 flex items-center bg-black/20 px-3 py-1 rounded-md border border-white/5 transition-all duration-500 hover:bg-black/40 
+                className={`flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-white/5 transition-all duration-500 hover:bg-black/40 
                   ${animateIndex === index ? 'animate-entrance' : ''}`}
               >
-                <div className="flex items-center">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2
-                    ${bet.prediction === 'migrate' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {bet.prediction === 'migrate' 
-                      ? <ArrowUp className="h-3 w-3" /> 
-                      : <ArrowDown className="h-3 w-3" />}
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
+                    <span className="font-display font-bold text-sm">{bet.tokenSymbol.charAt(0)}</span>
                   </div>
+                  
                   <div className="mr-2">
-                    <div className="text-xs font-semibold">{bet.tokenSymbol}</div>
-                    <div className="text-[10px] text-gray-400">{bet.prediction.toUpperCase()}</div>
+                    <div className="flex items-center gap-1">
+                      <div className="text-sm font-semibold">{bet.tokenName}</div>
+                      <ExternalLink className="w-3 h-3 text-dream-foreground/40" />
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-dream-foreground/60">
+                      <span>{bet.tokenSymbol}</span>
+                      <span className="flex items-center">
+                        <Clock className="h-2.5 w-2.5 mr-0.5" />
+                        <span>{formatTimeRemaining(bet.expiresAt)}</span>
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center text-xs">
-                    <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
-                    <span className="font-semibold">{bet.amount} SOL</span>
-                  </div>
-                  <div className="ml-2 flex items-center text-xs">
-                    <Clock className="h-3 w-3 mr-1 text-dream-accent3" />
-                    <span className="text-gray-300">{formatTimeRemaining(bet.expiresAt)}</span>
+                  
+                  <div className="flex gap-3 items-center">
+                    <div className={`flex items-center px-2 py-0.5 rounded-md text-xs
+                      ${bet.prediction === 'migrate' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {bet.prediction === 'migrate' 
+                        ? <ArrowUp className="h-3 w-3 mr-1" /> 
+                        : <ArrowDown className="h-3 w-3 mr-1" />}
+                      <span>{bet.prediction === 'migrate' ? 'Moon' : 'Die'}</span>
+                    </div>
+                    
+                    <div className="flex items-center text-xs bg-dream-accent2/10 px-2 py-0.5 rounded-md">
+                      <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
+                      <span className="font-semibold">{bet.amount} SOL</span>
+                    </div>
                   </div>
                 </div>
               </Link>
