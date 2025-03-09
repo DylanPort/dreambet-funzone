@@ -6,11 +6,11 @@ import {
   PhantomWalletAdapter, 
   SolflareWalletAdapter, 
   TorusWalletAdapter,
-  BackpackWalletAdapter,
-  GlowWalletAdapter,
-  CoinbaseWalletAdapter,
-  SlopeWalletAdapter,
-  LedgerWalletAdapter
+  LedgerWalletAdapter,
+  SolongWalletAdapter,
+  CloverWalletAdapter, 
+  Coin98WalletAdapter,
+  CoinbaseWalletAdapter
 } from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
@@ -27,15 +27,11 @@ const WalletConnectionMonitor = ({ children }: { children: React.ReactNode }) =>
 
   useEffect(() => {
     const verifyWalletConnection = async () => {
-      if (connected && publicKey && wallet && wallet.adapter.publicKey) {
+      if (connected && publicKey && wallet) {
         try {
-          // Try to use the wallet to verify it's really connected
-          const signature = await wallet.adapter.signMessage?.(
-            new TextEncoder().encode('Connection verification')
-          );
-          
-          if (signature) {
-            console.log("Wallet successfully verified with signature");
+          // Instead of sign message, just check if the publicKey matches
+          if (wallet.adapter.publicKey && wallet.adapter.publicKey.equals(publicKey)) {
+            console.log("Wallet successfully verified with publicKey check");
             if (!connectionChecked) {
               toast({
                 title: "Wallet Connected",
@@ -44,7 +40,7 @@ const WalletConnectionMonitor = ({ children }: { children: React.ReactNode }) =>
               setConnectionChecked(true);
             }
           } else {
-            console.warn("Wallet appears connected but couldn't sign message");
+            console.warn("Wallet appears connected but publicKey doesn't match");
             if (connectionChecked) {
               setConnectionChecked(false);
             }
@@ -88,10 +84,10 @@ const SolanaWalletProvider = ({ children }: { children: React.ReactNode }) => {
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
       new TorusWalletAdapter(),
-      new BackpackWalletAdapter(),
-      new GlowWalletAdapter(),
+      new SolongWalletAdapter(),
+      new CloverWalletAdapter(),
+      new Coin98WalletAdapter(),
       new CoinbaseWalletAdapter(),
-      new SlopeWalletAdapter(),
       new LedgerWalletAdapter(),
     ],
     [network]

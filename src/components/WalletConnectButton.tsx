@@ -19,26 +19,12 @@ const WalletConnectButton = () => {
         try {
           setVerifying(true);
           
-          // Try to use the wallet adapter to verify it's really connected
-          if (wallet.adapter.signMessage) {
-            try {
-              const message = new TextEncoder().encode('Verify Connection');
-              const signature = await wallet.adapter.signMessage(message);
-              if (signature) {
-                console.log("Wallet verified with signature");
-                setIsFullyConnected(true);
-              } else {
-                setIsFullyConnected(false);
-              }
-            } catch (err) {
-              console.error("Error verifying wallet signature:", err);
-              setIsFullyConnected(false);
-            }
-          } else {
-            // If the wallet doesn't support signMessage, just assume it's connected
-            // But log this as a potential issue
-            console.warn("This wallet doesn't support signMessage for verification");
+          // Check if the wallet adapter has a matching publicKey
+          if (wallet.adapter.publicKey.equals(publicKey)) {
+            console.log("Wallet verified with publicKey check");
             setIsFullyConnected(true);
+          } else {
+            setIsFullyConnected(false);
           }
         } catch (error) {
           console.error("Error verifying wallet connection:", error);

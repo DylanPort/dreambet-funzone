@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -46,42 +45,16 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         setWalletCheckingInProgress(true);
         console.log("Verifying wallet connection...");
         
-        // Try to use the wallet adapter to verify it's really connected
-        if (wallet.adapter.signMessage) {
-          try {
-            const message = new TextEncoder().encode('Connection Check');
-            const signature = await wallet.adapter.signMessage(message);
-            
-            if (signature) {
-              console.log("Wallet successfully verified with signature");
-              setIsWalletReady(true);
-              setWalletRetryCount(0);
-              return true;
-            } else {
-              console.warn("Wallet couldn't sign verification message");
-              setIsWalletReady(false);
-              return false;
-            }
-          } catch (err) {
-            console.error("Error during wallet signature verification:", err);
-            setIsWalletReady(false);
-            return false;
-          }
+        // Check if the wallet adapter has a matching publicKey
+        if (wallet.adapter.publicKey.equals(publicKey)) {
+          console.log("Wallet successfully verified with publicKey check");
+          setIsWalletReady(true);
+          setWalletRetryCount(0);
+          return true;
         } else {
-          // If the wallet doesn't support signMessage
-          console.warn("This wallet doesn't support signMessage for verification, checking publicKey");
-          
-          // Check if the publicKey is consistent
-          if (wallet.adapter.publicKey && wallet.adapter.publicKey.equals(publicKey)) {
-            console.log("Wallet verified via publicKey check");
-            setIsWalletReady(true);
-            setWalletRetryCount(0);
-            return true;
-          } else {
-            console.warn("Wallet publicKey mismatch");
-            setIsWalletReady(false);
-            return false;
-          }
+          console.warn("Wallet publicKey mismatch");
+          setIsWalletReady(false);
+          return false;
         }
       } catch (error) {
         console.error("Error verifying wallet:", error);
@@ -171,7 +144,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         wallet connected: ${connected}
         wallet adapter ready: ${wallet?.adapter?.publicKey ? 'Yes' : 'No'}
         wallet verified: ${isWalletReady ? 'Yes' : 'No'}
-        amount: ${amountValue} SOL
+        amount: ${parseFloat(amount)} SOL
         prediction: ${prediction}
         duration: ${duration} minutes
       `);
@@ -187,8 +160,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         tokenName,
         tokenSymbol,
         publicKey!.toString(),
-        amountValue,
-        prediction,
+        parseFloat(amount),
+        prediction!,
         wallet,
         duration
       );
@@ -197,7 +170,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       toast({
         title: "Bet created successfully!",
-        description: `Your ${amountValue} SOL bet that ${tokenSymbol} will ${prediction} is now live on-chain`,
+        description: `Your ${parseFloat(amount)} SOL bet that ${tokenSymbol} will ${prediction} is now live on-chain`,
       });
       
       // Reset form
