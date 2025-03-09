@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame } from 'lucide-react';
@@ -93,7 +94,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center">
               <img 
-                src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" 
+                src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
                 alt={name} 
                 className="w-full h-full object-contain"
               />

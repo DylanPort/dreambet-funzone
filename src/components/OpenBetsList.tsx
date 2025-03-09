@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOpenBets } from '@/services/supabaseService';
@@ -74,6 +75,11 @@ const OpenBetsList = () => {
       <div className="space-y-5">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
+            <img 
+              src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
+              alt="Crown" 
+              className="h-6 w-6"
+            />
             <span>ACTIVE BETS</span>
           </h2>
           
@@ -126,6 +132,11 @@ const OpenBetsList = () => {
     <div className="space-y-5">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
+          <img 
+            src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
+            alt="Crown" 
+            className="h-6 w-6"
+          />
           <span>ACTIVE BETS</span>
           <span className="text-sm bg-dream-accent2/20 px-2 py-0.5 rounded-full text-dream-accent2">
             {filteredBets.length}
