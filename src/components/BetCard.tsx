@@ -59,7 +59,7 @@ const BetCard: React.FC<BetCardProps> = ({
           <div className="flex items-center">
             <Timer className="w-3 h-3 mr-1 text-dream-foreground/70" />
             <span className="text-dream-foreground/70">
-              {bet.duration ? formatBetDuration(bet.duration) : "1h bet"} {/* Display bet duration */}
+              {bet.duration ? formatBetDuration(bet.duration) : "1h bet"}
             </span>
           </div>
         </div>
