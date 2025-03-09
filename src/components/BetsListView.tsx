@@ -16,7 +16,7 @@ const BetsListView: React.FC<BetsListViewProps> = ({
   publicKeyString, 
   onAcceptBet 
 }) => {
-  if (bets.length === 0) {
+  if (!bets || bets.length === 0) {
     return (
       <div className="glass-panel p-6 text-center">
         <p className="text-dream-foreground/70">No bets available in this category.</p>
@@ -24,6 +24,8 @@ const BetsListView: React.FC<BetsListViewProps> = ({
       </div>
     );
   }
+
+  console.log('Rendering BetsListView with bets:', bets);
 
   // Limit to top 10 bets
   const topBets = bets.slice(0, 10);

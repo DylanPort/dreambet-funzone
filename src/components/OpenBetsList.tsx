@@ -32,15 +32,22 @@ const OpenBetsList = () => {
       console.log("Fetching open bets...");
       const data = await fetchOpenBets();
       console.log("Fetched open bets:", data);
-      setBets(data);
+      if (data && Array.isArray(data)) {
+        setBets(data);
+      } else {
+        console.error("Invalid data returned from fetchOpenBets:", data);
+        setBets([]);
+      }
     } catch (error) {
       console.error('Error loading bets:', error);
+      setBets([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log("OpenBetsList component mounted, loading bets...");
     loadBets();
     // Refresh every 30 seconds
     const interval = setInterval(loadBets, 30000);
@@ -124,6 +131,11 @@ const OpenBetsList = () => {
   };
 
   const publicKeyString = publicKey ? publicKey.toString() : null;
+  
+  useEffect(() => {
+    // Debug logging
+    console.log("Current bets in OpenBetsList:", bets);
+  }, [bets]);
 
   return (
     <div className="space-y-6">

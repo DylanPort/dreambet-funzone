@@ -33,44 +33,70 @@ export const fetchTokenById = async (tokenMint: string) => {
 
 // Bet related functions
 export const fetchOpenBets = async () => {
-  const { data, error } = await supabase
-    .from('bets')
-    .select(`
-      bet_id,
-      token_mint,
-      tokens (token_name, token_symbol),
-      bettor1_id,
-      users!bets_bettor1_id_fkey (wallet_address),
-      prediction_bettor1,
-      duration,
-      sol_amount,
-      created_at,
-      status
-    `)
-    .eq('status', 'open')
-    .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('Supabase error fetching open bets:', error);
+  try {
+    console.log("Fetching open bets from Supabase...");
+    
+    // Explicitly request all needed fields and use appropriate joins
+    const { data, error } = await supabase
+      .from('bets')
+      .select(`
+        bet_id,
+        token_mint,
+        tokens (token_name, token_symbol),
+        bettor1_id,
+        users!bets_bettor1_id_fkey (wallet_address),
+        prediction_bettor1,
+        duration,
+        sol_amount,
+        created_at,
+        status
+      `)
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Supabase error fetching open bets:', error);
+      throw error;
+    }
+    
+    console.log('Raw open bets data from Supabase:', data);
+    
+    if (!data || data.length === 0) {
+      console.log('No open bets found in database');
+      return [];
+    }
+    
+    // Transform to match our frontend Bet type with more detailed logging
+    const transformedBets = data.map(bet => {
+      // Ensure we have all required data
+      if (!bet.tokens || !bet.users) {
+        console.warn('Missing related data for bet:', bet.bet_id);
+      }
+      
+      const transformedBet = {
+        id: bet.bet_id,
+        tokenId: bet.token_mint,
+        tokenName: bet.tokens?.token_name || 'Unknown Token',
+        tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
+        initiator: bet.users?.wallet_address || 'Unknown',
+        amount: bet.sol_amount,
+        prediction: bet.prediction_bettor1 as 'migrate' | 'die',
+        timestamp: new Date(bet.created_at).getTime(),
+        expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
+        status: bet.status,
+        duration: Math.floor(bet.duration / 60) // Convert seconds to minutes
+      };
+      
+      console.log('Transformed bet:', transformedBet);
+      return transformedBet;
+    });
+    
+    console.log('Final transformed bets:', transformedBets);
+    return transformedBets;
+  } catch (error) {
+    console.error('Error in fetchOpenBets:', error);
     throw error;
   }
-  
-  console.log('Raw open bets data from Supabase:', data);
-  
-  // Transform to match our frontend Bet type
-  return data.map(bet => ({
-    id: bet.bet_id,
-    tokenId: bet.token_mint,
-    tokenName: bet.tokens.token_name,
-    tokenSymbol: bet.tokens.token_symbol,
-    initiator: bet.users.wallet_address,
-    amount: bet.sol_amount,
-    prediction: bet.prediction_bettor1 as 'migrate' | 'die',
-    timestamp: new Date(bet.created_at).getTime(),
-    expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-    status: bet.status,
-    duration: Math.floor(bet.duration / 60) // Convert seconds to minutes
-  }));
 };
 
 export const fetchUserBets = async (userWalletAddress: string) => {
@@ -136,64 +162,81 @@ export const createBet = async (
   duration: number, // in minutes
   solAmount: number
 ) => {
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
-  
-  // Convert duration to seconds for database
-  const durationInSeconds = duration * 60;
-  
-  // Get token data to store initial market cap
-  const { data: tokenData } = await supabase
-    .from('tokens')
-    .select('current_market_cap, token_name, token_symbol')
-    .eq('token_mint', tokenMint)
-    .single();
-  
-  if (!tokenData) throw new Error('Token not found');
-  
-  // Insert the bet
-  const { data, error } = await supabase
-    .from('bets')
-    .insert({
-      token_mint: tokenMint,
-      bettor1_id: user.id,
-      prediction_bettor1: prediction,
-      duration: durationInSeconds,
-      sol_amount: solAmount,
-      initial_market_cap: tokenData.current_market_cap,
-      status: 'open'
-    })
-    .select('bet_id, created_at')
-    .single();
-  
-  if (error) throw error;
-  
-  // Create a history record
-  await supabase
-    .from('bet_history')
-    .insert({
-      bet_id: data.bet_id,
-      action: 'created',
-      user_id: user.id,
-      details: { prediction, duration: durationInSeconds, sol_amount: solAmount },
-      market_cap_at_action: tokenData.current_market_cap
-    });
-  
-  // Return in the format expected by our frontend
-  return {
-    id: data.bet_id,
-    tokenId: tokenMint,
-    tokenName: tokenData.token_name,
-    tokenSymbol: tokenData.token_symbol,
-    initiator: user.id,
-    amount: solAmount,
-    prediction: prediction,
-    timestamp: new Date(data.created_at).getTime(),
-    expiresAt: new Date(data.created_at).getTime() + (durationInSeconds * 1000),
-    status: 'open',
-    duration: duration
-  };
+  try {
+    console.log(`Creating bet: tokenMint=${tokenMint}, prediction=${prediction}, duration=${duration}, amount=${solAmount}`);
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+    
+    // Convert duration to seconds for database
+    const durationInSeconds = duration * 60;
+    
+    // Get token data to store initial market cap
+    const { data: tokenData } = await supabase
+      .from('tokens')
+      .select('current_market_cap, token_name, token_symbol')
+      .eq('token_mint', tokenMint)
+      .single();
+    
+    if (!tokenData) throw new Error('Token not found');
+    
+    console.log('Token data for bet:', tokenData);
+    
+    // Insert the bet
+    const { data, error } = await supabase
+      .from('bets')
+      .insert({
+        token_mint: tokenMint,
+        bettor1_id: user.id,
+        prediction_bettor1: prediction,
+        duration: durationInSeconds,
+        sol_amount: solAmount,
+        initial_market_cap: tokenData.current_market_cap,
+        status: 'open'
+      })
+      .select('bet_id, created_at')
+      .single();
+    
+    if (error) {
+      console.error('Error creating bet:', error);
+      throw error;
+    }
+    
+    console.log('Bet created successfully:', data);
+    
+    // Create a history record
+    await supabase
+      .from('bet_history')
+      .insert({
+        bet_id: data.bet_id,
+        action: 'created',
+        user_id: user.id,
+        details: { prediction, duration: durationInSeconds, sol_amount: solAmount },
+        market_cap_at_action: tokenData.current_market_cap
+      });
+    
+    // Return in the format expected by our frontend
+    const newBet = {
+      id: data.bet_id,
+      tokenId: tokenMint,
+      tokenName: tokenData.token_name,
+      tokenSymbol: tokenData.token_symbol,
+      initiator: user.id,
+      amount: solAmount,
+      prediction: prediction,
+      timestamp: new Date(data.created_at).getTime(),
+      expiresAt: new Date(data.created_at).getTime() + (durationInSeconds * 1000),
+      status: 'open',
+      duration: duration
+    };
+    
+    console.log('Returning new bet:', newBet);
+    return newBet;
+  } catch (error) {
+    console.error('Error in createBet:', error);
+    throw error;
+  }
 };
 
 export const acceptBet = async (betId: string) => {
