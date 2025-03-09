@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
 import PriceChart from '@/components/PriceChart';
 import { fetchTokenById } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
 import { Bet } from '@/types/bet';
-import { ArrowUp, ArrowDown, RefreshCw, ExternalLink } from 'lucide-react';
+import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CreateBetForm from '@/components/CreateBetForm';
 import BetCard from '@/components/BetCard';
@@ -25,6 +25,12 @@ const TokenDetail = () => {
   const { toast } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
   const { connected, publicKey } = useWallet();
+  const [tokenMetrics, setTokenMetrics] = useState({
+    marketCap: 0,
+    volume24h: 0,
+    liquidity: 0,
+    holders: 0
+  });
   
   useEffect(() => {
     const loadToken = async () => {
@@ -71,6 +77,14 @@ const TokenDetail = () => {
             migrationTime: new Date(tokenData.last_updated_time).getTime(),
           });
           
+          // Generate mock metrics for this token
+          setTokenMetrics({
+            marketCap: (tokenData.last_trade_price || 0.001) * 1000000 * (0.5 + Math.random()),
+            volume24h: (tokenData.last_trade_price || 0.001) * 50000 * (0.5 + Math.random()),
+            liquidity: (tokenData.last_trade_price || 0.001) * 20000 * (0.5 + Math.random()),
+            holders: Math.floor(100 + Math.random() * 900)
+          });
+          
           // Subscribe to real-time trades for this token
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(tokenId);
@@ -106,6 +120,14 @@ const TokenDetail = () => {
             currentPrice: 0,
             change24h: 0,
             migrationTime: new Date().getTime(),
+          });
+          
+          // Generate mock metrics for this token
+          setTokenMetrics({
+            marketCap: 10000 * (0.5 + Math.random()),
+            volume24h: 5000 * (0.5 + Math.random()),
+            liquidity: 2000 * (0.5 + Math.random()),
+            holders: Math.floor(50 + Math.random() * 150)
           });
           
           // Subscribe to real-time trades for this token
@@ -194,6 +216,15 @@ const TokenDetail = () => {
           
           // Keep only the last 60 points
           return [...current, newPoint].slice(-60);
+        });
+        
+        // Update metrics based on new price
+        setTokenMetrics(current => {
+          return {
+            ...current,
+            marketCap: latestPrice * 1000000 * (0.5 + Math.random()),
+            volume24h: current.volume24h + (latestPrice * 1000 * Math.random())
+          };
         });
         
         // Show toast for significant price changes (>5%)
@@ -299,6 +330,20 @@ const TokenDetail = () => {
     return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
 
+  // Format large numbers with abbreviations (K, M, B)
+  const formatLargeNumber = (num: number) => {
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    }
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    }
+    if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    }
+    return `$${num.toFixed(2)}`;
+  };
+
   // Check if WebSocket connection is active
   const isLive = pumpPortal.connected && tokenId && pumpPortal.recentTrades[tokenId];
   
@@ -323,6 +368,12 @@ const TokenDetail = () => {
             </div>
           ) : (
             <>
+              {/* Back Button */}
+              <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
+                <ChevronLeft size={20} />
+                <span>Back to Tokens</span>
+              </Link>
+            
               {/* Token Header */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div className="flex items-center">
@@ -356,6 +407,41 @@ const TokenDetail = () => {
                     {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
                     {Math.abs(token.change24h).toFixed(2)}%
                   </div>
+                </div>
+              </div>
+              
+              {/* Token Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="glass-panel p-4">
+                  <div className="flex items-center text-dream-foreground/70 mb-1">
+                    <BarChart3 size={16} className="mr-2" />
+                    <span className="text-sm">Market Cap</span>
+                  </div>
+                  <div className="text-xl font-bold">{formatLargeNumber(tokenMetrics.marketCap)}</div>
+                </div>
+                
+                <div className="glass-panel p-4">
+                  <div className="flex items-center text-dream-foreground/70 mb-1">
+                    <RefreshCw size={16} className="mr-2" />
+                    <span className="text-sm">24h Volume</span>
+                  </div>
+                  <div className="text-xl font-bold">{formatLargeNumber(tokenMetrics.volume24h)}</div>
+                </div>
+                
+                <div className="glass-panel p-4">
+                  <div className="flex items-center text-dream-foreground/70 mb-1">
+                    <DollarSign size={16} className="mr-2" />
+                    <span className="text-sm">Liquidity</span>
+                  </div>
+                  <div className="text-xl font-bold">{formatLargeNumber(tokenMetrics.liquidity)}</div>
+                </div>
+                
+                <div className="glass-panel p-4">
+                  <div className="flex items-center text-dream-foreground/70 mb-1">
+                    <Users size={16} className="mr-2" />
+                    <span className="text-sm">Holders</span>
+                  </div>
+                  <div className="text-xl font-bold">{tokenMetrics.holders}</div>
                 </div>
               </div>
               
