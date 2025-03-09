@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -11,7 +10,6 @@ const BetReel: React.FC = () => {
   const [animateIndex, setAnimateIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    // Function to fetch some initial bets
     const fetchInitialBets = async () => {
       try {
         const { data, error } = await supabase
@@ -36,18 +34,15 @@ const BetReel: React.FC = () => {
         
         if (data) {
           const formattedBets = data.map(bet => {
-            // Convert database prediction to BetPrediction type
             let prediction: BetPrediction;
             if (bet.prediction_bettor1 === 'up') {
               prediction = 'migrate';
             } else if (bet.prediction_bettor1 === 'down') {
               prediction = 'die';
             } else {
-              // Ensure we're casting to a valid BetPrediction value
               prediction = bet.prediction_bettor1 as BetPrediction;
             }
 
-            // Convert status string to BetStatus type
             const status = bet.status as BetStatus;
 
             return {
@@ -76,7 +71,6 @@ const BetReel: React.FC = () => {
 
     fetchInitialBets();
 
-    // Set up supabase realtime subscription
     const channel = supabase
       .channel('public:bets')
       .on('postgres_changes', 
@@ -89,7 +83,6 @@ const BetReel: React.FC = () => {
           console.log('New bet inserted in reel:', payload);
           
           try {
-            // Fetch the complete bet data with token info
             const { data, error } = await supabase
               .from('bets')
               .select(`
@@ -111,18 +104,15 @@ const BetReel: React.FC = () => {
             if (error) throw error;
             
             if (data) {
-              // Convert database prediction to BetPrediction type
               let prediction: BetPrediction;
               if (data.prediction_bettor1 === 'up') {
                 prediction = 'migrate';
               } else if (data.prediction_bettor1 === 'down') {
                 prediction = 'die';
               } else {
-                // Ensure we're casting to a valid BetPrediction value
                 prediction = data.prediction_bettor1 as BetPrediction;
               }
               
-              // Convert status string to BetStatus type
               const status = data.status as BetStatus;
               
               const newBet: Bet = {
@@ -141,16 +131,13 @@ const BetReel: React.FC = () => {
                 transactionSignature: data.transaction_signature || ''
               };
               
-              // Add the new bet to the beginning of the array
               setRecentBets(prev => {
-                const newBets = [newBet, ...prev.slice(0, 4)]; // Keep only 5 bets
+                const newBets = [newBet, ...prev.slice(0, 4)];
                 return newBets;
               });
               
-              // Set the animate index to trigger animation
               setAnimateIndex(0);
               
-              // Reset animation after it completes
               setTimeout(() => {
                 setAnimateIndex(null);
               }, 3000);
@@ -162,7 +149,6 @@ const BetReel: React.FC = () => {
       )
       .subscribe();
     
-    // Also listen for custom events from the app
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in BetReel:", event.detail);
       
@@ -170,15 +156,12 @@ const BetReel: React.FC = () => {
       
       if (bet) {
         setRecentBets(prev => {
-          // Check if the bet already exists
           const exists = prev.some(existingBet => existingBet.id === bet.id);
           if (!exists) {
-            const newBets = [bet, ...prev.slice(0, 4)]; // Keep only 5 bets
+            const newBets = [bet, ...prev.slice(0, 4)];
             
-            // Set the animate index to trigger animation
             setAnimateIndex(0);
             
-            // Reset animation after it completes
             setTimeout(() => {
               setAnimateIndex(null);
             }, 3000);
@@ -199,7 +182,19 @@ const BetReel: React.FC = () => {
   }, []);
 
   if (recentBets.length === 0) {
-    return null; // Don't render anything if there are no bets
+    return (
+      <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
+        <div className="flex items-center">
+          <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
+            <Sparkles className="h-4 w-4 text-dream-accent1 mr-2" />
+            <span className="text-sm font-semibold">Live Bets</span>
+          </div>
+          <div className="overflow-hidden mx-4 flex-1">
+            <div className="text-sm text-gray-400 italic">No active bets at the moment</div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
