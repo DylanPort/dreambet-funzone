@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, BarChart2 } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 import ProfileButton from './ProfileButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
@@ -40,7 +41,13 @@ const Navbar = () => {
           
           <nav className="hidden md:flex space-x-8 items-center">
             <Link to="/dashboard" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <BarChart2 size={18} />
+              <div className="w-5 h-5 flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/716d1861-1000-4986-ba2f-15693a5816af.png" 
+                  alt="Bet-Scope" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
               <span>Bet-Scope</span>
             </Link>
             <Link to="/betting" className={`nav-link flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
@@ -95,7 +102,13 @@ const Navbar = () => {
         <div className="md:hidden glass-panel p-4">
           <nav className="flex flex-col space-y-4">
             <Link to="/dashboard" className={`py-2 flex items-center gap-2 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
-              <BarChart2 size={18} />
+              <div className="w-5 h-5 flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/716d1861-1000-4986-ba2f-15693a5816af.png" 
+                  alt="Bet-Scope" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
               <span>Bet-Scope</span>
             </Link>
             <Link to="/betting" className={`py-2 flex items-center gap-2 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
