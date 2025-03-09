@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -127,15 +128,26 @@ export const createBet = async (
     // This allows betting on tokens that don't exist in our database yet
     console.log(`Initiating Solana transaction on Devnet...`);
     
-    const { betId } = await createSolanaBet(
-      wallet,
-      tokenId,
-      prediction,
-      duration,
-      amount
-    );
-    
-    console.log(`Solana bet created with ID: ${betId}`);
+    let betId;
+    try {
+      // Attempt to create the Solana bet
+      const result = await createSolanaBet(
+        wallet,
+        tokenId,
+        prediction,
+        duration,
+        amount
+      );
+      betId = result.betId;
+      console.log(`Solana bet created with ID: ${betId}`);
+    } catch (solanaBetError: any) {
+      console.error("Error creating bet on Solana:", solanaBetError);
+      // If this is the 'emit' error, provide a more helpful message
+      if (solanaBetError.message && solanaBetError.message.includes("'emit'")) {
+        throw new Error("Wallet adapter error: Please refresh the page and reconnect your wallet.");
+      }
+      throw solanaBetError;
+    }
     
     try {
       // Try to create in Supabase, but handle the case where token doesn't exist yet
