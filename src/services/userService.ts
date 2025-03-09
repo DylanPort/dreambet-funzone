@@ -27,26 +27,30 @@ export interface UserStats {
   balance: number;
 }
 
-// Fetch the user's profile data
-export const fetchUserProfile = async (): Promise<UserProfile | null> => {
+// Fetch the user's profile data by wallet address
+export const fetchUserProfile = async (walletAddress?: string): Promise<UserProfile | null> => {
   try {
-    // Get the current user from auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      console.error("Error fetching authenticated user:", authError);
+    if (!walletAddress) {
+      console.error("Wallet address is required to fetch profile");
       return null;
     }
     
-    // Fetch the user's profile data from the users table
+    // Fetch the user's profile data from the users table using wallet address
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', user.id)
+      .eq('wallet_address', walletAddress)
       .single();
     
     if (error) {
       console.error("Error fetching user profile:", error);
+      
+      // If user doesn't exist, create a new profile
+      if (error.code === 'PGRST116') {
+        const newProfile = await createUserProfile(walletAddress);
+        return newProfile;
+      }
+      
       return null;
     }
     
@@ -57,18 +61,41 @@ export const fetchUserProfile = async (): Promise<UserProfile | null> => {
   }
 };
 
-// Fetch the user's betting history
-export const fetchUserBettingHistory = async (): Promise<UserBet[]> => {
+// Create a new user profile if it doesn't exist
+const createUserProfile = async (walletAddress: string): Promise<UserProfile | null> => {
   try {
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from('users')
+      .insert([
+        { 
+          wallet_address: walletAddress,
+          username: `User_${walletAddress.substring(0, 8)}`
+        }
+      ])
+      .select()
+      .single();
     
-    if (authError || !user) {
-      console.error("Error fetching authenticated user:", authError);
+    if (error) {
+      console.error("Error creating user profile:", error);
+      return null;
+    }
+    
+    return data as UserProfile;
+  } catch (error) {
+    console.error("Unexpected error in createUserProfile:", error);
+    return null;
+  }
+};
+
+// Fetch the user's betting history by wallet address
+export const fetchUserBettingHistory = async (walletAddress?: string): Promise<UserBet[]> => {
+  try {
+    if (!walletAddress) {
+      console.error("Wallet address is required to fetch betting history");
       return [];
     }
     
-    // Fetch bets created by this user
+    // Fetch bets created by this wallet address
     const { data, error } = await supabase
       .from('bets')
       .select(`
@@ -80,7 +107,7 @@ export const fetchUserBettingHistory = async (): Promise<UserBet[]> => {
         status,
         created_at
       `)
-      .eq('creator', user.id)
+      .eq('creator', walletAddress)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -148,14 +175,11 @@ export const calculateUserStats = (bets: UserBet[]): UserStats => {
 };
 
 // Update the user's username
-export const updateUsername = async (username: string): Promise<boolean> => {
+export const updateUsername = async (walletAddress: string, username: string): Promise<boolean> => {
   try {
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      console.error("Error fetching authenticated user:", authError);
-      toast.error("You need to be logged in to update your profile");
+    if (!walletAddress) {
+      console.error("Wallet address is required to update username");
+      toast.error("You need to connect your wallet to update your profile");
       return false;
     }
     
@@ -163,7 +187,7 @@ export const updateUsername = async (username: string): Promise<boolean> => {
     const { error } = await supabase
       .from('users')
       .update({ username })
-      .eq('id', user.id);
+      .eq('wallet_address', walletAddress);
     
     if (error) {
       console.error("Error updating username:", error);

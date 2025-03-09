@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
 import { UserCircle, Clock, TrendingUp, TrendingDown, Settings, History } from 'lucide-react';
 import OrbitingParticles from '@/components/OrbitingParticles';
@@ -9,6 +10,7 @@ import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUs
 import { toast } from 'sonner';
 
 const Profile = () => {
+  const { connected, publicKey } = useWallet();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [bets, setBets] = useState<UserBet[]>([]);
   const [stats, setStats] = useState<UserStats>({
@@ -24,9 +26,18 @@ const Profile = () => {
   useEffect(() => {
     const loadUserData = async () => {
       setIsLoading(true);
+      
+      // Check if wallet is connected
+      if (!connected || !publicKey) {
+        setIsLoading(false);
+        return;
+      }
+      
       try {
+        const walletAddress = publicKey.toString();
+        
         // Fetch user profile
-        const profileData = await fetchUserProfile();
+        const profileData = await fetchUserProfile(walletAddress);
         setUser(profileData);
         
         if (profileData) {
@@ -34,7 +45,7 @@ const Profile = () => {
         }
         
         // Fetch user's betting history
-        const bettingHistory = await fetchUserBettingHistory();
+        const bettingHistory = await fetchUserBettingHistory(walletAddress);
         setBets(bettingHistory);
         
         // Calculate stats from betting history
@@ -49,7 +60,7 @@ const Profile = () => {
     };
     
     loadUserData();
-  }, []);
+  }, [connected, publicKey]);
   
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -62,7 +73,14 @@ const Profile = () => {
       return;
     }
     
-    const success = await updateUsername(usernameInput);
+    if (!connected || !publicKey) {
+      toast.error("Please connect your wallet to update your profile");
+      return;
+    }
+    
+    const walletAddress = publicKey.toString();
+    const success = await updateUsername(walletAddress, usernameInput);
+    
     if (success && user) {
       setUser({
         ...user,
@@ -70,6 +88,23 @@ const Profile = () => {
       });
     }
   };
+  
+  if (!connected || !publicKey) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center">
+          <div className="glass-panel p-10 flex flex-col items-center">
+            <div className="w-20 h-20 mb-6 bg-dream-foreground/10 rounded-full flex items-center justify-center">
+              <UserCircle className="w-12 h-12 text-dream-foreground/80" />
+            </div>
+            <h2 className="text-xl font-display font-bold mb-4">Connect Your Wallet</h2>
+            <p className="text-dream-foreground/70 text-center mb-6">You need to connect your wallet to access your profile.</p>
+          </div>
+        </main>
+      </>
+    );
+  }
   
   if (isLoading) {
     return (
@@ -98,11 +133,11 @@ const Profile = () => {
             </div>
             
             <div className="text-center md:text-left">
-              <h1 className="text-2xl md:text-3xl font-display font-bold">{user?.username || user?.wallet_address?.substring(0, 8) || 'DreamPredictor'}</h1>
-              <p className="text-dream-foreground/60">{user?.wallet_address || 'Connect your wallet'}</p>
+              <h1 className="text-2xl md:text-3xl font-display font-bold">{user?.username || publicKey.toString().substring(0, 8) || 'DreamPredictor'}</h1>
+              <p className="text-dream-foreground/60">{publicKey.toString()}</p>
               <p className="text-dream-foreground/60 text-sm mt-1">
                 <Clock className="inline w-3 h-3 mr-1" />
-                Joined {user?.created_at ? formatDate(user.created_at) : 'Unknown'}
+                Joined {user?.created_at ? formatDate(user.created_at) : 'Recently'}
               </p>
             </div>
             
@@ -130,7 +165,7 @@ const Profile = () => {
             <p className={`text-3xl font-display font-bold ${
               stats.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'
             }`}>
-              {stats.totalProfit >= 0 ? '+' : ''}${stats.totalProfit.toLocaleString()}
+              {stats.totalProfit >= 0 ? '+' : ''}${Math.abs(stats.totalProfit).toLocaleString()}
             </p>
           </div>
         </div>
@@ -267,7 +302,7 @@ const Profile = () => {
                     <input
                       type="text"
                       className="input-dream w-full bg-gray-900/50"
-                      value={user?.wallet_address || ''}
+                      value={publicKey.toString()}
                       disabled
                       readOnly
                     />
