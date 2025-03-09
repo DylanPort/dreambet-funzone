@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, BarChart2, Award } from 'lucide-react';
+import { Menu, X, BarChart2 } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 import ProfileButton from './ProfileButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
@@ -11,7 +11,6 @@ const Navbar = () => {
   const location = useLocation();
   const { balance } = useSolanaBalance();
   
-  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -25,7 +24,6 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
-  // Close menu when route changes
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
@@ -36,19 +34,23 @@ const Navbar = () => {
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
-          {/* Logo */}
           <Link to="/" className="text-xl font-display font-bold text-gradient">
             PumpXBounty
           </Link>
           
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8 items-center">
             <Link to="/dashboard" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <BarChart2 size={18} />
               <span>Dashboard</span>
             </Link>
             <Link to="/betting" className={`nav-link flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <Award size={18} />
+              <div className="w-5 h-5 flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" 
+                  alt="Betting" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
               <span>Betting</span>
             </Link>
             <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
@@ -80,7 +82,6 @@ const Navbar = () => {
             <WalletConnectButton />
           </nav>
           
-          {/* Mobile Menu Button */}
           <button 
             className="md:hidden text-dream-foreground"
             onClick={() => setIsOpen(!isOpen)}
@@ -90,7 +91,6 @@ const Navbar = () => {
         </div>
       </div>
       
-      {/* Mobile Navigation */}
       {isOpen && (
         <div className="md:hidden glass-panel p-4">
           <nav className="flex flex-col space-y-4">
@@ -99,7 +99,13 @@ const Navbar = () => {
               <span>Dashboard</span>
             </Link>
             <Link to="/betting" className={`py-2 flex items-center gap-2 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
-              <Award size={18} />
+              <div className="w-5 h-5 flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" 
+                  alt="Betting" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
               <span>Betting</span>
             </Link>
             <Link to="/betting/my-bets" className={`py-2 flex items-center gap-2 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
