@@ -64,14 +64,16 @@ export const fetchUserProfile = async (walletAddress?: string): Promise<UserProf
 // Create a new user profile if it doesn't exist
 const createUserProfile = async (walletAddress: string): Promise<UserProfile | null> => {
   try {
+    // Generate a unique ID for the user
+    const id = crypto.randomUUID();
+    
     const { data, error } = await supabase
       .from('users')
-      .insert([
-        { 
-          wallet_address: walletAddress,
-          username: `User_${walletAddress.substring(0, 8)}`
-        }
-      ])
+      .insert({
+        id: id,
+        wallet_address: walletAddress,
+        username: `User_${walletAddress.substring(0, 8)}`
+      })
       .select()
       .single();
     
