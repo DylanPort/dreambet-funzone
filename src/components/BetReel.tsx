@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -171,7 +170,7 @@ const BetReel: React.FC = () => {
             <img 
               src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
               alt="Crown" 
-              className="h-12 w-12 mr-2"
+              className="h-5 w-5 mr-2"
             />
             <span className="text-sm font-semibold">ACTIVE BETS</span>
           </div>
@@ -191,7 +190,7 @@ const BetReel: React.FC = () => {
             <img 
               src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
               alt="Crown" 
-              className="h-12 w-12 mr-2"
+              className="h-5 w-5 mr-2"
             />
             <span className="text-sm font-semibold">ACTIVE BETS</span>
           </div>
@@ -210,7 +209,7 @@ const BetReel: React.FC = () => {
           <img 
             src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
             alt="Crown" 
-            className="h-12 w-12 mr-2"
+            className="h-5 w-5 mr-2"
           />
           <span className="text-sm font-semibold">ACTIVE BETS</span>
         </div>
