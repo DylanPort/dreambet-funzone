@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
@@ -266,12 +265,10 @@ const MigratingTokenList = () => {
 
   const displayTokens = sortTokens(getTokensForDisplay());
 
-  // Toggle sort menu visibility
   const toggleSortMenu = () => {
     setSortMenuOpen(!sortMenuOpen);
   };
 
-  // Close sort menu when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
       if (sortMenuOpen) {
@@ -384,8 +381,12 @@ const MigratingTokenList = () => {
               <div className={`glass-panel p-4 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300 h-full ${token.isPlaceholder ? 'animate-pulse' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
-                      <span className="font-display font-bold text-lg">{token.symbol?.charAt(0) || '?'}</span>
+                    <div className="w-10 h-10 flex items-center justify-center">
+                      <img 
+                        src="/lovable-uploads/8c486ae4-3f72-46b0-9d0a-ecbf63c37968.png" 
+                        alt="Token"
+                        className="w-full h-full object-contain"
+                      />
                     </div>
                     <div>
                       <div className="flex items-center gap-1">
@@ -459,8 +460,12 @@ const MigratingTokenList = () => {
                 >
                   <td className="py-3 px-4">
                     <Link to={token.isPlaceholder ? '#' : `/token/${token.id}`} className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
-                        <span className="font-display font-bold text-sm">{token.symbol?.charAt(0) || '?'}</span>
+                      <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                        <img 
+                          src="/lovable-uploads/8c486ae4-3f72-46b0-9d0a-ecbf63c37968.png" 
+                          alt="Token"
+                          className="w-full h-full object-contain"
+                        />
                       </div>
                       <div>
                         <div className="font-medium text-dream-foreground flex items-center gap-1">
