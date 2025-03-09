@@ -139,11 +139,6 @@ const Profile = () => {
             
             <div className="ml-auto flex flex-col md:flex-row gap-4">
               <div className="glass-panel p-4 text-center">
-                <p className="text-dream-foreground/60 text-sm">Game Balance</p>
-                <p className="text-2xl font-display font-bold text-gradient">${stats.balance.toLocaleString()}</p>
-              </div>
-              
-              <div className="glass-panel p-4 text-center">
                 <p className="text-dream-foreground/60 text-sm flex items-center justify-center">
                   <WalletIcon className="w-4 h-4 mr-1" />
                   SOL Balance
@@ -162,7 +157,7 @@ const Profile = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="glass-panel p-6 text-center">
             <p className="text-dream-foreground/60 mb-2">Total Bets</p>
             <p className="text-3xl font-display font-bold">{stats.totalBets}</p>
@@ -171,15 +166,6 @@ const Profile = () => {
           <div className="glass-panel p-6 text-center">
             <p className="text-dream-foreground/60 mb-2">Win Rate</p>
             <p className="text-3xl font-display font-bold">{stats.winRate}%</p>
-          </div>
-          
-          <div className="glass-panel p-6 text-center">
-            <p className="text-dream-foreground/60 mb-2">Total Profit</p>
-            <p className={`text-3xl font-display font-bold ${
-              stats.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'
-            }`}>
-              {stats.totalProfit >= 0 ? '+' : ''}${Math.abs(stats.totalProfit).toLocaleString()}
-            </p>
           </div>
         </div>
         
