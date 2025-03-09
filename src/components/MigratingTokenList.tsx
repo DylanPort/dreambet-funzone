@@ -44,11 +44,33 @@ const MigratingTokenList = () => {
     return () => clearInterval(interval);
   }, [toast]);
   
-  // Listen for real-time token updates
+  // Process raw websocket messages that come in different format
+  const processRawWebSocketData = (data: any) => {
+    if (!data) return null;
+    
+    // Handle create token event
+    if (data.txType === 'create' && data.mint) {
+      return {
+        id: data.mint,
+        name: data.name || 'Unknown Token',
+        symbol: data.symbol || '',
+        logo: '🪙',
+        currentPrice: data.marketCapSol ? parseFloat((data.marketCapSol / data.supply || 0).toFixed(6)) : 0,
+        change24h: 0,
+        migrationTime: new Date().getTime(),
+      };
+    }
+    
+    return null;
+  };
+  
+  // Listen for real-time token updates from standard format data
   useEffect(() => {
     if (pumpPortal.recentTokens.length > 0) {
       // Convert WebSocket token data to our format and merge with existing tokens
-      const newTokens = pumpPortal.recentTokens.map(formatWebSocketTokenData);
+      const newTokens = pumpPortal.recentTokens
+        .map(formatWebSocketTokenData)
+        .filter(token => token); // Filter out any null results
       
       // Merge with existing tokens, avoiding duplicates
       setTokens(currentTokens => {
@@ -73,6 +95,69 @@ const MigratingTokenList = () => {
       }
     }
   }, [pumpPortal.recentTokens, loading, toast]);
+  
+  // Also watch for raw websocket messages
+  useEffect(() => {
+    const handleRawWebSocketMessages = () => {
+      // Get the last 10 unknown messages from console logs
+      const rawMessages = (console.__logs || [])
+        .filter((log: any) => 
+          log.message && 
+          typeof log.message === 'string' && 
+          log.message.includes('Unknown message type:')
+        )
+        .slice(-10);
+        
+      if (rawMessages.length === 0) return;
+      
+      // Process each message to extract token data
+      const processedTokens = rawMessages
+        .map((log: any) => {
+          try {
+            // Extract the JSON from the log message
+            const match = log.message.match(/Unknown message type: (.+)/);
+            if (!match || !match[1]) return null;
+            
+            // Parse the JSON data
+            const data = JSON.parse(match[1]);
+            return processRawWebSocketData(data);
+          } catch (e) {
+            return null;
+          }
+        })
+        .filter(token => token); // Remove nulls
+        
+      if (processedTokens.length > 0) {
+        // Merge with existing tokens, avoiding duplicates
+        setTokens(currentTokens => {
+          const existingIds = new Set(currentTokens.map(t => t.id));
+          const newUniqueTokens = processedTokens.filter(t => !existingIds.has(t.id));
+          
+          if (newUniqueTokens.length > 0) {
+            toast({
+              title: "New tokens detected!",
+              description: `${newUniqueTokens.length} new tokens from Pump.fun`,
+              variant: "default"
+            });
+          }
+          
+          return [...newUniqueTokens, ...currentTokens];
+        });
+        
+        // If we were in loading state, exit it
+        if (loading) {
+          setLoading(false);
+        }
+      }
+    };
+    
+    // Run once immediately
+    handleRawWebSocketMessages();
+    
+    // And set up an interval to check for new messages
+    const interval = setInterval(handleRawWebSocketMessages, 5000);
+    return () => clearInterval(interval);
+  }, [loading, toast]);
 
   // Function to format time since migration
   const formatTimeSince = (timestamp: number) => {
@@ -93,6 +178,57 @@ const MigratingTokenList = () => {
   const getTokenIcon = (symbol: string) => {
     if (!symbol) return '🪙';
     return symbol.charAt(0);
+  };
+
+  // Process data from unknown format messages for display
+  const getRawTokensForDisplay = () => {
+    const rawMessages = (console.__logs || [])
+      .filter((log: any) => 
+        log.message && 
+        typeof log.message === 'string' && 
+        log.message.includes('Unknown message type:')
+      )
+      .slice(-10);
+    
+    if (rawMessages.length === 0) return [];
+    
+    return rawMessages
+      .map((log: any) => {
+        try {
+          const match = log.message.match(/Unknown message type: (.+)/);
+          if (!match || !match[1]) return null;
+          
+          const data = JSON.parse(match[1]);
+          if (!data.txType || data.txType !== 'create' || !data.mint) return null;
+          
+          return {
+            token_mint: data.mint,
+            token_name: data.name || 'Unknown Token',
+            token_symbol: data.symbol || '',
+            created_time: new Date().toISOString()
+          };
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter(token => token);
+  };
+
+  // Combine tokens from both sources for display in the empty state
+  const getTokensForEmptyState = () => {
+    const standardTokens = pumpPortal.recentTokens || [];
+    const rawTokens = getRawTokensForDisplay();
+    
+    // Combine and deduplicate
+    const allTokens = [...standardTokens, ...rawTokens];
+    const uniqueTokens = Array.from(
+      new Map(allTokens.map(token => [token.token_mint, token])).values()
+    );
+    
+    // Sort by most recent first (assuming created_time is an ISO string)
+    return uniqueTokens.sort((a, b) => 
+      new Date(b.created_time).getTime() - new Date(a.created_time).getTime()
+    );
   };
 
   return (
@@ -116,7 +252,7 @@ const MigratingTokenList = () => {
         </div>
       ) : tokens.length === 0 ? (
         <div className="glass-panel p-6">
-          {pumpPortal.connected && pumpPortal.recentTokens.length > 0 ? (
+          {(pumpPortal.connected && pumpPortal.recentTokens.length > 0) || getRawTokensForDisplay().length > 0 ? (
             <>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
@@ -134,7 +270,7 @@ const MigratingTokenList = () => {
               </div>
               
               <div className="grid gap-3">
-                {pumpPortal.recentTokens.slice(0, 5).map((token) => (
+                {getTokensForEmptyState().slice(0, 5).map((token) => (
                   <div key={token.token_mint} className="glass-panel p-3 flex items-center justify-between hover:bg-white/5 transition-colors">
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-lg border border-white/10">
@@ -161,7 +297,7 @@ const MigratingTokenList = () => {
                 ))}
               </div>
               
-              {pumpPortal.recentTokens.length > 5 && (
+              {getTokensForEmptyState().length > 5 && (
                 <div className="mt-4 text-center">
                   <Button variant="ghost" size="sm">
                     View All Tokens

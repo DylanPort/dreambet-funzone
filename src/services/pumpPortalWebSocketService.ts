@@ -37,12 +37,26 @@ export interface RaydiumLiquidityEvent {
   };
 }
 
+// Raw token creation format from PumpPortal
+export interface RawTokenCreationEvent {
+  signature: string;
+  mint: string;
+  traderPublicKey: string;
+  txType: 'create';
+  name: string;
+  symbol: string;
+  marketCapSol: number;
+  pool: string;
+  uri?: string;
+}
+
 export type PumpPortalEvent = NewTokenEvent | TokenTradeEvent | RaydiumLiquidityEvent;
 
 interface PumpPortalState {
   connected: boolean;
   connecting: boolean;
   recentTokens: NewTokenEvent['data'][];
+  rawTokens: RawTokenCreationEvent[];
   recentTrades: Record<string, TokenTradeEvent['data'][]>;
   recentLiquidity: Record<string, RaydiumLiquidityEvent['data']>;
   connect: () => void;
@@ -53,11 +67,40 @@ interface PumpPortalState {
 
 let websocket: WebSocket | null = null;
 
+// Store to save console logs for debugging
+if (typeof window !== 'undefined' && !console.__logs) {
+  console.__logs = [];
+  const oldConsoleLog = console.log;
+  console.log = function(...args) {
+    console.__logs.push({ 
+      time: new Date().toISOString(),
+      message: args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ') 
+    });
+    if (console.__logs.length > 100) console.__logs.shift();
+    oldConsoleLog.apply(console, args);
+  };
+  
+  const oldConsoleInfo = console.info;
+  console.info = function(...args) {
+    console.__logs.push({ 
+      time: new Date().toISOString(),
+      message: args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ') 
+    });
+    if (console.__logs.length > 100) console.__logs.shift();
+    oldConsoleInfo.apply(console, args);
+  };
+}
+
 // Create a Zustand store to manage WebSocket state
 export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
   connected: false,
   connecting: false,
   recentTokens: [],
+  rawTokens: [],
   recentTrades: {},
   recentLiquidity: {},
 
@@ -72,12 +115,12 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
     websocket = new WebSocket('wss://pumpportal.fun/api/data');
 
     websocket.onopen = () => {
-      console.log('Connected to PumpPortal WebSocket');
+      console.info('Connected to PumpPortal WebSocket');
       set({ connected: true, connecting: false });
     };
 
     websocket.onclose = () => {
-      console.log('Disconnected from PumpPortal WebSocket');
+      console.info('Disconnected from PumpPortal WebSocket');
       websocket = null;
       set({ connected: false, connecting: false });
       
@@ -94,40 +137,73 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
 
     websocket.onmessage = (event) => {
       try {
-        const message = JSON.parse(event.data) as PumpPortalEvent;
+        const rawData = JSON.parse(event.data);
         
-        switch (message.type) {
-          case 'newToken':
-            set((state) => ({
-              recentTokens: [message.data, ...state.recentTokens].slice(0, 50)
-            }));
-            break;
-            
-          case 'tokenTrade':
-            set((state) => {
-              const tokenId = message.data.token_mint;
-              const currentTrades = state.recentTrades[tokenId] || [];
+        // Handle standard message format
+        if (rawData.type) {
+          const message = rawData as PumpPortalEvent;
+          
+          switch (message.type) {
+            case 'newToken':
+              set((state) => ({
+                recentTokens: [message.data, ...state.recentTokens].slice(0, 50)
+              }));
+              break;
               
-              return {
-                recentTrades: {
-                  ...state.recentTrades,
-                  [tokenId]: [message.data, ...currentTrades].slice(0, 100)
+            case 'tokenTrade':
+              set((state) => {
+                const tokenId = message.data.token_mint;
+                const currentTrades = state.recentTrades[tokenId] || [];
+                
+                return {
+                  recentTrades: {
+                    ...state.recentTrades,
+                    [tokenId]: [message.data, ...currentTrades].slice(0, 100)
+                  }
+                };
+              });
+              break;
+              
+            case 'raydiumLiquidity':
+              set((state) => ({
+                recentLiquidity: {
+                  ...state.recentLiquidity,
+                  [message.data.token_mint]: message.data
                 }
-              };
-            });
-            break;
-            
-          case 'raydiumLiquidity':
-            set((state) => ({
-              recentLiquidity: {
-                ...state.recentLiquidity,
-                [message.data.token_mint]: message.data
-              }
-            }));
-            break;
-            
-          default:
-            console.log('Unknown message type:', message);
+              }));
+              break;
+              
+            default:
+              console.info('Unknown message type:', message);
+          }
+        } 
+        // Handle raw token creation format
+        else if (rawData.txType === 'create' && rawData.mint) {
+          const tokenEvent = rawData as RawTokenCreationEvent;
+          
+          // Add to raw tokens store
+          set((state) => ({
+            rawTokens: [tokenEvent, ...state.rawTokens].slice(0, 50)
+          }));
+          
+          // Also convert to standard format for compatibility
+          const standardFormat: NewTokenEvent['data'] = {
+            token_mint: tokenEvent.mint,
+            token_name: tokenEvent.name || 'Unknown Token',
+            token_symbol: tokenEvent.symbol || '',
+            created_time: new Date().toISOString(),
+            token_decimals: 9, // Default for Solana
+            token_supply: '1000000000', // Placeholder
+            metaplex_metadata: tokenEvent.uri
+          };
+          
+          set((state) => ({
+            recentTokens: [standardFormat, ...state.recentTokens].slice(0, 50)
+          }));
+        }
+        // Log unknown formats for debugging
+        else {
+          console.info('Unknown message type:', rawData);
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
