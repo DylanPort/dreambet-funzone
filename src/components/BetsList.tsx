@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Clock } from 'lucide-react';
-import { fetchUserBetsWrapper as fetchUserBets } from '@/api/mockData';
+import { fetchUserBets } from '@/api/mockData';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet } from '@/types/bet';
@@ -41,6 +41,7 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
         }
       } catch (error) {
         console.error('Error loading bets:', error);
+        setBets([]);
       } finally {
         setLoading(false);
       }
