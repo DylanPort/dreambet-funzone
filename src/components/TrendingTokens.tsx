@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, TrendingUp, Clock, ExternalLink, Zap, Flame } from 'lucide-react';
 import TokenCard from '@/components/TokenCard';
@@ -45,12 +44,10 @@ const TrendingTokens: React.FC = () => {
   useEffect(() => {
     fetchData();
     
-    // Set up a more frequent refresh interval (every 30 seconds)
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Refresh data when tab becomes visible again
   useVisibilityChange(() => {
     console.log("Tab became visible, refreshing trending tokens data");
     fetchData();
@@ -74,7 +71,6 @@ const TrendingTokens: React.FC = () => {
     return `${diffInHours}h ago`;
   };
 
-  // Format large numbers for display
   const formatNumber = (num: number, prefix = "") => {
     if (num >= 1000000000) {
       return `${prefix}${(num / 1000000000).toFixed(2)}B`;
@@ -90,7 +86,7 @@ const TrendingTokens: React.FC = () => {
     <div className="glass-panel p-6 relative">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 flex items-center justify-center transition-transform hover:scale-105">
+          <div className="w-20 h-20 flex items-center justify-center transition-transform hover:scale-105">
             <img 
               src="/lovable-uploads/b4c3d83c-03ad-43c5-bbc1-ade4e2d1c15b.png" 
               alt="Trending" 
