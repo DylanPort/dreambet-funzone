@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
@@ -36,11 +35,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <Link to="/" className="text-xl font-display font-bold text-gradient">
-            <img 
-              src="/lovable-uploads/0efcf12e-2095-48c8-83a1-60dddf4f2f42.png" 
-              alt="PumpBounty Logo" 
-              className="h-10 w-auto"
-            />
+            PumpXBounty
           </Link>
           
           <nav className="hidden md:flex space-x-8 items-center">
