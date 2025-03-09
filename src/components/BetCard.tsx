@@ -3,7 +3,7 @@ import React from 'react';
 import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
-import { formatTimeRemaining, formatAddress } from '@/utils/betUtils';
+import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
 
 interface BetCardProps {
   bet: Bet;
@@ -45,7 +45,7 @@ const BetCard: React.FC<BetCardProps> = ({
           <div className="flex items-center">
             <Timer className="w-3 h-3 mr-1 text-dream-foreground/70" />
             <span className="text-dream-foreground/70">
-              {new Date(bet.timestamp).toLocaleString()}
+              {bet.duration ? formatBetDuration(bet.duration) : "1h bet"} {/* Display bet duration */}
             </span>
           </div>
         </div>
@@ -54,15 +54,15 @@ const BetCard: React.FC<BetCardProps> = ({
       <div className="flex items-center mt-3 justify-between">
         <div className="flex items-center">
           <div className={`flex items-center justify-center w-8 h-8 rounded-full mr-2 ${
-            bet.prediction === 'up' 
+            bet.prediction === 'up' || bet.prediction === 'migrate'
               ? 'bg-green-500/20 text-green-400' 
               : 'bg-red-500/20 text-red-400'
           }`}>
-            {bet.prediction === 'up' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+            {bet.prediction === 'up' || bet.prediction === 'migrate' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
           </div>
           <div>
             <div className="font-semibold flex items-center">
-              Betting {bet.prediction === 'up' ? 'UP ↑' : 'DOWN ↓'}
+              Betting {bet.prediction === 'up' || bet.prediction === 'migrate' ? 'MIGRATE 🚀' : 'DIE 💀'}
               {isExpiringSoon && (
                 <AlertTriangle className="ml-2 w-4 h-4 text-orange-400" />
               )}
@@ -79,13 +79,13 @@ const BetCard: React.FC<BetCardProps> = ({
         <Button 
           onClick={() => onAcceptBet(bet)}
           className={`${
-            bet.prediction === 'up'
-              ? 'bg-red-500 hover:bg-red-600'  // If they bet up, you bet down (red)
-              : 'bg-green-500 hover:bg-green-600'  // If they bet down, you bet up (green)
+            bet.prediction === 'up' || bet.prediction === 'migrate'
+              ? 'bg-red-500 hover:bg-red-600'  // If they bet migrate, you bet die (red)
+              : 'bg-green-500 hover:bg-green-600'  // If they bet die, you bet migrate (green)
           }`}
           disabled={!connected || bet.initiator === publicKeyString}
         >
-          Take {bet.prediction === 'up' ? 'DOWN' : 'UP'} Position
+          Take {bet.prediction === 'up' || bet.prediction === 'migrate' ? 'DIE 💀' : 'MIGRATE 🚀'} Position
         </Button>
       </div>
     </div>
