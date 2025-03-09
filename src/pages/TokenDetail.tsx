@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
-import PriceChart from '@/components/PriceChart';
 import { fetchTokenById } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
 import { Bet } from '@/types/bet';
@@ -460,17 +459,34 @@ const TokenDetail = () => {
               <div className="glass-panel p-6 mb-8">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-display font-bold">Price Chart</h2>
-                  <button 
-                    onClick={refreshData}
-                    className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm"
-                    disabled={loading}
-                  >
-                    <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
+                  <div className="flex gap-2">
+                    <a 
+                      href={`https://dexscreener.com/solana/${token.id}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-dream-accent2 hover:underline flex items-center text-sm"
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      DexScreener
+                    </a>
+                    <button 
+                      onClick={refreshData}
+                      className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm"
+                      disabled={loading}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </button>
+                  </div>
                 </div>
                 
-                <PriceChart data={priceData} isLoading={loading} />
+                <div className="w-full h-[400px] bg-black/10 rounded-lg overflow-hidden relative">
+                  <iframe 
+                    src={`https://dexscreener.com/solana/${token.id}?embed=1&theme=dark&trades=0&info=0`} 
+                    className="w-full h-full border-0"
+                    title="DexScreener Chart"
+                  ></iframe>
+                </div>
                 
                 <div className="mt-8 grid grid-cols-2 gap-4">
                   <Button

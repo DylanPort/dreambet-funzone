@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { ArrowLeft, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, ArrowDownRight, ExternalLink } from 'lucide-react';
 import { fetchMigratingTokens, fetchBetsByToken } from '@/api/mockData';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
-import PriceChart from '@/components/PriceChart';
 import CountdownTimer from '@/components/CountdownTimer';
 import CreateBetForm from '@/components/CreateBetForm';
 import OrbitingParticles from '@/components/OrbitingParticles';
@@ -174,8 +174,24 @@ const TokenBetting = () => {
               )}
             </div>
             
-            <div className="h-64">
-              <PriceChart />
+            <div className="w-full h-[300px] bg-black/10 rounded-lg overflow-hidden relative mb-4">
+              <iframe 
+                src={`https://dexscreener.com/solana/${token.id}?embed=1&theme=dark&trades=0&info=0`} 
+                className="w-full h-full border-0"
+                title="DexScreener Chart"
+              ></iframe>
+            </div>
+            
+            <div className="flex justify-end">
+              <a 
+                href={`https://dexscreener.com/solana/${token.id}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-dream-accent2 hover:underline inline-flex items-center text-sm"
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                View on DexScreener
+              </a>
             </div>
           </div>
           
