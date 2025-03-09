@@ -21,15 +21,15 @@ const Index = () => {
     
     // Process formatted tokens
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
-      for (let i = 0; i < Math.min(4, pumpPortal.recentTokens.length); i++) {
+      for (let i = 0; i < Math.min(3, pumpPortal.recentTokens.length); i++) {
         const formattedToken = formatWebSocketTokenData(pumpPortal.recentTokens[i]);
         tokens.push(formattedToken);
       }
     }
     
     // Process raw tokens if we need more
-    if (tokens.length < 4 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
-      for (let i = 0; i < Math.min(4 - tokens.length, pumpPortal.rawTokens.length); i++) {
+    if (tokens.length < 3 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
+      for (let i = 0; i < Math.min(3 - tokens.length, pumpPortal.rawTokens.length); i++) {
         const rawToken = pumpPortal.rawTokens[i];
         tokens.push({
           id: rawToken.mint,
@@ -43,7 +43,7 @@ const Index = () => {
     }
     
     // Fill with placeholders if needed
-    while (tokens.length < 4) {
+    while (tokens.length < 3) {
       tokens.push({
         id: `placeholder-${tokens.length}`,
         name: `Token ${tokens.length + 1}`,
@@ -63,12 +63,11 @@ const Index = () => {
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
 
-  // Card styles to position the 4 cards
+  // Card styles to position the 3 cards
   const cardPositions = [
     "top-[5%] left-[40%] shadow-neon-green animate-float", // Style for first card
     "top-0 left-[10%] shadow-neon-purple animate-float", // Style for second card
     "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed", // Style for third card
-    "bottom-0 left-[30%] shadow-neon animate-float-delayed-2" // Style for fourth card
   ];
 
   return (
