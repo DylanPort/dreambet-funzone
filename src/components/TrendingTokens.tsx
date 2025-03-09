@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, TrendingUp, Clock } from 'lucide-react';
 import TokenCard from '@/components/TokenCard';
 import { fetchTrendingTokens } from '@/services/dexScreenerService';
@@ -13,10 +13,12 @@ const TrendingTokens: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const { toast } = useToast();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setRefreshing(true);
     try {
+      console.log("Fetching trending tokens data...");
       const data = await fetchTrendingTokens();
+      console.log("Trending tokens data received:", data.length, "tokens");
       setTokens(data);
       setLastUpdated(new Date());
       
@@ -38,21 +40,24 @@ const TrendingTokens: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchData();
-    // Set up a refresh interval for every 2 minutes
-    const interval = setInterval(fetchData, 120000);
+    
+    // Set up a more frequent refresh interval (every 30 seconds)
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   // Refresh data when tab becomes visible again
   useVisibilityChange(() => {
+    console.log("Tab became visible, refreshing trending tokens data");
     fetchData();
   });
 
   const handleRefresh = () => {
+    console.log("Manual refresh triggered");
     fetchData();
   };
 
@@ -77,7 +82,7 @@ const TrendingTokens: React.FC = () => {
           <h2 className="text-xl font-display font-semibold">Trending Solana Tokens</h2>
           <div className="bg-dream-accent1/20 text-dream-accent1 text-xs px-2 py-0.5 rounded-full flex items-center">
             <Clock className="h-3 w-3 mr-1" />
-            Last Hour
+            Real-time
           </div>
         </div>
         <div className="flex items-center gap-3">

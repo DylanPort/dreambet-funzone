@@ -27,6 +27,7 @@ interface TrendingToken {
 }
 
 const CACHE_EXPIRY_TIME = 30000; // 30 seconds
+const TRENDING_CACHE_EXPIRY = 10000; // 10 seconds
 const tokenDataCache = new Map<string, {
   data: any;
   timestamp: number;
@@ -93,11 +94,12 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
     // Check cache first
     const cachedData = tokenDataCache.get('trending_tokens');
     const now = Date.now();
-    if (cachedData && (now - cachedData.timestamp) < CACHE_EXPIRY_TIME) {
+    if (cachedData && (now - cachedData.timestamp) < TRENDING_CACHE_EXPIRY) {
+      console.log("Using cached trending tokens data");
       return cachedData.data;
     }
     
-    console.log("Fetching trending tokens from DexScreener");
+    console.log("Fetching real-time trending tokens from DexScreener");
     const response = await fetch('https://api.dexscreener.com/latest/dex/search?q=solana');
     
     if (!response.ok) {
@@ -131,7 +133,7 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
       .slice(0, 20);
     
-    console.log(`Found ${sortedPairs.length} trending tokens in the last hour`);
+    console.log(`Found ${sortedPairs.length} real-time trending tokens`);
     
     const tokens = sortedPairs.map(pair => {
       // Calculate minutes since this pair was updated
@@ -157,10 +159,10 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       timestamp: now
     });
     
-    console.log("Trending tokens retrieved successfully:", tokens.length);
+    console.log("Real-time trending tokens retrieved:", tokens.length);
     return tokens;
   } catch (error) {
-    console.error("Error fetching trending tokens:", error);
+    console.error("Error fetching real-time trending tokens:", error);
     return [];
   }
 };
