@@ -224,7 +224,8 @@ const Dashboard = () => {
         </div>
       </footer>
       
-      <style jsx>{`
+      <style>
+        {`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }
@@ -259,7 +260,8 @@ const Dashboard = () => {
         .bet-button:hover:before {
           left: 100%;
         }
-      `}</style>
+        `}
+      </style>
     </>
   );
 };
