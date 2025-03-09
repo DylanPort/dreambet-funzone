@@ -1,4 +1,3 @@
-
 interface DexScreenerPair {
   liquidity: number;
   volume: {
@@ -13,6 +12,18 @@ interface DexScreenerPair {
 
 interface DexScreenerTokenData {
   pairs: DexScreenerPair[];
+}
+
+interface TrendingToken {
+  id: string;
+  name: string;
+  symbol: string;
+  price: number;
+  priceChange: number;
+  timeRemaining: number;
+  volume24h: number;
+  marketCap: number;
+  imageUrl?: string;
 }
 
 const CACHE_EXPIRY_TIME = 30000; // 30 seconds
@@ -77,18 +88,75 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
   }
 };
 
-// Add a polling function with better performance
+export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
+  try {
+    // Check cache first
+    const cachedData = tokenDataCache.get('trending_tokens');
+    const now = Date.now();
+    if (cachedData && (now - cachedData.timestamp) < CACHE_EXPIRY_TIME) {
+      return cachedData.data;
+    }
+    
+    console.log("Fetching trending tokens from DexScreener");
+    const response = await fetch('https://api.dexscreener.com/latest/dex/search?q=solana');
+    
+    if (!response.ok) {
+      console.error(`DexScreener API error: ${response.status} ${response.statusText}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    
+    if (!data.pairs || data.pairs.length === 0) {
+      console.log("No trending tokens found");
+      return [];
+    }
+    
+    // Sort pairs by volume to get the most active tokens
+    const sortedPairs = [...data.pairs]
+      .filter(pair => pair.chainId === 'solana' && pair.volume?.h24 > 0)
+      .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
+      .slice(0, 20);
+    
+    const tokens = sortedPairs.map(pair => {
+      // Generate a random time in the past (1-120 minutes ago)
+      const randomTime = Math.floor(Math.random() * 120) + 1;
+      
+      return {
+        id: pair.baseToken?.address || '',
+        name: pair.baseToken?.name || 'Unknown',
+        symbol: pair.baseToken?.symbol || '???',
+        price: parseFloat(pair.priceUsd || '0'),
+        priceChange: pair.priceChange?.h24 || 0,
+        timeRemaining: randomTime,
+        volume24h: pair.volume?.h24 || 0,
+        marketCap: pair.fdv || 0,
+        imageUrl: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${pair.baseToken?.address}/logo.png`
+      };
+    });
+    
+    // Save to cache
+    tokenDataCache.set('trending_tokens', {
+      data: tokens,
+      timestamp: now
+    });
+    
+    console.log("Trending tokens retrieved successfully:", tokens.length);
+    return tokens;
+  } catch (error) {
+    console.error("Error fetching trending tokens:", error);
+    return [];
+  }
+};
+
 let activePollingTokens = new Set<string>();
 let pollingIntervalId: number | null = null;
 
-// Store callbacks for each token
 const tokenCallbacks = new Map<string, Function>();
 
-// Add separate callback maps for specific metrics
 const marketCapCallbacks = new Map<string, Function>();
 const volumeCallbacks = new Map<string, Function>();
 
-// Define the unified polling function that handles all callback types
 const pollAllActiveTokens = async () => {
   const tokens = Array.from(activePollingTokens);
   for (const token of tokens) {
@@ -151,7 +219,6 @@ export const startDexScreenerPolling = (
   };
 };
 
-// Function to only poll for market cap updates
 export const subscribeToMarketCap = (
   tokenAddress: string,
   onMarketCapUpdate: (marketCap: number) => void
@@ -180,7 +247,6 @@ export const subscribeToMarketCap = (
   };
 };
 
-// Function to only poll for volume updates
 export const subscribeToVolume = (
   tokenAddress: string,
   onVolumeUpdate: (volume24h: number) => void

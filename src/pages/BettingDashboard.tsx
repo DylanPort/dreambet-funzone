@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, ArrowUp, ArrowDown } from 'lucide-react';
@@ -7,6 +8,8 @@ import MigratingTokenList from '@/components/MigratingTokenList';
 import OpenBetsList from '@/components/OpenBetsList';
 import BetsList from '@/components/BetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
+import TrendingTokens from '@/components/TrendingTokens';
+
 const BettingDashboard = () => {
   const {
     connected
@@ -32,6 +35,11 @@ const BettingDashboard = () => {
                 <span>Connect your Solana wallet to start betting</span>
                 <WalletConnectButton />
               </div>}
+          </section>
+
+          {/* Trending Tokens Section */}
+          <section className="mb-10">
+            <TrendingTokens />
           </section>
 
           {/* Dashboard Sections */}
