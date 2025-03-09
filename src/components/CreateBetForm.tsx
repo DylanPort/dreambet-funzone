@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { ArrowUp, ArrowDown, Clock } from 'lucide-react';
@@ -32,9 +32,23 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duration, setDuration] = useState<number>(30); // Default to 30 minutes
   const [transactionStatus, setTransactionStatus] = useState<string>('');
+  const [isWalletReady, setIsWalletReady] = useState(false);
   
-  const { connected, publicKey, wallet } = useWallet();
+  const { connected, publicKey, wallet, connecting } = useWallet();
   const { toast } = useToast();
+
+  // Check if wallet is actually ready for transactions
+  useEffect(() => {
+    const checkWalletReady = async () => {
+      if (connected && publicKey && wallet && wallet.adapter.publicKey) {
+        setIsWalletReady(true);
+      } else {
+        setIsWalletReady(false);
+      }
+    };
+    
+    checkWalletReady();
+  }, [connected, publicKey, wallet]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
@@ -46,10 +60,10 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   };
 
   const handleCreateBet = async () => {
-    if (!connected || !publicKey) {
+    if (!isWalletReady) {
       toast({
-        title: "Wallet not connected",
-        description: "Please connect your wallet to create a bet",
+        title: "Wallet not connected properly",
+        description: "Please ensure your wallet is fully connected and try again",
         variant: "destructive",
       });
       return;
@@ -81,7 +95,9 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       // Log for debugging
       console.log(`Creating bet with: 
         token: ${tokenId} (${tokenName})
-        wallet: ${publicKey.toString()}
+        wallet: ${publicKey?.toString()}
+        wallet connected: ${connected}
+        wallet adapter ready: ${wallet?.adapter?.publicKey ? 'Yes' : 'No'}
         amount: ${amountValue} SOL
         prediction: ${prediction}
         duration: ${duration} minutes
@@ -89,11 +105,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       setTransactionStatus('Sending transaction to Solana...');
       
+      if (!wallet) {
+        throw new Error("Wallet instance is not available");
+      }
+      
       await createBet(
         tokenId,
         tokenName,
         tokenSymbol,
-        publicKey.toString(),
+        publicKey!.toString(),
         amountValue,
         prediction,
         wallet,
@@ -230,7 +250,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       <div className="flex gap-3">
         <Button
           onClick={handleCreateBet}
-          disabled={!connected || isSubmitting || !prediction || !amount}
+          disabled={!isWalletReady || isSubmitting || !prediction || !amount}
           className="flex-1 bg-gradient-to-r from-dream-accent1 to-dream-accent3"
         >
           {isSubmitting ? (
@@ -254,10 +274,16 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         )}
       </div>
       
-      {!connected && (
-        <p className="text-center text-sm text-dream-foreground/70">
-          Connect your wallet to create bets
-        </p>
+      {!isWalletReady && (
+        <div className="text-center text-sm">
+          {connecting ? (
+            <p className="text-yellow-400">Connecting wallet...</p>
+          ) : !connected ? (
+            <p className="text-dream-foreground/70">Connect your wallet to create bets</p>
+          ) : (
+            <p className="text-yellow-400">Waiting for wallet to be ready...</p>
+          )}
+        </div>
       )}
     </div>
   );

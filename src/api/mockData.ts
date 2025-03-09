@@ -94,7 +94,15 @@ export const createBet = async (
   try {
     console.log(`Creating bet with tokenId=${tokenId}, amount=${amount}, prediction=${prediction}, duration=${duration}`);
     
+    // Validate wallet connection
+    if (!wallet || !wallet.publicKey) {
+      throw new Error("Wallet not properly connected. Please reconnect your wallet.");
+    }
+    
     // Create bet on Solana blockchain first
+    console.log("Wallet adapter ready:", wallet.adapter?.publicKey ? "Yes" : "No");
+    console.log("Initiating Solana transaction...");
+    
     const { betId } = await createSolanaBet(
       wallet,
       tokenId,
@@ -122,7 +130,7 @@ export const createBet = async (
       onChainBetId: betId.toString(),
       status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating bet:', error);
     throw error;
   }
@@ -135,6 +143,11 @@ export const acceptBet = async (
 ): Promise<Bet> => {
   try {
     console.log(`Accepting bet: ${bet.id}, onChainBetId: ${bet.onChainBetId}`);
+    
+    // Validate wallet connection
+    if (!wallet || !wallet.publicKey) {
+      throw new Error("Wallet not properly connected. Please reconnect your wallet.");
+    }
     
     // Accept on Solana blockchain first
     if (bet.onChainBetId) {
