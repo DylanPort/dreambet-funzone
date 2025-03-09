@@ -160,7 +160,7 @@ const BetReel: React.FC = () => {
     return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 overflow-hidden py-[3px] my-[36px]">
         <div className="flex items-center">
           <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
-            <img src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" alt="Crown" className="h-19 w-22 mr-19 object-cover" />
+            <img src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" alt="Crown" className="h-4 w-26 mr-1 object-cover" />
             <span className="text-sm font-semibold">ACTIVE BETS</span>
           </div>
           <div className="overflow-hidden mx-4 flex-1">
