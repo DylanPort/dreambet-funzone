@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -94,9 +93,9 @@ const Index = () => {
       <OrbitingParticles />
       <Navbar />
       
-      <BetReel />
+      <div className="h-28"></div>
       
-      <main className="pt-12 min-h-screen overflow-hidden">
+      <main className="min-h-screen overflow-hidden">
         {/* Hero Section */}
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
           <div className="text-center mb-16 animate-fade-in">

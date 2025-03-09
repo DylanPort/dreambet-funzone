@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -63,14 +62,13 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom colors for our dreamy UI
 				dream: {
 					background: '#0A0A1F',
 					foreground: '#FFFFFF',
-					accent1: '#FF3DFC', // vibrant magenta
-					accent2: '#00EEFF', // electric cyan
-					accent3: '#7B61FF', // soft purple
-					surface: 'rgba(255, 255, 255, 0.05)', // glass surface
+					accent1: '#FF3DFC',
+					accent2: '#00EEFF',
+					accent3: '#7B61FF',
+					surface: 'rgba(255, 255, 255, 0.05)'
 				}
 			},
 			borderRadius: {
@@ -117,6 +115,14 @@ export default {
 				'spin-slow': {
 					'0%': { transform: 'rotate(0deg)' },
 					'100%': { transform: 'rotate(360deg)' }
+				},
+				'scroll': {
+					'0%': { transform: 'translateX(0)' },
+					'100%': { transform: 'translateX(-50%)' }
+				},
+				'entrance': {
+					'0%': { transform: 'translateY(-10px)', opacity: '0' },
+					'100%': { transform: 'translateY(0)', opacity: '1' }
 				}
 			},
 			animation: {
@@ -126,7 +132,9 @@ export default {
 				'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
 				'gradient-move': 'gradient-move 8s ease infinite',
 				'fade-in': 'fade-in 0.5s ease-out',
-				'spin-slow': 'spin-slow 15s linear infinite'
+				'spin-slow': 'spin-slow 15s linear infinite',
+				'scroll': 'scroll 25s linear infinite',
+				'entrance': 'entrance 0.3s ease-out'
 			},
 			backgroundImage: {
 				'dream-gradient': 'linear-gradient(to right, #0A0A1F, #1A1040, #0A0A1F)',
