@@ -172,7 +172,7 @@ const BetReel: React.FC = () => {
         <div className="flex items-center">
           <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
             <Sparkles className="h-4 w-4 text-dream-accent1 mr-2" />
-            <span className="text-sm font-semibold">ABOUT TO GRADUATE</span>
+            <span className="text-sm font-semibold">ACTIVE BETS</span>
           </div>
           <div className="overflow-hidden mx-4 flex-1">
             <div className="text-sm text-gray-400">Loading active bets...</div>
@@ -188,7 +188,7 @@ const BetReel: React.FC = () => {
         <div className="flex items-center">
           <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
             <Sparkles className="h-4 w-4 text-dream-accent1 mr-2" />
-            <span className="text-sm font-semibold">ABOUT TO GRADUATE</span>
+            <span className="text-sm font-semibold">ACTIVE BETS</span>
           </div>
           <div className="overflow-hidden mx-4 flex-1">
             <div className="text-sm text-gray-400 italic">No active bets at the moment</div>
@@ -203,7 +203,7 @@ const BetReel: React.FC = () => {
       <div className="flex items-center">
         <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
           <Sparkles className="h-4 w-4 text-dream-accent1 mr-2" />
-          <span className="text-sm font-semibold">ABOUT TO GRADUATE</span>
+          <span className="text-sm font-semibold">ACTIVE BETS</span>
         </div>
         
         <div className="flex items-center ml-auto mr-4">

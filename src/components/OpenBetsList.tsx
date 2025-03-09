@@ -30,7 +30,7 @@ const OpenBetsList = () => {
       <div className="space-y-5">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
-            <span>ABOUT TO GRADUATE</span>
+            <span>ACTIVE BETS</span>
           </h2>
           
           <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ const OpenBetsList = () => {
     <div className="space-y-5">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
-          <span>ABOUT TO GRADUATE</span>
+          <span>ACTIVE BETS</span>
         </h2>
         
         <div className="flex items-center gap-2">
