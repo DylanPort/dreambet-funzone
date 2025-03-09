@@ -69,7 +69,7 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
         message: `New ${amount} SOL bet created predicting token will ${prediction}!`
       });
       
-      // Refresh the bets
+      // Refresh the bets immediately when a new bet is created
       loadBets();
       
       // Hide notification after 5 seconds
@@ -79,6 +79,7 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
     };
 
     const handleBetAccepted = () => {
+      // Also refresh when any bet is accepted
       loadBets();
     };
 
