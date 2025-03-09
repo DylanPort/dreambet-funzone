@@ -9,6 +9,7 @@ import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import CountdownTimer from '@/components/CountdownTimer';
+import { cn } from '@/lib/utils';
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,7 +57,7 @@ const Dashboard = () => {
       <Link 
         key={bet.id} 
         to={`/betting/token/${bet.tokenId}`}
-        className="token-card relative overflow-hidden group"
+        className="token-card relative overflow-hidden group mb-4"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
@@ -121,43 +122,44 @@ const Dashboard = () => {
     );
   };
   
-  const renderSection = (title: string, bets: Bet[], icon: React.ReactNode) => {
+  const renderSectionColumn = (title: string, bets: Bet[], icon: React.ReactNode) => {
     return (
-      <div className="space-y-5">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
-            <span>{title}</span>
+      <div className="w-full px-2 relative flex flex-col h-full">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-display font-bold text-dream-foreground flex items-center gap-1">
+            {title}
           </h2>
           
           <div className="flex items-center gap-2">
-            <div className="flex items-center text-sm bg-dream-background/50 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent1/30">
-              <Filter className="w-3.5 h-3.5 mr-1.5 text-dream-accent1" />
-              <span className="font-medium">Filter {bets.length}</span>
+            <div className="flex items-center text-xs bg-dream-background/50 backdrop-blur-sm px-2 py-1 rounded-full border border-dream-accent1/30">
+              <Filter className="w-3 h-3 mr-1 text-dream-accent1" />
+              <span className="font-medium">{bets.length}</span>
             </div>
             
-            <div className="flex items-center text-sm bg-dream-background/30 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent2/20">
-              <Zap className="w-4 h-4 text-dream-accent2" />
+            <div className="flex items-center text-xs bg-dream-background/30 backdrop-blur-sm px-2 py-1 rounded-full border border-dream-accent2/20">
+              <Zap className="w-3.5 h-3.5 text-dream-accent2" />
               <span>0.6</span>
             </div>
           </div>
         </div>
         
-        {bets.length === 0 ? (
-          <div className="glass-panel p-6 text-center">
-            <p className="text-dream-foreground/80 mb-2">No bets in this category</p>
-            <p className="text-dream-foreground/60 text-sm">
-              {title === "NEWLY CREATED" 
-                ? "No new bets have been created recently" 
-                : title === "EXPIRING SOON" 
-                  ? "No bets are expiring within the next hour" 
-                  : "No bets have expired recently"}
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {bets.map(renderBetCard)}
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {bets.length === 0 ? (
+            <div className="glass-panel p-6 text-center h-32 flex items-center justify-center">
+              <p className="text-dream-foreground/60 text-sm">
+                {title === "NEWLY CREATED" 
+                  ? "No new bets created recently" 
+                  : title === "EXPIRING SOON" 
+                    ? "No bets expiring within the hour" 
+                    : "No expired bets"}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-0 flex flex-col">
+              {bets.map(renderBetCard)}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -168,8 +170,8 @@ const Dashboard = () => {
       <Navbar />
       <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">Dashboard</h1>
-          <p className="text-dream-foreground/70">Real-time feeds of bets matching your selected filters</p>
+          <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">MEMESCOPE</h1>
+          <p className="text-dream-foreground/70">Customized real-time feeds of new tokens matching your selected preset filters.</p>
         </div>
         
         {/* Search and Filters */}
@@ -192,37 +194,72 @@ const Dashboard = () => {
         </div>
         
         {/* Bet Sections */}
-        <div className="space-y-16">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="glass-panel p-10 flex flex-col items-center">
-                <div className="w-12 h-12 border-4 border-t-transparent border-dream-accent1 rounded-full animate-spin mb-4"></div>
-                <p className="text-dream-foreground/70">Loading bets...</p>
-              </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="glass-panel p-10 flex flex-col items-center">
+              <div className="w-12 h-12 border-4 border-t-transparent border-dream-accent1 rounded-full animate-spin mb-4"></div>
+              <p className="text-dream-foreground/70">Loading bets...</p>
             </div>
-          ) : error ? (
-            <div className="glass-panel p-8 text-center">
-              <p className="text-xl text-red-400 mb-4">Failed to load bets</p>
-              <p className="text-dream-foreground/70">There was an error fetching the bet data. Please try again later.</p>
-            </div>
-          ) : (
-            <>
-              {renderSection("NEWLY CREATED", newlyCreated, <Clock />)}
-              {renderSection("EXPIRING SOON", expiring, <Clock />)}
-              {renderSection("EXPIRED", expired, <Clock />)}
-            </>
-          )}
-        </div>
+          </div>
+        ) : error ? (
+          <div className="glass-panel p-8 text-center">
+            <p className="text-xl text-red-400 mb-4">Failed to load bets</p>
+            <p className="text-dream-foreground/70">There was an error fetching the bet data. Please try again later.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            {renderSectionColumn("NEWLY CREATED", newlyCreated, <Clock />)}
+            {renderSectionColumn("EXPIRING SOON", expiring, <Clock />)}
+            {renderSectionColumn("EXPIRED", expired, <Clock />)}
+          </div>
+        )}
       </main>
       
       {/* Footer */}
-      <footer className="glass-panel mt-20 px-6 py-8">
+      <footer className="glass-panel mt-8 px-6 py-8">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-dream-foreground/40 text-sm">
             © {new Date().getFullYear()} PumpXBounty. All rights reserved.
           </p>
         </div>
       </footer>
+      
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+        .bet-button {
+          position: relative;
+          background: linear-gradient(90deg, rgba(255, 61, 252, 0.2), rgba(0, 238, 255, 0.2));
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          overflow: hidden;
+        }
+        .bet-button:before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+          transition: all 0.5s;
+        }
+        .bet-button:hover:before {
+          left: 100%;
+        }
+      `}</style>
     </>
   );
 };
