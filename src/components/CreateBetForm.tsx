@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -34,7 +33,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [transactionStatus, setTransactionStatus] = useState<string>('');
   const [isWalletReady, setIsWalletReady] = useState(false);
   const [walletCheckingInProgress, setWalletCheckingInProgress] = useState(false);
-  const [walletRetryCount, setWalletRetryCount] = useState(0);
+  const [checkAttempts, setCheckAttempts] = useState(0);
   
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { toast } = useToast();
@@ -44,16 +43,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     if (connected && publicKey && wallet && wallet.adapter.publicKey) {
       try {
         setWalletCheckingInProgress(true);
-        console.log("Verifying wallet connection...");
+        console.log("Verifying wallet connection in CreateBetForm...");
         
-        // Check if the wallet adapter has a matching publicKey
+        // Simple check - if publicKeys match, wallet is considered connected
         if (wallet.adapter.publicKey.equals(publicKey)) {
-          console.log("Wallet successfully verified with publicKey check");
+          console.log("Wallet successfully verified - Ready for transactions");
           setIsWalletReady(true);
-          setWalletRetryCount(0);
           return true;
         } else {
-          console.warn("Wallet publicKey mismatch");
+          console.warn("Wallet adapter publicKey doesn't match connected publicKey");
           setIsWalletReady(false);
           return false;
         }
@@ -65,15 +63,27 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         setWalletCheckingInProgress(false);
       }
     } else {
-      console.log("Wallet not connected or missing required properties");
+      // Log what's missing for debugging
+      console.log("Wallet not ready:", {
+        connected,
+        hasPublicKey: !!publicKey,
+        hasWallet: !!wallet,
+        hasWalletPublicKey: !!wallet?.adapter?.publicKey
+      });
       setIsWalletReady(false);
       return false;
     }
   }, [connected, publicKey, wallet]);
   
+  // Always verify wallet when connection state changes
   useEffect(() => {
-    verifyWalletConnection();
-  }, [verifyWalletConnection, connected, publicKey, wallet, walletRetryCount]);
+    // Add a small delay to give the wallet adapter time to fully connect
+    const timeoutId = setTimeout(() => {
+      verifyWalletConnection();
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [verifyWalletConnection, connected, publicKey, wallet, checkAttempts]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
@@ -99,7 +109,11 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   };
 
   const handleCheckWalletAgain = () => {
-    setWalletRetryCount(prev => prev + 1);
+    setCheckAttempts(prev => prev + 1);
+    toast({
+      title: "Checking wallet connection",
+      description: "Verifying your wallet connection status...",
+    });
   };
 
   const handleCreateBet = async () => {

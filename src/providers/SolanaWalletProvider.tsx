@@ -13,7 +13,7 @@ import {
   CoinbaseWalletAdapter
 } from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { useToast } from '@/hooks/use-toast';
 
 // Import the CSS for the wallet adapter
@@ -26,12 +26,24 @@ const WalletConnectionMonitor = ({ children }: { children: React.ReactNode }) =>
   const [connectionChecked, setConnectionChecked] = useState(false);
 
   useEffect(() => {
+    // Connection status monitor
+    console.log("Wallet connection status:", {
+      connected,
+      connecting,
+      hasPublicKey: !!publicKey,
+      hasWallet: !!wallet,
+      hasWalletPublicKey: !!wallet?.adapter?.publicKey,
+      connectionChecked
+    });
+
     const verifyWalletConnection = async () => {
       if (connected && publicKey && wallet) {
         try {
-          // Instead of sign message, just check if the publicKey matches
+          // Simple check if wallet adapter has the expected publicKey
           if (wallet.adapter.publicKey && wallet.adapter.publicKey.equals(publicKey)) {
-            console.log("Wallet successfully verified with publicKey check");
+            console.log("Wallet successfully verified - publicKey matches");
+            
+            // Only show toast when first connected
             if (!connectionChecked) {
               toast({
                 title: "Wallet Connected",
@@ -40,13 +52,14 @@ const WalletConnectionMonitor = ({ children }: { children: React.ReactNode }) =>
               setConnectionChecked(true);
             }
           } else {
-            console.warn("Wallet appears connected but publicKey doesn't match");
+            console.warn("Public key mismatch between wallet adapter and connection");
+            // The publicKeys don't match, try to recover
             if (connectionChecked) {
               setConnectionChecked(false);
             }
           }
         } catch (error) {
-          console.error("Failed to verify wallet connection:", error);
+          console.error("Error verifying wallet connection:", error);
           if (connectionChecked) {
             setConnectionChecked(false);
             toast({
@@ -57,11 +70,17 @@ const WalletConnectionMonitor = ({ children }: { children: React.ReactNode }) =>
           }
         }
       } else if (!connected && connectionChecked) {
+        // Reset when wallet is disconnected
         setConnectionChecked(false);
       }
     };
 
-    verifyWalletConnection();
+    // Verify connection status after a short delay to allow wallet to fully connect
+    const timeoutId = setTimeout(() => {
+      verifyWalletConnection();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
   }, [connected, publicKey, wallet, connecting, connectionChecked, toast]);
 
   return <>{children}</>;

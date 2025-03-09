@@ -15,29 +15,39 @@ const WalletConnectButton = () => {
   useEffect(() => {
     // Check if wallet is actually ready for transactions
     const verifyConnection = async () => {
-      if (connected && publicKey && wallet && wallet.adapter.publicKey) {
+      if (connected && publicKey && wallet) {
         try {
           setVerifying(true);
+          console.log("Verifying wallet connection in WalletConnectButton");
           
-          // Check if the wallet adapter has a matching publicKey
-          if (wallet.adapter.publicKey.equals(publicKey)) {
-            console.log("Wallet verified with publicKey check");
+          // Simple check - if the wallet adapter has a matching publicKey, consider it fully connected
+          // This is more reliable than using signMessage which might not be available in all wallets
+          if (wallet.adapter.publicKey && wallet.adapter.publicKey.equals(publicKey)) {
+            console.log("Wallet verified with publicKey check - FULLY CONNECTED");
             setIsFullyConnected(true);
           } else {
+            console.warn("Wallet connection issue: publicKey mismatch");
             setIsFullyConnected(false);
           }
         } catch (error) {
-          console.error("Error verifying wallet connection:", error);
+          console.error("Error verifying wallet:", error);
           setIsFullyConnected(false);
         } finally {
           setVerifying(false);
         }
       } else {
+        // Not all conditions met for a wallet connection
+        console.log("Wallet not fully connected, missing required properties");
         setIsFullyConnected(false);
       }
     };
     
-    verifyConnection();
+    // Add a small delay to allow wallet adapter to fully initialize
+    const timeoutId = setTimeout(() => {
+      verifyConnection();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [connected, publicKey, wallet]);
 
   const handleForceReconnect = async () => {
