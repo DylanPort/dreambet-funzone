@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { fetchOpenBets, acceptBet } from '@/api/mockData';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, SortAsc, SortDesc, Timer } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { SortAsc, SortDesc, Timer, Clock, Wallet, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Bet } from '@/types/bet';
-import CountdownTimer from './CountdownTimer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import BetsListView from './BetsListView';
+import { getSortedBets, getExpiringBets, getPublicBets } from '@/utils/betUtils';
 
 const OpenBetsList = () => {
   const [bets, setBets] = useState<Bet[]>([]);
@@ -33,17 +33,6 @@ const OpenBetsList = () => {
     const interval = setInterval(loadBets, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const formatTimeRemaining = (expiresAt: number) => {
-    const now = new Date().getTime();
-    const diffMs = expiresAt - now;
-    if (diffMs <= 0) return 'Expired';
-    
-    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${diffHrs}h ${diffMins}m left`;
-  };
 
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
@@ -87,126 +76,7 @@ const OpenBetsList = () => {
     }
   };
 
-  const getSortedBets = () => {
-    switch(sortBy) {
-      case 'newest':
-        return [...bets].sort((a, b) => b.timestamp - a.timestamp);
-      case 'expiring':
-        return [...bets].sort((a, b) => a.expiresAt - b.expiresAt);
-      case 'amount':
-        return [...bets].sort((a, b) => b.amount - a.amount);
-      default:
-        return bets;
-    }
-  };
-
-  const getExpiringBets = () => {
-    const oneHourFromNow = new Date().getTime() + 60 * 60 * 1000;
-    return getSortedBets().filter(bet => bet.expiresAt < oneHourFromNow).slice(0, 10); // Show top 10
-  };
-
-  const getPublicBets = () => {
-    return getSortedBets().filter(bet => !publicKey || bet.initiator !== publicKey.toString()).slice(0, 10); // Show top 10
-  };
-
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
-  };
-
-  const renderBetsList = (betsToRender: Bet[]) => {
-    if (betsToRender.length === 0) {
-      return (
-        <div className="glass-panel p-6 text-center">
-          <p className="text-dream-foreground/70">No bets available in this category.</p>
-          <p className="text-sm mt-2">Check back soon or create your own bet!</p>
-        </div>
-      );
-    }
-
-    // Limit to top 10 bets in each category
-    const topBets = betsToRender.slice(0, 10);
-    
-    return (
-      <div className="space-y-4">
-        {topBets.map(bet => (
-          <div key={bet.id} className="glass-panel p-4 transition-all hover:shadow-lg animate-fade-in">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="font-display font-semibold flex items-center gap-2">
-                  {bet.tokenName} <span className="text-sm font-normal text-dream-foreground/60">({bet.tokenSymbol})</span>
-                </h3>
-                <div className="flex items-center text-sm text-dream-foreground/70 mt-1">
-                  <Users className="w-3 h-3 mr-1" />
-                  <span className="truncate">
-                    Created by: {formatAddress(bet.initiator)}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex flex-col items-end text-sm">
-                <div className="flex items-center mb-1">
-                  <Clock className="w-3 h-3 mr-1 text-dream-foreground/70" />
-                  <span className={`${bet.expiresAt - new Date().getTime() < 3600000 ? 'text-red-400 font-semibold' : 'text-dream-foreground/70'}`}>
-                    {formatTimeRemaining(bet.expiresAt)}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <Timer className="w-3 h-3 mr-1 text-dream-foreground/70" />
-                  <span className="text-dream-foreground/70">
-                    {new Date(bet.timestamp).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center mt-3 justify-between">
-              <div className="flex items-center">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full mr-2 ${
-                  bet.prediction === 'up' 
-                    ? 'bg-green-500/20 text-green-400' 
-                    : 'bg-red-500/20 text-red-400'
-                }`}>
-                  {bet.prediction === 'up' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
-                </div>
-                <div>
-                  <div className="font-semibold flex items-center">
-                    Betting {bet.prediction === 'up' ? 'UP ↑' : 'DOWN ↓'}
-                    {bet.expiresAt - new Date().getTime() < 3600000 && (
-                      <AlertTriangle className="ml-2 w-4 h-4 text-orange-400" />
-                    )}
-                  </div>
-                  <div className="flex items-center text-sm text-dream-foreground/70">
-                    <Wallet className="w-3 h-3 mr-1" />
-                    <span>{bet.amount} SOL</span>
-                    <span className="mx-1">•</span>
-                    <span>Potential win: {bet.amount * 2} SOL</span>
-                  </div>
-                </div>
-              </div>
-              
-              <Button 
-                onClick={() => handleAcceptBet(bet)}
-                className={`${
-                  bet.prediction === 'up'
-                    ? 'bg-red-500 hover:bg-red-600'  // If they bet up, you bet down (red)
-                    : 'bg-green-500 hover:bg-green-600'  // If they bet down, you bet up (green)
-                }`}
-                disabled={!connected || bet.initiator === publicKey?.toString()}
-              >
-                Take {bet.prediction === 'up' ? 'DOWN' : 'UP'} Position
-              </Button>
-            </div>
-          </div>
-        ))}
-        
-        {betsToRender.length > 10 && (
-          <div className="text-center mt-4 text-sm text-dream-foreground/70">
-            Showing top 10 of {betsToRender.length} bets
-          </div>
-        )}
-      </div>
-    );
-  };
+  const publicKeyString = publicKey ? publicKey.toString() : null;
 
   return (
     <div className="space-y-6">
@@ -253,11 +123,21 @@ const OpenBetsList = () => {
           </TabsList>
           
           <TabsContent value="all">
-            {renderBetsList(getSortedBets().slice(0, 10))}
+            <BetsListView 
+              bets={getSortedBets(bets, sortBy).slice(0, 10)}
+              connected={connected}
+              publicKeyString={publicKeyString}
+              onAcceptBet={handleAcceptBet}
+            />
           </TabsContent>
           
           <TabsContent value="public">
-            {renderBetsList(getPublicBets())}
+            <BetsListView 
+              bets={getPublicBets(bets, sortBy, publicKeyString)}
+              connected={connected}
+              publicKeyString={publicKeyString}
+              onAcceptBet={handleAcceptBet}
+            />
           </TabsContent>
           
           <TabsContent value="expiring">
@@ -265,7 +145,12 @@ const OpenBetsList = () => {
               <AlertTriangle className="text-orange-400 mr-2" />
               <p className="text-sm">These bets will expire within the next hour!</p>
             </div>
-            {renderBetsList(getExpiringBets())}
+            <BetsListView 
+              bets={getExpiringBets(bets, sortBy)}
+              connected={connected}
+              publicKeyString={publicKeyString}
+              onAcceptBet={handleAcceptBet}
+            />
           </TabsContent>
         </Tabs>
       )}
