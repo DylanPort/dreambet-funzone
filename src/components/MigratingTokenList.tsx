@@ -115,14 +115,27 @@ const MigratingTokenList = () => {
           <div className="w-8 h-8 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : tokens.length === 0 ? (
-        <div className="glass-panel p-8 text-center">
+        <div className="glass-panel p-6">
           {pumpPortal.connected && pumpPortal.recentTokens.length > 0 ? (
             <>
-              <Sparkles className="w-12 h-12 text-dream-accent2/70 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">New Pump.fun Tokens</h3>
-              <div className="space-y-4 mt-4">
-                {pumpPortal.recentTokens.slice(0, 5).map((token, index) => (
-                  <div key={token.token_mint} className="glass-panel p-3 flex items-center justify-between">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-dream-accent2" />
+                  <h3 className="text-xl font-semibold">New Pump.fun Tokens</h3>
+                </div>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => window.open('https://pump.fun', '_blank')}
+                >
+                  Pump.fun <ExternalLink className="w-3 h-3 ml-1" />
+                </Button>
+              </div>
+              
+              <div className="grid gap-3">
+                {pumpPortal.recentTokens.slice(0, 5).map((token) => (
+                  <div key={token.token_mint} className="glass-panel p-3 flex items-center justify-between hover:bg-white/5 transition-colors">
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-lg border border-white/10">
                         {token.token_symbol ? token.token_symbol.charAt(0) : '🪙'}
@@ -132,25 +145,35 @@ const MigratingTokenList = () => {
                         <p className="text-xs text-dream-foreground/70">{token.token_symbol || '???'}</p>
                       </div>
                     </div>
-                    <span className="text-xs text-dream-foreground/70 flex items-center">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {formatTimeSince(new Date(token.created_time).getTime())}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs text-dream-foreground/70 flex items-center">
+                        <Clock className="w-3 h-3 mr-1" /> {formatTimeSince(new Date(token.created_time).getTime())}
+                      </span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs mt-1 h-6 px-2 text-dream-accent2"
+                      >
+                        Place Bet
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
-              <Button 
-                className="mt-4 bg-dream-accent1/20 hover:bg-dream-accent1/40 px-3 py-1 text-sm transition-colors"
-                onClick={() => window.open('https://pump.fun', '_blank')}
-              >
-                Visit Pump.fun <ExternalLink className="w-3 h-3 ml-1" />
-              </Button>
+              
+              {pumpPortal.recentTokens.length > 5 && (
+                <div className="mt-4 text-center">
+                  <Button variant="ghost" size="sm">
+                    View All Tokens
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <>
               <AlertCircle className="w-12 h-12 text-dream-accent2/70 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No Tokens Found</h3>
-              <p className="text-dream-foreground/70">
+              <h3 className="text-xl font-semibold mb-2 text-center">No Tokens Found</h3>
+              <p className="text-dream-foreground/70 text-center">
                 No migrating tokens from Pump.fun are currently available.
                 Check back soon for updates.
               </p>
