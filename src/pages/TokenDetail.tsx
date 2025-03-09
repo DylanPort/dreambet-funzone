@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -16,7 +15,7 @@ import { usePumpPortalWebSocket, getLatestPriceFromTrades } from '@/services/pum
 import OrbitingParticles from '@/components/OrbitingParticles';
 
 const TokenDetail = () => {
-  const { tokenId } = useParams<{ tokenId: string }>();
+  const { id } = useParams<{ id: string }>();
   const [token, setToken] = useState<any>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,10 +33,11 @@ const TokenDetail = () => {
   
   useEffect(() => {
     const loadToken = async () => {
-      if (!tokenId) return;
+      if (!id) return;
       
       try {
         setLoading(true);
+        console.log("Loading token with ID:", id);
         
         // First check if the token exists in the PumpPortal service
         let tokenData = null;
@@ -45,9 +45,10 @@ const TokenDetail = () => {
         
         // Check recent tokens from WebSocket
         const recentTokens = pumpPortal.recentTokens || [];
-        const webSocketToken = recentTokens.find(t => t.token_mint === tokenId);
+        const webSocketToken = recentTokens.find(t => t.token_mint === id);
         
         if (webSocketToken) {
+          console.log("Found token in WebSocket data:", webSocketToken);
           isWebSocketToken = true;
           tokenData = {
             token_mint: webSocketToken.token_mint,
@@ -60,13 +61,16 @@ const TokenDetail = () => {
         
         // If not found in WebSocket, check Supabase
         if (!tokenData) {
-          const supabaseTokenData = await fetchTokenById(tokenId);
+          console.log("Checking Supabase for token");
+          const supabaseTokenData = await fetchTokenById(id);
           if (supabaseTokenData) {
+            console.log("Found token in Supabase:", supabaseTokenData);
             tokenData = supabaseTokenData;
           }
         }
         
         if (tokenData) {
+          console.log("Setting token data:", tokenData);
           setToken({
             id: tokenData.token_mint,
             name: tokenData.token_name,
@@ -87,7 +91,7 @@ const TokenDetail = () => {
           
           // Subscribe to real-time trades for this token
           if (pumpPortal.connected) {
-            pumpPortal.subscribeToToken(tokenId);
+            pumpPortal.subscribeToToken(id);
           }
           
           // Create some initial price data
@@ -107,13 +111,12 @@ const TokenDetail = () => {
           setPriceData(initialData);
           
           // Load bets for this token
-          const tokenBets = await fetchBetsByToken(tokenId);
+          const tokenBets = await fetchBetsByToken(id);
           setBets(tokenBets);
-        } else if (tokenId) {
-          // If we can't find the token in either source but have an ID,
-          // create a minimal placeholder for a very new token
+        } else if (id) {
+          console.log("Creating placeholder for new token with ID:", id);
           setToken({
-            id: tokenId,
+            id: id,
             name: "New Token",
             symbol: "",
             logo: '🪙',
@@ -132,7 +135,7 @@ const TokenDetail = () => {
           
           // Subscribe to real-time trades for this token
           if (pumpPortal.connected) {
-            pumpPortal.subscribeToToken(tokenId);
+            pumpPortal.subscribeToToken(id);
           }
           
           // Create some initial price data
@@ -152,7 +155,7 @@ const TokenDetail = () => {
           setPriceData(initialData);
           
           // Still try to load bets
-          const tokenBets = await fetchBetsByToken(tokenId);
+          const tokenBets = await fetchBetsByToken(id);
           setBets(tokenBets);
           
           toast({
@@ -180,22 +183,18 @@ const TokenDetail = () => {
     };
     
     loadToken();
-  }, [tokenId, toast, pumpPortal.connected, pumpPortal.recentTokens]);
+  }, [id, toast, pumpPortal.connected, pumpPortal.recentTokens]);
   
-  // Handle real-time trade updates
   useEffect(() => {
-    if (tokenId && pumpPortal.recentTrades[tokenId]) {
-      const trades = pumpPortal.recentTrades[tokenId];
+    if (id && pumpPortal.recentTrades[id]) {
+      const trades = pumpPortal.recentTrades[id];
       
-      // Update current price if we have trades
       if (trades.length > 0) {
         const latestPrice = getLatestPriceFromTrades(trades);
         
-        // Update token price
         setToken(current => {
           if (!current) return null;
           
-          // Calculate price change
           const priceChange = current.currentPrice > 0 
             ? ((latestPrice - current.currentPrice) / current.currentPrice) * 100 
             : 0;
@@ -207,18 +206,15 @@ const TokenDetail = () => {
           };
         });
         
-        // Add new price data point
         setPriceData(current => {
           const newPoint = {
             time: new Date().toISOString(),
             price: latestPrice
           };
           
-          // Keep only the last 60 points
           return [...current, newPoint].slice(-60);
         });
         
-        // Update metrics based on new price
         setTokenMetrics(current => {
           return {
             ...current,
@@ -227,7 +223,6 @@ const TokenDetail = () => {
           };
         });
         
-        // Show toast for significant price changes (>5%)
         const lastPrice = priceData[priceData.length - 1]?.price || 0;
         if (lastPrice > 0) {
           const percentChange = ((latestPrice - lastPrice) / lastPrice) * 100;
@@ -241,17 +236,16 @@ const TokenDetail = () => {
         }
       }
     }
-  }, [tokenId, pumpPortal.recentTrades, toast]);
-
+  }, [id, pumpPortal.recentTrades, toast]);
+  
   const refreshData = async () => {
-    if (!tokenId) return;
+    if (!id) return;
     
     try {
       setLoading(true);
       
-      // Check recent tokens from WebSocket first
       const recentTokens = pumpPortal.recentTokens || [];
-      const webSocketToken = recentTokens.find(t => t.token_mint === tokenId);
+      const webSocketToken = recentTokens.find(t => t.token_mint === id);
       
       if (webSocketToken) {
         setToken(current => ({
@@ -260,8 +254,7 @@ const TokenDetail = () => {
           symbol: webSocketToken.token_symbol || current?.symbol || "",
         }));
       } else {
-        // Try Supabase as fallback
-        const tokenData = await fetchTokenById(tokenId);
+        const tokenData = await fetchTokenById(id);
         if (tokenData) {
           setToken({
             id: tokenData.token_mint,
@@ -275,8 +268,7 @@ const TokenDetail = () => {
         }
       }
       
-      // Refresh bets
-      const tokenBets = await fetchBetsByToken(tokenId);
+      const tokenBets = await fetchBetsByToken(id);
       setBets(tokenBets);
     } catch (error) {
       console.error("Error refreshing data:", error);
@@ -290,7 +282,6 @@ const TokenDetail = () => {
     }
   };
 
-  // Handler for accepting a bet
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
       toast({
@@ -318,7 +309,6 @@ const TokenDetail = () => {
     }
   };
 
-  // Format price with appropriate decimals
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     
@@ -330,7 +320,6 @@ const TokenDetail = () => {
     return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
 
-  // Format large numbers with abbreviations (K, M, B)
   const formatLargeNumber = (num: number) => {
     if (num >= 1000000000) {
       return `$${(num / 1000000000).toFixed(2)}B`;
@@ -344,8 +333,7 @@ const TokenDetail = () => {
     return `$${num.toFixed(2)}`;
   };
 
-  // Check if WebSocket connection is active
-  const isLive = pumpPortal.connected && tokenId && pumpPortal.recentTrades[tokenId];
+  const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
   
   return (
     <>
@@ -368,13 +356,11 @@ const TokenDetail = () => {
             </div>
           ) : (
             <>
-              {/* Back Button */}
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
                 <span>Back to Tokens</span>
               </Link>
             
-              {/* Token Header */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div className="flex items-center">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-3xl border border-white/10 mr-4">
@@ -410,7 +396,6 @@ const TokenDetail = () => {
                 </div>
               </div>
               
-              {/* Token Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="glass-panel p-4">
                   <div className="flex items-center text-dream-foreground/70 mb-1">
@@ -445,7 +430,6 @@ const TokenDetail = () => {
                 </div>
               </div>
               
-              {/* Price Chart and Trading Actions */}
               <div className="glass-panel p-6 mb-8">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-display font-bold">Price Chart</h2>
@@ -480,55 +464,5 @@ const TokenDetail = () => {
                 </div>
               </div>
               
-              {/* Create Bet Form */}
-              {showCreateBet && (
-                <div className="glass-panel p-6 mb-8">
-                  <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
-                  <CreateBetForm 
-                    tokenId={token.id}
-                    tokenName={token.name}
-                    tokenSymbol={token.symbol}
-                    onBetCreated={refreshData}
-                    token={token}
-                    onSuccess={() => {
-                      setShowCreateBet(false);
-                      refreshData();
-                    }}
-                    onCancel={() => setShowCreateBet(false)}
-                  />
-                </div>
-              )}
-              
-              {/* Open Bets */}
-              <div className="glass-panel p-6 mb-8">
-                <h2 className="text-xl font-display font-bold mb-4">Open Bets for {token.name}</h2>
-                
-                {bets.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-dream-foreground/70">No open bets for this token yet.</p>
-                    <p className="text-sm mt-2">Be the first to place a bet!</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {bets.map(bet => (
-                      <BetCard 
-                        key={bet.id} 
-                        bet={bet}
-                        connected={connected}
-                        publicKeyString={publicKey ? publicKey.toString() : null}
-                        onAcceptBet={handleAcceptBet}
-                        onBetAccepted={refreshData}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </main>
-    </>
-  );
-};
+              {
 
-export default TokenDetail;

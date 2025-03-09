@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { ArrowLeft, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { fetchMigratingTokens, fetchBetsByToken } from '@/api/mockData';
@@ -11,28 +10,42 @@ import CountdownTimer from '@/components/CountdownTimer';
 import CreateBetForm from '@/components/CreateBetForm';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Bet } from '@/types/bet';
+import { useToast } from '@/hooks/use-toast';
 
 const TokenBetting = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [token, setToken] = useState<any>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const { connected } = useWallet();
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
+        console.log("Loading token with ID:", id);
         const tokens = await fetchMigratingTokens();
+        console.log("Fetched tokens:", tokens);
         const foundToken = tokens.find(t => t.id === id);
         
         if (foundToken) {
+          console.log("Found token:", foundToken);
           setToken(foundToken);
           const tokenBets = await fetchBetsByToken(id!);
           setBets(tokenBets);
+        } else {
+          console.log("Token not found in migrating tokens. Redirecting to token detail page");
+          navigate(`/token/${id}`);
         }
       } catch (error) {
         console.error('Error loading token data:', error);
+        toast({
+          title: "Error loading token",
+          description: "There was a problem loading the token data.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -41,7 +54,7 @@ const TokenBetting = () => {
     if (id) {
       loadData();
     }
-  }, [id]);
+  }, [id, navigate, toast]);
 
   const handleBetCreated = async () => {
     if (id) {
@@ -76,7 +89,6 @@ const TokenBetting = () => {
     );
   }
 
-  // Calculate time since migration
   const migrationTimeAgo = () => {
     const now = new Date().getTime();
     const diffMs = now - token.migrationTime;
@@ -91,7 +103,6 @@ const TokenBetting = () => {
     }
   };
 
-  // Calculate if betting is still open (within 1 hour of migration)
   const isBettingOpen = () => {
     const now = new Date().getTime();
     const diffMs = now - token.migrationTime;
@@ -99,7 +110,6 @@ const TokenBetting = () => {
     return diffMins < 60; // Less than 1 hour
   };
 
-  // Calculate countdown end time (1 hour after migration)
   const countdownEndTime = new Date(token.migrationTime + 60 * 60 * 1000);
 
   return (
@@ -109,13 +119,11 @@ const TokenBetting = () => {
       
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-5xl mx-auto">
-          {/* Back button */}
           <Link to="/betting" className="inline-flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Link>
           
-          {/* Token Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div className="flex items-center mb-4 md:mb-0">
               <div className="text-4xl mr-3">{token.logo}</div>
@@ -143,7 +151,6 @@ const TokenBetting = () => {
             </div>
           </div>
           
-          {/* Price Info */}
           <div className="glass-panel p-6 mb-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
               <div>
@@ -167,15 +174,12 @@ const TokenBetting = () => {
               )}
             </div>
             
-            {/* Price Chart */}
             <div className="h-64">
               <PriceChart />
             </div>
           </div>
           
-          {/* Betting Section */}
           <div className="grid md:grid-cols-2 gap-8">
-            {/* Create Bet Form */}
             {isBettingOpen() ? (
               <CreateBetForm 
                 tokenId={token.id}
@@ -197,7 +201,6 @@ const TokenBetting = () => {
               </div>
             )}
             
-            {/* Active Bets */}
             <div className="glass-panel p-6 space-y-4">
               <h3 className="text-xl font-display font-semibold">Active Bets</h3>
               
