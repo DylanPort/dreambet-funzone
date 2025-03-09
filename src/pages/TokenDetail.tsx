@@ -25,9 +25,9 @@ const TokenDetail = () => {
   const pumpPortal = usePumpPortalWebSocket();
   const { connected, publicKey } = useWallet();
   const [tokenMetrics, setTokenMetrics] = useState({
-    marketCap: 0,
-    volume24h: 0,
-    liquidity: 0,
+    marketCap: null,
+    volume24h: null,
+    liquidity: null,
     holders: 0
   });
   
@@ -78,6 +78,13 @@ const TokenDetail = () => {
             migrationTime: new Date(tokenData.last_updated_time).getTime(),
           });
           
+          setTokenMetrics({
+            marketCap: null,
+            volume24h: null,
+            liquidity: null,
+            holders: 0
+          });
+          
           const dexScreenerData = await fetchDexScreenerData(tokenData.token_mint);
           if (dexScreenerData) {
             console.log("Got DexScreener data:", dexScreenerData);
@@ -86,13 +93,6 @@ const TokenDetail = () => {
               volume24h: dexScreenerData.volume24h,
               liquidity: dexScreenerData.liquidity,
               holders: tokenMetrics.holders
-            });
-          } else {
-            setTokenMetrics({
-              marketCap: (tokenData.last_trade_price || 0.001) * 1000000 * (0.5 + Math.random()),
-              volume24h: (tokenData.last_trade_price || 0.001) * 50000 * (0.5 + Math.random()),
-              liquidity: (tokenData.last_trade_price || 0.001) * 20000 * (0.5 + Math.random()),
-              holders: Math.floor(100 + Math.random() * 900)
             });
           }
           
@@ -130,10 +130,10 @@ const TokenDetail = () => {
           });
           
           setTokenMetrics({
-            marketCap: 10000 * (0.5 + Math.random()),
-            volume24h: 5000 * (0.5 + Math.random()),
-            liquidity: 2000 * (0.5 + Math.random()),
-            holders: Math.floor(50 + Math.random() * 150)
+            marketCap: null,
+            volume24h: null,
+            liquidity: null,
+            holders: 0
           });
           
           if (pumpPortal.connected) {
@@ -384,7 +384,9 @@ const TokenDetail = () => {
     return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
 
-  const formatLargeNumber = (num: number) => {
+  const formatLargeNumber = (num: number | null) => {
+    if (num === null) return "Loading...";
+    
     if (num >= 1000000000) {
       return `$${(num / 1000000000).toFixed(2)}B`;
     }
@@ -479,7 +481,9 @@ const TokenDetail = () => {
                       <ExternalLink className="w-4 h-4" />
                     </a>
                   </div>
-                  <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent1 to-dream-accent2 animate-pulse-glow" style={{ width: `${Math.min(100, (tokenMetrics.marketCap / 10000000) * 100)}%` }}></div>
+                  {tokenMetrics.marketCap !== null && (
+                    <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent1 to-dream-accent2 animate-pulse-glow" style={{ width: `${Math.min(100, (tokenMetrics.marketCap / 10000000) * 100)}%` }}></div>
+                  )}
                 </div>
                 
                 <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{ animationDelay: '0.1s' }}>
@@ -500,7 +504,9 @@ const TokenDetail = () => {
                       <ExternalLink className="w-4 h-4" />
                     </a>
                   </div>
-                  <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent2 to-dream-accent3 animate-pulse-glow" style={{ width: `${Math.min(100, (tokenMetrics.volume24h / 1000000) * 100)}%` }}></div>
+                  {tokenMetrics.volume24h !== null && (
+                    <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent2 to-dream-accent3 animate-pulse-glow" style={{ width: `${Math.min(100, (tokenMetrics.volume24h / 1000000) * 100)}%` }}></div>
+                  )}
                 </div>
                 
                 <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{ animationDelay: '0.2s' }}>
@@ -622,3 +628,4 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
+
