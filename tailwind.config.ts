@@ -123,6 +123,9 @@ export default {
 				'entrance': {
 					'0%': { transform: 'translateY(-10px)', opacity: '0' },
 					'100%': { transform: 'translateY(0)', opacity: '1' }
+				},
+				'shine': {
+					'100%': { left: '125%' }
 				}
 			},
 			animation: {
@@ -134,7 +137,8 @@ export default {
 				'fade-in': 'fade-in 0.5s ease-out',
 				'spin-slow': 'spin-slow 15s linear infinite',
 				'scroll': 'scroll 25s linear infinite',
-				'entrance': 'entrance 0.3s ease-out'
+				'entrance': 'entrance 0.3s ease-out',
+				'shine': 'shine 1.5s ease-in-out'
 			},
 			backgroundImage: {
 				'dream-gradient': 'linear-gradient(to right, #0A0A1F, #1A1040, #0A0A1F)',

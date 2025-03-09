@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -96,15 +95,22 @@ const Index = () => {
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
               <Link to="/betting">
-                <Button className="relative overflow-hidden group bg-gradient-to-r from-dream-accent1/80 to-dream-accent3/80 hover:from-dream-accent1 hover:to-dream-accent3 text-white text-lg px-8 py-6 rounded-xl shadow-lg transition-all duration-300 border border-white/10 backdrop-blur-sm 
-                transform hover:translate-y-[-2px] active:translate-y-[1px]
-                before:content-[''] before:absolute before:inset-0 before:bg-white/20 before:rounded-xl before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100
-                after:content-[''] after:absolute after:top-0 after:w-full after:h-[50%] after:bg-white/10 after:rounded-t-xl">
+                <Button className="relative overflow-hidden group bg-gradient-to-r from-dream-accent1/40 to-dream-accent3/40 text-white text-lg px-8 py-6 
+                  rounded-xl transition-all duration-300 border border-white/20 backdrop-blur-md
+                  transform hover:translate-y-[-2px] active:translate-y-[1px]
+                  shadow-[0_8px_20px_rgba(123,97,255,0.3)] hover:shadow-[0_10px_25px_rgba(123,97,255,0.4)]
+                  before:content-[''] before:absolute before:inset-0 before:bg-white/5 before:rounded-xl before:opacity-100 
+                  after:content-[''] after:absolute after:inset-0 after:rounded-xl after:opacity-0 after:transition-opacity after:duration-300
+                  after:bg-gradient-to-b after:from-white/20 after:via-white/10 after:to-transparent hover:after:opacity-100
+                  "
+                >
                   <span className="relative z-10 flex items-center">
                     Start Betting
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </span>
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/10 to-transparent opacity-25"></div>
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/5 to-transparent opacity-25"></div>
+                  <div className="absolute -inset-full h-[200%] w-[50%] z-10 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-40 group-hover:animate-shine" />
+                  <div className="absolute inset-[1.5px] rounded-[10px] pointer-events-none z-0 bg-gradient-to-b from-white/10 to-transparent border border-white/10"></div>
                 </Button>
               </Link>
               <Link to="/betting">
