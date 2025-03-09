@@ -29,7 +29,9 @@ const OpenBetsList = () => {
   const loadBets = async () => {
     try {
       setLoading(true);
+      console.log("Fetching open bets...");
       const data = await fetchOpenBets();
+      console.log("Fetched open bets:", data);
       setBets(data);
     } catch (error) {
       console.error('Error loading bets:', error);
@@ -48,7 +50,7 @@ const OpenBetsList = () => {
   // Listen for new bet created or accepted events
   useEffect(() => {
     const handleNewBet = (event: CustomEvent) => {
-      console.log("New bet created event received:", event.detail);
+      console.log("New bet created event received in OpenBetsList:", event.detail);
       
       const { amount, prediction, tokenId } = event.detail;
       setNewBetNotification({
@@ -61,12 +63,13 @@ const OpenBetsList = () => {
         setNewBetNotification(prev => ({ ...prev, visible: false }));
       }, 5000);
       
-      // Refresh the bets list
+      // Refresh the bets list immediately
       loadBets();
     };
 
     const handleBetAccepted = (event: CustomEvent) => {
-      console.log("Bet accepted event received:", event.detail);
+      console.log("Bet accepted event received in OpenBetsList:", event.detail);
+      // Immediately refresh the bets when one is accepted
       loadBets();
     };
 

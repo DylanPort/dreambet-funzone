@@ -56,7 +56,10 @@ export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
 // Export wrapper functions that use Supabase services
 export const fetchOpenBets = async (): Promise<Bet[]> => {
   try {
+    console.log('Fetching open bets from Supabase...');
     const bets = await fetchSupabaseOpenBets();
+    console.log('Retrieved bets from Supabase:', bets);
+    
     // Make sure the status is one of the allowed types in the Bet interface
     return bets.map(bet => ({
       ...bet,

@@ -50,7 +50,12 @@ export const fetchOpenBets = async () => {
     .eq('status', 'open')
     .order('created_at', { ascending: false });
   
-  if (error) throw error;
+  if (error) {
+    console.error('Supabase error fetching open bets:', error);
+    throw error;
+  }
+  
+  console.log('Raw open bets data from Supabase:', data);
   
   // Transform to match our frontend Bet type
   return data.map(bet => ({
