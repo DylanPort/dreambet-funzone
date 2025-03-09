@@ -188,7 +188,7 @@ const Index = () => {
                 <img 
                   src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" 
                   alt="Solana Logo" 
-                  className="h-8 w-8 filter drop-shadow-[0_0_8px_rgba(64,224,208,0.8)] transition-transform hover:scale-110 duration-300"
+                  className="h-24 w-24 filter drop-shadow-[0_0_8px_rgba(64,224,208,0.8)] transition-transform hover:scale-110 duration-300"
                 />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">Solana Powered</h3>
