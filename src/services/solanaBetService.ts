@@ -1,12 +1,11 @@
-
 import { Connection, PublicKey, Transaction, SystemProgram, Keypair, sendAndConfirmTransaction } from '@solana/web3.js';
 import { BN, Program, Provider, web3 } from '@project-serum/anchor';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet, SolanaContractPrediction, SolanaContractStatus, BetPrediction, BetStatus } from '@/types/bet';
 
 // Constants
-// Using a demo program ID for testing - replace with actual program ID in production
-const PROGRAM_ID = "Bet888rKYceN9RGEJYFXnYPczSyCKrwFY8mPghf2S3K";
+// Using the real program ID provided by the user
+const PROGRAM_ID = "9Y1rKMgRMaDxhkUkUn3ib9AJJqapjkzKqFrsMKwhBVVd";
 
 // Solana connection
 export const getSolanaConnection = () => {
