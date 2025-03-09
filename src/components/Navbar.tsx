@@ -41,7 +41,7 @@ const Navbar = () => {
           <nav className="hidden md:flex space-x-8 items-center">
             <Link to="/dashboard" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <BarChart2 size={18} />
-              <span>Dashboard</span>
+              <span>Bet-Scope</span>
             </Link>
             <Link to="/betting" className={`nav-link flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-5 h-5 flex items-center justify-center">
@@ -96,7 +96,7 @@ const Navbar = () => {
           <nav className="flex flex-col space-y-4">
             <Link to="/dashboard" className={`py-2 flex items-center gap-2 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
               <BarChart2 size={18} />
-              <span>Dashboard</span>
+              <span>Bet-Scope</span>
             </Link>
             <Link to="/betting" className={`py-2 flex items-center gap-2 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
               <div className="w-5 h-5 flex items-center justify-center">
