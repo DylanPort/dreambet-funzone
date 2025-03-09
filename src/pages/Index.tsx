@@ -7,27 +7,22 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import AnimatedLogo from '@/components/AnimatedLogo';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
-
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
       for (let i = 0; i < Math.min(3, pumpPortal.recentTokens.length); i++) {
         const formattedToken = formatWebSocketTokenData(pumpPortal.recentTokens[i]);
         tokens.push(formattedToken);
       }
     }
-
     if (tokens.length < 3 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
       for (let i = 0; i < Math.min(3 - tokens.length, pumpPortal.rawTokens.length); i++) {
         const rawToken = pumpPortal.rawTokens[i];
@@ -42,7 +37,6 @@ const Index = () => {
         });
       }
     }
-
     while (tokens.length < 3) {
       tokens.push({
         id: `placeholder-${tokens.length}`,
@@ -56,23 +50,14 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
-  const cardPositions = [
-    "top-[5%] left-[40%] shadow-neon-green animate-float",
-    "top-0 left-[10%] shadow-neon-purple animate-float",
-    "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed"
-  ];
-
+  const cardPositions = ["top-[5%] left-[40%] shadow-neon-green animate-float", "top-0 left-[10%] shadow-neon-purple animate-float", "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed"];
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-
     if (isNaN(numPrice)) return "0.000000";
-
     if (numPrice < 0.01) return numPrice.toFixed(6);
     if (numPrice < 1) return numPrice.toFixed(4);
     if (numPrice < 1000) return numPrice.toFixed(2);
@@ -80,13 +65,12 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
       <OrbitingParticles />
       <Navbar />
       <BetReel />
       
-      <div className="h-24"></div>
+      <div className="h-20 py-0 my-0"></div>
       
       <main className="min-h-screen overflow-hidden">
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
@@ -102,8 +86,7 @@ const Index = () => {
                   before:content-[''] before:absolute before:inset-0 before:bg-white/5 before:rounded-xl before:opacity-100 
                   after:content-[''] after:absolute after:inset-0 after:rounded-xl after:opacity-0 after:transition-opacity after:duration-300
                   after:bg-gradient-to-b after:from-white/20 after:via-white/10 after:to-transparent hover:after:opacity-100
-                  "
-                >
+                  ">
                   <span className="relative z-10 flex items-center">
                     Start Betting
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -170,11 +153,7 @@ const Index = () => {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent1/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <img 
-                  src="/lovable-uploads/c40baa88-ed47-4c9b-bbd9-d248df1c7863.png" 
-                  alt="P2P Betting Icon" 
-                  className="h-20 w-20 filter drop-shadow-[0_0_8px_rgba(255,61,252,0.8)] transition-transform hover:scale-110 duration-300"
-                />
+                <img src="/lovable-uploads/c40baa88-ed47-4c9b-bbd9-d248df1c7863.png" alt="P2P Betting Icon" className="h-20 w-20 filter drop-shadow-[0_0_8px_rgba(255,61,252,0.8)] transition-transform hover:scale-110 duration-300" />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">P2P Betting</h3>
               <p className="text-dream-foreground/70">
@@ -184,11 +163,7 @@ const Index = () => {
             
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent2/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <img 
-                  src="/lovable-uploads/996f7a3a-2e7a-4c12-bcd7-8af762f1087a.png" 
-                  alt="One-Hour Window Icon" 
-                  className="h-16 w-16 filter drop-shadow-[0_0_8px_rgba(0,255,240,0.8)] transition-transform hover:scale-110 duration-300"
-                />
+                <img src="/lovable-uploads/996f7a3a-2e7a-4c12-bcd7-8af762f1087a.png" alt="One-Hour Window Icon" className="h-16 w-16 filter drop-shadow-[0_0_8px_rgba(0,255,240,0.8)] transition-transform hover:scale-110 duration-300" />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">One-Hour Window</h3>
               <p className="text-dream-foreground/70">
@@ -198,11 +173,7 @@ const Index = () => {
             
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent3/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <img 
-                  src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" 
-                  alt="Solana Logo" 
-                  className="h-24 w-24 filter drop-shadow-[0_0_8px_rgba(64,224,208,0.8)] transition-transform hover:scale-110 duration-300"
-                />
+                <img src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" alt="Solana Logo" className="h-24 w-24 filter drop-shadow-[0_0_8px_rgba(64,224,208,0.8)] transition-transform hover:scale-110 duration-300" />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">Solana Powered</h3>
               <p className="text-dream-foreground/70">
@@ -230,5 +201,4 @@ const Index = () => {
       </footer>
     </>;
 };
-
 export default Index;
