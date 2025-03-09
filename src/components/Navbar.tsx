@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, BarChart2, Wallet, User, Award } from 'lucide-react';
+import { Menu, X, BarChart2, Wallet, Award } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
+import ProfileButton from './ProfileButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
 
 const Navbar = () => {
@@ -55,10 +56,8 @@ const Navbar = () => {
               <Wallet size={18} />
               <span>My Bets</span>
             </Link>
-            <Link to="/profile" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/profile' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <User size={18} />
-              <span>Profile</span>
-            </Link>
+            
+            <ProfileButton />
             
             {balance !== null && (
               <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-green-400">
@@ -97,7 +96,13 @@ const Navbar = () => {
               <span>My Bets</span>
             </Link>
             <Link to="/profile" className={`py-2 flex items-center gap-2 ${location.pathname === '/profile' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
-              <User size={18} />
+              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-400 to-blue-500 flex items-center justify-center overflow-hidden">
+                <img 
+                  src="/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png" 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <span>Profile</span>
             </Link>
             
