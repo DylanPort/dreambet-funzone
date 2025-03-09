@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 
 // Types for WebSocket messages
@@ -36,6 +37,18 @@ export interface RaydiumLiquidityEvent {
   };
 }
 
+export interface TokenMetricsEvent {
+  type: 'tokenMetrics';
+  data: {
+    token_mint: string;
+    market_cap: number;
+    volume_24h: number;
+    liquidity: number;
+    holders: number;
+    timestamp: string;
+  };
+}
+
 // Raw token creation format from PumpPortal
 export interface RawTokenCreationEvent {
   signature: string;
@@ -47,9 +60,12 @@ export interface RawTokenCreationEvent {
   marketCapSol: number;
   pool: string;
   uri?: string;
+  holders?: number;
+  volume24h?: number;
+  liquidity?: number;
 }
 
-export type PumpPortalEvent = NewTokenEvent | TokenTradeEvent | RaydiumLiquidityEvent;
+export type PumpPortalEvent = NewTokenEvent | TokenTradeEvent | RaydiumLiquidityEvent | TokenMetricsEvent;
 
 interface PumpPortalState {
   connected: boolean;
@@ -58,10 +74,12 @@ interface PumpPortalState {
   rawTokens: RawTokenCreationEvent[];
   recentTrades: Record<string, TokenTradeEvent['data'][]>;
   recentLiquidity: Record<string, RaydiumLiquidityEvent['data']>;
+  tokenMetrics: Record<string, TokenMetricsEvent['data']>;
   connect: () => void;
   disconnect: () => void;
   subscribeToToken: (tokenId: string) => void;
   subscribeToNewTokens: () => void;
+  fetchTokenMetrics: (tokenId: string) => void;
 }
 
 let websocket: WebSocket | null = null;
@@ -108,6 +126,7 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
   rawTokens: [],
   recentTrades: {},
   recentLiquidity: {},
+  tokenMetrics: {},
 
   connect: () => {
     if (websocket !== null || get().connecting) {
@@ -178,6 +197,15 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
               }));
               break;
               
+            case 'tokenMetrics':
+              set((state) => ({
+                tokenMetrics: {
+                  ...state.tokenMetrics,
+                  [message.data.token_mint]: message.data
+                }
+              }));
+              break;
+              
             default:
               console.info('Unknown message type:', message);
           }
@@ -205,6 +233,25 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
           set((state) => ({
             recentTokens: [standardFormat, ...state.recentTokens].slice(0, 50)
           }));
+          
+          // If metrics are available in the token creation event
+          if (tokenEvent.marketCapSol || tokenEvent.holders || tokenEvent.volume24h || tokenEvent.liquidity) {
+            const metricsData: TokenMetricsEvent['data'] = {
+              token_mint: tokenEvent.mint,
+              market_cap: tokenEvent.marketCapSol || 0,
+              volume_24h: tokenEvent.volume24h || 0,
+              liquidity: tokenEvent.liquidity || 0,
+              holders: tokenEvent.holders || 0,
+              timestamp: new Date().toISOString()
+            };
+            
+            set((state) => ({
+              tokenMetrics: {
+                ...state.tokenMetrics,
+                [tokenEvent.mint]: metricsData
+              }
+            }));
+          }
         }
         // Log unknown formats for debugging
         else {
@@ -232,6 +279,9 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
       };
       websocket.send(JSON.stringify(payload));
       console.log(`Subscribed to token trades for ${tokenId}`);
+      
+      // Also fetch metrics for this token
+      get().fetchTokenMetrics(tokenId);
     }
   },
 
@@ -242,6 +292,21 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
       };
       websocket.send(JSON.stringify(payload));
       console.log('Subscribed to new token events');
+    }
+  },
+  
+  fetchTokenMetrics: (tokenId: string) => {
+    if (websocket && get().connected) {
+      const payload = {
+        method: "getTokenMetrics",
+        keys: [tokenId]
+      };
+      try {
+        websocket.send(JSON.stringify(payload));
+        console.log(`Requested metrics for token ${tokenId}`);
+      } catch (error) {
+        console.error('Error requesting token metrics:', error);
+      }
     }
   }
 }));

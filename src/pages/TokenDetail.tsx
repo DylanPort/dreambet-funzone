@@ -227,6 +227,19 @@ const TokenDetail = () => {
     }
   }, [id, pumpPortal.recentTrades, toast]);
   
+  useEffect(() => {
+    if (id && pumpPortal.tokenMetrics[id]) {
+      const metrics = pumpPortal.tokenMetrics[id];
+      setTokenMetrics({
+        marketCap: metrics.market_cap,
+        volume24h: metrics.volume_24h,
+        liquidity: metrics.liquidity,
+        holders: metrics.holders
+      });
+      console.log("Updated token metrics from WebSocket:", metrics);
+    }
+  }, [id, pumpPortal.tokenMetrics]);
+  
   const refreshData = async () => {
     if (!id) return;
     
@@ -255,6 +268,10 @@ const TokenDetail = () => {
             migrationTime: new Date(tokenData.last_updated_time).getTime(),
           });
         }
+      }
+      
+      if (pumpPortal.connected) {
+        pumpPortal.fetchTokenMetrics(id);
       }
       
       const tokenBets = await fetchBetsByToken(id);
@@ -386,36 +403,48 @@ const TokenDetail = () => {
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="glass-panel p-4">
+                <div className="glass-panel p-4 relative">
                   <div className="flex items-center text-dream-foreground/70 mb-1">
                     <BarChart3 size={16} className="mr-2" />
                     <span className="text-sm">Market Cap</span>
                   </div>
                   <div className="text-xl font-bold">{formatLargeNumber(tokenMetrics.marketCap)}</div>
+                  {pumpPortal.tokenMetrics[id!] && (
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" title="Live data"></div>
+                  )}
                 </div>
                 
-                <div className="glass-panel p-4">
+                <div className="glass-panel p-4 relative">
                   <div className="flex items-center text-dream-foreground/70 mb-1">
                     <RefreshCw size={16} className="mr-2" />
                     <span className="text-sm">24h Volume</span>
                   </div>
                   <div className="text-xl font-bold">{formatLargeNumber(tokenMetrics.volume24h)}</div>
+                  {pumpPortal.tokenMetrics[id!] && (
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" title="Live data"></div>
+                  )}
                 </div>
                 
-                <div className="glass-panel p-4">
+                <div className="glass-panel p-4 relative">
                   <div className="flex items-center text-dream-foreground/70 mb-1">
                     <DollarSign size={16} className="mr-2" />
                     <span className="text-sm">Liquidity</span>
                   </div>
                   <div className="text-xl font-bold">{formatLargeNumber(tokenMetrics.liquidity)}</div>
+                  {pumpPortal.tokenMetrics[id!] && (
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" title="Live data"></div>
+                  )}
                 </div>
                 
-                <div className="glass-panel p-4">
+                <div className="glass-panel p-4 relative">
                   <div className="flex items-center text-dream-foreground/70 mb-1">
                     <Users size={16} className="mr-2" />
                     <span className="text-sm">Holders</span>
                   </div>
                   <div className="text-xl font-bold">{tokenMetrics.holders}</div>
+                  {pumpPortal.tokenMetrics[id!] && (
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" title="Live data"></div>
+                  )}
                 </div>
               </div>
               
