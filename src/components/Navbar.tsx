@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Home, BarChart2, Wallet, User, Award } from 'lucide-react';
+import { Menu, X, BarChart2, Wallet, User, Award } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
 
@@ -42,10 +43,6 @@ const Navbar = () => {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8 items-center">
-            <Link to="/" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <Home size={18} />
-              <span>Home</span>
-            </Link>
             <Link to="/dashboard" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <BarChart2 size={18} />
               <span>Dashboard</span>
@@ -87,10 +84,6 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden glass-panel p-4">
           <nav className="flex flex-col space-y-4">
-            <Link to="/" className={`py-2 flex items-center gap-2 ${location.pathname === '/' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
-              <Home size={18} />
-              <span>Home</span>
-            </Link>
             <Link to="/dashboard" className={`py-2 flex items-center gap-2 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
               <BarChart2 size={18} />
               <span>Dashboard</span>
