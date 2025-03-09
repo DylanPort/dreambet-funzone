@@ -95,6 +95,10 @@ const pollAllActiveTokens = async () => {
 // Store callbacks for each token
 const tokenCallbacks = new Map<string, Function>();
 
+// New: Add separate callback maps for specific metrics
+const marketCapCallbacks = new Map<string, Function>();
+const volumeCallbacks = new Map<string, Function>();
+
 export const startDexScreenerPolling = (
   tokenAddress: string, 
   onData: (data: ReturnType<typeof fetchDexScreenerData> extends Promise<infer T> ? T : never) => void,
@@ -120,6 +124,8 @@ export const startDexScreenerPolling = (
   return () => {
     activePollingTokens.delete(tokenAddress);
     tokenCallbacks.delete(tokenAddress);
+    marketCapCallbacks.delete(tokenAddress);
+    volumeCallbacks.delete(tokenAddress);
     
     // If no more tokens, clear the interval
     if (activePollingTokens.size === 0 && pollingIntervalId) {
@@ -127,4 +133,90 @@ export const startDexScreenerPolling = (
       pollingIntervalId = null;
     }
   };
+};
+
+// New function to only poll for market cap updates
+export const subscribeToMarketCap = (
+  tokenAddress: string,
+  onMarketCapUpdate: (marketCap: number) => void
+) => {
+  marketCapCallbacks.set(tokenAddress, onMarketCapUpdate);
+  
+  // If we already have cached data, use it immediately
+  const cachedData = tokenDataCache.get(tokenAddress);
+  if (cachedData && cachedData.data && cachedData.data.marketCap !== undefined) {
+    onMarketCapUpdate(cachedData.data.marketCap);
+  }
+  
+  // Make sure the token is being polled
+  if (!activePollingTokens.has(tokenAddress)) {
+    activePollingTokens.add(tokenAddress);
+    
+    // Start polling if not already running
+    if (!pollingIntervalId) {
+      pollingIntervalId = window.setInterval(pollAllActiveTokens, 30000);
+    }
+  }
+  
+  // Return cleanup function
+  return () => {
+    marketCapCallbacks.delete(tokenAddress);
+  };
+};
+
+// New function to only poll for volume updates
+export const subscribeToVolume = (
+  tokenAddress: string,
+  onVolumeUpdate: (volume24h: number) => void
+) => {
+  volumeCallbacks.set(tokenAddress, onVolumeUpdate);
+  
+  // If we already have cached data, use it immediately
+  const cachedData = tokenDataCache.get(tokenAddress);
+  if (cachedData && cachedData.data && cachedData.data.volume24h !== undefined) {
+    onVolumeUpdate(cachedData.data.volume24h);
+  }
+  
+  // Make sure the token is being polled
+  if (!activePollingTokens.has(tokenAddress)) {
+    activePollingTokens.add(tokenAddress);
+    
+    // Start polling if not already running
+    if (!pollingIntervalId) {
+      pollingIntervalId = window.setInterval(pollAllActiveTokens, 30000);
+    }
+  }
+  
+  // Return cleanup function
+  return () => {
+    volumeCallbacks.delete(tokenAddress);
+  };
+};
+
+// Modify the poll function to also call specific metric callbacks
+const originalPollAllActiveTokens = pollAllActiveTokens;
+const pollAllActiveTokens = async () => {
+  const tokens = Array.from(activePollingTokens);
+  for (const token of tokens) {
+    const data = await fetchDexScreenerData(token);
+    
+    // Call the main callback
+    const callbackFn = tokenCallbacks.get(token);
+    if (data && callbackFn) {
+      callbackFn(data);
+    }
+    
+    // Call specific metric callbacks
+    if (data) {
+      const marketCapFn = marketCapCallbacks.get(token);
+      if (marketCapFn) {
+        marketCapFn(data.marketCap);
+      }
+      
+      const volumeFn = volumeCallbacks.get(token);
+      if (volumeFn) {
+        volumeFn(data.volume24h);
+      }
+    }
+  }
 };

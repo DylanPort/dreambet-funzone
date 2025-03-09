@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, getLatestPriceFromTrades } from '@/services/pumpPortalWebSocketService';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
+import TokenMarketCap from '@/components/TokenMarketCap';
+import TokenVolume from '@/components/TokenVolume';
 
 const TokenDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -481,51 +483,9 @@ const TokenDetail = () => {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in">
-                  <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/10 to-dream-accent2/10 animate-gradient-move"></div>
-                  <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
-                    <BarChart3 size={20} className="mr-3 text-dream-accent1 animate-pulse-glow" />
-                    <span className="text-lg font-semibold">Market Cap</span>
-                  </div>
-                  <div className="text-3xl font-bold relative z-10">{formatLargeNumber(tokenMetrics.marketCap)}</div>
-                  <div className="absolute top-2 right-2 flex items-center">
-                    <a 
-                      href={`https://dexscreener.com/solana/${token.id}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
-                      title="View on DexScreener"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                  {tokenMetrics.marketCap !== null && (
-                    <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent1 to-dream-accent2 animate-pulse-glow" style={{ width: `${Math.min(100, (tokenMetrics.marketCap / 10000000) * 100)}%` }}></div>
-                  )}
-                </div>
+                <TokenMarketCap tokenId={token.id} />
                 
-                <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                  <div className="absolute inset-0 bg-gradient-to-r from-dream-accent2/10 to-dream-accent3/10 animate-gradient-move"></div>
-                  <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
-                    <RefreshCw size={20} className="mr-3 text-dream-accent2 animate-spin-slow" />
-                    <span className="text-lg font-semibold">24h Volume</span>
-                  </div>
-                  <div className="text-3xl font-bold relative z-10">{formatLargeNumber(tokenMetrics.volume24h)}</div>
-                  <div className="absolute top-2 right-2 flex items-center">
-                    <a 
-                      href={`https://dexscreener.com/solana/${token.id}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
-                      title="View on DexScreener"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                  {tokenMetrics.volume24h !== null && (
-                    <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent2 to-dream-accent3 animate-pulse-glow" style={{ width: `${Math.min(100, (tokenMetrics.volume24h / 1000000) * 100)}%` }}></div>
-                  )}
-                </div>
+                <TokenVolume tokenId={token.id} />
                 
                 <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{ animationDelay: '0.2s' }}>
                   <div className="absolute inset-0 bg-gradient-to-r from-dream-accent3/10 to-dream-accent1/10 animate-gradient-move"></div>
