@@ -1,4 +1,3 @@
-
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -15,12 +14,47 @@ import {
 } from '@/services/solanaBetService';
 import { toast } from '@/hooks/use-toast';
 
-// API functions that now directly use Supabase services
+const FALLBACK_BETS_KEY = 'pumpxbounty_fallback_bets';
+
+const storeFallbackBet = (bet: Bet) => {
+  try {
+    const storedBets = localStorage.getItem(FALLBACK_BETS_KEY);
+    let bets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+    
+    const exists = bets.some(
+      existingBet => existingBet.id === bet.id || 
+      (existingBet.onChainBetId && bet.onChainBetId && existingBet.onChainBetId === bet.onChainBetId)
+    );
+    
+    if (!exists) {
+      bets.push(bet);
+      localStorage.setItem(FALLBACK_BETS_KEY, JSON.stringify(bets));
+      console.log("Stored fallback bet:", bet);
+    }
+  } catch (error) {
+    console.error("Error storing fallback bet:", error);
+  }
+};
+
+const getFallbackBets = (): Bet[] => {
+  try {
+    const storedBets = localStorage.getItem(FALLBACK_BETS_KEY);
+    if (storedBets) {
+      const bets: Bet[] = JSON.parse(storedBets);
+      
+      const now = Date.now();
+      return bets.filter(bet => bet.expiresAt > now);
+    }
+  } catch (error) {
+    console.error("Error getting fallback bets:", error);
+  }
+  return [];
+};
+
 export const fetchMigratingTokens = async () => {
   try {
     const tokens = await fetchSupabaseTokens();
     
-    // Convert to the format expected by our UI
     return tokens.map(token => ({
       id: token.token_mint,
       name: token.token_name,
@@ -38,43 +72,71 @@ export const fetchMigratingTokens = async () => {
 
 export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
   try {
-    // Query bets by token ID from Supabase
     const openBets = await fetchSupabaseOpenBets();
     const filteredBets = openBets.filter(bet => bet.tokenId === tokenId);
     
-    // Ensure status is of the correct type
-    return filteredBets.map(bet => ({
+    const fallbackBets = getFallbackBets().filter(bet => bet.tokenId === tokenId);
+    
+    const allBets = [...filteredBets];
+    
+    for (const fallbackBet of fallbackBets) {
+      const exists = allBets.some(
+        bet => bet.id === fallbackBet.id || 
+        (bet.onChainBetId && fallbackBet.onChainBetId && bet.onChainBetId === fallbackBet.onChainBetId)
+      );
+      
+      if (!exists) {
+        allBets.push(fallbackBet);
+      }
+    }
+    
+    return allBets.map(bet => ({
       ...bet,
       status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
     }));
   } catch (error) {
     console.error('Error fetching bets by token:', error);
-    return [];
+    return getFallbackBets().filter(bet => bet.tokenId === tokenId);
   }
 };
 
-// Export wrapper functions that use Supabase services
 export const fetchOpenBets = async (): Promise<Bet[]> => {
   try {
     console.log('Fetching open bets from Supabase...');
     const bets = await fetchSupabaseOpenBets();
     console.log('Retrieved bets from Supabase:', bets);
     
-    // Make sure the status is one of the allowed types in the Bet interface
-    return bets.map(bet => ({
+    const fallbackBets = getFallbackBets();
+    console.log('Fallback bets from localStorage:', fallbackBets);
+    
+    const allBets = [...bets];
+    
+    for (const fallbackBet of fallbackBets) {
+      const exists = allBets.some(
+        bet => bet.id === fallbackBet.id || 
+        (bet.onChainBetId && fallbackBet.onChainBetId && bet.onChainBetId === fallbackBet.onChainBetId)
+      );
+      
+      if (!exists) {
+        allBets.push(fallbackBet);
+      }
+    }
+    
+    console.log('Final combined bets:', allBets);
+    
+    return allBets.map(bet => ({
       ...bet,
       status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
     }));
   } catch (error) {
     console.error('Error fetching open bets:', error);
-    return [];
+    return getFallbackBets();
   }
 };
 
 export const fetchUserBets = async (userAddress: string): Promise<Bet[]> => {
   try {
     const bets = await fetchSupabaseUserBets(userAddress);
-    // Make sure the status is one of the allowed types in the Bet interface
     return bets.map(bet => ({
       ...bet,
       status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
@@ -99,13 +161,11 @@ export const createBet = async (
     console.log(`Creating bet with tokenId=${tokenId}, amount=${amount}, prediction=${prediction}, duration=${duration}`);
     console.log(`Using Devnet for transaction`);
     
-    // Enhanced wallet validation approach
     if (!wallet) {
       console.error("Wallet object is null or undefined");
       throw new Error("Wallet not connected. Please connect your wallet and try again.");
     }
     
-    // Get wallet status from adapter directly
     const walletAdapter = wallet.adapter;
     const adapterConnected = walletAdapter?.connected || false;
     const adapterPublicKey = walletAdapter?.publicKey;
@@ -120,7 +180,6 @@ export const createBet = async (
       walletPublicKeyString: walletPublicKey?.toString()
     });
     
-    // Fall back to using adapter public key if wallet public key is missing
     const effectivePublicKey = walletPublicKey || adapterPublicKey;
     
     if (!effectivePublicKey) {
@@ -128,13 +187,10 @@ export const createBet = async (
       throw new Error("Wallet connection issue: No public key found. Please reconnect your wallet.");
     }
     
-    // Create bet with DexScreener data if Supabase token not found
-    // This allows betting on tokens that don't exist in our database yet
     console.log(`Initiating Solana transaction on Devnet...`);
     
     let betId;
     try {
-      // Attempt to create the Solana bet
       const result = await createSolanaBet(
         wallet,
         tokenId,
@@ -145,22 +201,53 @@ export const createBet = async (
       betId = result.betId;
       console.log(`Solana bet created with ID: ${betId}`);
       
-      // Display a notification for the new bet creation
       toast({
         title: `New ${prediction.toUpperCase()} Bet Created!`,
         description: `${amount} SOL bet on ${tokenSymbol || 'token'} is now active for ${duration} minutes`,
       });
     } catch (solanaBetError: any) {
       console.error("Error creating bet on Solana:", solanaBetError);
-      // If this is the 'emit' error, provide a more helpful message
       if (solanaBetError.message && solanaBetError.message.includes("'emit'")) {
         throw new Error("Wallet adapter error: Please refresh the page and reconnect your wallet.");
       }
       throw solanaBetError;
     }
     
+    const fallbackBet: Bet = {
+      id: `local-${Date.now()}`,
+      tokenId,
+      tokenName,
+      tokenSymbol,
+      initiator: effectivePublicKey.toString(),
+      amount,
+      prediction,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + (duration * 60 * 1000),
+      status: "open",
+      duration,
+      onChainBetId: betId.toString()
+    };
+    
+    storeFallbackBet(fallbackBet);
+    
+    const eventData = {
+      amount,
+      prediction,
+      tokenId,
+      tokenName,
+      tokenSymbol,
+      bet: fallbackBet
+    };
+    
     try {
-      // Try to create in Supabase, but handle the case where token doesn't exist yet
+      const event = new CustomEvent('newBetCreated', { detail: eventData });
+      window.dispatchEvent(event);
+      console.log("Dispatched newBetCreated event:", eventData);
+    } catch (eventError) {
+      console.error("Error dispatching newBetCreated event:", eventError);
+    }
+    
+    try {
       const bet = await createSupabaseBet(
         tokenId, 
         prediction, 
@@ -170,7 +257,6 @@ export const createBet = async (
       
       console.log(`Supabase bet created: ${bet.id}`);
       
-      // Return complete bet object
       return {
         ...bet,
         onChainBetId: betId.toString(),
@@ -179,26 +265,11 @@ export const createBet = async (
     } catch (supabaseError) {
       console.warn("Failed to create bet in Supabase, using fallback data:", supabaseError);
       
-      // Fallback data when Supabase fails - common when token doesn't exist in our DB yet
-      return {
-        id: `local-${Date.now()}`,
-        tokenId,
-        tokenName,
-        tokenSymbol,
-        initiator: effectivePublicKey.toString(),
-        amount,
-        prediction,
-        timestamp: Date.now(),
-        expiresAt: Date.now() + (duration * 60 * 1000),
-        status: "open",
-        duration,
-        onChainBetId: betId.toString()
-      };
+      return fallbackBet;
     }
   } catch (error: any) {
     console.error('Error creating bet:', error);
     
-    // Enhanced error reporting
     if (error.name === 'WalletSignTransactionError') {
       throw new Error("Transaction signing failed. Please check your wallet connection.");
     } else if (error.name === 'WalletNotConnectedError') {
@@ -223,7 +294,6 @@ export const acceptBet = async (
   try {
     console.log(`Accepting bet: ${bet.id}, onChainBetId: ${bet.onChainBetId}`);
     
-    // Enhanced wallet validation
     if (!wallet || !wallet.publicKey) {
       console.error("Wallet not properly connected - missing publicKey");
       throw new Error("Wallet not properly connected. Please reconnect your wallet.");
@@ -234,12 +304,10 @@ export const acceptBet = async (
       throw new Error("Your wallet doesn't support the required signing methods.");
     }
     
-    // Accept on Solana blockchain first
     if (bet.onChainBetId) {
       await acceptSolanaBet(wallet, parseInt(bet.onChainBetId));
       console.log(`Solana bet accepted: ${bet.onChainBetId}`);
       
-      // Display a global notification for the bet acceptance
       toast({
         title: "Bet Accepted!",
         description: `A ${bet.amount} SOL bet on ${bet.tokenSymbol || 'a token'} is now active!`,
@@ -248,11 +316,9 @@ export const acceptBet = async (
       throw new Error("Missing on-chain bet ID");
     }
     
-    // Then update in Supabase for our frontend
     const updatedBet = await acceptSupabaseBet(bet.id);
     console.log(`Supabase bet updated: ${updatedBet.id}`);
     
-    // Ensure the status is one of the allowed types
     return {
       ...updatedBet,
       status: updatedBet.status as "open" | "matched" | "completed" | "expired" | "closed"
@@ -263,7 +329,6 @@ export const acceptBet = async (
   }
 };
 
-// Fetch bet details from Solana blockchain
 export const fetchSolanaBet = async (onChainBetId: string): Promise<Bet | null> => {
   if (!onChainBetId) return null;
   

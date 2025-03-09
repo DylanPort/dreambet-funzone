@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { fetchOpenBets, acceptBet } from '@/api/mockData';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { SortAsc, SortDesc, Timer, Clock, Wallet, AlertTriangle } from 'lucide-react';
@@ -9,8 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BetsListView from './BetsListView';
 import { getSortedBets, getExpiringBets, getPublicBets } from '@/utils/betUtils';
 
+const FALLBACK_BETS_KEY = 'pumpxbounty_fallback_bets';
+
 const OpenBetsList = () => {
   const [bets, setBets] = useState<Bet[]>([]);
+  const [fallbackBets, setFallbackBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [newBetNotification, setNewBetNotification] = useState<{
     visible: boolean;
@@ -26,21 +29,95 @@ const OpenBetsList = () => {
   } = useToast();
   const [sortBy, setSortBy] = useState<'newest' | 'expiring' | 'amount'>('newest');
 
+  // Function to load fallback bets from localStorage
+  const loadFallbackBets = useCallback(() => {
+    try {
+      const storedBets = localStorage.getItem(FALLBACK_BETS_KEY);
+      if (storedBets) {
+        const parsedBets = JSON.parse(storedBets) as Bet[];
+        console.log("Loaded fallback bets from localStorage:", parsedBets);
+        
+        // Filter out expired bets
+        const now = Date.now();
+        const validBets = parsedBets.filter(bet => bet.expiresAt > now);
+        
+        // Update localStorage with only valid bets
+        if (validBets.length !== parsedBets.length) {
+          localStorage.setItem(FALLBACK_BETS_KEY, JSON.stringify(validBets));
+        }
+        
+        setFallbackBets(validBets);
+        return validBets;
+      }
+    } catch (error) {
+      console.error("Error loading fallback bets:", error);
+    }
+    return [];
+  }, []);
+
+  // Function to save a fallback bet to localStorage
+  const saveFallbackBet = useCallback((bet: Bet) => {
+    try {
+      const existingBets = loadFallbackBets();
+      
+      // Check if bet already exists to avoid duplicates
+      const betExists = existingBets.some(
+        existingBet => existingBet.onChainBetId === bet.onChainBetId || 
+                        existingBet.id === bet.id
+      );
+      
+      if (!betExists) {
+        const updatedBets = [...existingBets, bet];
+        localStorage.setItem(FALLBACK_BETS_KEY, JSON.stringify(updatedBets));
+        setFallbackBets(updatedBets);
+      }
+    } catch (error) {
+      console.error("Error saving fallback bet:", error);
+    }
+  }, [loadFallbackBets]);
+
   const loadBets = async () => {
     try {
       setLoading(true);
       console.log("Fetching open bets...");
       const data = await fetchOpenBets();
       console.log("Fetched open bets:", data);
+      
+      // Load fallback bets from localStorage
+      const fallbacks = loadFallbackBets();
+      
+      // Combine database bets with fallback bets
+      let combinedBets: Bet[] = [];
+      
       if (data && Array.isArray(data)) {
-        setBets(data);
+        // Create a map of existing bet IDs to avoid duplicates
+        const existingBetIds = new Set(data.map(bet => bet.id));
+        const existingOnChainIds = new Set(
+          data
+            .filter(bet => bet.onChainBetId)
+            .map(bet => bet.onChainBetId)
+        );
+        
+        // Add fallback bets that don't exist in database
+        const uniqueFallbacks = fallbacks.filter(
+          fallbackBet => 
+            !existingBetIds.has(fallbackBet.id) && 
+            (!fallbackBet.onChainBetId || !existingOnChainIds.has(fallbackBet.onChainBetId))
+        );
+        
+        combinedBets = [...data, ...uniqueFallbacks];
+        console.log("Combined bets:", combinedBets);
       } else {
         console.error("Invalid data returned from fetchOpenBets:", data);
-        setBets([]);
+        combinedBets = [...fallbacks];
       }
+      
+      setBets(combinedBets);
     } catch (error) {
       console.error('Error loading bets:', error);
-      setBets([]);
+      // On error, at least show fallback bets
+      const fallbacks = loadFallbackBets();
+      setBets(fallbacks);
     } finally {
       setLoading(false);
     }
@@ -59,7 +136,29 @@ const OpenBetsList = () => {
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in OpenBetsList:", event.detail);
       
-      const { amount, prediction, tokenId } = event.detail;
+      const { amount, prediction, tokenId, tokenName, tokenSymbol, bet } = event.detail;
+      
+      // If the complete bet object was provided in the event
+      if (bet) {
+        console.log("Adding new bet to fallback storage:", bet);
+        saveFallbackBet(bet);
+        
+        // Add to current bets list
+        setBets(prevBets => {
+          // Check if bet already exists
+          const exists = prevBets.some(
+            existingBet => 
+              existingBet.id === bet.id || 
+              (existingBet.onChainBetId && existingBet.onChainBetId === bet.onChainBetId)
+          );
+          
+          if (!exists) {
+            return [...prevBets, bet];
+          }
+          return prevBets;
+        });
+      }
+      
       setNewBetNotification({
         visible: true,
         message: `New ${amount} SOL bet created predicting token will ${prediction}!`
@@ -87,7 +186,7 @@ const OpenBetsList = () => {
       window.removeEventListener('newBetCreated', handleNewBet as EventListener);
       window.removeEventListener('betAccepted', handleBetAccepted as EventListener);
     };
-  }, []);
+  }, [saveFallbackBet]);
 
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
@@ -116,8 +215,7 @@ const OpenBetsList = () => {
       });
 
       // Refresh bets
-      const updatedBets = await fetchOpenBets();
-      setBets(updatedBets);
+      loadBets();
     } catch (error) {
       console.error('Error accepting bet:', error);
       toast({

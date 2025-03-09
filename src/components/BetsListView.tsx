@@ -16,7 +16,10 @@ const BetsListView: React.FC<BetsListViewProps> = ({
   publicKeyString, 
   onAcceptBet 
 }) => {
-  if (!bets || bets.length === 0) {
+  // Ensure bets is always an array
+  const validBets = Array.isArray(bets) ? bets : [];
+  
+  if (validBets.length === 0) {
     return (
       <div className="glass-panel p-6 text-center">
         <p className="text-dream-foreground/70">No bets available in this category.</p>
@@ -25,16 +28,16 @@ const BetsListView: React.FC<BetsListViewProps> = ({
     );
   }
 
-  console.log('Rendering BetsListView with bets:', bets);
+  console.log('Rendering BetsListView with bets:', validBets);
 
   // Limit to top 10 bets
-  const topBets = bets.slice(0, 10);
+  const topBets = validBets.slice(0, 10);
   
   return (
     <div className="space-y-4">
       {topBets.map((bet, index) => (
         <BetCard
-          key={`${bet.id}-${index}`}
+          key={`${bet.id || bet.onChainBetId || index}-${index}`}
           bet={bet}
           connected={connected}
           publicKeyString={publicKeyString}
@@ -42,9 +45,9 @@ const BetsListView: React.FC<BetsListViewProps> = ({
         />
       ))}
       
-      {bets.length > 10 && (
+      {validBets.length > 10 && (
         <div className="text-center mt-4 text-sm text-dream-foreground/70">
-          Showing top 10 of {bets.length} bets
+          Showing top 10 of {validBets.length} bets
         </div>
       )}
     </div>
