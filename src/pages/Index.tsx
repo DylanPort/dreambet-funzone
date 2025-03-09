@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -36,6 +37,7 @@ const Index = () => {
           name: rawToken.name || 'Unknown Token',
           symbol: rawToken.symbol || '',
           logo: '🪙',
+          imageUrl: rawToken.uri || '', // Include URI from raw token as the image URL
           currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
           change24h: Math.random() * 40 - 20, // Random change between -20% and +20% for demonstration
         });
@@ -49,6 +51,7 @@ const Index = () => {
         name: `Token ${tokens.length + 1}`,
         symbol: `T${tokens.length + 1}`,
         logo: '🪙',
+        imageUrl: '', // No image for placeholder tokens
         currentPrice: (Math.random() * 0.1).toFixed(6),
         change24h: Math.random() * 40 - 20, // Random change between -20% and +20%
       });
@@ -111,7 +114,21 @@ const Index = () => {
               >
                 <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10">
+                    {token.imageUrl ? (
+                      <img 
+                        src={token.imageUrl} 
+                        alt={token.name} 
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          // Fallback to default symbol display on image load error
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).nextElementSibling!.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className={`w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}
+                    >
                       <span className="font-display font-bold">{getTokenSymbol(token)}</span>
                     </div>
                     <span className="ml-2 font-semibold">{token.name}</span>

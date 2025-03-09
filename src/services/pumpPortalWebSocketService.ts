@@ -252,6 +252,7 @@ export const formatWebSocketTokenData = (tokenData: NewTokenEvent['data']) => ({
   name: tokenData.token_name,
   symbol: tokenData.token_symbol || '',
   logo: '🪙', // Default logo
+  imageUrl: tokenData.metaplex_metadata || '', // Include the metadata URL for image
   currentPrice: 0, // Initial price unknown from creation event
   change24h: 0,
   migrationTime: new Date(tokenData.created_time).getTime(),

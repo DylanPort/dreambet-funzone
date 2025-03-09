@@ -10,6 +10,7 @@ interface TokenCardProps {
   price: number;
   priceChange: number;
   timeRemaining: number; // in minutes
+  imageUrl?: string; // Add optional image URL
 }
 
 const TokenCard: React.FC<TokenCardProps> = ({
@@ -19,6 +20,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
   price,
   priceChange,
   timeRemaining,
+  imageUrl,
 }) => {
   const isPositive = priceChange >= 0;
 
@@ -41,7 +43,21 @@ const TokenCard: React.FC<TokenCardProps> = ({
       <Link to={`/token/${id}`} className="block p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
+            {imageUrl ? (
+              <img 
+                src={imageUrl} 
+                alt={name} 
+                className="w-10 h-10 rounded-full object-cover"
+                onError={(e) => {
+                  // Fallback to default symbol display on image load error
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).nextElementSibling!.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className={`w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 ${imageUrl ? 'hidden' : ''}`}
+            >
               <span className="font-display font-bold text-lg">{symbol.charAt(0)}</span>
             </div>
             <div className="ml-3">
