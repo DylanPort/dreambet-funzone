@@ -45,7 +45,12 @@ export const fetchBetsByToken = async (tokenId: string) => {
 // Export wrapper functions that use Supabase services
 export const fetchOpenBets = async () => {
   try {
-    return await fetchSupabaseOpenBets();
+    const bets = await fetchSupabaseOpenBets();
+    // Make sure the status is one of the allowed types in the Bet interface
+    return bets.map(bet => ({
+      ...bet,
+      status: (bet.status as any) as "open" | "matched" | "completed" | "expired"
+    }));
   } catch (error) {
     console.error('Error fetching open bets:', error);
     return [];
@@ -54,7 +59,12 @@ export const fetchOpenBets = async () => {
 
 export const fetchUserBets = async (userAddress: string) => {
   try {
-    return await fetchSupabaseUserBets(userAddress);
+    const bets = await fetchSupabaseUserBets(userAddress);
+    // Make sure the status is one of the allowed types in the Bet interface
+    return bets.map(bet => ({
+      ...bet,
+      status: (bet.status as any) as "open" | "matched" | "completed" | "expired"
+    }));
   } catch (error) {
     console.error('Error fetching user bets:', error);
     return [];
@@ -71,10 +81,15 @@ export const createBet = async (
 ): Promise<Bet> => {
   try {
     // Use the Supabase service to create the bet
-    return await createSupabaseBet(tokenId, prediction, 60, amount); // Default 1 hour duration
+    const bet = await createSupabaseBet(tokenId, prediction, 60, amount);
+    // Ensure the status is one of the allowed types
+    return {
+      ...bet,
+      status: (bet.status as any) as "open" | "matched" | "completed" | "expired"
+    };
   } catch (error) {
     console.error('Error creating bet:', error);
-    throw error; // Don't create mock bets, just throw the error
+    throw error;
   }
 };
 
@@ -84,9 +99,14 @@ export const acceptBet = async (
 ): Promise<Bet> => {
   try {
     // Use the Supabase service to accept the bet
-    return await acceptSupabaseBet(betId);
+    const bet = await acceptSupabaseBet(betId);
+    // Ensure the status is one of the allowed types
+    return {
+      ...bet,
+      status: (bet.status as any) as "open" | "matched" | "completed" | "expired"
+    };
   } catch (error) {
     console.error('Error accepting bet:', error);
-    throw error; // Don't use mock, just throw the error
+    throw error;
   }
 };

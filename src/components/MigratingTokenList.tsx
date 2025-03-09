@@ -2,14 +2,24 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, AlertCircle, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 
 const MigratingTokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const pumpPortal = usePumpPortalWebSocket();
+  
+  // Subscribe to new token events
+  useEffect(() => {
+    if (pumpPortal.connected) {
+      pumpPortal.subscribeToNewTokens();
+    }
+  }, [pumpPortal.connected]);
 
+  // Initial load from Supabase
   useEffect(() => {
     const loadTokens = async () => {
       try {
@@ -28,10 +38,40 @@ const MigratingTokenList = () => {
     };
 
     loadTokens();
-    // Refresh data every 2 minutes
+    // Refresh data every 2 minutes from Supabase as a fallback
     const interval = setInterval(loadTokens, 120000);
     return () => clearInterval(interval);
   }, [toast]);
+  
+  // Listen for real-time token updates
+  useEffect(() => {
+    if (pumpPortal.recentTokens.length > 0) {
+      // Convert WebSocket token data to our format and merge with existing tokens
+      const newTokens = pumpPortal.recentTokens.map(formatWebSocketTokenData);
+      
+      // Merge with existing tokens, avoiding duplicates
+      setTokens(currentTokens => {
+        const existingIds = new Set(currentTokens.map(t => t.id));
+        const newUniqueTokens = newTokens.filter(t => !existingIds.has(t.id));
+        
+        // Show toast for new tokens if any
+        if (newUniqueTokens.length > 0) {
+          toast({
+            title: "New tokens created!",
+            description: `${newUniqueTokens.length} new tokens from Pump.fun`,
+            variant: "default"
+          });
+        }
+        
+        return [...newUniqueTokens, ...currentTokens];
+      });
+      
+      // If we were in loading state, exit it
+      if (loading) {
+        setLoading(false);
+      }
+    }
+  }, [pumpPortal.recentTokens, loading, toast]);
 
   // Function to format time since migration
   const formatTimeSince = (timestamp: number) => {
@@ -56,9 +96,18 @@ const MigratingTokenList = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-display font-bold text-dream-foreground">
-        Migrating Tokens
-      </h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-display font-bold text-dream-foreground">
+          Migrating Tokens
+        </h2>
+        
+        <div className="flex items-center text-sm">
+          <span className={`flex items-center gap-1 ${pumpPortal.connected ? 'text-green-400' : 'text-yellow-400'}`}>
+            <Zap className="w-4 h-4" />
+            {pumpPortal.connected ? 'Live' : 'Connecting...'}
+          </span>
+        </div>
+      </div>
       
       {loading ? (
         <div className="flex justify-center py-8">
