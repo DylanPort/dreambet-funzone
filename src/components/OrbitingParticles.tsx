@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 
 interface Particle {
@@ -47,17 +46,17 @@ const OrbitingParticles = () => {
     // Create particles
     const createParticles = () => {
       const particles: Particle[] = [];
-      const particleCount = Math.min(Math.floor(width * height / 12000), 60);
+      const particleCount = Math.min(Math.floor(width * height / 15000), 50); // Reduced particle count
       
       for (let i = 0; i < particleCount; i++) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          size: Math.random() * 5 + 1,
-          speedX: (Math.random() - 0.5) * 0.7,
-          speedY: (Math.random() - 0.5) * 0.7,
+          size: Math.random() * 4 + 1, // Slightly smaller particles
+          speedX: (Math.random() - 0.5) * 0.5, // Slower movement
+          speedY: (Math.random() - 0.5) * 0.5,
           color: colors[Math.floor(Math.random() * colors.length)],
-          opacity: Math.random() * 0.7 + 0.3
+          opacity: Math.random() * 0.5 + 0.2 // Lower opacity
         });
       }
       
@@ -71,8 +70,8 @@ const OrbitingParticles = () => {
       
       // Add a subtle gradient background
       const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, 'rgba(10, 10, 31, 0.05)');
-      gradient.addColorStop(1, 'rgba(26, 16, 64, 0.05)');
+      gradient.addColorStop(0, 'rgba(10, 10, 31, 0.03)'); // Reduced opacity
+      gradient.addColorStop(1, 'rgba(26, 16, 64, 0.03)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
       
@@ -89,7 +88,7 @@ const OrbitingParticles = () => {
         
         // Draw particle with glow effect
         ctx.shadowColor = particle.color;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 10; // Reduced blur
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fillStyle = particle.color.replace('0.7', particle.opacity.toString());
@@ -102,18 +101,18 @@ const OrbitingParticles = () => {
           const dy = particle.y - otherParticle.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
-          if (distance < 150) {
+          if (distance < 120) { // Reduced connection distance
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(otherParticle.x, otherParticle.y);
-            const alpha = 0.05 * (1 - distance / 150);
+            const alpha = 0.03 * (1 - distance / 120); // Reduced opacity
             const gradient = ctx.createLinearGradient(
               particle.x, particle.y, otherParticle.x, otherParticle.y
             );
-            gradient.addColorStop(0, particle.color.replace('0.7', (alpha * 0.7).toString()));
-            gradient.addColorStop(1, otherParticle.color.replace('0.7', (alpha * 0.7).toString()));
+            gradient.addColorStop(0, particle.color.replace('0.7', (alpha * 0.5).toString()));
+            gradient.addColorStop(1, otherParticle.color.replace('0.7', (alpha * 0.5).toString()));
             ctx.strokeStyle = gradient;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0.7; // Thinner lines
             ctx.stroke();
           }
         });
@@ -134,6 +133,7 @@ const OrbitingParticles = () => {
     <canvas
       ref={canvasRef}
       className="fixed top-0 left-0 w-full h-full pointer-events-none z-0"
+      style={{ position: 'fixed', zIndex: 1 }}
     />
   );
 };
