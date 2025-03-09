@@ -90,11 +90,11 @@ const TrendingTokens: React.FC = () => {
     <div className="glass-panel p-6 relative">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 flex items-center justify-center">
+          <div className="w-10 h-10 flex items-center justify-center transition-transform hover:scale-105">
             <img 
               src="/lovable-uploads/b4c3d83c-03ad-43c5-bbc1-ade4e2d1c15b.png" 
               alt="Trending" 
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]"
             />
           </div>
           <h2 className="text-xl font-display font-semibold">Trending Solana Tokens</h2>
