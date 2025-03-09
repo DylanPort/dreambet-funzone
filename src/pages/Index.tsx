@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, TrendingUp, Shield, Clock, ExternalLink } from 'lucide-react';
+import { ArrowRight, Shield, Clock, ExternalLink } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
@@ -173,7 +174,11 @@ const Index = () => {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent1/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <TrendingUp className="h-8 w-8 text-dream-accent1" />
+                <img 
+                  src="/lovable-uploads/4cf5638c-4544-455d-baf2-37470b161dbd.png" 
+                  alt="Lightning Bolt" 
+                  className="h-10 w-10 filter drop-shadow-[0_0_8px_rgba(255,61,252,0.8)] transition-transform hover:scale-110 duration-300"
+                />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">P2P Betting</h3>
               <p className="text-dream-foreground/70">
