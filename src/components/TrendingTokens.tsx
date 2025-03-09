@@ -90,7 +90,13 @@ const TrendingTokens: React.FC = () => {
     <div className="glass-panel p-6 relative">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-dream-accent1" />
+          <div className="w-5 h-5 flex items-center justify-center">
+            <img 
+              src="/lovable-uploads/b4c3d83c-03ad-43c5-bbc1-ade4e2d1c15b.png" 
+              alt="Trending" 
+              className="w-full h-full object-contain"
+            />
+          </div>
           <h2 className="text-xl font-display font-semibold">Trending Solana Tokens</h2>
           <div className="bg-dream-accent1/20 text-dream-accent1 text-xs px-2 py-0.5 rounded-full flex items-center">
             <Clock className="h-3 w-3 mr-1" />
