@@ -1,8 +1,9 @@
+
 import { Bet } from '@/types/bet';
 import { 
-  fetchTokens, 
-  fetchOpenBets, 
-  fetchUserBets, 
+  fetchTokens as fetchSupabaseTokens, 
+  fetchOpenBets as fetchSupabaseOpenBets, 
+  fetchUserBets as fetchSupabaseUserBets, 
   createBet as createSupabaseBet, 
   acceptBet as acceptSupabaseBet,
   fetchTokenById
@@ -102,7 +103,7 @@ export const mockBets: Bet[] = [
 // API functions that now interface with Supabase
 export const fetchMigratingTokens = async () => {
   try {
-    const tokens = await fetchTokens();
+    const tokens = await fetchSupabaseTokens();
     
     // Convert to the format expected by our UI
     return tokens.map(token => ({
@@ -132,19 +133,19 @@ export const fetchBetsByToken = async (tokenId: string) => {
   }
 };
 
-// These functions now use Supabase but should be properly exported
-export const fetchOpenBetsWrapper = async () => {
+// Export wrapper functions that use Supabase services
+export const fetchOpenBets = async () => {
   try {
-    return await fetchOpenBets();
+    return await fetchSupabaseOpenBets();
   } catch (error) {
     console.error('Error fetching open bets:', error);
     return mockBets.filter(bet => bet.status === 'open');
   }
 };
 
-export const fetchUserBetsWrapper = async (userAddress: string) => {
+export const fetchUserBets = async (userAddress: string) => {
   try {
-    return await fetchUserBets(userAddress);
+    return await fetchSupabaseUserBets(userAddress);
   } catch (error) {
     console.error('Error fetching user bets:', error);
     // Fallback to mock data
@@ -154,7 +155,7 @@ export const fetchUserBetsWrapper = async (userAddress: string) => {
   }
 };
 
-export const createBetWrapper = async (
+export const createBet = async (
   tokenId: string,
   tokenName: string,
   tokenSymbol: string,
@@ -188,7 +189,7 @@ export const createBetWrapper = async (
   }
 };
 
-export const acceptBetWrapper = async (
+export const acceptBet = async (
   betId: string,
   counterParty: string
 ): Promise<Bet> => {
@@ -212,9 +213,3 @@ export const acceptBetWrapper = async (
     return updatedBet;
   }
 };
-
-// Export these functions to fix import errors in components
-export const fetchOpenBets = fetchOpenBetsWrapper;
-export const fetchUserBets = fetchUserBetsWrapper;
-export const createBet = createBetWrapper;
-export const acceptBet = acceptBetWrapper;
