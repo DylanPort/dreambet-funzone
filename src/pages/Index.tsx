@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Clock, ExternalLink } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
@@ -92,6 +92,8 @@ const Index = () => {
     <>
       <OrbitingParticles />
       <Navbar />
+      
+      <BetReel />
       
       <main className="pt-24 min-h-screen overflow-hidden">
         {/* Hero Section */}
