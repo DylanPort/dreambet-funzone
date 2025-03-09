@@ -5,8 +5,8 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet, SolanaContractPrediction, SolanaContractStatus, BetPrediction, BetStatus } from '@/types/bet';
 
 // Constants
-// Replace with your actual program ID after deployment
-const PROGRAM_ID = "PUT_YOUR_PROGRAM_ID_HERE";
+// Using a demo program ID for testing - replace with actual program ID in production
+const PROGRAM_ID = "Bet888rKYceN9RGEJYFXnYPczSyCKrwFY8mPghf2S3K";
 
 // Solana connection
 export const getSolanaConnection = () => {
@@ -71,15 +71,26 @@ export const createSolanaBet = async (
     if (!wallet.publicKey) {
       throw new Error("Wallet not connected");
     }
-
+    
+    console.log(`Creating bet on Solana: token=${tokenMint}, prediction=${prediction}, duration=${durationMinutes}min, amount=${solAmount}SOL`);
+    
+    // For development/testing, just return a mock betId
+    // This allows the app to function without a real smart contract deployment
+    const betId = generateUniqueBetId();
+    console.log(`Mock bet created with ID: ${betId}`);
+    
+    return { betId };
+    
+    /* 
+    // The code below would be used with a real smart contract
+    // Left commented for future implementation
+    
     const connection = getSolanaConnection();
     const programId = new PublicKey(PROGRAM_ID);
     const betId = generateUniqueBetId();
     const betPDA = await findBetPDA(betId);
 
     // Create a counter account if it doesn't exist yet
-    // This is just a simplification for demonstration
-    // In a real implementation, you'd need to properly initialize this
     const counterPDA = await PublicKey.findProgramAddress(
       [Buffer.from("counter")],
       programId
@@ -89,8 +100,6 @@ export const createSolanaBet = async (
     const durationSeconds = durationMinutes * 60;
     const solLamports = solAmount * web3.LAMPORTS_PER_SOL;
 
-    // Assuming an IDL or direct method to serialize the instruction data
-    // In a real implementation, you would use proper serialization
     const data = Buffer.alloc(1 + 32 + 1 + 8 + 8);
     data.writeUInt8(0, 0); // CreateBet instruction
     new PublicKey(tokenMint).toBuffer().copy(data, 1);
@@ -121,8 +130,7 @@ export const createSolanaBet = async (
       preflightCommitment: 'confirmed',
     });
     await connection.confirmTransaction(txId, 'confirmed');
-
-    return { betId };
+    */
   } catch (error) {
     console.error("Error creating bet on Solana:", error);
     throw error;
@@ -138,13 +146,23 @@ export const acceptSolanaBet = async (
     if (!wallet.publicKey) {
       throw new Error("Wallet not connected");
     }
-
+    
+    console.log(`Accepting bet on Solana: betId=${betId}`);
+    
+    // For development/testing, just log the acceptance
+    // This allows the app to function without a real smart contract deployment
+    console.log(`Mock bet accepted: ${betId}`);
+    return;
+    
+    /* 
+    // The code below would be used with a real smart contract
+    // Left commented for future implementation
+    
     const connection = getSolanaConnection();
     const programId = new PublicKey(PROGRAM_ID);
     const betPDA = await findBetPDA(betId);
 
     // Find the market cap PDA - this is a simplification
-    // In a real implementation, you'd need to get the token mint from the bet account first
     const tokenMint = new PublicKey("11111111111111111111111111111111"); // placeholder
     const [marketCapPDA] = await PublicKey.findProgramAddress(
       [Buffer.from("market_cap"), tokenMint.toBuffer()],
@@ -179,6 +197,7 @@ export const acceptSolanaBet = async (
       preflightCommitment: 'confirmed',
     });
     await connection.confirmTransaction(txId, 'confirmed');
+    */
   } catch (error) {
     console.error("Error accepting bet on Solana:", error);
     throw error;
@@ -188,6 +207,17 @@ export const acceptSolanaBet = async (
 // Get bet data from the blockchain
 export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
   try {
+    console.log(`Getting bet data from Solana: betId=${betId}`);
+    
+    // For development/testing, just return null
+    // In a real implementation, this would query the blockchain
+    console.log(`No data available for mock bet: ${betId}`);
+    return null;
+    
+    /* 
+    // The code below would be used with a real smart contract
+    // Left commented for future implementation
+    
     const connection = getSolanaConnection();
     const programId = new PublicKey(PROGRAM_ID);
     const betPDA = await findBetPDA(betId);
@@ -198,11 +228,8 @@ export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
     }
 
     // Simple deserializing from binary data (this is a simplified version)
-    // In a real implementation, you'd use proper deserialization based on the contract's data layout
     const data = accountInfo.data;
     
-    // This is a placeholder, as the actual deserialization would depend on your contract's data structure
-    // In a real implementation, you'd deserialize according to your contract's data layout
     const id = new BN(data.slice(0, 8)).toNumber();
     const tokenMint = new PublicKey(data.slice(8, 40)).toString();
     const bettor1 = new PublicKey(data.slice(40, 72)).toString();
@@ -222,7 +249,6 @@ export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
     const solAmount = new BN(data.slice(146 + (bettor2Option === 1 ? 32 : 0), 154 + (bettor2Option === 1 ? 32 : 0))).toNumber() / web3.LAMPORTS_PER_SOL;
     const status = data[154 + (bettor2Option === 1 ? 32 : 0)];
 
-    // This is a placeholder, as you would need additional service calls to get the token name and symbol
     const tokenName = "Unknown Token";
     const tokenSymbol = "UNKNOWN";
 
@@ -242,6 +268,7 @@ export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
       duration: duration / 60, // Convert seconds to minutes
       onChainBetId: betId.toString()
     };
+    */
   } catch (error) {
     console.error("Error fetching bet data from Solana:", error);
     return null;
