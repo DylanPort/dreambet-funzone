@@ -64,11 +64,13 @@ export type Database = {
           duration: number
           end_time: string | null
           initial_market_cap: number | null
+          on_chain_id: string | null
           prediction_bettor1: string
           sol_amount: number
           start_time: string | null
           status: string
           token_mint: string
+          transaction_signature: string | null
         }
         Insert: {
           bet_id?: string
@@ -79,11 +81,13 @@ export type Database = {
           duration: number
           end_time?: string | null
           initial_market_cap?: number | null
+          on_chain_id?: string | null
           prediction_bettor1: string
           sol_amount: number
           start_time?: string | null
           status?: string
           token_mint: string
+          transaction_signature?: string | null
         }
         Update: {
           bet_id?: string
@@ -94,11 +98,13 @@ export type Database = {
           duration?: number
           end_time?: string | null
           initial_market_cap?: number | null
+          on_chain_id?: string | null
           prediction_bettor1?: string
           sol_amount?: number
           start_time?: string | null
           status?: string
           token_mint?: string
+          transaction_signature?: string | null
         }
         Relationships: [
           {
