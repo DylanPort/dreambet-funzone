@@ -7,6 +7,7 @@ import { Bet } from '@/types/bet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BetsListView from './BetsListView';
 import { getSortedBets, getExpiringBets, getPublicBets } from '@/utils/betUtils';
+
 const OpenBetsList = () => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +19,7 @@ const OpenBetsList = () => {
     toast
   } = useToast();
   const [sortBy, setSortBy] = useState<'newest' | 'expiring' | 'amount'>('newest');
+
   useEffect(() => {
     const loadBets = async () => {
       try {
@@ -34,6 +36,7 @@ const OpenBetsList = () => {
     const interval = setInterval(loadBets, 30000);
     return () => clearInterval(interval);
   }, []);
+
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
       toast({
@@ -73,7 +76,9 @@ const OpenBetsList = () => {
       setLoading(false);
     }
   };
+
   const publicKeyString = publicKey ? publicKey.toString() : null;
+
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-display font-bold text-dream-foreground">
@@ -116,11 +121,12 @@ const OpenBetsList = () => {
           <TabsContent value="expiring">
             <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2 mb-4 flex items-center">
               <AlertTriangle className="text-orange-400 mr-2" />
-              <p className="text-sm">These bets will expire within the next hour!</p>
+              <p className="text-sm">These bets will expire within the next 10 minutes!</p>
             </div>
             <BetsListView bets={getExpiringBets(bets, sortBy)} connected={connected} publicKeyString={publicKeyString} onAcceptBet={handleAcceptBet} />
           </TabsContent>
         </Tabs>}
     </div>;
 };
+
 export default OpenBetsList;
