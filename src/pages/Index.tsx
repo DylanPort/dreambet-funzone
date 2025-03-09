@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -203,8 +204,12 @@ const Index = () => {
       <footer className="glass-panel mt-20 px-6 py-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
-            <Link to="/" className="text-xl font-display font-bold text-gradient mb-3 inline-block">
-              PumpXBounty
+            <Link to="/" className="mb-3 inline-block">
+              <img 
+                src="/lovable-uploads/0efcf12e-2095-48c8-83a1-60dddf4f2f42.png" 
+                alt="PumpBounty Logo" 
+                className="h-8 w-auto mx-auto"
+              />
             </Link>
             <p className="text-dream-foreground/60 max-w-md mx-auto text-sm">
               PumpXBounty is a platform for predicting the future of tokens migrating from PumpFun to Raydium. This is for entertainment purposes only.
