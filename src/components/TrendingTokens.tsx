@@ -154,27 +154,12 @@ const TrendingTokens: React.FC = () => {
                       <td className="py-3 px-2 text-sm">#{index + 1}</td>
                       <td className="py-3 px-2">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 relative">
-                            {token.imageUrl ? (
-                              <img 
-                                src={token.imageUrl} 
-                                alt={token.name} 
-                                className="w-8 h-8 rounded-full object-cover"
-                                onError={(e) => {
-                                  const imgElement = e.target as HTMLImageElement;
-                                  imgElement.style.display = 'none';
-                                  const nextElement = imgElement.nextElementSibling as HTMLElement;
-                                  if (nextElement) {
-                                    nextElement.style.display = 'flex';
-                                  }
-                                }}
-                              />
-                            ) : null}
-                            <div 
-                              className={`w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}
-                            >
-                              <span className="font-display font-bold text-sm">{token.symbol.charAt(0)}</span>
-                            </div>
+                          <div className="w-8 h-8 relative flex items-center justify-center">
+                            <img 
+                              src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" 
+                              alt={token.name} 
+                              className="w-full h-full object-contain"
+                            />
                           </div>
                           <div>
                             <div className="flex items-center gap-1">

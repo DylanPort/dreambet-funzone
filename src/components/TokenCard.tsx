@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame } from 'lucide-react';
@@ -92,25 +91,12 @@ const TokenCard: React.FC<TokenCardProps> = ({
       <Link to={`/token/${id}`} className="block glass-panel p-4 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            {imageUrl ? (
+            <div className="w-10 h-10 flex items-center justify-center">
               <img 
-                src={imageUrl} 
+                src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" 
                 alt={name} 
-                className="w-10 h-10 rounded-full object-cover"
-                onError={(e) => {
-                  const imgElement = e.target as HTMLImageElement;
-                  imgElement.style.display = 'none';
-                  const nextElement = imgElement.nextElementSibling as HTMLElement;
-                  if (nextElement) {
-                    nextElement.style.display = 'flex';
-                  }
-                }}
+                className="w-full h-full object-contain"
               />
-            ) : null}
-            <div 
-              className={`w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 ${imageUrl ? 'hidden' : ''}`}
-            >
-              <span className="font-display font-bold text-lg">{symbol.charAt(0)}</span>
             </div>
             <div>
               <div className="flex items-center gap-1">

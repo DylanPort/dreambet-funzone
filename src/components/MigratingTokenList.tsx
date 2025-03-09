@@ -383,7 +383,7 @@ const MigratingTokenList = () => {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 flex items-center justify-center">
                       <img 
-                        src="/lovable-uploads/8c486ae4-3f72-46b0-9d0a-ecbf63c37968.png" 
+                        src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" 
                         alt="Token"
                         className="w-full h-full object-contain"
                       />
@@ -462,7 +462,7 @@ const MigratingTokenList = () => {
                     <Link to={token.isPlaceholder ? '#' : `/token/${token.id}`} className="flex items-center">
                       <div className="w-8 h-8 mr-3 flex items-center justify-center">
                         <img 
-                          src="/lovable-uploads/8c486ae4-3f72-46b0-9d0a-ecbf63c37968.png" 
+                          src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" 
                           alt="Token"
                           className="w-full h-full object-contain"
                         />
