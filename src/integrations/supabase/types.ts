@@ -9,13 +9,191 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bet_history: {
+        Row: {
+          action: string
+          bet_id: string
+          details: Json | null
+          id: string
+          market_cap_at_action: number | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          bet_id: string
+          details?: Json | null
+          id?: string
+          market_cap_at_action?: number | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          bet_id?: string
+          details?: Json | null
+          id?: string
+          market_cap_at_action?: number | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bet_history_bet_id_fkey"
+            columns: ["bet_id"]
+            isOneToOne: false
+            referencedRelation: "bets"
+            referencedColumns: ["bet_id"]
+          },
+          {
+            foreignKeyName: "bet_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bets: {
+        Row: {
+          bet_id: string
+          bettor1_id: string
+          bettor2_id: string | null
+          created_at: string
+          duration: number
+          end_time: string | null
+          initial_market_cap: number | null
+          prediction_bettor1: string
+          sol_amount: number
+          start_time: string | null
+          status: string
+          token_mint: string
+        }
+        Insert: {
+          bet_id?: string
+          bettor1_id: string
+          bettor2_id?: string | null
+          created_at?: string
+          duration: number
+          end_time?: string | null
+          initial_market_cap?: number | null
+          prediction_bettor1: string
+          sol_amount: number
+          start_time?: string | null
+          status?: string
+          token_mint: string
+        }
+        Update: {
+          bet_id?: string
+          bettor1_id?: string
+          bettor2_id?: string | null
+          created_at?: string
+          duration?: number
+          end_time?: string | null
+          initial_market_cap?: number | null
+          prediction_bettor1?: string
+          sol_amount?: number
+          start_time?: string | null
+          status?: string
+          token_mint?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bets_bettor1_id_fkey"
+            columns: ["bettor1_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bets_bettor2_id_fkey"
+            columns: ["bettor2_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bets_token_mint_fkey"
+            columns: ["token_mint"]
+            isOneToOne: false
+            referencedRelation: "tokens"
+            referencedColumns: ["token_mint"]
+          },
+        ]
+      }
+      tokens: {
+        Row: {
+          created_on: string | null
+          current_market_cap: number
+          initial_market_cap: number | null
+          last_trade_price: number
+          last_updated_time: string
+          token_mint: string
+          token_name: string
+          token_symbol: string | null
+          total_supply: number
+        }
+        Insert: {
+          created_on?: string | null
+          current_market_cap: number
+          initial_market_cap?: number | null
+          last_trade_price: number
+          last_updated_time?: string
+          token_mint: string
+          token_name: string
+          token_symbol?: string | null
+          total_supply: number
+        }
+        Update: {
+          created_on?: string | null
+          current_market_cap?: number
+          initial_market_cap?: number | null
+          last_trade_price?: number
+          last_updated_time?: string
+          token_mint?: string
+          token_name?: string
+          token_symbol?: string | null
+          total_supply?: number
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string
+          id: string
+          username: string | null
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          username?: string | null
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          username?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_bet_status: {
+        Args: {
+          p_bet_id: string
+          p_status: string
+          p_user_id: string
+          p_action: string
+          p_details?: Json
+          p_market_cap?: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

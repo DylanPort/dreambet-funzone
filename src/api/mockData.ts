@@ -1,7 +1,18 @@
 
 import { Bet } from '@/types/bet';
+import { 
+  fetchTokens, 
+  fetchOpenBets, 
+  fetchUserBets, 
+  createBet as createSupabaseBet, 
+  acceptBet as acceptSupabaseBet,
+  fetchTokenById
+} from '@/services/supabaseService';
 
-// Mock migrating tokens data
+// This file now acts as a bridge between our existing UI and the new Supabase backend
+// Eventually, all these functions should directly use the Supabase service
+
+// Mock migrating tokens data (will be replaced with real data from Supabase)
 export const migratingTokens = [
   {
     id: 'token1',
@@ -41,7 +52,7 @@ export const migratingTokens = [
   },
 ];
 
-// Mock open bets
+// Mock open bets (will be replaced with real data from Supabase)
 export const mockBets: Bet[] = [
   {
     id: 'bet1',
@@ -89,36 +100,62 @@ export const mockBets: Bet[] = [
   },
 ];
 
-// Mock API functions
-let bets = [...mockBets];
-
+// API functions that now interface with Supabase
 export const fetchMigratingTokens = async () => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return migratingTokens;
-};
-
-export const fetchOpenBets = async () => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return bets.filter(bet => bet.status === 'open');
+  try {
+    const tokens = await fetchTokens();
+    
+    // Convert to the format expected by our UI
+    return tokens.map(token => ({
+      id: token.token_mint,
+      name: token.token_name,
+      symbol: token.token_symbol || '',
+      logo: '🪙', // Default logo
+      currentPrice: token.last_trade_price,
+      change24h: 0, // We don't have historical data yet
+      migrationTime: new Date(token.last_updated_time).getTime(),
+    }));
+  } catch (error) {
+    console.error('Error fetching tokens:', error);
+    // Fallback to mock data for now
+    return migratingTokens;
+  }
 };
 
 export const fetchBetsByToken = async (tokenId: string) => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return bets.filter(bet => bet.tokenId === tokenId);
+  try {
+    // This is a mock implementation until we have a proper API for this
+    // In reality, we would query bets by token ID from Supabase
+    return mockBets.filter(bet => bet.tokenId === tokenId);
+  } catch (error) {
+    console.error('Error fetching bets by token:', error);
+    return [];
+  }
 };
 
-export const fetchUserBets = async (userAddress: string) => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return bets.filter(
-    bet => bet.initiator === userAddress || bet.counterParty === userAddress
-  );
+// These functions now use Supabase
+export const fetchOpenBetsWrapper = async () => {
+  try {
+    return await fetchOpenBets();
+  } catch (error) {
+    console.error('Error fetching open bets:', error);
+    return mockBets.filter(bet => bet.status === 'open');
+  }
 };
 
-export const createBet = async (
+export const fetchUserBetsWrapper = async (userAddress: string) => {
+  try {
+    return await fetchUserBets(userAddress);
+  } catch (error) {
+    console.error('Error fetching user bets:', error);
+    // Fallback to mock data
+    return mockBets.filter(
+      bet => bet.initiator === userAddress || bet.counterParty === userAddress
+    );
+  }
+};
+
+export const createBetWrapper = async (
   tokenId: string,
   tokenName: string,
   tokenSymbol: string,
@@ -126,49 +163,53 @@ export const createBet = async (
   amount: number,
   prediction: 'migrate' | 'die'
 ): Promise<Bet> => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  
-  const newBet: Bet = {
-    id: `bet${bets.length + 1}`,
-    tokenId,
-    tokenName,
-    tokenSymbol,
-    initiator,
-    amount,
-    prediction,
-    timestamp: new Date().getTime(),
-    expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000, // 24 hours from now
-    status: 'open',
-    duration: 60, // Default 1 hour in minutes
-  };
-  
-  bets = [...bets, newBet];
-  return newBet;
+  try {
+    // Use the Supabase service to create the bet
+    // Note: tokenName and tokenSymbol are not needed as they're fetched from the database
+    return await createSupabaseBet(tokenId, prediction, 60, amount); // Default 1 hour duration
+  } catch (error) {
+    console.error('Error creating bet:', error);
+    // Fallback to creating a mock bet
+    const newBet: Bet = {
+      id: `bet${mockBets.length + 1}`,
+      tokenId,
+      tokenName,
+      tokenSymbol,
+      initiator,
+      amount,
+      prediction,
+      timestamp: new Date().getTime(),
+      expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000, // 24 hours from now
+      status: 'open',
+      duration: 60, // Default 1 hour in minutes
+    };
+    
+    mockBets.push(newBet);
+    return newBet;
+  }
 };
 
-export const acceptBet = async (
+export const acceptBetWrapper = async (
   betId: string,
   counterParty: string
 ): Promise<Bet> => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  
-  const betIndex = bets.findIndex(bet => bet.id === betId);
-  if (betIndex === -1) throw new Error('Bet not found');
-  
-  const updatedBet = {
-    ...bets[betIndex],
-    counterParty,
-    status: 'matched' as const,
-    initialPrice: migratingTokens.find(token => token.id === bets[betIndex].tokenId)?.currentPrice,
-  };
-  
-  bets = [
-    ...bets.slice(0, betIndex),
-    updatedBet,
-    ...bets.slice(betIndex + 1),
-  ];
-  
-  return updatedBet;
+  try {
+    // Use the Supabase service to accept the bet
+    return await acceptSupabaseBet(betId);
+  } catch (error) {
+    console.error('Error accepting bet:', error);
+    // Fallback to mock implementation
+    const betIndex = mockBets.findIndex(bet => bet.id === betId);
+    if (betIndex === -1) throw new Error('Bet not found');
+    
+    const updatedBet = {
+      ...mockBets[betIndex],
+      counterParty,
+      status: 'matched' as const,
+      initialPrice: migratingTokens.find(token => token.id === mockBets[betIndex].tokenId)?.currentPrice,
+    };
+    
+    mockBets[betIndex] = updatedBet;
+    return updatedBet;
+  }
 };

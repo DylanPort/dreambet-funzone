@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Clock } from 'lucide-react';
-import { fetchUserBets } from '@/api/mockData';
+import { fetchUserBetsWrapper as fetchUserBets } from '@/api/mockData';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet } from '@/types/bet';
 import { Link } from 'react-router-dom';
+import { formatTimeRemaining } from '@/utils/betUtils';
 
 interface BetsListProps {
   title: string;
@@ -50,17 +51,6 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
     const interval = setInterval(loadBets, 30000);
     return () => clearInterval(interval);
   }, [connected, publicKey, type]);
-
-  const formatTimeRemaining = (expiresAt: number) => {
-    const now = new Date().getTime();
-    const diffMs = expiresAt - now;
-    if (diffMs <= 0) return 'Expired';
-    
-    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${diffHrs}h ${diffMins}m left`;
-  };
 
   if (!connected) {
     return (
