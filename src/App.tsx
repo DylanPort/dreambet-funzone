@@ -19,6 +19,8 @@ import MyBets from "./pages/MyBets";
 const queryClient = new QueryClient();
 
 function App() {
+  console.log("App rendering");
+  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

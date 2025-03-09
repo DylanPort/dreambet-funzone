@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { fetchOpenBets, acceptBet } from '@/api/mockData';
 import { useWallet } from '@solana/wallet-adapter-react';

@@ -12,6 +12,8 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 const BettingDashboard = () => {
   const { connected } = useWallet();
 
+  console.log("BettingDashboard rendering, wallet connected:", connected);
+
   return (
     <>
       <OrbitingParticles />
