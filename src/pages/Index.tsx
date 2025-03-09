@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -51,7 +52,7 @@ const Index = () => {
         symbol: `T${tokens.length + 1}`,
         logo: '🪙',
         imageUrl: '', // No image for placeholder tokens
-        currentPrice: (Math.random() * 0.1).toFixed(6),
+        currentPrice: (Math.random() * 0.1),
         change24h: Math.random() * 40 - 20, // Random change between -20% and +20%
       });
     }
@@ -71,6 +72,21 @@ const Index = () => {
     "top-0 left-[10%] shadow-neon-purple animate-float", // Style for second card
     "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed", // Style for third card
   ];
+
+  // Format price with appropriate decimals based on value
+  const formatPrice = (price: number | string) => {
+    // Ensure price is a number
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    
+    // Check if it's a valid number
+    if (isNaN(numPrice)) return "0.000000";
+    
+    // Format based on value
+    if (numPrice < 0.01) return numPrice.toFixed(6);
+    if (numPrice < 1) return numPrice.toFixed(4);
+    if (numPrice < 1000) return numPrice.toFixed(2);
+    return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  };
 
   return (
     <>
@@ -141,7 +157,7 @@ const Index = () => {
                 </div>
                 <div className="h-[80px] bg-gradient-to-r from-green-500/20 to-green-300/10 rounded-md mb-3 flex items-center justify-center">
                   <span className={`font-bold ${token.change24h >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                    ${token.currentPrice?.toFixed(6) || "0.000000"}
+                    ${formatPrice(token.currentPrice)}
                   </span>
                 </div>
                 <div className="flex justify-around">
