@@ -445,7 +445,7 @@ const TokenDetail = () => {
     }
     
     try {
-      await acceptBet(bet.id, publicKey.toString(), wallet, bet.onChainBetId);
+      await acceptBet(bet, publicKey.toString(), wallet);
       toast({
         title: "Bet accepted!",
         description: `You've successfully accepted the bet on ${bet.tokenSymbol}`,
