@@ -32,7 +32,33 @@ const TokenDetail = () => {
       
       try {
         setLoading(true);
-        const tokenData = await fetchTokenById(tokenId);
+        
+        // First check if the token exists in the PumpPortal service
+        let tokenData = null;
+        let isWebSocketToken = false;
+        
+        // Check recent tokens from WebSocket
+        const recentTokens = pumpPortal.recentTokens || [];
+        const webSocketToken = recentTokens.find(t => t.token_mint === tokenId);
+        
+        if (webSocketToken) {
+          isWebSocketToken = true;
+          tokenData = {
+            token_mint: webSocketToken.token_mint,
+            token_name: webSocketToken.token_name,
+            token_symbol: webSocketToken.token_symbol || '',
+            last_trade_price: 0, // New tokens may not have a price yet
+            last_updated_time: webSocketToken.created_time,
+          };
+        }
+        
+        // If not found in WebSocket, check Supabase
+        if (!tokenData) {
+          const supabaseTokenData = await fetchTokenById(tokenId);
+          if (supabaseTokenData) {
+            tokenData = supabaseTokenData;
+          }
+        }
         
         if (tokenData) {
           setToken({
@@ -69,6 +95,49 @@ const TokenDetail = () => {
           // Load bets for this token
           const tokenBets = await fetchBetsByToken(tokenId);
           setBets(tokenBets);
+        } else if (tokenId) {
+          // If we can't find the token in either source but have an ID,
+          // create a minimal placeholder for a very new token
+          setToken({
+            id: tokenId,
+            name: "New Token",
+            symbol: "",
+            logo: '🪙',
+            currentPrice: 0,
+            change24h: 0,
+            migrationTime: new Date().getTime(),
+          });
+          
+          // Subscribe to real-time trades for this token
+          if (pumpPortal.connected) {
+            pumpPortal.subscribeToToken(tokenId);
+          }
+          
+          // Create some initial price data
+          const now = new Date();
+          const initialData = [];
+          
+          for (let i = -30; i <= 0; i++) {
+            const time = new Date(now);
+            time.setMinutes(time.getMinutes() + i);
+            
+            initialData.push({
+              time: time.toISOString(),
+              price: 0,
+            });
+          }
+          
+          setPriceData(initialData);
+          
+          // Still try to load bets
+          const tokenBets = await fetchBetsByToken(tokenId);
+          setBets(tokenBets);
+          
+          toast({
+            title: "New token detected",
+            description: "This appears to be a very new token. Limited information is available.",
+            variant: "default",
+          });
         } else {
           toast({
             title: "Token not found",
@@ -89,7 +158,7 @@ const TokenDetail = () => {
     };
     
     loadToken();
-  }, [tokenId, toast, pumpPortal.connected]);
+  }, [tokenId, toast, pumpPortal.connected, pumpPortal.recentTokens]);
   
   // Handle real-time trade updates
   useEffect(() => {
@@ -134,7 +203,7 @@ const TokenDetail = () => {
           if (Math.abs(percentChange) > 5) {
             toast({
               title: `Price ${percentChange > 0 ? 'up' : 'down'} ${Math.abs(percentChange).toFixed(1)}%`,
-              description: `${token?.symbol || 'Token'} is now $${latestPrice.toFixed(6)}`,
+              description: `${token?.symbol || 'Token'} is now $${formatPrice(latestPrice)}`,
               variant: percentChange > 0 ? "default" : "destructive",
             });
           }
@@ -148,23 +217,36 @@ const TokenDetail = () => {
     
     try {
       setLoading(true);
-      const tokenData = await fetchTokenById(tokenId);
       
-      if (tokenData) {
-        setToken({
-          id: tokenData.token_mint,
-          name: tokenData.token_name,
-          symbol: tokenData.token_symbol || '',
-          logo: '🪙',
-          currentPrice: tokenData.last_trade_price || 0,
-          change24h: 0,
-          migrationTime: new Date(tokenData.last_updated_time).getTime(),
-        });
-        
-        // Refresh bets
-        const tokenBets = await fetchBetsByToken(tokenId);
-        setBets(tokenBets);
+      // Check recent tokens from WebSocket first
+      const recentTokens = pumpPortal.recentTokens || [];
+      const webSocketToken = recentTokens.find(t => t.token_mint === tokenId);
+      
+      if (webSocketToken) {
+        setToken(current => ({
+          ...current,
+          name: webSocketToken.token_name || current?.name || "New Token",
+          symbol: webSocketToken.token_symbol || current?.symbol || "",
+        }));
+      } else {
+        // Try Supabase as fallback
+        const tokenData = await fetchTokenById(tokenId);
+        if (tokenData) {
+          setToken({
+            id: tokenData.token_mint,
+            name: tokenData.token_name,
+            symbol: tokenData.token_symbol || '',
+            logo: '🪙',
+            currentPrice: tokenData.last_trade_price || 0,
+            change24h: 0,
+            migrationTime: new Date(tokenData.last_updated_time).getTime(),
+          });
+        }
       }
+      
+      // Refresh bets
+      const tokenBets = await fetchBetsByToken(tokenId);
+      setBets(tokenBets);
     } catch (error) {
       console.error("Error refreshing data:", error);
       toast({
@@ -203,6 +285,18 @@ const TokenDetail = () => {
         variant: "destructive",
       });
     }
+  };
+
+  // Format price with appropriate decimals
+  const formatPrice = (price: number | string) => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    
+    if (isNaN(numPrice)) return "0.000000";
+    
+    if (numPrice < 0.01) return numPrice.toFixed(6);
+    if (numPrice < 1) return numPrice.toFixed(4);
+    if (numPrice < 1000) return numPrice.toFixed(2);
+    return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
 
   // Check if WebSocket connection is active
@@ -257,7 +351,7 @@ const TokenDetail = () => {
                 </div>
                 
                 <div className="flex flex-col items-end">
-                  <div className="text-3xl font-bold">${token.currentPrice.toFixed(6)}</div>
+                  <div className="text-3xl font-bold">${formatPrice(token.currentPrice)}</div>
                   <div className={`flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
                     {Math.abs(token.change24h).toFixed(2)}%
