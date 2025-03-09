@@ -8,6 +8,7 @@ import { Bet } from '@/types/bet';
 import { Link } from 'react-router-dom';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from '@/hooks/use-toast';
 
 interface BetsListProps {
   title: string;
@@ -23,27 +24,58 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
   });
   const { connected, publicKey } = useWallet();
   const [activeBetsCount, setActiveBetsCount] = useState(0);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const loadBets = async () => {
     try {
       setLoading(true);
       if (connected && publicKey) {
+        console.log(`Fetching ${type} bets for user ${publicKey.toString()}`);
         const userBets = await fetchUserBets(publicKey.toString());
+        console.log('Received user bets:', userBets);
+        
+        // Also check localStorage for any pending bets
+        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
+        let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+        console.log('Local stored bets:', localBets);
+        
+        // Filter out expired local bets
+        const now = Date.now();
+        localBets = localBets.filter(bet => bet.expiresAt > now);
+        
+        // Combine both sources, avoiding duplicates
+        const allBets = [...userBets];
+        for (const localBet of localBets) {
+          // Only include local bets from this user
+          if (localBet.initiator === publicKey.toString()) {
+            const exists = allBets.some(
+              existingBet => existingBet.id === localBet.id || 
+              (existingBet.onChainBetId && localBet.onChainBetId && existingBet.onChainBetId === localBet.onChainBetId)
+            );
+            
+            if (!exists) {
+              allBets.push(localBet);
+            }
+          }
+        }
+        
+        console.log('Combined bets:', allBets);
         
         // Filter bets based on type
         let filteredBets: Bet[];
         if (type === 'latest') {
           // Latest bets - sort by timestamp descending and take first 5
-          filteredBets = [...userBets].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
+          filteredBets = [...allBets].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
         } else {
           // Active bets - only matched or open
-          filteredBets = userBets.filter(bet => ['open', 'matched'].includes(bet.status));
+          filteredBets = allBets.filter(bet => ['open', 'matched'].includes(bet.status));
         }
         
+        console.log(`Filtered ${type} bets:`, filteredBets);
         setBets(filteredBets);
         
         // Count active bets (open or matched)
-        const activeCount = userBets.filter(bet => 
+        const activeCount = allBets.filter(bet => 
           bet.status === 'open' || bet.status === 'matched'
         ).length;
         setActiveBetsCount(activeCount);
@@ -64,6 +96,23 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
     const interval = setInterval(loadBets, 30000);
     return () => clearInterval(interval);
   }, [connected, publicKey, type]);
+
+  // Force refresh when component is visible
+  useEffect(() => {
+    // Set up a visibility change listener
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Tab became visible, refreshing bets data');
+        setLastRefresh(new Date());
+        loadBets();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Listen for new bet events
   useEffect(() => {
@@ -99,6 +148,15 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
       window.removeEventListener('betAccepted', handleBetAccepted as EventListener);
     };
   }, []);
+
+  const manualRefresh = () => {
+    toast({
+      title: "Refreshing bets",
+      description: "Fetching your latest bet data..."
+    });
+    setLastRefresh(new Date());
+    loadBets();
+  };
 
   const getBetStatusColor = (status: string) => {
     switch(status) {
@@ -137,6 +195,13 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
             </div>
           )}
         </h2>
+        <button 
+          onClick={manualRefresh}
+          className="text-dream-foreground/60 hover:text-dream-foreground p-1 rounded-full transition-colors"
+          title="Refresh bets"
+        >
+          <Clock className="w-4 h-4" />
+        </button>
       </div>
       
       <AnimatePresence>

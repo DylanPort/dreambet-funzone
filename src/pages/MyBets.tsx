@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { ArrowUp, ArrowDown, Clock, ArrowLeft, Zap, Activity, Filter, Sparkles } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, ArrowLeft, Zap, Activity, Filter, Sparkles, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { fetchUserBets } from '@/api/mockData';
 import Navbar from '@/components/Navbar';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Bet } from '@/types/bet';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 
 const MyBets = () => {
   const [bets, setBets] = useState<Bet[]>([]);
@@ -15,38 +16,93 @@ const MyBets = () => {
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const { connected, publicKey } = useWallet();
   const [activeBetsCount, setActiveBetsCount] = useState(0);
+  const { toast } = useToast();
+
+  const loadBets = async () => {
+    try {
+      setLoading(true);
+      if (connected && publicKey) {
+        console.log('Fetching bets for user:', publicKey.toString());
+        
+        // Get bets from the API
+        const userBets = await fetchUserBets(publicKey.toString());
+        console.log('Fetched user bets from API:', userBets);
+        
+        // Get locally stored bets (fallback)
+        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
+        let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+        console.log('Retrieved local bets from storage:', localBets);
+        
+        // Filter local bets to only include those created by the current user
+        localBets = localBets.filter(bet => bet.initiator === publicKey.toString());
+        
+        // Combine bets, avoiding duplicates
+        const allBets = [...userBets];
+        for (const localBet of localBets) {
+          const exists = allBets.some(
+            existingBet => existingBet.id === localBet.id || 
+            (existingBet.onChainBetId && localBet.onChainBetId && existingBet.onChainBetId === localBet.onChainBetId)
+          );
+          
+          if (!exists) {
+            allBets.push(localBet);
+          }
+        }
+        
+        console.log('Combined user bets:', allBets);
+        setBets(allBets);
+        
+        // Count active bets (open or matched)
+        const activeCount = allBets.filter(bet => 
+          bet.status === 'open' || bet.status === 'matched'
+        ).length;
+        setActiveBetsCount(activeCount);
+      } else {
+        setBets([]);
+      }
+    } catch (error) {
+      console.error('Error loading bets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadBets = async () => {
-      try {
-        if (connected && publicKey) {
-          const userBets = await fetchUserBets(publicKey.toString());
-          setBets(userBets);
-          
-          // Count active bets (open or matched)
-          const activeCount = userBets.filter(bet => 
-            bet.status === 'open' || bet.status === 'matched'
-          ).length;
-          setActiveBetsCount(activeCount);
-        }
-      } catch (error) {
-        console.error('Error loading bets:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadBets();
     // Refresh every 30 seconds
     const interval = setInterval(loadBets, 30000);
     return () => clearInterval(interval);
   }, [connected, publicKey]);
 
+  // Force refresh when component is visible
+  useEffect(() => {
+    // Set up a visibility change listener
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Tab became visible, refreshing my bets data');
+        loadBets();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const filteredBets = bets.filter(bet => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'active') return bet.status === 'open' || bet.status === 'matched';
     return bet.status === activeFilter;
   });
+
+  const handleRefresh = () => {
+    toast({
+      title: "Refreshing your bets",
+      description: "Fetching your latest bet data..."
+    });
+    loadBets();
+  };
 
   const formatTimeRemaining = (expiresAt: number) => {
     const now = new Date().getTime();
@@ -85,12 +141,22 @@ const MyBets = () => {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-display font-bold">My Bets</h1>
             
-            {connected && !loading && activeBetsCount > 0 && (
-              <div className="flex items-center gap-2 bg-gradient-to-r from-dream-accent1/20 to-dream-accent2/20 px-4 py-2 rounded-full border border-dream-accent2/30 text-dream-accent2">
-                <Activity className="h-4 w-4 animate-pulse" />
-                <span className="font-medium">{activeBetsCount} Active {activeBetsCount === 1 ? 'Bet' : 'Bets'}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {connected && !loading && activeBetsCount > 0 && (
+                <div className="flex items-center gap-2 bg-gradient-to-r from-dream-accent1/20 to-dream-accent2/20 px-4 py-2 rounded-full border border-dream-accent2/30 text-dream-accent2">
+                  <Activity className="h-4 w-4 animate-pulse" />
+                  <span className="font-medium">{activeBetsCount} Active {activeBetsCount === 1 ? 'Bet' : 'Bets'}</span>
+                </div>
+              )}
+              
+              <button
+                onClick={handleRefresh}
+                className="p-2 rounded-full bg-dream-surface/50 text-dream-foreground/60 hover:text-dream-accent1 transition-colors"
+                title="Refresh bets"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+            </div>
           </div>
           
           {!connected ? (
