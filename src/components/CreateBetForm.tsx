@@ -39,7 +39,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     name: tokenName || "Unknown Token",
     symbol: tokenSymbol || "UNKNOWN"
   });
-  
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { toast } = useToast();
 
@@ -275,25 +276,31 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       );
       
       setTransactionStatus('Transaction confirmed!');
+      setSuccessMessage(`Your ${parseFloat(amount)} SOL bet that ${tokenData.symbol} will ${prediction} is now live!`);
       
       toast({
-        title: "Bet created successfully!",
+        title: "Bet created successfully! 🎯",
         description: `Your ${parseFloat(amount)} SOL bet that ${tokenData.symbol} will ${prediction} is now live on-chain`,
       });
       
-      setAmount('0.1');
-      setPrediction(null);
-      setDuration(30);
-      setTransactionStatus('');
+      setTimeout(() => {
+        setAmount('0.1');
+        setPrediction(null);
+        setDuration(30);
+        setTransactionStatus('');
+        setSuccessMessage(null);
+        
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          onBetCreated();
+        }
+      }, 3000);
       
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        onBetCreated();
-      }
     } catch (error: any) {
       console.error('Error creating bet:', error);
       setTransactionStatus('');
+      setSuccessMessage(null);
       
       let errorMessage = "Something went wrong with the blockchain transaction.";
       if (error.message) {
@@ -317,6 +324,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   return (
     <div className="glass-panel p-6 space-y-4">
       <h3 className="text-xl font-display font-semibold">Create a New Bet</h3>
+      
+      {successMessage && (
+        <div className="p-3 bg-green-500/20 border border-green-500/40 rounded-md animate-pulse-slow">
+          <div className="flex items-center text-green-400">
+            <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+            <p>{successMessage}</p>
+          </div>
+        </div>
+      )}
       
       {showExtraWalletReconnectOption && (
         <div className="p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-md">
@@ -437,7 +453,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       <div className="flex gap-3">
         <Button
           onClick={handleCreateBet}
-          disabled={!isWalletReady || isSubmitting || !prediction || !amount || walletCheckingInProgress}
+          disabled={!isWalletReady || isSubmitting || !prediction || !amount || walletCheckingInProgress || !!successMessage}
           className="flex-1 bg-gradient-to-r from-dream-accent1 to-dream-accent3"
         >
           {isSubmitting ? (
@@ -445,6 +461,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
               <div className="w-4 h-4 border-2 border-dream-foreground border-t-transparent rounded-full animate-spin"></div>
               Creating Bet...
             </span>
+          ) : successMessage ? (
+            "Bet Created!"
           ) : (
             "Create Bet"
           )}
@@ -455,6 +473,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             variant="outline" 
             onClick={onCancel}
             className="flex-1"
+            disabled={isSubmitting || !!successMessage}
           >
             Cancel
           </Button>

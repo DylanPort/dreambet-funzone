@@ -12,6 +12,10 @@ import { getSortedBets, getExpiringBets, getPublicBets } from '@/utils/betUtils'
 const OpenBetsList = () => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newBetNotification, setNewBetNotification] = useState<{
+    visible: boolean;
+    message: string;
+  }>({ visible: false, message: '' });
   const {
     connected,
     publicKey,
@@ -22,21 +26,57 @@ const OpenBetsList = () => {
   } = useToast();
   const [sortBy, setSortBy] = useState<'newest' | 'expiring' | 'amount'>('newest');
 
+  const loadBets = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchOpenBets();
+      setBets(data);
+    } catch (error) {
+      console.error('Error loading bets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadBets = async () => {
-      try {
-        const data = await fetchOpenBets();
-        setBets(data);
-      } catch (error) {
-        console.error('Error loading bets:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadBets();
     // Refresh every 30 seconds
     const interval = setInterval(loadBets, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Listen for new bet created or accepted events
+  useEffect(() => {
+    const handleNewBet = (event: CustomEvent) => {
+      console.log("New bet created event received:", event.detail);
+      
+      const { amount, prediction, tokenId } = event.detail;
+      setNewBetNotification({
+        visible: true,
+        message: `New ${amount} SOL bet created predicting token will ${prediction}!`
+      });
+      
+      // Automatically hide the notification after 5 seconds
+      setTimeout(() => {
+        setNewBetNotification(prev => ({ ...prev, visible: false }));
+      }, 5000);
+      
+      // Refresh the bets list
+      loadBets();
+    };
+
+    const handleBetAccepted = (event: CustomEvent) => {
+      console.log("Bet accepted event received:", event.detail);
+      loadBets();
+    };
+
+    window.addEventListener('newBetCreated', handleNewBet as EventListener);
+    window.addEventListener('betAccepted', handleBetAccepted as EventListener);
+    
+    return () => {
+      window.removeEventListener('newBetCreated', handleNewBet as EventListener);
+      window.removeEventListener('betAccepted', handleBetAccepted as EventListener);
+    };
   }, []);
 
   const handleAcceptBet = async (bet: Bet) => {
@@ -104,6 +144,21 @@ const OpenBetsList = () => {
           </div>
         </div>
       </div>
+      
+      {newBetNotification.visible && (
+        <div className="bg-green-500/20 border border-green-500/30 text-green-400 rounded-md p-3 animate-pulse-slow flex justify-between items-center">
+          <p className="flex items-center">
+            <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+            {newBetNotification.message}
+          </p>
+          <button 
+            onClick={() => setNewBetNotification(prev => ({ ...prev, visible: false }))}
+            className="text-green-400/70 hover:text-green-400 text-sm"
+          >
+            ×
+          </button>
+        </div>
+      )}
       
       {loading && bets.length === 0 ? (
         <div className="flex justify-center py-8">

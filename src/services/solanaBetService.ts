@@ -109,10 +109,21 @@ export const createSolanaBet = async (
 
     // Display a global toast notification for everyone about the new bet
     toast({
-      title: "New Bet Created!",
-      description: `A new bet of ${solAmount} SOL has been placed on token predicting it will ${prediction}`,
+      title: "New Bet Created! 🎯",
+      description: `A new bet of ${solAmount} SOL has been placed predicting the token will ${prediction}`,
       variant: "default",
     });
+
+    // Broadcast a custom event to notify all components about the new bet
+    const newBetEvent = new CustomEvent('newBetCreated', { 
+      detail: { 
+        betId,
+        tokenId: tokenMint,
+        amount: solAmount,
+        prediction
+      } 
+    });
+    window.dispatchEvent(newBetEvent);
 
     return {
       betId,
@@ -191,10 +202,16 @@ export const acceptSolanaBet = async (
 
     // Display a toast notification when a bet is accepted
     toast({
-      title: "Bet Accepted!",
+      title: "Bet Accepted! 🤝",
       description: `Bet #${betId} has been accepted and is now active.`,
       variant: "default",
     });
+
+    // Broadcast a custom event to notify all components about the accepted bet
+    const betAcceptedEvent = new CustomEvent('betAccepted', { 
+      detail: { betId } 
+    });
+    window.dispatchEvent(betAcceptedEvent);
 
     return {
       txSignature,
