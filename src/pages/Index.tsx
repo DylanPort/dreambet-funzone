@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -174,8 +175,8 @@ const Index = () => {
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent1/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
                 <img 
-                  src="/lovable-uploads/4cf5638c-4544-455d-baf2-37470b161dbd.png" 
-                  alt="Lightning Bolt" 
+                  src="/lovable-uploads/c40baa88-ed47-4c9b-bbd9-d248df1c7863.png" 
+                  alt="P2P Betting Icon" 
                   className="h-20 w-20 filter drop-shadow-[0_0_8px_rgba(255,61,252,0.8)] transition-transform hover:scale-110 duration-300"
                 />
               </div>
