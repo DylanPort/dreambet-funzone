@@ -102,11 +102,11 @@ const OpenBetsList = () => {
 
   const getExpiringBets = () => {
     const oneHourFromNow = new Date().getTime() + 60 * 60 * 1000;
-    return getSortedBets().filter(bet => bet.expiresAt < oneHourFromNow);
+    return getSortedBets().filter(bet => bet.expiresAt < oneHourFromNow).slice(0, 10); // Show top 10
   };
 
   const getPublicBets = () => {
-    return getSortedBets().filter(bet => !publicKey || bet.initiator !== publicKey.toString());
+    return getSortedBets().filter(bet => !publicKey || bet.initiator !== publicKey.toString()).slice(0, 10); // Show top 10
   };
 
   const formatAddress = (address: string) => {
@@ -123,9 +123,12 @@ const OpenBetsList = () => {
       );
     }
 
+    // Limit to top 10 bets in each category
+    const topBets = betsToRender.slice(0, 10);
+    
     return (
       <div className="space-y-4">
-        {betsToRender.map(bet => (
+        {topBets.map(bet => (
           <div key={bet.id} className="glass-panel p-4 transition-all hover:shadow-lg animate-fade-in">
             <div className="flex justify-between items-start mb-3">
               <div>
@@ -195,6 +198,12 @@ const OpenBetsList = () => {
             </div>
           </div>
         ))}
+        
+        {betsToRender.length > 10 && (
+          <div className="text-center mt-4 text-sm text-dream-foreground/70">
+            Showing top 10 of {betsToRender.length} bets
+          </div>
+        )}
       </div>
     );
   };
@@ -244,7 +253,7 @@ const OpenBetsList = () => {
           </TabsList>
           
           <TabsContent value="all">
-            {renderBetsList(getSortedBets())}
+            {renderBetsList(getSortedBets().slice(0, 10))}
           </TabsContent>
           
           <TabsContent value="public">
