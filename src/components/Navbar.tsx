@@ -1,13 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Home, BarChart2, Wallet, User, Award } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
+import useSolanaBalance from '@/hooks/useSolanaBalance';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const { balance } = useSolanaBalance();
   
   // Handle scroll effect
   useEffect(() => {
@@ -61,6 +62,14 @@ const Navbar = () => {
               <User size={18} />
               <span>Profile</span>
             </Link>
+            
+            {balance !== null && (
+              <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-dream-accent1">
+                <Wallet size={16} />
+                <span>{balance.toFixed(2)} SOL</span>
+              </div>
+            )}
+            
             <WalletConnectButton />
           </nav>
           
@@ -98,6 +107,14 @@ const Navbar = () => {
               <User size={18} />
               <span>Profile</span>
             </Link>
+            
+            {balance !== null && (
+              <div className="py-2 flex items-center gap-2 text-dream-accent1">
+                <Wallet size={18} />
+                <span>{balance.toFixed(2)} SOL</span>
+              </div>
+            )}
+            
             <div className="py-2">
               <WalletConnectButton />
             </div>

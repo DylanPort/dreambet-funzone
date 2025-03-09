@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
-import { UserCircle, Clock, TrendingUp, TrendingDown, Settings, History } from 'lucide-react';
+import { UserCircle, Clock, TrendingUp, TrendingDown, Settings, History, Wallet as WalletIcon } from 'lucide-react';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
 import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile, UserBet, UserStats } from '@/services/userService';
+import useSolanaBalance from '@/hooks/useSolanaBalance';
 import { toast } from 'sonner';
 
 const Profile = () => {
@@ -22,12 +22,12 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'history' | 'settings'>('history');
   const [usernameInput, setUsernameInput] = useState('');
+  const { balance: solanaBalance, isLoading: balanceLoading } = useSolanaBalance();
   
   useEffect(() => {
     const loadUserData = async () => {
       setIsLoading(true);
       
-      // Check if wallet is connected
       if (!connected || !publicKey) {
         setIsLoading(false);
         return;
@@ -36,7 +36,6 @@ const Profile = () => {
       try {
         const walletAddress = publicKey.toString();
         
-        // Fetch user profile
         const profileData = await fetchUserProfile(walletAddress);
         setUser(profileData);
         
@@ -44,11 +43,9 @@ const Profile = () => {
           setUsernameInput(profileData.username || '');
         }
         
-        // Fetch user's betting history
         const bettingHistory = await fetchUserBettingHistory(walletAddress);
         setBets(bettingHistory);
         
-        // Calculate stats from betting history
         const userStats = calculateUserStats(bettingHistory);
         setStats(userStats);
       } catch (error) {
@@ -125,7 +122,6 @@ const Profile = () => {
       <OrbitingParticles />
       <Navbar />
       <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto">
-        {/* Profile Header */}
         <div className="glass-panel p-6 mb-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
@@ -141,14 +137,31 @@ const Profile = () => {
               </p>
             </div>
             
-            <div className="ml-auto glass-panel p-4 text-center">
-              <p className="text-dream-foreground/60 text-sm">Balance</p>
-              <p className="text-2xl font-display font-bold text-gradient">${stats.balance.toLocaleString()}</p>
+            <div className="ml-auto flex flex-col md:flex-row gap-4">
+              <div className="glass-panel p-4 text-center">
+                <p className="text-dream-foreground/60 text-sm">Game Balance</p>
+                <p className="text-2xl font-display font-bold text-gradient">${stats.balance.toLocaleString()}</p>
+              </div>
+              
+              <div className="glass-panel p-4 text-center">
+                <p className="text-dream-foreground/60 text-sm flex items-center justify-center">
+                  <WalletIcon className="w-4 h-4 mr-1" />
+                  SOL Balance
+                </p>
+                <p className="text-2xl font-display font-bold text-gradient">
+                  {balanceLoading ? (
+                    <span className="text-sm text-dream-foreground/40">Loading...</span>
+                  ) : solanaBalance !== null ? (
+                    `${solanaBalance.toFixed(4)} SOL`
+                  ) : (
+                    <span className="text-sm text-dream-foreground/40">Unavailable</span>
+                  )}
+                </p>
+              </div>
             </div>
           </div>
         </div>
         
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="glass-panel p-6 text-center">
             <p className="text-dream-foreground/60 mb-2">Total Bets</p>
@@ -170,7 +183,6 @@ const Profile = () => {
           </div>
         </div>
         
-        {/* Tabs */}
         <div className="glass-panel p-6">
           <div className="flex border-b border-white/10">
             <button
@@ -198,7 +210,6 @@ const Profile = () => {
             </button>
           </div>
           
-          {/* History Tab Content */}
           {activeTab === 'history' && (
             <div className="mt-6">
               <h2 className="text-xl font-display font-semibold mb-4">Recent Bets</h2>
@@ -285,7 +296,6 @@ const Profile = () => {
             </div>
           )}
           
-          {/* Settings Tab Content */}
           {activeTab === 'settings' && (
             <div className="mt-6">
               <h2 className="text-xl font-display font-semibold mb-4">Account Settings</h2>
@@ -333,7 +343,6 @@ const Profile = () => {
         </div>
       </main>
       
-      {/* Footer */}
       <footer className="glass-panel mt-20 px-6 py-8">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-dream-foreground/40 text-sm">
