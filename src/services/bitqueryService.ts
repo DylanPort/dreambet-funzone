@@ -47,7 +47,7 @@ const topTokensByMarketCapQuery = `
           Sell: { AmountInUSD: { gt: "10" } }
         }
         Transaction: { Result: { Success: true } }
-        Block: { Time: { since: "2025-02-21T05:05:00Z" } }
+        Block: { Time: { since: "2023-02-21T05:05:00Z" } }
       }
     ) {
       Trade {
