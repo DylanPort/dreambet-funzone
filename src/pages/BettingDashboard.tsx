@@ -9,6 +9,7 @@ import OpenBetsList from '@/components/OpenBetsList';
 import BetsList from '@/components/BetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import TrendingTokens from '@/components/TrendingTokens';
+import PumpFunTokens from '@/components/PumpFunTokens';
 
 const BettingDashboard = () => {
   const {
@@ -37,6 +38,11 @@ const BettingDashboard = () => {
               </div>}
           </section>
 
+          {/* PumpFun Tokens Section */}
+          <section className="mb-10">
+            <PumpFunTokens />
+          </section>
+          
           {/* Trending Tokens Section */}
           <section className="mb-10">
             <TrendingTokens />
@@ -47,9 +53,6 @@ const BettingDashboard = () => {
             <MigratingTokenList />
             <OpenBetsList />
           </div>
-          
-          {/* User Bets Sections */}
-          
           
           {/* How it Works Section */}
           <section className="mt-16">

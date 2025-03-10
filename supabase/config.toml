@@ -3,3 +3,6 @@ project_id = "achfiqgwprefmlhjoanj"
 
 [functions.pump-portal-sync]
 verify_jwt = false
+
+[functions.bitquery]
+verify_jwt = false
