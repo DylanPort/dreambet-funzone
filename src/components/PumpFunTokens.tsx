@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchTopTokensByMarketCap, fetchTokensAbove10kMarketCap, transformBitqueryTokenToCardData, BitqueryToken } from '@/services/bitqueryService';
 import TokenCard from './TokenCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, ArrowTrendingUp, RefreshCw } from 'lucide-react';
+import { BarChart3, TrendingUp, RefreshCw } from 'lucide-react';
 
 const PumpFunTokens: React.FC = () => {
   const [topTokens, setTopTokens] = useState<BitqueryToken[]>([]);
@@ -61,7 +61,7 @@ const PumpFunTokens: React.FC = () => {
             <span>Top by Market Cap</span>
           </TabsTrigger>
           <TabsTrigger value="10k" className="flex items-center gap-2">
-            <ArrowTrendingUp size={16} />
+            <TrendingUp size={16} />
             <span>Above 10k MCAP</span>
           </TabsTrigger>
         </TabsList>
