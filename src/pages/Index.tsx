@@ -7,6 +7,8 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import AnimatedLogo from '@/components/AnimatedLogo';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
+import FloatingImages from '@/components/FloatingImages';
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -67,9 +69,7 @@ const Index = () => {
   };
   return <>
       <OrbitingParticles />
-      <Navbar />
-      <BetReel />
-      
+      <FloatingImages />
       <div className="h-20 py-0 my-0"></div>
       
       <main className="min-h-screen overflow-hidden">
@@ -201,4 +201,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;

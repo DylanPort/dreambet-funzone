@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 
 interface Particle {
@@ -16,9 +15,9 @@ const OrbitingParticles = () => {
   const particlesRef = useRef<Particle[]>([]);
   
   const colors = [
-    'rgba(255, 61, 252, 0.7)',  // magenta
-    'rgba(0, 238, 255, 0.7)',   // cyan
-    'rgba(123, 97, 255, 0.7)',  // purple
+    'rgba(255, 61, 252, 0.3)',  // reduced opacity magenta
+    'rgba(0, 238, 255, 0.3)',   // reduced opacity cyan
+    'rgba(123, 97, 255, 0.3)',  // reduced opacity purple
   ];
 
   useEffect(() => {
@@ -56,7 +55,7 @@ const OrbitingParticles = () => {
           speedX: (Math.random() - 0.5) * 0.5,
           speedY: (Math.random() - 0.5) * 0.5,
           color: colors[Math.floor(Math.random() * colors.length)],
-          opacity: Math.random() * 0.7 + 0.3
+          opacity: Math.random() * 0.3 + 0.7
         });
       }
       
