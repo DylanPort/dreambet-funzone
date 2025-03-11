@@ -88,21 +88,31 @@ const Index = () => {
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
               <Link to="/betting">
-                <Button className="relative overflow-hidden group bg-gradient-to-r from-dream-accent1/40 to-dream-accent3/40 text-white text-lg px-8 py-6 
-                  rounded-xl transition-all duration-300 border border-white/20 backdrop-blur-md
-                  transform hover:translate-y-[-2px] active:translate-y-[1px]
-                  shadow-[0_8px_20px_rgba(123,97,255,0.3)] hover:shadow-[0_10px_25px_rgba(123,97,255,0.4)]
-                  before:content-[''] before:absolute before:inset-0 before:bg-white/5 before:rounded-xl before:opacity-100 
-                  after:content-[''] after:absolute after:inset-0 after:rounded-xl after:opacity-0 after:transition-opacity after:duration-300
-                  after:bg-gradient-to-b after:from-white/20 after:via-white/10 after:to-transparent hover:after:opacity-100
-                  ">
+                <Button className="relative overflow-hidden group bg-gradient-to-r from-dream-accent1/20 via-dream-accent2/20 to-dream-accent3/20 text-white text-lg px-8 py-6 
+                  rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
+                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
+                  hover:border-dream-accent2/50
+                  before:content-[''] before:absolute before:inset-0 
+                  before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
+                  before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
+                  after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
+                  after:shadow-[0_0_30px_rgba(123,97,255,0.5)] after:opacity-50 hover:after:opacity-100
+                  after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(123,97,255,0.8)]
+                  [&>span]:relative [&>span]:z-10
+                  [&>span]:bg-gradient-to-r [&>span]:from-white [&>span]:to-dream-accent2 [&>span]:bg-clip-text [&>span]:text-transparent
+                  [&>span]:transition-all [&>span]:duration-500
+                  group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
+                  group-hover:[&>span]:from-dream-accent2 group-hover:[&>span]:to-white">
                   <span className="relative z-10 flex items-center">
                     Start Betting
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                   </span>
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/5 to-transparent opacity-25"></div>
-                  <div className="absolute -inset-full h-[200%] w-[50%] z-10 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-40 group-hover:animate-shine" />
-                  <div className="absolute inset-[1.5px] rounded-[10px] pointer-events-none z-0 bg-gradient-to-b from-white/10 to-transparent border border-white/10"></div>
+                  <div className="absolute inset-0 rounded-xl bg-[conic-gradient(from_0deg_at_50%_50%,rgba(123,97,255,0.1)_0deg,rgba(0,238,255,0.1)_90deg,rgba(123,97,255,0.1)_180deg,rgba(0,238,255,0.1)_270deg,rgba(123,97,255,0.1)_360deg)]
+                    opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                    animate-spin-slow"></div>
+                  <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3
+                    opacity-0 group-hover:opacity-20 blur-xl transition-all duration-500
+                    group-hover:blur-2xl"></div>
                 </Button>
               </Link>
               <Link to="/betting">
