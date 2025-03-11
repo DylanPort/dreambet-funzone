@@ -31,7 +31,7 @@ const topTokensByVolumeQuery = `
           Sell: { AmountInUSD: { gt: "10" } }
         }
         Transaction: { Result: { Success: true } }
-        Block: { Time: { since: "2025-03-11T00:00:00Z" } }
+        Block: { Time: { since: "2023-03-11T00:00:00Z" } }
       }
     ) {
       Trade {
