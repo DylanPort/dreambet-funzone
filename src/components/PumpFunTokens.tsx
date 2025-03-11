@@ -1,15 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { fetchTopTokensByMarketCap, fetchTokensAbove10kMarketCap, transformBitqueryTokenToCardData, BitqueryToken } from '@/services/bitqueryService';
+import { 
+  fetchTopTokensByMarketCap, 
+  fetchTokensAbove10kMarketCap, 
+  fetchTokensAbove15kMarketCap,
+  transformBitqueryTokenToCardData, 
+  BitqueryToken 
+} from '@/services/bitqueryService';
 import TokenCard from './TokenCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, TrendingUp, RefreshCw } from 'lucide-react';
+import { BarChart3, TrendingUp, RefreshCw, ChevronsUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from "sonner";
 
 const PumpFunTokens: React.FC = () => {
   const [topTokens, setTopTokens] = useState<BitqueryToken[]>([]);
   const [tokensWith10kMcap, setTokensWith10kMcap] = useState<BitqueryToken[]>([]);
+  const [tokensWith15kMcap, setTokensWith15kMcap] = useState<BitqueryToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('top');
@@ -23,9 +30,12 @@ const PumpFunTokens: React.FC = () => {
       if (activeTab === 'top') {
         const topTokensData = await fetchTopTokensByMarketCap();
         setTopTokens(topTokensData);
-      } else {
+      } else if (activeTab === '10k') {
         const tokens10kData = await fetchTokensAbove10kMarketCap();
         setTokensWith10kMcap(tokens10kData);
+      } else if (activeTab === '15k') {
+        const tokens15kData = await fetchTokensAbove15kMarketCap();
+        setTokensWith15kMcap(tokens15kData);
       }
     } catch (error) {
       console.error("Error fetching PumpFun token data:", error);
@@ -117,6 +127,10 @@ const PumpFunTokens: React.FC = () => {
             <TrendingUp size={16} />
             <span>Above 10k MCAP</span>
           </TabsTrigger>
+          <TabsTrigger value="15k" className="flex items-center gap-2">
+            <ChevronsUp size={16} />
+            <span>Above 15k MCAP</span>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="top">
@@ -155,6 +169,28 @@ const PumpFunTokens: React.FC = () => {
               {tokensWith10kMcap.map((token, index) => (
                 <TokenCard 
                   key={`10k-${token.Trade.Buy.Currency.MintAddress}-${index}`}
+                  {...transformBitqueryTokenToCardData(token)}
+                  index={index}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="15k">
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin w-8 h-8 border-2 border-dream-accent1 border-t-transparent rounded-full"></div>
+            </div>
+          ) : tokensWith15kMcap.length === 0 ? (
+            <div className="text-center py-10 text-dream-foreground/60">
+              No tokens found above 15k market cap. Try refreshing later.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tokensWith15kMcap.map((token, index) => (
+                <TokenCard 
+                  key={`15k-${token.Trade.Buy.Currency.MintAddress}-${index}`}
                   {...transformBitqueryTokenToCardData(token)}
                   index={index}
                 />

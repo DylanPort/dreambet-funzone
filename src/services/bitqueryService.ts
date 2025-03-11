@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Define types for the Bitquery response
@@ -15,6 +14,13 @@ export interface BitqueryToken {
         Fungible: boolean;
         Uri: string;
       }
+      Amount?: number;
+      AmountInUSD?: number;
+    }
+    volume?: number;
+    Sell?: {
+      Amount?: number;
+      AmountInUSD?: number;
     }
   }
 }
@@ -153,6 +159,50 @@ const topTokensByVolumeQuery = `
 }
 `;
 
+// Query to get tokens above 15k market cap
+const tokensAbove15kMarketCapQuery = `
+{
+  Solana {
+    DEXTrades(
+      limitBy: {by: Trade_Buy_Currency_MintAddress, count: 1}
+      limit: {count: 20}
+      orderBy: {descending: Trade_Buy_Price}
+      where: {
+        Trade: {
+          Dex: {ProtocolName: {is: "pump"}}, 
+          Buy: {
+            Currency: {MintAddress: {notIn: ["11111111111111111111111111111111"]}}, 
+            PriceInUSD: {gt: 0.000015}
+          }, 
+          Sell: {AmountInUSD: {gt: "10"}}
+        }, 
+        Transaction: {Result: {Success: true}}, 
+        Block: {Time: {since: "2024-03-11T00:00:00Z"}}
+      }
+    ) {
+      Trade {
+        Buy {
+          Price(maximum: Block_Time)
+          PriceInUSD(maximum: Block_Time)
+          Currency {
+            Name
+            Symbol
+            MintAddress
+            Decimals
+            Fungible
+            Uri
+          }
+        }
+        Sell {
+          Amount
+          AmountInUSD
+        }
+      }
+    }
+  }
+}
+`;
+
 // Function to fetch data from Bitquery
 async function fetchBitqueryData(query: string): Promise<BitqueryResponse> {
   try {
@@ -192,6 +242,17 @@ export async function fetchTokensAbove10kMarketCap(): Promise<BitqueryToken[]> {
     return response.data.Solana.DEXTrades;
   } catch (error) {
     console.error("Error fetching tokens above 10k market cap:", error);
+    return [];
+  }
+}
+
+// Fetch tokens that crossed 15k market cap
+export async function fetchTokensAbove15kMarketCap(): Promise<BitqueryToken[]> {
+  try {
+    const response = await fetchBitqueryData(tokensAbove15kMarketCapQuery);
+    return response.data.Solana.DEXTrades;
+  } catch (error) {
+    console.error("Error fetching tokens above 15k market cap:", error);
     return [];
   }
 }
