@@ -12,6 +12,7 @@ import TrendingTokens from '@/components/TrendingTokens';
 import PumpFunTokens from '@/components/PumpFunTokens';
 import TopVolumeTokens from '@/components/TopVolumeTokens';
 import VolumeFilteredTokens from '@/components/VolumeFilteredTokens';
+import TopPumpFunTokensByVolume from '@/components/TopPumpFunTokensByVolume';
 
 const BettingDashboard = () => {
   const {
@@ -40,7 +41,12 @@ const BettingDashboard = () => {
               </div>}
           </section>
 
-          {/* Volume Filtered Tokens Section - NEW! */}
+          {/* Top PumpFun Tokens By Volume - NEW! */}
+          <section className="mb-10">
+            <TopPumpFunTokensByVolume />
+          </section>
+          
+          {/* Volume Filtered Tokens Section */}
           <section className="mb-10">
             <VolumeFilteredTokens />
           </section>
