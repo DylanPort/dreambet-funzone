@@ -15,11 +15,9 @@ serve(async (req) => {
   try {
     const { query, variables } = await req.json();
     
-    const BITQUERY_API_KEY = Deno.env.get("BITQUERY_API_KEY");
-    if (!BITQUERY_API_KEY) {
-      throw new Error("BITQUERY_API_KEY is not set");
-    }
-
+    // Use the new API token
+    const BITQUERY_API_KEY = "ory_at_lmgpNJuVuEOb5l2asp7t2Rok7CSMzHc_y4y1vRza95Q.hvEf3SmfH-ClhdMrg93jTLcPJBga2zKs5KpCmG0avSg";
+    
     console.log("Fetching data from Bitquery with query:", query);
     console.log("Using API key starting with:", BITQUERY_API_KEY.substring(0, 3) + "...");
     

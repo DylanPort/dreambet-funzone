@@ -7,7 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BITQUERY_API_KEY = Deno.env.get("BITQUERY_API_KEY");
+// Use the new API token directly in the code
+const BITQUERY_API_KEY = "ory_at_lmgpNJuVuEOb5l2asp7t2Rok7CSMzHc_y4y1vRza95Q.hvEf3SmfH-ClhdMrg93jTLcPJBga2zKs5KpCmG0avSg";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
