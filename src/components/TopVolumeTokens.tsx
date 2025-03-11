@@ -34,7 +34,8 @@ const TopVolumeTokens: React.FC = () => {
             token_name: token.name || 'Unknown Token',
             token_symbol: token.symbol || '',
             current_market_cap: token.marketCapSol || 0,
-            last_trade_price: token.marketCapSol ? (token.marketCapSol / token.supply || 1000000000) : 0,
+            // Fixed error: token.supply doesn't exist, using a fixed supply value instead
+            last_trade_price: token.marketCapSol ? (token.marketCapSol / 1000000000) : 0,
             volume_24h: token.volume24h || 0
           })));
           tokensFound = true;
