@@ -15,9 +15,12 @@ export interface TokenVolumeData {
 export const fetchTokensByVolumeCategory = async (category: string): Promise<TokenVolumeData[]> => {
   try {
     console.log(`Fetching tokens with volume category: ${category}`);
+    
+    // Make sure we explicitly select only fields that exist in the database
+    // and match our interface
     const { data, error } = await supabase
       .from('tokens')
-      .select('token_mint, token_name, token_symbol, volume_24h, current_market_cap, last_trade_price, volume_category')
+      .select('token_mint, token_name, token_symbol, volume_24h, current_market_cap, last_trade_price')
       .eq('volume_category', category)
       .order('volume_24h', { ascending: false });
     
@@ -27,8 +30,14 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       throw error;
     }
     
-    console.log(`Found ${data?.length || 0} tokens in category ${category}`);
-    return data || [];
+    // Transform the data to include the volume_category field
+    const transformedData: TokenVolumeData[] = data?.map(token => ({
+      ...token,
+      volume_category: category
+    })) || [];
+    
+    console.log(`Found ${transformedData.length} tokens in category ${category}`);
+    return transformedData;
   } catch (error) {
     console.error(`Error in fetchTokensByVolumeCategory for ${category}:`, error);
     return [];
@@ -86,11 +95,11 @@ export const triggerTokenVolumeUpdate = async (): Promise<boolean> => {
     
     console.log("Token volume update response:", data);
     
-    if (data.success) {
+    if (data?.success) {
       toast.success(`Updated ${data.tokensProcessed} tokens (${data.tokensAbove15k} above 15k, ${data.tokensAbove30k} above 30k)`);
       return true;
     } else {
-      toast.error(`Failed to update tokens: ${data.message || 'Unknown error'}`);
+      toast.error(`Failed to update tokens: ${data?.message || 'Unknown error'}`);
       return false;
     }
   } catch (error) {

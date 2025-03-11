@@ -106,6 +106,20 @@ async function updateTokenData(tokenData: any[]) {
     console.log("No tokens returned from Bitquery API");
     return { success: false, message: "No tokens found in API response" };
   }
+
+  // First, check if the volume_category column exists, add it if it doesn't
+  try {
+    // This operation won't throw an error if it already exists
+    await supabase.rpc('add_column_if_not_exists', { 
+      table_name: 'tokens',
+      column_name: 'volume_category',
+      column_type: 'text'
+    });
+    console.log("Ensured volume_category column exists");
+  } catch (error) {
+    console.error("Error ensuring volume_category column exists:", error);
+    // Continue anyway, as this might fail if the RPC doesn't exist but the column does
+  }
   
   console.log(`Processing ${tokenData.length} tokens from Bitquery`);
   const tokensProcessed = { total: 0, above15k: 0, above30k: 0 };
