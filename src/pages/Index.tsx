@@ -101,9 +101,9 @@ const Index = () => {
                   [&>span]:relative [&>span]:z-10
                   group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
                   group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
-                  <span className="relative z-10 flex items-center font-bold text-transparent bg-gradient-to-r from-green-400 to-green-200 bg-clip-text drop-shadow-[0_0_10px_rgba(74,222,128,0.8)]">
+                  <span className="relative z-10 flex items-center font-bold text-transparent bg-gradient-to-r from-green-800 to-green-600 bg-clip-text drop-shadow-[0_0_10px_rgba(22,163,74,0.8)]">
                     Start Betting
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-400 filter drop-shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-700 filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
                   </span>
                   
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400 via-yellow-300 to-purple-600
