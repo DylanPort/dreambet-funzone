@@ -109,6 +109,50 @@ const tokensAbove10kMarketCapQuery = `
 }
 `;
 
+// Query to get top tokens by trading volume
+const topTokensByVolumeQuery = `
+{
+  Solana {
+    DEXTrades(
+      limitBy: {by: Trade_Buy_Currency_MintAddress, count: 1}
+      limit: {count: 20}
+      orderBy: {descending: Trade_Sell_Amount}
+      where: {
+        Trade: {
+          Dex: {ProtocolName: {is: "pump"}}, 
+          Buy: {
+            Currency: {MintAddress: {notIn: ["11111111111111111111111111111111"]}}
+          }, 
+          PriceAsymmetry: {le: 0.1},
+          Sell: {AmountInUSD: {gt: "10"}}
+        }, 
+        Transaction: {Result: {Success: true}}, 
+        Block: {Time: {since: "2023-02-21T05:05:00Z"}}
+      }
+    ) {
+      Trade {
+        Buy {
+          Price(maximum: Block_Time)
+          PriceInUSD(maximum: Block_Time)
+          Currency {
+            Name
+            Symbol
+            MintAddress
+            Decimals
+            Fungible
+            Uri
+          }
+        }
+        Sell {
+          Amount
+          AmountInUSD
+        }
+      }
+    }
+  }
+}
+`;
+
 // Function to fetch data from Bitquery
 async function fetchBitqueryData(query: string): Promise<BitqueryResponse> {
   try {
@@ -152,6 +196,38 @@ export async function fetchTokensAbove10kMarketCap(): Promise<BitqueryToken[]> {
   }
 }
 
+// Fetch top PumpFun tokens by trading volume
+export async function fetchTopTokensByVolume(): Promise<BitqueryToken[]> {
+  try {
+    const response = await fetchBitqueryData(topTokensByVolumeQuery);
+    return response.data.Solana.DEXTrades;
+  } catch (error) {
+    console.error("Error fetching top tokens by volume:", error);
+    return [];
+  }
+}
+
+// Fetch top tokens by volume from Supabase
+export async function fetchTopTokensByVolumeFromSupabase() {
+  try {
+    const { data, error } = await supabase
+      .from('tokens')
+      .select('*')
+      .order('volume_24h', { ascending: false })
+      .limit(10);
+    
+    if (error) {
+      console.error("Error fetching top tokens by volume from Supabase:", error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in fetchTopTokensByVolumeFromSupabase:", error);
+    return [];
+  }
+}
+
 // Transform BitqueryToken to a format compatible with our TokenCard component
 export function transformBitqueryTokenToCardData(token: BitqueryToken) {
   // PumpFun tokens have a fixed supply of 1 billion
@@ -173,5 +249,22 @@ export function transformBitqueryTokenToCardData(token: BitqueryToken) {
     age: `${Math.floor(
       (parseInt(token.Trade.Buy.Currency.MintAddress.substring(0, 8), 16) % 72) + 1
     )}h ago`,
+  };
+}
+
+// Transform Supabase token data to TokenCard format
+export function transformSupabaseTokenToCardData(token: any) {
+  return {
+    id: token.token_mint,
+    name: token.token_name || "Unknown Token",
+    symbol: token.token_symbol || "UNKNOWN",
+    price: token.last_trade_price,
+    priceChange: 0, // Not available
+    timeRemaining: 0, // Not relevant here
+    marketCap: token.current_market_cap,
+    liquidity: token.current_market_cap * 0.1, // Estimated
+    volume24h: token.volume_24h,
+    // Generate a consistent age 
+    age: new Date(token.last_updated_time).toLocaleString(),
   };
 }

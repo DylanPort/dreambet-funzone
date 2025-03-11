@@ -10,6 +10,7 @@ import BetsList from '@/components/BetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import TrendingTokens from '@/components/TrendingTokens';
 import PumpFunTokens from '@/components/PumpFunTokens';
+import TopVolumeTokens from '@/components/TopVolumeTokens';
 
 const BettingDashboard = () => {
   const {
@@ -41,6 +42,11 @@ const BettingDashboard = () => {
           {/* PumpFun Tokens Section */}
           <section className="mb-10">
             <PumpFunTokens />
+          </section>
+          
+          {/* Top Volume Tokens Section */}
+          <section className="mb-10">
+            <TopVolumeTokens />
           </section>
           
           {/* Trending Tokens Section */}

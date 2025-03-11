@@ -130,6 +130,35 @@ export type Database = {
           },
         ]
       }
+      token_volume_history: {
+        Row: {
+          id: string
+          timestamp: string
+          token_mint: string
+          volume_24h: number
+        }
+        Insert: {
+          id?: string
+          timestamp?: string
+          token_mint: string
+          volume_24h: number
+        }
+        Update: {
+          id?: string
+          timestamp?: string
+          token_mint?: string
+          volume_24h?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_volume_history_token_mint_fkey"
+            columns: ["token_mint"]
+            isOneToOne: false
+            referencedRelation: "tokens"
+            referencedColumns: ["token_mint"]
+          },
+        ]
+      }
       tokens: {
         Row: {
           created_on: string | null
@@ -141,6 +170,7 @@ export type Database = {
           token_name: string
           token_symbol: string | null
           total_supply: number
+          volume_24h: number | null
         }
         Insert: {
           created_on?: string | null
@@ -152,6 +182,7 @@ export type Database = {
           token_name: string
           token_symbol?: string | null
           total_supply: number
+          volume_24h?: number | null
         }
         Update: {
           created_on?: string | null
@@ -163,6 +194,7 @@ export type Database = {
           token_name?: string
           token_symbol?: string | null
           total_supply?: number
+          volume_24h?: number | null
         }
         Relationships: []
       }
