@@ -39,14 +39,14 @@ const BettingDashboard = () => {
               </div>}
           </section>
 
+          {/* Top Volume Tokens Section - Moved to top for visibility */}
+          <section className="mb-10">
+            <TopVolumeTokens />
+          </section>
+          
           {/* PumpFun Tokens Section */}
           <section className="mb-10">
             <PumpFunTokens />
-          </section>
-          
-          {/* Top Volume Tokens Section */}
-          <section className="mb-10">
-            <TopVolumeTokens />
           </section>
           
           {/* Trending Tokens Section */}

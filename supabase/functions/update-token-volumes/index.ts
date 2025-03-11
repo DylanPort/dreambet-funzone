@@ -12,40 +12,39 @@ const BITQUERY_API_KEY = "ory_at_lmgpNJuVuEOb5l2asp7t2Rok7CSMzHc_y4y1vRza95Q.hvE
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-// Query to get most traded tokens on PumpFun by volume
+// Updated query to match the user's requirements for top tokens by trading volume
 const topTokensByVolumeQuery = `
 {
   Solana {
     DEXTrades(
-      limitBy: {by: Trade_Buy_Currency_MintAddress, count: 1}
-      limit: {count: 20}
-      orderBy: {descending: Trade_Sell_Amount}
+      limitBy: { by: Trade_Buy_Currency_MintAddress, count: 1 }
+      limit: { count: 10 }
+      orderBy: { descending: Trade_Amount }
       where: {
         Trade: {
-          Dex: {ProtocolName: {is: "pump"}}, 
+          Dex: { ProtocolName: { is: "pump" } }
           Buy: {
-            Currency: {MintAddress: {notIn: ["11111111111111111111111111111111"]}}
-          }, 
-          PriceAsymmetry: {le: 0.1},
-          Sell: {AmountInUSD: {gt: "10"}}
-        }, 
-        Transaction: {Result: {Success: true}}, 
-        Block: {Time: {since: "2023-02-21T05:05:00Z"}}
+            Currency: {
+              MintAddress: { notIn: ["11111111111111111111111111111111"] }
+            }
+          }
+          Sell: { AmountInUSD: { gt: "10" } }
+        }
+        Transaction: { Result: { Success: true } }
+        Block: { Time: { since: "2025-03-11T00:00:00Z" } }
       }
     ) {
       Trade {
         Buy {
-          Price
-          PriceInUSD
           Currency {
+            MintAddress
             Name
             Symbol
-            MintAddress
-            Decimals
-            Fungible
-            Uri
           }
+          Amount(maximum: Block_Time)
+          AmountInUSD(maximum: Block_Time)
         }
+        volume: sum(of: Trade_Amount)
         Sell {
           Amount
           AmountInUSD
@@ -98,8 +97,8 @@ async function updateTokenData(tokenData: any[]) {
     const mintAddress = token.Trade.Buy.Currency.MintAddress;
     const name = token.Trade.Buy.Currency.Name || "Unknown Token";
     const symbol = token.Trade.Buy.Currency.Symbol || "UNKNOWN";
-    const price = token.Trade.Buy.Price;
-    const volume24h = token.Trade.Sell.AmountInUSD;
+    const volume24h = token.Trade.Sell.AmountInUSD || 0;
+    const price = token.Trade.Buy.Amount || 0;
     
     console.log(`Processing token: ${name} (${mintAddress}) with volume: ${volume24h}`);
     
@@ -187,6 +186,12 @@ serve(async (req) => {
     
     // Fetch top tokens by volume
     const bitqueryData = await fetchBitqueryData(topTokensByVolumeQuery);
+    
+    if (!bitqueryData.data || !bitqueryData.data.Solana || !bitqueryData.data.Solana.DEXTrades) {
+      console.error("Invalid response from Bitquery:", bitqueryData);
+      throw new Error("Invalid Bitquery response structure");
+    }
+    
     const tokenData = bitqueryData.data.Solana.DEXTrades;
     
     console.log(`Fetched ${tokenData.length} tokens from Bitquery`);
