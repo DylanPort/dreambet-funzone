@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -108,17 +107,30 @@ const Index = () => {
                     Start Betting
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                   </span>
+                  
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400 via-yellow-300 to-purple-600
-                    animate-gradient-move bg-[length:400%_100%] opacity-70"></div>
+                    animate-gradient-move bg-[length:400%_100%] opacity-70 transform-gpu"></div>
+                  
                   <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-green-500 via-yellow-400 via-orange-500 to-purple-600
                     opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500
                     group-hover:blur-2xl animate-pulse-glow"></div>
+                  
                   <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-xl">
                     <div className="absolute -inset-[10px] bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.5),transparent_60%)]
                       animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    <div className="absolute -bottom-2 left-0 right-0 h-10 bg-gradient-to-t from-green-400 via-yellow-300 to-transparent
+                    
+                    <div className="absolute -bottom-2 left-0 right-0 h-12 bg-gradient-to-t from-green-400 via-yellow-300 to-transparent
                       filter blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500
-                      animate-bob"></div>
+                      animate-bob [mask-image:linear-gradient(to_bottom,transparent,black)]"></div>
+                    
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-700">
+                      <div className="absolute top-[20%] left-[15%] w-4 h-4 rounded-full bg-green-300 filter blur-sm animate-float"></div>
+                      <div className="absolute top-[40%] left-[75%] w-3 h-3 rounded-full bg-yellow-300 filter blur-sm animate-float-delayed"></div>
+                      <div className="absolute top-[70%] left-[30%] w-2 h-2 rounded-full bg-purple-300 filter blur-sm animate-float-delayed-2"></div>
+                    </div>
+                    
+                    <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
+                    <div className="absolute inset-x-8 bottom-0 h-[30%] bg-gradient-to-t from-black/40 to-transparent rounded-b-xl opacity-10 group-hover:opacity-40 transition-opacity duration-500"></div>
                   </div>
                 </Button>
               </Link>
