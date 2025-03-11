@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
 
@@ -168,7 +167,7 @@ async function addMockTokensForTesting(supabase) {
   }
 }
 
-// Function to update token data in Supabase
+// Updated function to update token data in Supabase
 async function updateTokenData(tokenData: any[]) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error("Supabase credentials not set");
@@ -187,8 +186,8 @@ async function updateTokenData(tokenData: any[]) {
     const mintAddress = token.Trade.Buy.Currency.MintAddress;
     const name = token.Trade.Buy.Currency.Name || "Unknown Token";
     const symbol = token.Trade.Buy.Currency.Symbol || "UNKNOWN";
-    const volume24h = token.Trade.volume || 0;
-    const price = token.Trade.Buy.Amount || 0;
+    const volume24h = parseFloat(token.Trade.volume) || 0;
+    const price = parseFloat(token.Trade.Buy.Amount) || 0;
     
     console.log(`Processing token: ${name} (${mintAddress}) with volume: ${volume24h}`);
     

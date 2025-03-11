@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { transformSupabaseTokenToCardData } from '@/services/bitqueryService';
 import TokenCard from './TokenCard';
@@ -16,46 +17,58 @@ const TopVolumeTokens: React.FC = () => {
   const fetchPumpFunHighMarketCapTokens = async () => {
     try {
       setLoading(true);
+      let tokensFound = false;
       
-      // Query tokens from Supabase with market cap higher than 15k
-      const { data, error } = await supabase
-        .from('tokens')
-        .select('*')
-        .gt('current_market_cap', 15000)
-        .order('current_market_cap', { ascending: false })
-        .limit(12);
-      
-      if (error) {
-        console.error("Error fetching tokens:", error);
-        toast.error("Failed to fetch tokens");
-        return;
-      }
-      
-      console.log("Fetched high market cap tokens:", data);
-      
-      // If we have data from Supabase, use it
-      if (data && data.length > 0) {
-        setTokens(data);
-      }
-      // Otherwise try to use PumpPortal WebSocket data
-      else if (pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
+      // First try the PumpPortal WebSocket data (prioritize this as real-time source)
+      if (pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
         // Filter tokens with market cap over 15k
         const highMarketCapTokens = pumpPortal.rawTokens.filter(token => 
           token.marketCapSol && token.marketCapSol > 15000
         );
         
         console.log("Using WebSocket high market cap tokens:", highMarketCapTokens);
-        setTokens(highMarketCapTokens.map(token => ({
-          token_mint: token.mint,
-          token_name: token.name || 'Unknown Token',
-          token_symbol: token.symbol || '',
-          current_market_cap: token.marketCapSol,
-          last_trade_price: token.marketCapSol ? (token.marketCapSol / 1000000000) : 0,
-          volume_24h: token.volume24h || 0
-        })));
+        
+        if (highMarketCapTokens.length > 0) {
+          setTokens(highMarketCapTokens.map(token => ({
+            token_mint: token.mint,
+            token_name: token.name || 'Unknown Token',
+            token_symbol: token.symbol || '',
+            current_market_cap: token.marketCapSol || 0,
+            last_trade_price: token.marketCapSol ? (token.marketCapSol / token.supply || 1000000000) : 0,
+            volume_24h: token.volume24h || 0
+          })));
+          tokensFound = true;
+        }
       }
-      // If no data from either source, show empty state
-      else {
+      
+      // If no tokens from WebSocket, try to use Supabase
+      if (!tokensFound) {
+        // Query tokens from Supabase with market cap higher than 15k
+        const { data, error } = await supabase
+          .from('tokens')
+          .select('*')
+          .gt('current_market_cap', 15000)
+          .order('current_market_cap', { ascending: false })
+          .limit(12);
+        
+        if (error) {
+          console.error("Error fetching tokens:", error);
+          toast.error("Failed to fetch tokens");
+          return;
+        }
+        
+        console.log("Fetched high market cap tokens from Supabase:", data);
+        
+        // If we have data from Supabase, use it
+        if (data && data.length > 0) {
+          setTokens(data);
+          tokensFound = true;
+        }
+      }
+      
+      // If still no tokens, show empty state
+      if (!tokensFound) {
+        console.log("No tokens found with market cap over 15k");
         setTokens([]);
       }
     } catch (error) {
@@ -74,6 +87,7 @@ const TopVolumeTokens: React.FC = () => {
   // Subscribe to PumpPortal when connected
   useEffect(() => {
     if (pumpPortal.connected) {
+      console.log("Subscribing to PumpPortal WebSocket");
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
@@ -81,6 +95,7 @@ const TopVolumeTokens: React.FC = () => {
   // Refresh when new tokens are received in PumpPortal
   useEffect(() => {
     if (pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
+      console.log("New tokens received from PumpPortal, refreshing data");
       fetchPumpFunHighMarketCapTokens();
     }
   }, [pumpPortal.rawTokens]);
@@ -91,8 +106,16 @@ const TopVolumeTokens: React.FC = () => {
     setRefreshing(true);
     toast.info("Refreshing tokens data...");
     
-    // Trigger the update-token-volumes Edge Function
     try {
+      // Force reconnect the WebSocket to get fresh data
+      if (pumpPortal.connected) {
+        pumpPortal.disconnect();
+        setTimeout(() => {
+          pumpPortal.connect();
+        }, 1000);
+      }
+      
+      // Trigger the update-token-volumes Edge Function
       await supabase.functions.invoke('update-token-volumes', {
         method: 'POST',
         body: {}
