@@ -6,6 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Get API key from environment variables
+const BITQUERY_API_KEY = Deno.env.get("BITQUERY_API_KEY");
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -13,35 +16,40 @@ serve(async (req) => {
   }
 
   try {
-    const { query, variables } = await req.json();
+    if (!BITQUERY_API_KEY) {
+      throw new Error("BITQUERY_API_KEY is not set in environment variables");
+    }
+
+    // Get query from request body
+    const { query } = await req.json();
     
-    // Use the new API token
-    const BITQUERY_API_KEY = "ory_at_lmgpNJuVuEOb5l2asp7t2Rok7CSMzHc_y4y1vRza95Q.hvEf3SmfH-ClhdMrg93jTLcPJBga2zKs5KpCmG0avSg";
-    
-    console.log("Fetching data from Bitquery with query:", query);
-    console.log("Using API key starting with:", BITQUERY_API_KEY.substring(0, 3) + "...");
-    
+    if (!query) {
+      throw new Error("No GraphQL query provided");
+    }
+
+    console.log("Calling Bitquery API with query");
+    console.log("Using API key starting with:", BITQUERY_API_KEY.substring(0, 5) + "...");
+
+    // Make request to Bitquery API
     const response = await fetch("https://graphql.bitquery.io/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-API-KEY": BITQUERY_API_KEY,
       },
-      body: JSON.stringify({
-        query,
-        variables
-      }),
+      body: JSON.stringify({ query }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Bitquery API error:", errorText);
+      console.error(`Bitquery API error: ${response.status} ${errorText}`);
       throw new Error(`Bitquery API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("Received data from Bitquery:", JSON.stringify(data).substring(0, 200) + "...");
+    console.log("Bitquery response received");
 
+    // Return the Bitquery response
     return new Response(
       JSON.stringify(data),
       { 
@@ -52,7 +60,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error in bitquery function:", error);
+    console.error("Error in bitquery function:", error.message);
     
     return new Response(
       JSON.stringify({ error: error.message }),

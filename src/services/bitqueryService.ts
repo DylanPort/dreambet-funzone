@@ -210,6 +210,8 @@ export async function fetchTopTokensByVolume(): Promise<BitqueryToken[]> {
 // Fetch top tokens by volume from Supabase
 export async function fetchTopTokensByVolumeFromSupabase() {
   try {
+    console.log("Fetching top tokens by volume from Supabase");
+    
     const { data, error } = await supabase
       .from('tokens')
       .select('*')
@@ -221,9 +223,13 @@ export async function fetchTopTokensByVolumeFromSupabase() {
       throw error;
     }
     
-    return data;
+    console.log(`Fetched ${data?.length || 0} tokens from Supabase`);
+    
+    // Return empty array if no data to avoid null/undefined errors
+    return data || [];
   } catch (error) {
     console.error("Error in fetchTopTokensByVolumeFromSupabase:", error);
+    // Return empty array on error to avoid null/undefined errors
     return [];
   }
 }
@@ -254,17 +260,36 @@ export function transformBitqueryTokenToCardData(token: BitqueryToken) {
 
 // Transform Supabase token data to TokenCard format
 export function transformSupabaseTokenToCardData(token: any) {
-  return {
-    id: token.token_mint,
-    name: token.token_name || "Unknown Token",
-    symbol: token.token_symbol || "UNKNOWN",
-    price: token.last_trade_price,
-    priceChange: 0, // Not available
-    timeRemaining: 0, // Not relevant here
-    marketCap: token.current_market_cap,
-    liquidity: token.current_market_cap * 0.1, // Estimated
-    volume24h: token.volume_24h,
-    // Generate a consistent age 
-    age: new Date(token.last_updated_time).toLocaleString(),
-  };
+  try {
+    return {
+      id: token.token_mint,
+      name: token.token_name || "Unknown Token",
+      symbol: token.token_symbol || "UNKNOWN",
+      price: token.last_trade_price || 0,
+      priceChange: 0, // Not available
+      timeRemaining: 0, // Not relevant here
+      marketCap: token.current_market_cap || 0,
+      liquidity: (token.current_market_cap || 0) * 0.1, // Estimated
+      volume24h: token.volume_24h || 0,
+      // Format date or use placeholder if missing
+      age: token.last_updated_time 
+        ? new Date(token.last_updated_time).toLocaleString() 
+        : 'Recently updated'
+    };
+  } catch (error) {
+    console.error("Error transforming Supabase token data:", error, token);
+    // Return a default object if transformation fails
+    return {
+      id: token.token_mint || "unknown",
+      name: "Error Token",
+      symbol: "ERR",
+      price: 0,
+      priceChange: 0,
+      timeRemaining: 0,
+      marketCap: 0,
+      liquidity: 0,
+      volume24h: 0,
+      age: 'Unknown'
+    };
+  }
 }
