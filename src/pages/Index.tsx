@@ -99,13 +99,11 @@ const Index = () => {
                   after:shadow-[0_0_30px_rgba(139,92,246,0.5)] after:opacity-50 hover:after:opacity-100
                   after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(139,92,246,0.8)]
                   [&>span]:relative [&>span]:z-10
-                  [&>span]:bg-gradient-to-r [&>span]:from-white [&>span]:to-green-400 [&>span]:bg-clip-text [&>span]:text-transparent
-                  [&>span]:transition-all [&>span]:duration-500
                   group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
                   group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
-                  <span className="relative z-10 flex items-center">
+                  <span className="relative z-10 flex items-center font-bold text-transparent bg-gradient-to-r from-green-400 to-green-200 bg-clip-text drop-shadow-[0_0_10px_rgba(74,222,128,0.8)]">
                     Start Betting
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-400 filter drop-shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
                   </span>
                   
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400 via-yellow-300 to-purple-600
