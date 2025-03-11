@@ -14,9 +14,10 @@ const TopVolumeTokens: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const pumpPortal = usePumpPortalWebSocket();
 
-  const fetchPumpFunHighMarketCapTokens = async () => {
+  const fetchHighMarketCapTokens = async () => {
     try {
       setLoading(true);
+      console.log("Fetching high market cap tokens...");
       let tokensFound = false;
       
       // First try the PumpPortal WebSocket data (prioritize this as real-time source)
@@ -26,7 +27,8 @@ const TopVolumeTokens: React.FC = () => {
           token.marketCapSol && token.marketCapSol > 15000
         );
         
-        console.log("Using WebSocket high market cap tokens:", highMarketCapTokens);
+        console.log("WebSocket tokens:", pumpPortal.rawTokens);
+        console.log("Filtered high market cap tokens:", highMarketCapTokens);
         
         if (highMarketCapTokens.length > 0) {
           setTokens(highMarketCapTokens.map(token => ({
@@ -34,16 +36,18 @@ const TopVolumeTokens: React.FC = () => {
             token_name: token.name || 'Unknown Token',
             token_symbol: token.symbol || '',
             current_market_cap: token.marketCapSol || 0,
-            // Fixed error: token.supply doesn't exist, using a fixed supply value instead
             last_trade_price: token.marketCapSol ? (token.marketCapSol / 1000000000) : 0,
             volume_24h: token.volume24h || 0
           })));
           tokensFound = true;
+          console.log("Using WebSocket data for high market cap tokens");
         }
       }
       
       // If no tokens from WebSocket, try to use Supabase
       if (!tokensFound) {
+        console.log("No tokens from WebSocket, fetching from Supabase...");
+        
         // Query tokens from Supabase with market cap higher than 15k
         const { data, error } = await supabase
           .from('tokens')
@@ -58,12 +62,31 @@ const TopVolumeTokens: React.FC = () => {
           return;
         }
         
-        console.log("Fetched high market cap tokens from Supabase:", data);
+        console.log("Fetched tokens from Supabase:", data);
         
         // If we have data from Supabase, use it
         if (data && data.length > 0) {
           setTokens(data);
           tokensFound = true;
+          console.log("Using Supabase data for high market cap tokens");
+        } else {
+          // Try to force refresh from Bitquery to get real data
+          console.log("No tokens in Supabase, triggering update-token-volumes...");
+          await triggerTokenVolumesUpdate();
+          
+          // Check again after update
+          const { data: refreshedData, error: refreshError } = await supabase
+            .from('tokens')
+            .select('*')
+            .gt('current_market_cap', 15000)
+            .order('current_market_cap', { ascending: false })
+            .limit(12);
+          
+          if (!refreshError && refreshedData && refreshedData.length > 0) {
+            setTokens(refreshedData);
+            tokensFound = true;
+            console.log("Using refreshed Supabase data after trigger");
+          }
         }
       }
       
@@ -73,16 +96,38 @@ const TopVolumeTokens: React.FC = () => {
         setTokens([]);
       }
     } catch (error) {
-      console.error("Error in fetchPumpFunHighMarketCapTokens:", error);
+      console.error("Error in fetchHighMarketCapTokens:", error);
       toast.error("Failed to fetch tokens");
     } finally {
       setLoading(false);
     }
   };
 
+  // Function to trigger the update-token-volumes Edge Function
+  const triggerTokenVolumesUpdate = async () => {
+    try {
+      console.log("Triggering update-token-volumes Edge Function");
+      const { data, error } = await supabase.functions.invoke('update-token-volumes', {
+        method: 'POST',
+        body: {}
+      });
+      
+      if (error) {
+        console.error("Error triggering update-token-volumes:", error);
+        throw error;
+      }
+      
+      console.log("update-token-volumes response:", data);
+      return data;
+    } catch (error) {
+      console.error("Failed to trigger token volume update:", error);
+      throw error;
+    }
+  };
+
   // Initial data fetch
   useEffect(() => {
-    fetchPumpFunHighMarketCapTokens();
+    fetchHighMarketCapTokens();
   }, []);
 
   // Subscribe to PumpPortal when connected
@@ -97,7 +142,7 @@ const TopVolumeTokens: React.FC = () => {
   useEffect(() => {
     if (pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
       console.log("New tokens received from PumpPortal, refreshing data");
-      fetchPumpFunHighMarketCapTokens();
+      fetchHighMarketCapTokens();
     }
   }, [pumpPortal.rawTokens]);
 
@@ -108,8 +153,11 @@ const TopVolumeTokens: React.FC = () => {
     toast.info("Refreshing tokens data...");
     
     try {
+      console.log("Forcing data refresh...");
+      
       // Force reconnect the WebSocket to get fresh data
       if (pumpPortal.connected) {
+        console.log("Disconnecting and reconnecting WebSocket");
         pumpPortal.disconnect();
         setTimeout(() => {
           pumpPortal.connect();
@@ -117,13 +165,10 @@ const TopVolumeTokens: React.FC = () => {
       }
       
       // Trigger the update-token-volumes Edge Function
-      await supabase.functions.invoke('update-token-volumes', {
-        method: 'POST',
-        body: {}
-      });
+      await triggerTokenVolumesUpdate();
       
       // After function call, refresh our data
-      await fetchPumpFunHighMarketCapTokens();
+      await fetchHighMarketCapTokens();
       toast.success("Token data refreshed successfully");
     } catch (error) {
       console.error("Error refreshing tokens:", error);

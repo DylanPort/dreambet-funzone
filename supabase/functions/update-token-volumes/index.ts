@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
 
@@ -11,14 +12,14 @@ const BITQUERY_API_KEY = Deno.env.get("BITQUERY_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-// Updated query to match the user's requirements for top tokens by trading volume
+// Updated query to match the user's requirements for top tokens by trading volume on PumpFun
 const topTokensByVolumeQuery = `
 {
   Solana {
     DEXTrades(
       limitBy: { by: Trade_Buy_Currency_MintAddress, count: 1 }
-      limit: { count: 10 }
-      orderBy: { descending: Trade_Amount }
+      limit: { count: 20 }
+      orderBy: { descending: Trade_Buy_Price }
       where: {
         Trade: {
           Dex: { ProtocolName: { is: "pump" } }
@@ -30,7 +31,7 @@ const topTokensByVolumeQuery = `
           Sell: { AmountInUSD: { gt: "10" } }
         }
         Transaction: { Result: { Success: true } }
-        Block: { Time: { since: "2024-03-11T00:00:00Z" } }
+        Block: { Time: { since: "2024-03-01T00:00:00Z" } }
       }
     ) {
       Trade {
@@ -40,10 +41,10 @@ const topTokensByVolumeQuery = `
             Name
             Symbol
           }
-          Amount(maximum: Block_Time)
-          AmountInUSD(maximum: Block_Time)
+          Price
+          PriceInUSD
         }
-        volume: sum(of: Trade_Amount)
+        volume: sum(of: Trade_Sell_Amount)
         Sell {
           Amount
           AmountInUSD
@@ -91,82 +92,6 @@ async function fetchBitqueryData(query: string) {
   }
 }
 
-// Function to add mock data for testing when API is not available
-async function addMockTokensForTesting(supabase) {
-  const mockTokens = [
-    {
-      token_mint: "PumpE7ziJXXQbpZhpF8FNnQRv69RJ5SK5uKJGC73P4h",
-      token_name: "PumpToken",
-      token_symbol: "PUMP",
-      last_trade_price: 0.000045,
-      current_market_cap: 45000,
-      total_supply: 1000000000,
-      volume_24h: 15620
-    },
-    {
-      token_mint: "FunZcksMbsL7SvPMQnECUTpBJGJ2GKUuMXK5e5ZRwZbf",
-      token_name: "FunCoin",
-      token_symbol: "FUN",
-      last_trade_price: 0.000075,
-      current_market_cap: 75000,
-      total_supply: 1000000000,
-      volume_24h: 24500
-    },
-    {
-      token_mint: "SolarK6NMtsTMUXT41JEjueJRRGPnNx4xLJufgCnqUPH",
-      token_name: "SolarPump",
-      token_symbol: "SOLP",
-      last_trade_price: 0.00012,
-      current_market_cap: 120000,
-      total_supply: 1000000000,
-      volume_24h: 32000
-    }
-  ];
-
-  console.log("Adding mock data for testing");
-
-  for (const token of mockTokens) {
-    // Check if token exists
-    const { data: existingToken } = await supabase
-      .from('tokens')
-      .select('token_mint')
-      .eq('token_mint', token.token_mint)
-      .maybeSingle();
-    
-    if (!existingToken) {
-      // Insert new token
-      const { error } = await supabase
-        .from('tokens')
-        .insert(token);
-      
-      if (error) {
-        console.error(`Error inserting mock token ${token.token_mint}:`, error);
-      } else {
-        console.log(`Inserted mock token: ${token.token_name}`);
-      }
-    } else {
-      // Update existing token
-      const { error } = await supabase
-        .from('tokens')
-        .update({
-          token_name: token.token_name,
-          token_symbol: token.token_symbol,
-          current_market_cap: token.current_market_cap,
-          last_trade_price: token.last_trade_price,
-          volume_24h: token.volume_24h,
-          last_updated_time: new Date().toISOString()
-        })
-        .eq('token_mint', token.token_mint);
-      
-      if (error) {
-        console.error(`Error updating mock token ${token.token_mint}:`, error);
-      } else {
-        console.log(`Updated mock token: ${token.token_name}`);
-      }
-    }
-  }
-}
-
 // Updated function to update token data in Supabase
 async function updateTokenData(tokenData: any[]) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -175,25 +100,43 @@ async function updateTokenData(tokenData: any[]) {
   
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   
-  // If no tokens were returned from the API, add mock data for testing
+  // If no tokens were returned from the API, don't add mock data anymore
   if (!tokenData || tokenData.length === 0) {
-    await addMockTokensForTesting(supabase);
-    return { success: true, tokensProcessed: 0, mockAdded: true };
+    console.log("No tokens returned from Bitquery API");
+    return { success: false, message: "No tokens found in API response" };
   }
+  
+  console.log(`Processing ${tokenData.length} tokens from Bitquery`);
   
   // Process each token
   for (const token of tokenData) {
+    if (!token.Trade || !token.Trade.Buy || !token.Trade.Buy.Currency) {
+      console.log("Skipping invalid token data:", token);
+      continue;
+    }
+    
     const mintAddress = token.Trade.Buy.Currency.MintAddress;
     const name = token.Trade.Buy.Currency.Name || "Unknown Token";
     const symbol = token.Trade.Buy.Currency.Symbol || "UNKNOWN";
-    const volume24h = parseFloat(token.Trade.volume) || 0;
-    const price = parseFloat(token.Trade.Buy.Amount) || 0;
     
-    console.log(`Processing token: ${name} (${mintAddress}) with volume: ${volume24h}`);
+    // Get volume, defaulting to a calculated value if not available
+    const volume24h = token.Trade.volume || 0;
+    
+    // Get price, calculating market cap based on fixed supply
+    const price = token.Trade.Buy.Price || 0;
+    
+    console.log(`Processing token: ${name} (${mintAddress}) with price: ${price}`);
     
     // Calculate market cap (PumpFun tokens have a fixed supply of 1 billion)
     const SUPPLY = 1000000000;
     const marketCap = price * SUPPLY;
+    
+    if (marketCap < 15000) {
+      console.log(`Skipping ${name} - market cap too low: ${marketCap}`);
+      continue;
+    }
+    
+    console.log(`Token ${name} has market cap: ${marketCap}, which is > 15k`);
     
     // Check if token exists
     const { data: existingToken, error: checkError } = await supabase
@@ -292,18 +235,10 @@ serve(async (req) => {
     } catch (apiError) {
       console.error("Error fetching from Bitquery:", apiError);
       
-      // If API call fails, add mock data for testing
-      if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-        throw new Error("Supabase credentials not set");
-      }
-      
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      await addMockTokensForTesting(supabase);
-      
+      // Return error instead of falling back to mock data
       result = { 
-        success: true, 
-        apiError: apiError.message,
-        mockAdded: true 
+        success: false, 
+        apiError: apiError.message
       };
     }
     
