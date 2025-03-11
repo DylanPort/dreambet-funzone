@@ -17,7 +17,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
     console.log(`Fetching tokens with volume category: ${category}`);
     const { data, error } = await supabase
       .from('tokens')
-      .select('*')
+      .select('token_mint, token_name, token_symbol, volume_24h, current_market_cap, last_trade_price, volume_category')
       .eq('volume_category', category)
       .order('volume_24h', { ascending: false });
     
