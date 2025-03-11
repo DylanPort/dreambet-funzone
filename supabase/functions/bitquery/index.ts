@@ -30,7 +30,7 @@ serve(async (req) => {
     console.log("Calling Bitquery API with query");
     console.log("Using API key starting with:", BITQUERY_API_KEY.substring(0, 5) + "...");
 
-    // Make request to Bitquery API
+    // Make request to Bitquery API using X-API-KEY header
     const response = await fetch("https://graphql.bitquery.io/", {
       method: "POST",
       headers: {

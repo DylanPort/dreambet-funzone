@@ -31,7 +31,7 @@ const topTokensByVolumeQuery = `
           Sell: { AmountInUSD: { gt: "10" } }
         }
         Transaction: { Result: { Success: true } }
-        Block: { Time: { since: "2023-03-11T00:00:00Z" } }
+        Block: { Time: { since: "2025-03-11T00:00:00Z" } }
       }
     ) {
       Trade {
@@ -70,7 +70,7 @@ async function fetchBitqueryData(query: string) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-API-KEY": BITQUERY_API_KEY,
+        "X-API-KEY": BITQUERY_API_KEY, // Using X-API-KEY header as per Bitquery docs
       },
       body: JSON.stringify({
         query
