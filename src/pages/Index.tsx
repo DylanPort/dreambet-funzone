@@ -6,6 +6,7 @@ import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import FloatingImages from '@/components/FloatingImages';
 import AnimatedLogo from '@/components/AnimatedLogo';
+import FuturisticTokenDisplay from '@/components/FuturisticTokenDisplay';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 
@@ -60,8 +61,6 @@ const Index = () => {
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
 
-  const cardPositions = ["top-[5%] left-[40%] shadow-neon-green animate-float", "top-0 left-[10%] shadow-neon-purple animate-float", "top-[20%] right-[10%] shadow-neon-cyan animate-float-delayed"];
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -115,49 +114,7 @@ const Index = () => {
           </div>
           
           <div className="relative max-w-5xl mx-auto h-[300px] md:h-[400px] mb-16">
-            {latestTokens.map((token, index) => <div key={token.id || `token-${index}`} className={`absolute glass-panel p-6 w-[280px] ${cardPositions[index]}`} style={{
-            animationDelay: `${index * 0.3}s`,
-            zIndex: 10 - index
-          }}>
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center">
-                    {token.imageUrl ? <img src={token.imageUrl} alt={token.name} className="w-8 h-8 rounded-full object-cover" onError={e => {
-                  const imgElement = e.target as HTMLImageElement;
-                  imgElement.style.display = 'none';
-                  const nextElement = imgElement.nextElementSibling as HTMLElement;
-                  if (nextElement) {
-                    nextElement.style.display = 'flex';
-                  }
-                }} /> : null}
-                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}>
-                      <span className="font-display font-bold">{getTokenSymbol(token)}</span>
-                    </div>
-                    <span className="ml-2 font-semibold">{token.name}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">PumpFun</span>
-                  </div>
-                </div>
-                <div className="h-[80px] bg-gradient-to-r from-green-500/20 to-green-300/10 rounded-md mb-3 flex items-center justify-center">
-                  <span className={`font-bold ${token.change24h >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                    ${formatPrice(token.currentPrice)}
-                  </span>
-                </div>
-                <div className="flex justify-around">
-                  <button className="btn-moon py-1 px-3 text-sm">Moon 🚀</button>
-                  <button className="btn-die py-1 px-3 text-sm">Die 💀</button>
-                </div>
-                <div className="flex justify-between items-center mt-3">
-                  <Link to={`/token/${token.id}`}>
-                    <Button variant="outline" size="sm" className="text-xs">
-                      View Token
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => window.open('https://pump.fun', '_blank')}>
-                    <ExternalLink className="w-3 h-3 mr-1" /> Pump.fun
-                  </Button>
-                </div>
-              </div>)}
+            <FuturisticTokenDisplay tokens={latestTokens} />
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
