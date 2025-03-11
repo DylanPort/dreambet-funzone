@@ -182,7 +182,7 @@ const MigratingTokenList = () => {
   const getTokensForDisplay = () => {
     let displayTokens = [];
     if (loading) {
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 10; i++) {
         displayTokens.push({
           id: `placeholder-${i}`,
           name: 'Loading...',
@@ -197,7 +197,7 @@ const MigratingTokenList = () => {
     } else if (tokens.length === 0) {
       const wsTokens = getTokensForEmptyState();
       if (wsTokens.length > 0) {
-        displayTokens = wsTokens.slice(0, 20).map(token => ({
+        displayTokens = wsTokens.slice(0, 10).map(token => ({
           id: token.token_mint,
           name: token.token_name || 'Unknown Token',
           symbol: token.token_symbol || '???',
@@ -208,8 +208,8 @@ const MigratingTokenList = () => {
           fromWebSocket: true
         }));
       }
-      if (displayTokens.length < 20) {
-        for (let i = displayTokens.length; i < 20; i++) {
+      if (displayTokens.length < 10) {
+        for (let i = displayTokens.length; i < 10; i++) {
           displayTokens.push({
             id: `empty-${i}`,
             name: 'New Token Coming Soon',
@@ -223,9 +223,9 @@ const MigratingTokenList = () => {
         }
       }
     } else {
-      displayTokens = tokens.slice(0, 20);
-      if (displayTokens.length < 20) {
-        for (let i = displayTokens.length; i < 20; i++) {
+      displayTokens = tokens.slice(0, 10);
+      if (displayTokens.length < 10) {
+        for (let i = displayTokens.length; i < 10; i++) {
           displayTokens.push({
             id: `empty-${i}`,
             name: 'New Token Coming Soon',
@@ -508,3 +508,4 @@ const MigratingTokenList = () => {
 };
 
 export default MigratingTokenList;
+
