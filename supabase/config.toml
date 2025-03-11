@@ -9,5 +9,4 @@ verify_jwt = false
 
 [functions.update-token-volumes]
 verify_jwt = false
-schedule = "*/5 * * * *"
 
