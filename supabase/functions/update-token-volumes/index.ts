@@ -18,7 +18,7 @@ const topTokensByVolumeQuery = `
   Solana {
     DEXTrades(
       limitBy: { by: Trade_Buy_Currency_MintAddress, count: 1 }
-      limit: { count: 20 }
+      limit: { count: 50 }
       orderBy: { descending: Trade_Buy_Price }
       where: {
         Trade: {
@@ -45,6 +45,7 @@ const topTokensByVolumeQuery = `
           PriceInUSD
         }
         volume: sum(of: Trade_Sell_Amount)
+        volumeUSD: sum(of: Trade_Sell_AmountInUSD)
         Sell {
           Amount
           AmountInUSD
@@ -92,7 +93,7 @@ async function fetchBitqueryData(query: string) {
   }
 }
 
-// Updated function to update token data in Supabase
+// Updated function to update token data in Supabase with volume categories
 async function updateTokenData(tokenData: any[]) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error("Supabase credentials not set");
@@ -107,6 +108,7 @@ async function updateTokenData(tokenData: any[]) {
   }
   
   console.log(`Processing ${tokenData.length} tokens from Bitquery`);
+  const tokensProcessed = { total: 0, above15k: 0, above30k: 0 };
   
   // Process each token
   for (const token of tokenData) {
@@ -120,23 +122,30 @@ async function updateTokenData(tokenData: any[]) {
     const symbol = token.Trade.Buy.Currency.Symbol || "UNKNOWN";
     
     // Get volume, defaulting to a calculated value if not available
+    // Try to get volume in USD first, then fallback to SOL volume
+    const volumeUSD = token.Trade.volumeUSD || 0;
     const volume24h = token.Trade.volume || 0;
     
     // Get price, calculating market cap based on fixed supply
     const price = token.Trade.Buy.Price || 0;
     
-    console.log(`Processing token: ${name} (${mintAddress}) with price: ${price}`);
+    console.log(`Processing token: ${name} (${mintAddress}) with price: ${price} and volume: ${volumeUSD} USD`);
     
     // Calculate market cap (PumpFun tokens have a fixed supply of 1 billion)
     const SUPPLY = 1000000000;
     const marketCap = price * SUPPLY;
     
-    if (marketCap < 15000) {
-      console.log(`Skipping ${name} - market cap too low: ${marketCap}`);
-      continue;
+    // Determine volume category
+    let volumeCategory = 'below_15k';
+    if (volumeUSD >= 30000) {
+      volumeCategory = 'above_30k';
+      tokensProcessed.above30k++;
+    } else if (volumeUSD >= 15000) {
+      volumeCategory = 'above_15k';
+      tokensProcessed.above15k++;
     }
     
-    console.log(`Token ${name} has market cap: ${marketCap}, which is > 15k`);
+    console.log(`Token ${name} has market cap: ${marketCap}, volume: ${volumeUSD} USD, category: ${volumeCategory}`);
     
     // Check if token exists
     const { data: existingToken, error: checkError } = await supabase
@@ -162,13 +171,15 @@ async function updateTokenData(tokenData: any[]) {
           current_market_cap: marketCap,
           last_trade_price: price,
           total_supply: SUPPLY,
-          volume_24h: volume24h
+          volume_24h: volumeUSD, // Using USD volume for filtering
+          volume_category: volumeCategory
         });
       
       if (insertError) {
         console.error(`Error inserting token ${mintAddress}:`, insertError);
       } else {
-        console.log(`Inserted new token: ${name}`);
+        console.log(`Inserted new token: ${name} in category ${volumeCategory}`);
+        tokensProcessed.total++;
       }
     } else {
       // Update existing token
@@ -179,7 +190,8 @@ async function updateTokenData(tokenData: any[]) {
           token_symbol: symbol,
           current_market_cap: marketCap,
           last_trade_price: price,
-          volume_24h: volume24h,
+          volume_24h: volumeUSD, // Using USD volume for filtering
+          volume_category: volumeCategory,
           last_updated_time: new Date().toISOString()
         })
         .eq('token_mint', mintAddress);
@@ -187,7 +199,8 @@ async function updateTokenData(tokenData: any[]) {
       if (updateError) {
         console.error(`Error updating token ${mintAddress}:`, updateError);
       } else {
-        console.log(`Updated token: ${name}`);
+        console.log(`Updated token: ${name} to category ${volumeCategory}`);
+        tokensProcessed.total++;
       }
     }
     
@@ -196,7 +209,7 @@ async function updateTokenData(tokenData: any[]) {
       .from('token_volume_history')
       .insert({
         token_mint: mintAddress,
-        volume_24h: volume24h
+        volume_24h: volumeUSD // Using USD volume for history
       });
     
     if (historyError) {
@@ -204,7 +217,12 @@ async function updateTokenData(tokenData: any[]) {
     }
   }
   
-  return { success: true, tokensProcessed: tokenData.length };
+  return { 
+    success: true, 
+    tokensProcessed: tokensProcessed.total,
+    tokensAbove15k: tokensProcessed.above15k,
+    tokensAbove30k: tokensProcessed.above30k
+  };
 }
 
 serve(async (req) => {

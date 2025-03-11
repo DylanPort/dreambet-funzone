@@ -11,6 +11,7 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import TrendingTokens from '@/components/TrendingTokens';
 import PumpFunTokens from '@/components/PumpFunTokens';
 import TopVolumeTokens from '@/components/TopVolumeTokens';
+import VolumeFilteredTokens from '@/components/VolumeFilteredTokens';
 
 const BettingDashboard = () => {
   const {
@@ -39,7 +40,12 @@ const BettingDashboard = () => {
               </div>}
           </section>
 
-          {/* Top Volume Tokens Section - Moved to top for visibility */}
+          {/* Volume Filtered Tokens Section - NEW! */}
+          <section className="mb-10">
+            <VolumeFilteredTokens />
+          </section>
+          
+          {/* Top Volume Tokens Section */}
           <section className="mb-10">
             <TopVolumeTokens />
           </section>

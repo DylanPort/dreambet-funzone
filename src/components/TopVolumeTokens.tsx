@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
+import { triggerTokenVolumeUpdate } from '@/services/tokenVolumeService';
 
 const TopVolumeTokens: React.FC = () => {
   const [tokens, setTokens] = useState<any[]>([]);
@@ -71,8 +72,8 @@ const TopVolumeTokens: React.FC = () => {
           console.log("Using Supabase data for high market cap tokens");
         } else {
           // Try to force refresh from Bitquery to get real data
-          console.log("No tokens in Supabase, triggering update-token-volumes...");
-          await triggerTokenVolumesUpdate();
+          console.log("No tokens in Supabase with MCAP > 15k, triggering update-token-volumes...");
+          await triggerTokenVolumeUpdate();
           
           // Check again after update
           const { data: refreshedData, error: refreshError } = await supabase
@@ -100,28 +101,6 @@ const TopVolumeTokens: React.FC = () => {
       toast.error("Failed to fetch tokens");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Function to trigger the update-token-volumes Edge Function
-  const triggerTokenVolumesUpdate = async () => {
-    try {
-      console.log("Triggering update-token-volumes Edge Function");
-      const { data, error } = await supabase.functions.invoke('update-token-volumes', {
-        method: 'POST',
-        body: {}
-      });
-      
-      if (error) {
-        console.error("Error triggering update-token-volumes:", error);
-        throw error;
-      }
-      
-      console.log("update-token-volumes response:", data);
-      return data;
-    } catch (error) {
-      console.error("Failed to trigger token volume update:", error);
-      throw error;
     }
   };
 
@@ -165,7 +144,7 @@ const TopVolumeTokens: React.FC = () => {
       }
       
       // Trigger the update-token-volumes Edge Function
-      await triggerTokenVolumesUpdate();
+      await triggerTokenVolumeUpdate();
       
       // After function call, refresh our data
       await fetchHighMarketCapTokens();
