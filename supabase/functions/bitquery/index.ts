@@ -21,6 +21,7 @@ serve(async (req) => {
     }
 
     console.log("Fetching data from Bitquery with query:", query);
+    console.log("Using API key starting with:", BITQUERY_API_KEY.substring(0, 3) + "...");
     
     const response = await fetch("https://graphql.bitquery.io/", {
       method: "POST",

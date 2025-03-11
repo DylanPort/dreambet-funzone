@@ -62,6 +62,7 @@ async function fetchBitqueryData(query: string) {
   }
   
   console.log("Fetching data from Bitquery with query:", query);
+  console.log("Using API key starting with:", BITQUERY_API_KEY.substring(0, 3) + "...");
   
   const response = await fetch("https://graphql.bitquery.io/", {
     method: "POST",
@@ -76,7 +77,7 @@ async function fetchBitqueryData(query: string) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Bitquery API error:", errorText);
+    console.error(`Bitquery API error: ${response.status} ${errorText}`);
     throw new Error(`Bitquery API error: ${response.status} ${errorText}`);
   }
 
