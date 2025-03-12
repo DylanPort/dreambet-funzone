@@ -4,6 +4,7 @@ import TokenCard from '@/components/TokenCard';
 import { fetchTrendingTokens } from '@/services/dexScreenerService';
 import { useVisibilityChange } from '@/hooks/useVisibilityChange';
 import { useToast } from "@/hooks/use-toast";
+
 const TrendingTokens: React.FC = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +13,7 @@ const TrendingTokens: React.FC = () => {
   const {
     toast
   } = useToast();
+
   const fetchData = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -39,19 +41,23 @@ const TrendingTokens: React.FC = () => {
       setRefreshing(false);
     }
   }, [toast]);
+
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
   useVisibilityChange(() => {
     console.log("Tab became visible, refreshing trending tokens data");
     fetchData();
   });
+
   const handleRefresh = () => {
     console.log("Manual refresh triggered");
     fetchData();
   };
+
   const formatLastUpdated = () => {
     if (!lastUpdated) return "";
     const now = new Date();
@@ -62,6 +68,7 @@ const TrendingTokens: React.FC = () => {
     const diffInHours = Math.floor(diffInMinutes / 60);
     return `${diffInHours}h ago`;
   };
+
   const formatNumber = (num: number, prefix = "") => {
     if (num >= 1000000000) {
       return `${prefix}${(num / 1000000000).toFixed(2)}B`;
@@ -72,6 +79,42 @@ const TrendingTokens: React.FC = () => {
     }
     return `${prefix}${num.toFixed(2)}`;
   };
-  return;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Flame className="w-5 h-5 text-dream-accent2" />
+          <h2 className="text-xl font-semibold">Trending Tokens</h2>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? (
+          <p>Loading...</p>
+        ) : tokens.length > 0 ? (
+          tokens.map((token, index) => (
+            <TokenCard
+              key={token.id}
+              {...token}
+              index={index}
+            />
+          ))
+        ) : (
+          <p>No trending tokens found</p>
+        )}
+      </div>
+    </div>
+  );
 };
+
 export default TrendingTokens;

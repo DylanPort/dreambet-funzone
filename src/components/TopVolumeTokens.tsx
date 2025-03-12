@@ -7,11 +7,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
 import { triggerTokenVolumeUpdate } from '@/services/tokenVolumeService';
+
 const TopVolumeTokens: React.FC = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const pumpPortal = usePumpPortalWebSocket();
+
   const fetchHighMarketCapTokens = async () => {
     try {
       setLoading(true);
@@ -114,6 +116,7 @@ const TopVolumeTokens: React.FC = () => {
       fetchHighMarketCapTokens();
     }
   }, [pumpPortal.rawTokens]);
+
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
@@ -143,6 +146,42 @@ const TopVolumeTokens: React.FC = () => {
       setRefreshing(false);
     }
   };
-  return;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-dream-accent2" />
+          <h2 className="text-xl font-semibold">High Volume Tokens</h2>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? (
+          <p>Loading...</p>
+        ) : tokens.length > 0 ? (
+          tokens.map((token, index) => (
+            <TokenCard
+              key={token.token_mint}
+              {...transformSupabaseTokenToCardData(token)}
+              index={index}
+            />
+          ))
+        ) : (
+          <p>No high volume tokens found</p>
+        )}
+      </div>
+    </div>
+  );
 };
+
 export default TopVolumeTokens;

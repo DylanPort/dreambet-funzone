@@ -5,10 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import TokenCard from './TokenCard';
 import { transformSupabaseTokenToCardData } from '@/services/bitqueryService';
 import { toast } from 'sonner';
+
 const TopPumpFunTokensByVolume: React.FC = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
   const fetchTopTokensByVolume = async () => {
     try {
       setLoading(true);
@@ -40,11 +42,9 @@ const TopPumpFunTokensByVolume: React.FC = () => {
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
     fetchTopTokensByVolume();
 
-    // Set up subscription for real-time updates
     const channel = supabase.channel('tokens-volume-changes').on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -58,12 +58,12 @@ const TopPumpFunTokensByVolume: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
     toast.info("Refreshing top tokens by volume...");
     try {
-      // Trigger the edge function to fetch the latest data
       const {
         data,
         error
@@ -78,7 +78,6 @@ const TopPumpFunTokensByVolume: React.FC = () => {
         console.log("Refresh response:", data);
         toast.success(`Successfully refreshed top tokens`);
 
-        // Fetch the updated data
         await fetchTopTokensByVolume();
       }
     } catch (error) {
@@ -88,6 +87,42 @@ const TopPumpFunTokensByVolume: React.FC = () => {
       setRefreshing(false);
     }
   };
-  return;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-dream-accent2" />
+          <h2 className="text-xl font-semibold">Top Volume Tokens</h2>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? (
+          <p>Loading...</p>
+        ) : tokens.length > 0 ? (
+          tokens.map((token, index) => (
+            <TokenCard
+              key={token.token_mint}
+              {...transformSupabaseTokenToCardData(token)}
+              index={index}
+            />
+          ))
+        ) : (
+          <p>No tokens found</p>
+        )}
+      </div>
+    </div>
+  );
 };
+
 export default TopPumpFunTokensByVolume;
