@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Clock, Activity, Zap, Sparkles } from 'lucide-react';
 import { fetchUserBets, fetchBetsByToken } from '@/api/mockData';
