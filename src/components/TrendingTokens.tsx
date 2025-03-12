@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, TrendingUp, Clock, ExternalLink, Zap, Flame } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import TokenCard from '@/components/TokenCard';
 import { fetchTrendingTokens } from '@/services/dexScreenerService';
 import { useVisibilityChange } from '@/hooks/useVisibilityChange';
