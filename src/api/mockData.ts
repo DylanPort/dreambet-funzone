@@ -200,8 +200,10 @@ export const createBet = async (
         wallet,
         tokenId,
         prediction,
+        amount,
         duration,
-        amount
+        tokenName,
+        tokenSymbol
       );
       betId = result.betId;
       txSignature = result.txSignature;
