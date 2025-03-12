@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, ArrowUp, ArrowDown } from 'lucide-react';
@@ -10,7 +11,6 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import TrendingTokens from '@/components/TrendingTokens';
 import PumpFunTokens from '@/components/PumpFunTokens';
 import VolumeFilteredTokens from '@/components/VolumeFilteredTokens';
-import TopPumpFunTokensByVolume from '@/components/TopPumpFunTokensByVolume';
 
 const BettingDashboard = () => {
   const {
@@ -38,13 +38,8 @@ const BettingDashboard = () => {
                 <WalletConnectButton />
               </div>}
           </section>
-
-          {/* Top PumpFun Tokens By Volume - NEW! */}
-          <section className="mb-10">
-            <TopPumpFunTokensByVolume />
-          </section>
           
-          {/* Volume Filtered Tokens Section */}
+          {/* PumpFun Tokens Above 15k MCAP - With Real-time Updates */}
           <section className="mb-10">
             <VolumeFilteredTokens />
           </section>
