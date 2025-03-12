@@ -16,25 +16,27 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
   try {
     console.log(`Fetching tokens with volume category: ${category}`);
     
-    // Make sure we explicitly select only fields that exist in the database
-    // and match our interface
     const { data, error } = await supabase
       .from('tokens')
       .select('token_mint, token_name, token_symbol, volume_24h, current_market_cap, last_trade_price')
-      .eq('volume_category', category)
       .order('volume_24h', { ascending: false });
     
     if (error) {
       console.error(`Error fetching ${category} tokens:`, error);
       toast.error(`Failed to fetch ${category} tokens`);
-      throw error;
+      return [];
     }
     
-    // Transform the data to include the volume_category field
-    const transformedData: TokenVolumeData[] = data?.map(token => ({
+    // Filter and transform the data based on volume category
+    const transformedData: TokenVolumeData[] = (data || []).map(token => ({
       ...token,
-      volume_category: category
-    })) || [];
+      volume_category: token.volume_24h >= 30000 ? 'above_30k' : 
+                      token.volume_24h >= 15000 ? 'above_15k' : 'below_15k'
+    })).filter(token => {
+      if (category === 'above_30k') return token.volume_24h >= 30000;
+      if (category === 'above_15k') return token.volume_24h >= 15000;
+      return true;
+    });
     
     console.log(`Found ${transformedData.length} tokens in category ${category}`);
     return transformedData;
