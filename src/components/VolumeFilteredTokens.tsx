@@ -19,9 +19,7 @@ const VolumeFilteredTokens: React.FC = () => {
 
     const unsubscribe = subscribeToTokenVolumeUpdates('above_15k', tokens => {
       console.log(`Received ${tokens.length} PumpFun tokens above 15k MCAP`);
-      // Filter tokens specifically by market cap > 15000
-      const filteredTokens = tokens.filter(token => token.current_market_cap >= 15000);
-      setTokensAbove15k(filteredTokens);
+      setTokensAbove15k(tokens);
       setLoading(false);
     });
 
