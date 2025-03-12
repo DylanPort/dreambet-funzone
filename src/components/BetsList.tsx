@@ -26,23 +26,36 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
   const [activeBetsCount, setActiveBetsCount] = useState(0);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
+  const getBetStatusColor = (status: string): string => {
+    switch (status) {
+      case 'open':
+        return 'bg-blue-500/20 text-blue-400';
+      case 'matched':
+        return 'bg-green-500/20 text-green-400';
+      case 'won':
+        return 'bg-dream-accent2/20 text-dream-accent2';
+      case 'lost':
+        return 'bg-red-500/20 text-red-400';
+      case 'expired':
+        return 'bg-gray-500/20 text-gray-400';
+      default:
+        return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
   const loadBets = async () => {
     try {
       setLoading(true);
       
-      // If we're on a token-specific page, fetch bets for that token
       if (tokenId) {
         console.log(`Fetching bets for token ${tokenId}`);
         const tokenBets = await fetchBetsByToken(tokenId);
         console.log('Received token bets:', tokenBets);
         
-        // Filter bets based on type
         let filteredBets: Bet[];
         if (type === 'latest') {
-          // Latest bets - sort by timestamp descending and take first 5
           filteredBets = [...tokenBets].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
         } else {
-          // Active bets - only matched or open
           filteredBets = tokenBets.filter(bet => ['open', 'matched'].includes(bet.status));
         }
         
@@ -50,26 +63,20 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
         setActiveBetsCount(tokenBets.filter(bet => 
           bet.status === 'open' || bet.status === 'matched'
         ).length);
-      }
-      // Otherwise, load user bets if wallet connected
-      else if (connected && publicKey) {
+      } else if (connected && publicKey) {
         console.log(`Fetching ${type} bets for user ${publicKey.toString()}`);
         const userBets = await fetchUserBets(publicKey.toString());
         console.log('Received user bets:', userBets);
         
-        // Also check localStorage for any pending bets
         const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
         let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
         console.log('Local stored bets:', localBets);
         
-        // Filter out expired local bets
         const now = Date.now();
         localBets = localBets.filter(bet => bet.expiresAt > now);
         
-        // Combine both sources, avoiding duplicates
         const allBets = [...userBets];
         for (const localBet of localBets) {
-          // Only include local bets from this user
           if (localBet.initiator === publicKey.toString()) {
             const exists = allBets.some(
               existingBet => existingBet.id === localBet.id || 
@@ -84,20 +91,16 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
         
         console.log('Combined bets:', allBets);
         
-        // Filter bets based on type
         let filteredBets: Bet[];
         if (type === 'latest') {
-          // Latest bets - sort by timestamp descending and take first 5
           filteredBets = [...allBets].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
         } else {
-          // Active bets - only matched or open
           filteredBets = allBets.filter(bet => ['open', 'matched'].includes(bet.status));
         }
         
         console.log(`Filtered ${type} bets:`, filteredBets);
         setBets(filteredBets);
         
-        // Count active bets (open or matched)
         const activeCount = allBets.filter(bet => 
           bet.status === 'open' || bet.status === 'matched'
         ).length;
@@ -113,16 +116,23 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
     }
   };
 
+  const manualRefresh = () => {
+    setLastRefresh(new Date());
+    toast({
+      title: "Refreshing bets",
+      description: "Getting the latest betting data...",
+      duration: 2000,
+    });
+    loadBets();
+  };
+
   useEffect(() => {
     loadBets();
-    // Refresh every 30 seconds
     const interval = setInterval(loadBets, 30000);
     return () => clearInterval(interval);
   }, [connected, publicKey, type, tokenId]);
 
-  // Force refresh when component is visible
   useEffect(() => {
-    // Set up a visibility change listener
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         console.log('Tab became visible, refreshing bets data');
@@ -137,7 +147,6 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
     };
   }, []);
 
-  // Listen for new bet events
   useEffect(() => {
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in BetsList:", event.detail);
@@ -149,17 +158,14 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
         message: `New ${amount} SOL bet created predicting token will ${prediction}!`
       });
       
-      // Refresh the bets immediately when a new bet is created
       loadBets();
       
-      // Hide notification after 5 seconds
       setTimeout(() => {
         setNewBetAlert({ visible: false, message: '' });
       }, 5000);
     };
 
     const handleBetAccepted = () => {
-      // Also refresh when any bet is accepted
       loadBets();
     };
 
@@ -185,7 +191,6 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
 
   return (
     <div className="glass-panel p-6 space-y-4 relative overflow-hidden">
-      {/* Decorative elements */}
       <div className="absolute -right-16 -top-16 w-32 h-32 rounded-full blur-3xl bg-dream-accent2/10 opacity-70"></div>
       <div className="absolute -left-16 -bottom-16 w-32 h-32 rounded-full blur-3xl bg-dream-accent1/10 opacity-70"></div>
       
@@ -260,7 +265,6 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
                       className="block transition-all duration-300 hover:scale-[1.02] relative"
                     >
                       <div className="border border-dream-foreground/10 bg-gradient-to-br from-dream-surface/80 to-dream-surface/60 backdrop-blur-md rounded-md p-4 relative overflow-hidden">
-                        {/* Active bet indicator */}
                         {(bet.status === 'open' || bet.status === 'matched') && (
                           <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-dream-accent2/50 to-transparent"></div>
                         )}
