@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 

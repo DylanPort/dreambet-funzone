@@ -1,3 +1,4 @@
+
 import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { BetPrediction, Bet } from '@/types/bet';
 import { toast } from '@/hooks/use-toast';
@@ -310,7 +311,7 @@ export const createSolanaBet = async (
       console.warn("Failed to save bet to local storage:", err);
     }
 
-    // Display a global toast notification for everyone about the new bet
+    // Display a toast notification for bet creation only (not for tokens)
     toast({
       title: "New Bet Created! 🎯",
       description: `A new bet of ${solAmount} SOL has been placed predicting the token will ${prediction}`,
@@ -463,7 +464,7 @@ export const acceptSolanaBet = async (
 
     console.log(`Bet accepted on-chain, tx: ${txSignature}`);
 
-    // Display a toast notification when a bet is accepted
+    // Display a toast notification only for bet acceptance
     toast({
       title: "Bet Accepted! 🤝",
       description: `Bet #${betId} has been accepted and is now active.`,

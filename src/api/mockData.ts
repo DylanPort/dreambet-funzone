@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -199,11 +200,11 @@ export const createBet = async (
       const result = await createSolanaBet(
         wallet,
         tokenId,
-        prediction,
-        amount,
-        duration,
         tokenName,
-        tokenSymbol
+        tokenSymbol,
+        prediction,
+        duration,
+        amount
       );
       betId = result.betId;
       txSignature = result.txSignature;
