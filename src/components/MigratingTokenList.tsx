@@ -223,7 +223,12 @@ const MigratingTokenList = () => {
         }
       }
     } else {
-      displayTokens = tokens.slice(0, 10);
+      const tokensAbove15k = tokens.filter(token => 
+        token.currentPrice && token.currentPrice * (token.supply || 0) >= 15000
+      );
+      
+      displayTokens = tokensAbove15k.slice(0, 10);
+      
       if (displayTokens.length < 10) {
         for (let i = displayTokens.length; i < 10; i++) {
           displayTokens.push({
