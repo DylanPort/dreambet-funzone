@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -203,4 +204,192 @@ export const fetchMockBets = async () => {
       resolve(mockBets);
     }, 500);
   });
+};
+
+// Add the missing exports to fix the errors
+
+// Function to fetch migrating tokens - used by MigratingTokenList and TokenBetting
+export const fetchMigratingTokens = async () => {
+  // In a real application, this would fetch from an API or blockchain
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const tokens = [
+        {
+          id: 'migrating-token-1',
+          name: 'MigratingToken1',
+          symbol: 'MGT1',
+          logo: '🪙',
+          currentPrice: 0.00123,
+          change24h: 5.2,
+          migrationTime: Date.now() - 1800000, // 30 minutes ago
+        },
+        {
+          id: 'migrating-token-2',
+          name: 'MigratingToken2',
+          symbol: 'MGT2',
+          logo: '🪙',
+          currentPrice: 0.00456,
+          change24h: -2.1,
+          migrationTime: Date.now() - 3600000, // 1 hour ago
+        },
+        {
+          id: 'migrating-token-3',
+          name: 'MigratingToken3',
+          symbol: 'MGT3',
+          logo: '🪙',
+          currentPrice: 0.00789,
+          change24h: 10.5,
+          migrationTime: Date.now() - 900000, // 15 minutes ago
+        },
+      ];
+      resolve(tokens);
+    }, 300);
+  });
+};
+
+// Function to fetch bets by token - used by TokenBetting and TokenDetail
+export const fetchBetsByToken = async (tokenId: string) => {
+  console.log(`Fetching bets for token: ${tokenId}`);
+  // In a real application, this would filter bets from the database
+  return new Promise<Bet[]>((resolve) => {
+    setTimeout(() => {
+      const bets: Bet[] = [
+        {
+          id: `bet-${tokenId}-1`,
+          tokenId: tokenId,
+          tokenName: `Token for ${tokenId}`,
+          tokenSymbol: 'TKN',
+          initiator: 'user123',
+          amount: 0.5,
+          prediction: 'migrate',
+          timestamp: Date.now() - 1800000,
+          expiresAt: Date.now() + 1800000,
+          status: 'open',
+          duration: 60,
+          onChainBetId: '12345',
+          transactionSignature: 'tx123'
+        },
+        {
+          id: `bet-${tokenId}-2`,
+          tokenId: tokenId,
+          tokenName: `Token for ${tokenId}`,
+          tokenSymbol: 'TKN',
+          initiator: 'user456',
+          amount: 1.0,
+          prediction: 'die',
+          timestamp: Date.now() - 3600000,
+          expiresAt: Date.now() + 900000,
+          status: 'matched',
+          duration: 75,
+          counterParty: 'user789',
+          onChainBetId: '67890',
+          transactionSignature: 'tx456'
+        }
+      ];
+      resolve(bets);
+    }, 300);
+  });
+};
+
+// Function to accept a bet - used by TokenDetail
+export const acceptBet = async (bet: Bet, counterPartyAddress: string, wallet: any) => {
+  console.log(`Accepting bet ${bet.id} by counter-party ${counterPartyAddress}`);
+  return new Promise<Bet>((resolve) => {
+    setTimeout(() => {
+      const updatedBet: Bet = {
+        ...bet,
+        status: 'matched',
+        counterParty: counterPartyAddress
+      };
+      
+      // Dispatch a custom event for any components that need to know about bet acceptance
+      const betAcceptedEvent = new CustomEvent('betAccepted', {
+        detail: { bet: updatedBet }
+      });
+      window.dispatchEvent(betAcceptedEvent);
+      
+      resolve(updatedBet);
+    }, 1000);
+  });
+};
+
+// Function to fetch user bets - used by BetsList and MyBets
+export const fetchUserBets = async (userAddress: string) => {
+  console.log(`Fetching bets for user: ${userAddress}`);
+  return new Promise<Bet[]>((resolve) => {
+    setTimeout(() => {
+      const userBets: Bet[] = [
+        {
+          id: `user-bet-1`,
+          tokenId: 'token-1',
+          tokenName: 'UserToken1',
+          tokenSymbol: 'UTK1',
+          initiator: userAddress,
+          amount: 0.75,
+          prediction: 'migrate',
+          timestamp: Date.now() - 2400000,
+          expiresAt: Date.now() + 1200000,
+          status: 'open',
+          duration: 60,
+          onChainBetId: '12345',
+          transactionSignature: 'tx123'
+        },
+        {
+          id: `user-bet-2`,
+          tokenId: 'token-2',
+          tokenName: 'UserToken2',
+          tokenSymbol: 'UTK2',
+          initiator: userAddress,
+          amount: 1.25,
+          prediction: 'die',
+          timestamp: Date.now() - 4800000,
+          expiresAt: Date.now() + 600000,
+          status: 'matched',
+          counterParty: 'other-user-123',
+          duration: 90,
+          onChainBetId: '67890',
+          transactionSignature: 'tx456'
+        },
+        {
+          id: `user-bet-3`,
+          tokenId: 'token-3',
+          tokenName: 'UserToken3',
+          tokenSymbol: 'UTK3',
+          initiator: userAddress,
+          amount: 0.5,
+          prediction: 'migrate',
+          timestamp: Date.now() - 86400000, // 1 day ago
+          expiresAt: Date.now() - 43200000, // 12 hours ago
+          status: 'expired',
+          duration: 60,
+          onChainBetId: '54321',
+          transactionSignature: 'tx789'
+        }
+      ];
+      resolve(userBets);
+    }, 500);
+  });
+};
+
+// Function to create a bet - used by CreateBetForm
+export const createBet = async (
+  tokenId: string,
+  tokenName: string,
+  tokenSymbol: string,
+  userAddress: string,
+  amount: number,
+  prediction: BetPrediction,
+  wallet: any,
+  duration: number
+) => {
+  console.log(`Creating bet for token ${tokenId} with prediction ${prediction}`);
+  return await createMockBet(
+    wallet,
+    tokenId,
+    tokenName,
+    tokenSymbol,
+    prediction,
+    duration,
+    amount
+  );
 };
