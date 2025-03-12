@@ -36,6 +36,19 @@ const TokenBetting = () => {
     fetchData();
   }, [tokenId]);
 
+  const handleBetCreated = () => {
+    // Refresh the bets list
+    if (tokenId) {
+      fetchBetsByToken(tokenId)
+        .then(betsData => {
+          setBets(Array.isArray(betsData) ? betsData : []);
+        })
+        .catch(error => {
+          console.error('Error refreshing bets:', error);
+        });
+    }
+  };
+
   if (loading) {
     return <div>Loading token and bets...</div>;
   }
@@ -64,14 +77,24 @@ const TokenBetting = () => {
         {showCreateBetForm && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Create New Bet</h2>
-            <CreateBetForm tokenId={tokenId} onSuccess={() => setShowCreateBetForm(false)} />
+            <CreateBetForm 
+              tokenId={tokenId || ''}
+              tokenName={token.name || ''}
+              tokenSymbol={token.symbol || ''}
+              onBetCreated={handleBetCreated}
+              onSuccess={() => setShowCreateBetForm(false)}
+              token={token}
+            />
           </div>
         )}
       </div>
       
       <div className="mt-8">
         <h2 className="text-2xl font-bold mb-4">Active Bets</h2>
-        <BetsList bets={bets} />
+        <BetsList 
+          title="Active Bets" 
+          type="active" 
+        />
       </div>
     </div>
   );

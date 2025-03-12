@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Clock, Activity, Zap, Sparkles } from 'lucide-react';
-import { fetchUserBets } from '@/api/mockData';
+import { fetchUserBets, fetchBetsByToken } from '@/api/mockData';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet } from '@/types/bet';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
@@ -16,6 +15,7 @@ interface BetsListProps {
 }
 
 const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
+  const { tokenId } = useParams<{ tokenId: string }>();
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [newBetAlert, setNewBetAlert] = useState<{ visible: boolean; message: string }>({
@@ -29,7 +29,30 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
   const loadBets = async () => {
     try {
       setLoading(true);
-      if (connected && publicKey) {
+      
+      // If we're on a token-specific page, fetch bets for that token
+      if (tokenId) {
+        console.log(`Fetching bets for token ${tokenId}`);
+        const tokenBets = await fetchBetsByToken(tokenId);
+        console.log('Received token bets:', tokenBets);
+        
+        // Filter bets based on type
+        let filteredBets: Bet[];
+        if (type === 'latest') {
+          // Latest bets - sort by timestamp descending and take first 5
+          filteredBets = [...tokenBets].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
+        } else {
+          // Active bets - only matched or open
+          filteredBets = tokenBets.filter(bet => ['open', 'matched'].includes(bet.status));
+        }
+        
+        setBets(filteredBets);
+        setActiveBetsCount(tokenBets.filter(bet => 
+          bet.status === 'open' || bet.status === 'matched'
+        ).length);
+      }
+      // Otherwise, load user bets if wallet connected
+      else if (connected && publicKey) {
         console.log(`Fetching ${type} bets for user ${publicKey.toString()}`);
         const userBets = await fetchUserBets(publicKey.toString());
         console.log('Received user bets:', userBets);
@@ -95,7 +118,7 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
     // Refresh every 30 seconds
     const interval = setInterval(loadBets, 30000);
     return () => clearInterval(interval);
-  }, [connected, publicKey, type]);
+  }, [connected, publicKey, type, tokenId]);
 
   // Force refresh when component is visible
   useEffect(() => {
@@ -149,26 +172,7 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
     };
   }, []);
 
-  const manualRefresh = () => {
-    toast({
-      title: "Refreshing bets",
-      description: "Fetching your latest bet data..."
-    });
-    setLastRefresh(new Date());
-    loadBets();
-  };
-
-  const getBetStatusColor = (status: string) => {
-    switch(status) {
-      case 'open': return 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30';
-      case 'matched': return 'bg-blue-500/20 text-blue-400 border-blue-400/30';
-      case 'completed': return 'bg-green-500/20 text-green-400 border-green-400/30';
-      case 'expired': return 'bg-red-500/20 text-red-400 border-red-400/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-400/30';
-    }
-  };
-
-  if (!connected) {
+  if (!connected && !tokenId) {
     return (
       <div className="glass-panel p-6 space-y-4">
         <h2 className="text-2xl font-display font-bold">{title}</h2>
