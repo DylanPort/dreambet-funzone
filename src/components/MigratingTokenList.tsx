@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, Clock, AlertCircle, Zap, Sparkles, ExternalLink, Filter, ArrowUpDown, ChevronDown } from 'lucide-react';
+import { Filter, ArrowUpDown, ChevronDown, Zap, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
@@ -187,24 +187,23 @@ const MigratingTokenList = () => {
           id: `placeholder-${i}`,
           name: 'Loading...',
           symbol: '...',
-          logo: '🪙',
-          currentPrice: 0,
-          change24h: 0,
-          migrationTime: new Date().getTime() - i * 60000,
+          price: 0,
+          priceChange: 0,
+          timeRemaining: new Date().getTime() - i * 60000,
           isPlaceholder: true
         });
       }
     } else if (tokens.length === 0) {
       const wsTokens = getTokensForEmptyState();
       if (wsTokens.length > 0) {
-        displayTokens = wsTokens.slice(0, 10).map(token => ({
+        displayTokens = wsTokens.slice(0, 10).map((token, index) => ({
           id: token.token_mint,
           name: token.token_name || 'Unknown Token',
           symbol: token.token_symbol || '???',
-          logo: '🪙',
-          currentPrice: 0,
-          change24h: 0,
-          migrationTime: new Date(token.created_time).getTime(),
+          price: 0,
+          priceChange: 0,
+          timeRemaining: new Date(token.created_time).getTime(),
+          index: index,
           fromWebSocket: true
         }));
       }
@@ -214,11 +213,11 @@ const MigratingTokenList = () => {
             id: `empty-${i}`,
             name: 'New Token Coming Soon',
             symbol: '???',
-            logo: '🪙',
-            currentPrice: 0,
-            change24h: 0,
-            migrationTime: new Date().getTime() - i * 60000,
-            isPlaceholder: true
+            price: 0,
+            priceChange: 0,
+            timeRemaining: new Date().getTime() - i * 60000,
+            isPlaceholder: true,
+            index: i
           });
         }
       }
@@ -227,22 +226,20 @@ const MigratingTokenList = () => {
         token.currentPrice && token.currentPrice * (token.supply || 0) >= 15000
       );
       
-      displayTokens = tokensAbove15k.slice(0, 10);
-      
-      if (displayTokens.length < 10) {
-        for (let i = displayTokens.length; i < 10; i++) {
-          displayTokens.push({
-            id: `empty-${i}`,
-            name: 'New Token Coming Soon',
-            symbol: '???',
-            logo: '🪙',
-            currentPrice: 0,
-            change24h: 0,
-            migrationTime: new Date().getTime() - i * 60000,
-            isPlaceholder: true
-          });
-        }
-      }
+      displayTokens = tokensAbove15k.slice(0, 10).map((token, index) => ({
+        id: token.id,
+        name: token.name,
+        symbol: token.symbol,
+        price: token.currentPrice || 0,
+        priceChange: token.change24h || 0,
+        timeRemaining: token.migrationTime,
+        marketCap: token.currentPrice * (token.supply || 0),
+        volume24h: token.volume24h,
+        liquidity: token.liquidity,
+        index: index,
+        transactions: token.transactions,
+        age: formatTimeSince(token.migrationTime)
+      }));
     }
     return displayTokens;
   };
@@ -371,78 +368,10 @@ const MigratingTokenList = () => {
       {viewMode === 'grid' ? (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {displayTokens.map((token, index) => (
-            <Link 
-              key={token.id || `token-${index}`} 
-              to={token.isPlaceholder ? '#' : `/token/${token.id}`} 
-              className={`token-card group relative overflow-hidden ${token.isPlaceholder ? 'opacity-60 pointer-events-none' : ''}`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
-              <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
-              <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
-              
-              <div className="absolute -right-12 -top-12 w-24 h-24 bg-dream-accent2/10 blur-xl rounded-full group-hover:bg-dream-accent2/20 transition-all"></div>
-              <div className="absolute -left-12 -bottom-12 w-24 h-24 bg-dream-accent1/10 blur-xl rounded-full group-hover:bg-dream-accent1/20 transition-all"></div>
-              
-              <div className={`glass-panel p-4 relative backdrop-blur-md z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300 h-full ${token.isPlaceholder ? 'animate-pulse' : ''}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 flex items-center justify-center">
-                      <img 
-                        src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" 
-                        alt="Token"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1">
-                        <h3 className="font-display font-semibold text-lg truncate max-w-[150px]">{token.name || 'Unknown'}</h3>
-                        <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40 flex-shrink-0" />
-                      </div>
-                      <p className="text-dream-foreground/60 text-sm">{token.symbol || '???'}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="flex items-center gap-1.5 h-6 px-2 rounded-md bg-dream-background/40 text-xs">
-                      <Clock className="w-3 h-3 text-dream-accent2" />
-                      <span className="text-dream-foreground/60">{token.migrationTime ? formatTimeSince(token.migrationTime) : 'New'}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-dream-background/30 p-3 rounded-md mb-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs text-dream-foreground/60">Price</span>
-                    <span className="font-medium">${formatPrice(token.currentPrice || 0)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-dream-foreground/60">Change</span>
-                    <span className={`text-sm font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {token.change24h >= 0 ? '+' : ''}{token.change24h || 0}%
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-dream-foreground/60 mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <span>SOL {formatPrice((token.currentPrice || 0) / 100)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span>Supply {token.supply || 'Unknown'}</span>
-                  </div>
-                </div>
-
-                <div className="mt-2 grid grid-cols-2 gap-3">
-                  <button className="btn-moon py-1.5 flex items-center justify-center gap-1.5" disabled={token.isPlaceholder}>
-                    <ArrowUp className="w-3.5 h-3.5" />
-                    <span>Moon</span>
-                  </button>
-                  <button className="btn-die py-1.5 flex items-center justify-center gap-1.5" disabled={token.isPlaceholder}>
-                    <ArrowDown className="w-3.5 h-3.5" />
-                    <span>Die</span>
-                  </button>
-                </div>
-              </div>
-            </Link>
+            <TokenCard
+              key={token.id || `token-${index}`}
+              {...token}
+            />
           ))}
         </div>
       ) : (
@@ -513,4 +442,3 @@ const MigratingTokenList = () => {
 };
 
 export default MigratingTokenList;
-
