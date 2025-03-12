@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { TokenVolumeData, fetchTokensByVolumeCategory, subscribeToTokenVolumeUpdates, triggerTokenVolumeUpdate } from '@/services/tokenVolumeService';
 import TokenCard from './TokenCard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, RefreshCw, ChevronsUp, Rocket } from 'lucide-react';
+import { RefreshCw, Rocket } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from "sonner";
 import { transformSupabaseTokenToCardData } from '@/services/bitqueryService';
@@ -35,7 +34,7 @@ const VolumeFilteredTokens: React.FC = () => {
     if (autoRefresh) {
       intervalId = setInterval(() => {
         handleRefresh(false);
-      }, 60000);
+      }, 60000); // Refresh every minute
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
