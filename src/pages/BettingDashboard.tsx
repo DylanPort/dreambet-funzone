@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, ArrowUp, ArrowDown } from 'lucide-react';
@@ -10,7 +9,6 @@ import BetsList from '@/components/BetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import TrendingTokens from '@/components/TrendingTokens';
 import PumpFunTokens from '@/components/PumpFunTokens';
-import TopVolumeTokens from '@/components/TopVolumeTokens';
 import VolumeFilteredTokens from '@/components/VolumeFilteredTokens';
 import TopPumpFunTokensByVolume from '@/components/TopPumpFunTokensByVolume';
 
@@ -49,11 +47,6 @@ const BettingDashboard = () => {
           {/* Volume Filtered Tokens Section */}
           <section className="mb-10">
             <VolumeFilteredTokens />
-          </section>
-          
-          {/* Top Volume Tokens Section */}
-          <section className="mb-10">
-            <TopVolumeTokens />
           </section>
           
           {/* PumpFun Tokens Section */}
