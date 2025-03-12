@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { fetchTopTokensByMarketCap, fetchTokensAbove10kMarketCap, fetchTokensAbove15kMarketCap, transformBitqueryTokenToCardData, BitqueryToken } from '@/services/bitqueryService';
-import TokenCard from './TokenCard';
+import { fetchTopTokensByMarketCap, fetchTokensAbove10kMarketCap, fetchTokensAbove15kMarketCap, BitqueryToken } from '@/services/bitqueryService';
+import TokenList from './TokenList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, TrendingUp, RefreshCw, ChevronsUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from "sonner";
-import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
 
 const PumpFunTokens: React.FC = () => {
   const [topTokens, setTopTokens] = useState<BitqueryToken[]>([]);
@@ -16,7 +15,6 @@ const PumpFunTokens: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('top');
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const pumpPortal = usePumpPortalWebSocket();
 
   const fetchData = async () => {
     try {
@@ -126,78 +124,27 @@ const PumpFunTokens: React.FC = () => {
         </TabsList>
 
         <TabsContent value="top" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {loading ? (
-              <p>Loading...</p>
-            ) : topTokens.length > 0 ? (
-              topTokens.map((token, index) => (
-                <TokenCard
-                  key={token.token_mint}
-                  id={token.token_mint}
-                  name={token.token_name}
-                  symbol={token.token_symbol || ''}
-                  price={token.last_trade_price || 0}
-                  priceChange={0}
-                  timeRemaining={0}
-                  index={index}
-                  marketCap={token.current_market_cap}
-                  volume24h={token.volume_24h || 0}
-                />
-              ))
-            ) : (
-              <p>No tokens found</p>
-            )}
-          </div>
+          <TokenList 
+            tokens={topTokens} 
+            loading={loading} 
+            emptyMessage="No tokens found" 
+          />
         </TabsContent>
 
         <TabsContent value="10k" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {loading ? (
-              <p>Loading...</p>
-            ) : tokensWith10kMcap.length > 0 ? (
-              tokensWith10kMcap.map((token, index) => (
-                <TokenCard
-                  key={token.token_mint}
-                  id={token.token_mint}
-                  name={token.token_name}
-                  symbol={token.token_symbol || ''}
-                  price={token.last_trade_price || 0}
-                  priceChange={0}
-                  timeRemaining={0}
-                  index={index}
-                  marketCap={token.current_market_cap}
-                  volume24h={token.volume_24h || 0}
-                />
-              ))
-            ) : (
-              <p>No tokens found above 10k MCAP</p>
-            )}
-          </div>
+          <TokenList 
+            tokens={tokensWith10kMcap} 
+            loading={loading} 
+            emptyMessage="No tokens found above 10k MCAP" 
+          />
         </TabsContent>
 
         <TabsContent value="15k" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {loading ? (
-              <p>Loading...</p>
-            ) : tokensWith15kMcap.length > 0 ? (
-              tokensWith15kMcap.map((token, index) => (
-                <TokenCard
-                  key={token.token_mint}
-                  id={token.token_mint}
-                  name={token.token_name}
-                  symbol={token.token_symbol || ''}
-                  price={token.last_trade_price || 0}
-                  priceChange={0}
-                  timeRemaining={0}
-                  index={index}
-                  marketCap={token.current_market_cap}
-                  volume24h={token.volume_24h || 0}
-                />
-              ))
-            ) : (
-              <p>No tokens found above 15k MCAP</p>
-            )}
-          </div>
+          <TokenList 
+            tokens={tokensWith15kMcap} 
+            loading={loading} 
+            emptyMessage="No tokens found above 15k MCAP" 
+          />
         </TabsContent>
       </Tabs>
     </div>

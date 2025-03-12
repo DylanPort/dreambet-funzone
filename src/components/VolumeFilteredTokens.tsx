@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { TokenVolumeData, fetchTokensByVolumeCategory, subscribeToTokenVolumeUpdates, triggerTokenVolumeUpdate } from '@/services/tokenVolumeService';
-import TokenCard from './TokenCard';
+import { TokenVolumeData, subscribeToTokenVolumeUpdates, triggerTokenVolumeUpdate } from '@/services/tokenVolumeService';
+import { transformSupabaseTokenToCardData } from '@/services/bitqueryService';
+import TokenList from './TokenList';
 import { RefreshCw, Rocket } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from "sonner";
-import { transformSupabaseTokenToCardData } from '@/services/bitqueryService';
 
 const VolumeFilteredTokens: React.FC = () => {
-  const [tokensAbove15k, setTokensAbove15k] = useState<TokenVolumeData[]>([]);
+  const [tokens, setTokens] = useState<TokenVolumeData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -19,22 +19,18 @@ const VolumeFilteredTokens: React.FC = () => {
 
     const unsubscribe = subscribeToTokenVolumeUpdates('above_15k', tokens => {
       console.log(`Received ${tokens.length} PumpFun tokens above 15k MCAP`);
-      setTokensAbove15k(tokens);
+      setTokens(tokens);
       setLoading(false);
     });
 
     triggerTokenVolumeUpdate();
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
     if (autoRefresh) {
-      intervalId = setInterval(() => {
-        handleRefresh(false);
-      }, 60000); // Refresh every minute
+      intervalId = setInterval(() => handleRefresh(false), 60000); // Refresh every minute
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -45,6 +41,7 @@ const VolumeFilteredTokens: React.FC = () => {
     if (refreshing) return;
     setRefreshing(true);
     if (showToast) toast.info("Refreshing PumpFun token data...");
+    
     try {
       const success = await triggerTokenVolumeUpdate();
       if (success && showToast) {
@@ -91,21 +88,12 @@ const VolumeFilteredTokens: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {loading ? (
-          <p>Loading PumpFun tokens...</p>
-        ) : tokensAbove15k.length > 0 ? (
-          tokensAbove15k.map((token, index) => (
-            <TokenCard
-              key={token.token_mint}
-              {...transformSupabaseTokenToCardData(token)}
-              index={index}
-            />
-          ))
-        ) : (
-          <p>No PumpFun tokens found above 15k MCAP</p>
-        )}
-      </div>
+      <TokenList 
+        tokens={tokens} 
+        loading={loading} 
+        transformFn={transformSupabaseTokenToCardData}
+        emptyMessage="No PumpFun tokens found above 15k MCAP"
+      />
     </div>
   );
 };
