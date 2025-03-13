@@ -10,7 +10,9 @@ import BetsList from '@/components/BetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import TrendingTokens from '@/components/TrendingTokens';
 import PumpFunTokens from '@/components/PumpFunTokens';
+import TopVolumeTokens from '@/components/TopVolumeTokens';
 import VolumeFilteredTokens from '@/components/VolumeFilteredTokens';
+import TopPumpFunTokensByVolume from '@/components/TopPumpFunTokensByVolume';
 
 const BettingDashboard = () => {
   const {
@@ -38,10 +40,20 @@ const BettingDashboard = () => {
                 <WalletConnectButton />
               </div>}
           </section>
+
+          {/* Top PumpFun Tokens By Volume - NEW! */}
+          <section className="mb-10">
+            <TopPumpFunTokensByVolume />
+          </section>
           
-          {/* PumpFun Tokens Above 15k MCAP - With Real-time Updates */}
+          {/* Volume Filtered Tokens Section */}
           <section className="mb-10">
             <VolumeFilteredTokens />
+          </section>
+          
+          {/* Top Volume Tokens Section */}
+          <section className="mb-10">
+            <TopVolumeTokens />
           </section>
           
           {/* PumpFun Tokens Section */}

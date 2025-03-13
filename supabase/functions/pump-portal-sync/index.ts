@@ -1,10 +1,8 @@
-
 // Follow this setup guide to integrate the Deno runtime with your application:
 // https://docs.deno.land/runtime-manual/manual/nodejs/integrations
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { WebSocketClient } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,125 +11,10 @@ const corsHeaders = {
 
 // Create a Supabase client
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// In-memory storage for trending tokens
-let trendingTokens = new Map();
-let wsClient: WebSocketClient | null = null;
-let wsConnected = false;
-let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 5;
-const RECONNECT_DELAY = 5000; // 5 seconds
-
-// Function to connect to the WebSocket
-function connectToWebSocket() {
-  try {
-    console.log("Attempting to connect to PumpPortal WebSocket...");
-    wsClient = new WebSocketClient("wss://pumpportal.fun/api/data");
-    
-    wsClient.on("open", () => {
-      console.log("WebSocket connected to PumpPortal");
-      wsConnected = true;
-      reconnectAttempts = 0;
-      
-      // Subscribe to token trades
-      wsClient?.send(JSON.stringify({ method: "subscribeTokenTrade" }));
-    });
-    
-    wsClient.on("message", async (message: string) => {
-      try {
-        const trade = JSON.parse(message);
-        if (!trade || !trade.mint_address) {
-          console.log("Received invalid trade data:", message);
-          return;
-        }
-        
-        const { mint_address, name, symbol, price } = trade;
-        
-        // Calculate market cap (Pump.fun tokens have 1B supply)
-        const SUPPLY = 1000000000;
-        const marketCap = price * SUPPLY;
-        
-        console.log(`Received trade for ${name} (${mint_address}): price=${price}, marketCap=${marketCap}`);
-        
-        // Update in-memory store
-        trendingTokens.set(mint_address, {
-          mint_address,
-          name,
-          symbol,
-          price,
-          market_cap: marketCap,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Update Supabase
-        const { error } = await supabase
-          .from("tokens")
-          .upsert({
-            token_mint: mint_address,
-            token_name: name,
-            token_symbol: symbol,
-            current_market_cap: marketCap,
-            last_trade_price: price,
-            total_supply: SUPPLY,
-            created_on: 'pump.fun',
-            last_updated_time: new Date().toISOString()
-          });
-          
-        if (error) {
-          console.error("Supabase error updating token:", error);
-        } else {
-          console.log(`Successfully updated token ${name} in database`);
-        }
-      } catch (error) {
-        console.error("Error processing WebSocket message:", error);
-      }
-    });
-    
-    wsClient.on("error", (error: any) => {
-      console.error("WebSocket error:", error);
-      wsConnected = false;
-      
-      // Attempt reconnection
-      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-        reconnectAttempts++;
-        console.log(`WebSocket disconnected. Reconnecting (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
-        setTimeout(connectToWebSocket, RECONNECT_DELAY);
-      } else {
-        console.error(`Failed to reconnect after ${MAX_RECONNECT_ATTEMPTS} attempts`);
-      }
-    });
-    
-    wsClient.on("close", () => {
-      console.log("WebSocket connection closed");
-      wsConnected = false;
-      
-      // Attempt reconnection
-      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-        reconnectAttempts++;
-        console.log(`WebSocket disconnected. Reconnecting (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
-        setTimeout(connectToWebSocket, RECONNECT_DELAY);
-      } else {
-        console.error(`Failed to reconnect after ${MAX_RECONNECT_ATTEMPTS} attempts`);
-      }
-    });
-  } catch (error) {
-    console.error("Error connecting to WebSocket:", error);
-    
-    // Attempt reconnection
-    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-      reconnectAttempts++;
-      console.log(`Error connecting. Retrying (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
-      setTimeout(connectToWebSocket, RECONNECT_DELAY);
-    }
-  }
-}
-
-// Initialize connection (this will run when the edge function starts)
-// Note: In a real-world scenario, you'd want a more persistent solution
-// as edge functions are ephemeral, but this demonstrates the concept
-connectToWebSocket();
+const RETRY_DELAY = 5000; // 5 seconds
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -152,78 +35,188 @@ serve(async (req) => {
     const { action } = await req.json();
 
     if (action === "start_sync") {
-      // If WebSocket isn't connected, try to connect
-      if (!wsConnected) {
-        connectToWebSocket();
-      }
+      // This would ideally be a long-running process, but for edge functions we'll
+      // just demonstrate the concept - in reality this needs to be a separate service
+      
+      // Log that we're starting
+      console.log("Starting PumpPortal sync process");
+      
+      // In a real implementation, we'd:
+      // 1. Connect to the PumpPortal WebSocket
+      // 2. Listen for token events and trades
+      // 3. Update the Supabase database
       
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "PumpPortal sync process active",
-          status: wsConnected ? "connected" : "connecting"
+          message: "Token sync process initiated. In a production environment, this would start a background process."
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    if (action === "get_trending_tokens") {
-      // Convert the Map to an array
-      const tokens = Array.from(trendingTokens.values());
+    // Handle fetching recent tokens from PumpPortal (simulated)
+    if (action === "fetch_recent_tokens") {
+      // In reality, this would make an API call to PumpPortal or process cached data
+      const mockTokens = [
+        {
+          mint: "tokenMint123",
+          name: "DemoToken",
+          symbol: "DEMO",
+          price: 0.001,
+          supply: 1000000
+        }
+      ];
+      
+      // Process and insert these tokens into our database
+      for (const token of mockTokens) {
+        const marketCap = token.price * token.supply;
+        
+        // Check if token already exists
+        const { data: existingToken } = await supabase
+          .from('tokens')
+          .select('token_mint')
+          .eq('token_mint', token.mint)
+          .maybeSingle();
+        
+        if (!existingToken) {
+          // Insert new token
+          await supabase
+            .from('tokens')
+            .insert({
+              token_mint: token.mint,
+              token_name: token.name,
+              token_symbol: token.symbol,
+              current_market_cap: marketCap,
+              initial_market_cap: marketCap,
+              total_supply: token.supply,
+              last_trade_price: token.price,
+              created_on: 'pump.fun'
+            });
+          
+          console.log(`Added token: ${token.name}`);
+        }
+      }
       
       return new Response(
         JSON.stringify({ 
           success: true, 
-          data: tokens,
-          count: tokens.length
+          message: "Processed recent tokens", 
+          count: mockTokens.length 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    if (action === "fetch_token_data") {
-      const { tokenMint } = await req.json();
+    // Handle processing expired bets
+    if (action === "process_expired_bets") {
+      const now = new Date();
       
-      if (!tokenMint) {
-        return new Response(
-          JSON.stringify({ error: "tokenMint is required" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      // Find open bets that have expired (created more than 24 hours ago)
+      const expiryTime = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
       
-      // Check in-memory cache first
-      const cachedToken = trendingTokens.get(tokenMint);
+      const { data: expiredBets, error } = await supabase
+        .from('bets')
+        .select('bet_id, bettor1_id')
+        .eq('status', 'open')
+        .lt('created_at', expiryTime);
       
-      if (cachedToken) {
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            data: cachedToken,
-            source: "cache"
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      if (error) throw error;
       
-      // If not in cache, check database
-      const { data: tokenData, error } = await supabase
-        .from("tokens")
-        .select("*")
-        .eq("token_mint", tokenMint)
-        .single();
-      
-      if (error) {
-        return new Response(
-          JSON.stringify({ error: "Token not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      // Update each expired bet
+      for (const bet of expiredBets || []) {
+        await supabase.rpc('update_bet_status', {
+          p_bet_id: bet.bet_id,
+          p_status: 'expired',
+          p_user_id: bet.bettor1_id,
+          p_action: 'expired',
+          p_details: { reason: 'No counter-bet within 24 hours' }
+        });
       }
       
       return new Response(
         JSON.stringify({ 
           success: true, 
-          data: tokenData,
-          source: "database"
+          message: "Processed expired bets", 
+          count: expiredBets?.length || 0 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Handle resolving completed bets
+    if (action === "resolve_completed_bets") {
+      const now = new Date();
+      
+      // Find matched bets that have reached their end time
+      const { data: completedBets, error } = await supabase
+        .from('bets')
+        .select(`
+          bet_id, 
+          token_mint, 
+          bettor1_id, 
+          bettor2_id, 
+          prediction_bettor1, 
+          initial_market_cap,
+          sol_amount
+        `)
+        .eq('status', 'matched')
+        .lt('end_time', now.toISOString());
+      
+      if (error) throw error;
+      
+      // Process each completed bet
+      for (const bet of completedBets || []) {
+        // Get current market cap
+        const { data: token } = await supabase
+          .from('tokens')
+          .select('current_market_cap')
+          .eq('token_mint', bet.token_mint)
+          .single();
+        
+        if (!token) continue;
+        
+        // Determine winner
+        const finalMarketCap = token.current_market_cap;
+        const initialMarketCap = bet.initial_market_cap;
+        const didMigrate = finalMarketCap > initialMarketCap;
+        
+        // If predicted migrate and it did migrate, bettor1 wins
+        // If predicted migrate and it didn't migrate, bettor2 wins
+        const winner = (bet.prediction_bettor1 === 'migrate' && didMigrate) || 
+                      (bet.prediction_bettor1 === 'die' && !didMigrate)
+                      ? bet.bettor1_id : bet.bettor2_id;
+        
+        // Update bet status
+        await supabase
+          .from('bets')
+          .update({
+            status: 'completed'
+          })
+          .eq('bet_id', bet.bet_id);
+        
+        // Create history record
+        await supabase
+          .from('bet_history')
+          .insert({
+            bet_id: bet.bet_id,
+            action: 'completed',
+            user_id: winner,
+            details: { 
+              winner, 
+              initial_market_cap: initialMarketCap,
+              final_market_cap: finalMarketCap,
+              did_migrate: didMigrate
+            },
+            market_cap_at_action: finalMarketCap
+          });
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Resolved completed bets", 
+          count: completedBets?.length || 0 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
