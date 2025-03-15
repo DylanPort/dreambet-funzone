@@ -28,7 +28,7 @@ export interface SupabaseUserProfile {
   username: string; 
   wallet_address: string;
   points: number;
-  reputation?: number; // Add reputation as optional to match actual database schema
+  reputation?: number; // Make reputation optional to match actual database schema
   created_at: string;
 }
 
@@ -42,7 +42,7 @@ export interface SupabaseBetsRow {
   token_name?: string; 
   token_symbol?: string;
   sol_amount: number;
-  prediction_bettor1: 'up' | 'down'; // Fixed to match the expected type
+  prediction_bettor1: 'up' | 'down';
   status: string;
   points_won?: number;
   created_at: string;

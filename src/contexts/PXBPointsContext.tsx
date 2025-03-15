@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PXBBet, SupabaseUserProfile, SupabaseBetsRow } from '@/types/pxb';
 import { toast } from 'sonner';
@@ -75,7 +76,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
-          reputation: supabaseUser.reputation || 0, // Default to 0 if undefined
+          reputation: supabaseUser.reputation || 0, // Use a default value of 0 if reputation is undefined
           createdAt: supabaseUser.created_at
         });
       }
@@ -111,7 +112,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             id: existingUser.id,
             username: existingUser.username || username,
             pxbPoints: existingUser.points,
-            reputation: existingUser.reputation || 0, // Default to 0 if undefined
+            reputation: existingUser.reputation || 0, // Default to 0 if reputation is undefined
             createdAt: existingUser.created_at
           });
           return;
@@ -153,7 +154,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: updatedUser.id,
         username: updatedUser.username || username,
         pxbPoints: updatedUser.points,
-        reputation: updatedUser.reputation || 0, // Default to 0 if undefined
+        reputation: updatedUser.reputation || 0, // Default to 0 if reputation is undefined
         createdAt: updatedUser.created_at
       };
       
