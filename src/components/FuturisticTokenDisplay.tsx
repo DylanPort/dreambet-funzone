@@ -28,12 +28,12 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token }) => {
   
   return (
     <motion.div 
-      className="glass-panel w-[280px] p-5 mx-auto"
-      initial={{ opacity: 0, y: 20, rotateY: 0, scale: 0.9 }}
+      className="glass-panel w-[300px] p-5 mx-auto"
+      initial={{ opacity: 0, y: 20, scale: 0.9 }}
       animate={{ 
         opacity: 1, 
         y: 0, 
-        rotateY: isHovering ? 10 : 0,
+        rotateY: isHovering ? 15 : 0,
         scale: isHovering ? 1.05 : 1,
         z: isHovering ? 50 : 0,
       }}
@@ -70,7 +70,18 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token }) => {
             ease: "linear"
           }}
         />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.1)_0%,_rgba(0,0,0,0)_70%)] pointer-events-none"></div>
+        <motion.div 
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.1)_0%,_rgba(0,0,0,0)_70%)] pointer-events-none"
+          animate={{
+            opacity: [0.2, 0.5, 0.2],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
       </div>
       
       {/* Token Info */}

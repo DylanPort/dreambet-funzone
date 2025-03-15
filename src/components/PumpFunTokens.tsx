@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { fetchTopTokensByMarketCap, fetchTokensAbove10kMarketCap, fetchTokensAbove15kMarketCap, transformBitqueryTokenToCardData, BitqueryToken } from '@/services/bitqueryService';
 import TokenCard from './TokenCard';
@@ -73,6 +74,11 @@ const PumpFunTokens: React.FC = () => {
     }
   };
 
+  // Fix for the MouseEventHandler issue - we need to handle the event correctly
+  const handleRefreshClick = () => {
+    handleRefresh(true);
+  };
+
   const toggleAutoRefresh = () => {
     setAutoRefresh(!autoRefresh);
     toast.info(`Auto refresh ${!autoRefresh ? 'enabled' : 'disabled'}`);
@@ -90,7 +96,7 @@ const PumpFunTokens: React.FC = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={handleRefresh} 
+            onClick={handleRefreshClick} 
             disabled={refreshing}
             className="flex items-center text-xs"
           >
@@ -127,7 +133,7 @@ const PumpFunTokens: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {topTokens.map((token, index) => (
                 <TokenCard 
-                  key={token.tokenAddress || index}
+                  key={token.tokenAddress || `top-token-${index}`}
                   {...transformBitqueryTokenToCardData(token)}
                 />
               ))}
@@ -151,7 +157,7 @@ const PumpFunTokens: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {tokensWith10kMcap.map((token, index) => (
                 <TokenCard 
-                  key={token.tokenAddress || index}
+                  key={token.tokenAddress || `10k-token-${index}`}
                   {...transformBitqueryTokenToCardData(token)}
                 />
               ))}
@@ -175,7 +181,7 @@ const PumpFunTokens: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {tokensWith15kMcap.map((token, index) => (
                 <TokenCard 
-                  key={token.tokenAddress || index}
+                  key={token.tokenAddress || `15k-token-${index}`}
                   {...transformBitqueryTokenToCardData(token)}
                 />
               ))}

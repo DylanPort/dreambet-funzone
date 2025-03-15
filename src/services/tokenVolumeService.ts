@@ -30,16 +30,22 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       throw error;
     }
     
-    // Transform the data but without using spread to avoid type issues
-    const transformedData: TokenVolumeData[] = data?.map(token => ({
-      token_mint: token.token_mint,
-      volume_24h: token.volume_24h,
-      liquidity: token.liquidity,
-      current_market_cap: token.current_market_cap,
-      last_trade_price: token.last_trade_price,
-      token_name: token.token_name,
-      token_symbol: token.token_symbol
-    })) || [];
+    // Properly convert data without using spread operator to avoid deep type instantiation
+    const transformedData: TokenVolumeData[] = [];
+    
+    if (data) {
+      data.forEach(token => {
+        transformedData.push({
+          token_mint: token.token_mint,
+          volume_24h: token.volume_24h,
+          liquidity: token.liquidity,
+          current_market_cap: token.current_market_cap,
+          last_trade_price: token.last_trade_price,
+          token_name: token.token_name,
+          token_symbol: token.token_symbol
+        });
+      });
+    }
     
     console.log(`Found ${transformedData.length} tokens in category ${category}`);
     return transformedData;

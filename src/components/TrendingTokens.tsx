@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, TrendingUp, Clock, ExternalLink, Zap, Flame } from 'lucide-react';
 import TokenCard from '@/components/TokenCard';
@@ -115,16 +116,20 @@ const TrendingTokens: React.FC = () => {
           {tokens.map((token, index) => (
             <TokenCard 
               key={token.baseToken?.address || index}
+              id={token.baseToken?.address || `trending-${index}`}
               name={token.baseToken?.name || 'Unknown Token'}
               symbol={token.baseToken?.symbol || '???'}
               price={token.priceUsd || 0}
-              change24h={token.priceChange?.h24 || 0}
-              volume24h={token.volume?.h24 || 0}
+              priceChange={token.priceChange?.h24 || 0}
+              timeRemaining={0} // Added required prop
+              imageUrl={token.baseToken?.logoURI || ''}
+              liquidity={token.liquidity?.usd || 0}
               marketCap={token.marketCap || 0}
-              chainId={token.chainId || 'unknown'}
-              address={token.baseToken?.address || ''}
-              formatNumber={formatNumber}
-              logoUrl={token.baseToken?.logoURI || ''}
+              volume24h={token.volume?.h24 || 0}
+              pairAddress={token.pairAddress || ''}
+              priceChange1h={token.priceChange?.h1 || 0}
+              priceChange6h={token.priceChange?.h6 || 0}
+              transactions={token.txns?.h24?.buys || 0 + token.txns?.h24?.sells || 0}
             />
           ))}
         </div>
