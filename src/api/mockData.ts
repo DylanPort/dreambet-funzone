@@ -260,8 +260,8 @@ export const createBet = async (
         duration, 
         amount,
         effectivePublicKey.toString(),
-        betId?.toString(),
-        txSignature
+        betId?.toString() || '',
+        txSignature || ''
       );
       
       console.log(`Supabase bet created: ${bet.id}`);
