@@ -6,11 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
+import { useWallet } from '@solana/wallet-adapter-react';
+import WalletConnectButton from './WalletConnectButton';
 
 const PXBOnboarding: React.FC = () => {
   const { mintPoints, isLoading } = usePXBPoints();
   const [username, setUsername] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const { connected } = useWallet();
 
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,36 +36,47 @@ const PXBOnboarding: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold mb-2">Get Started with PXB Points</h2>
           <p className="text-dream-foreground/70">
-            Mint 500 PXB Points for free and start betting on tokens!
+            Claim 500 PXB Points and start betting on tokens!
           </p>
         </div>
         
-        <form onSubmit={handleMint} className="space-y-4">
-          <div>
-            <label htmlFor="username" className="block text-sm text-dream-foreground/70 mb-1">
-              Choose a username
-            </label>
-            <Input
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
-              className="w-full bg-dream-foreground/5"
-              required
-            />
+        {!connected ? (
+          <div className="space-y-4">
+            <p className="text-center text-dream-foreground/70 mb-4">
+              Connect your wallet to claim your PXB Points
+            </p>
+            <div className="flex justify-center">
+              <WalletConnectButton />
+            </div>
           </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isLoading || !username.trim()}
-          >
-            {isLoading ? 'Minting...' : 'Mint 500 PXB Points'}
-          </Button>
-        </form>
+        ) : (
+          <form onSubmit={handleMint} className="space-y-4">
+            <div>
+              <label htmlFor="username" className="block text-sm text-dream-foreground/70 mb-1">
+                Choose a username
+              </label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
+                className="w-full bg-dream-foreground/5"
+                required
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
+              disabled={isLoading || !username.trim()}
+            >
+              {isLoading ? 'Claiming...' : 'Claim 500 PXB Points'}
+            </Button>
+          </form>
+        )}
         
         <div className="mt-6 text-sm text-dream-foreground/50 text-center">
-          By minting PXB Points, you can participate in the betting platform and grow your reputation.
+          By claiming PXB Points, you can participate in the betting platform and grow your reputation.
         </div>
       </div>
 

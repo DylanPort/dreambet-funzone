@@ -1,6 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 interface PXBPointsContextType {
   userProfile: UserProfile | null;
@@ -29,22 +32,55 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isLoading, setIsLoading] = useState(true);
   const [bets, setBets] = useState<PXBBet[]>([]);
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
+  const { connected, publicKey } = useWallet();
 
-  const mockUserId = 'user-123';
+  // Check for wallet connection changes
+  useEffect(() => {
+    if (connected && publicKey) {
+      fetchUserProfile();
+    } else {
+      setUserProfile(null);
+    }
+  }, [connected, publicKey]);
 
   const fetchUserProfile = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const storedProfile = localStorage.getItem('pxb_user_profile');
-      if (storedProfile) {
-        setUserProfile(JSON.parse(storedProfile));
-      } else {
+      if (!connected || !publicKey) {
         setUserProfile(null);
+        return;
+      }
+
+      const walletAddress = publicKey.toString();
+      
+      // Check if user exists in Supabase
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // User doesn't exist yet, but that's okay
+          console.log('User not found in database yet');
+          setUserProfile(null);
+        } else {
+          console.error('Error fetching user profile:', error);
+          toast.error('Failed to load user profile');
+        }
+      } else if (userData) {
+        // Transform the Supabase user data to our UserProfile format
+        setUserProfile({
+          id: userData.id,
+          username: userData.username || walletAddress.substring(0, 8),
+          pxbPoints: userData.points || 0,
+          reputation: userData.reputation || 0,
+          createdAt: userData.created_at
+        });
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('Error in fetchUserProfile:', error);
       toast.error('Failed to load user profile');
     } finally {
       setIsLoading(false);
@@ -54,18 +90,73 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const mintPoints = async (username: string) => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!connected || !publicKey) {
+        toast.error('Please connect your wallet first');
+        return;
+      }
       
+      const walletAddress = publicKey.toString();
+      
+      // Check if user already exists
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .single();
+      
+      if (existingUser && existingUser.points >= 500) {
+        toast.error('You have already claimed your PXB Points');
+        setUserProfile({
+          id: existingUser.id,
+          username: existingUser.username || username,
+          pxbPoints: existingUser.points,
+          reputation: existingUser.reputation || 0,
+          createdAt: existingUser.created_at
+        });
+        return;
+      }
+      
+      // Create or update the user
+      let userId = existingUser?.id || crypto.randomUUID();
+      
+      const { data: updatedUser, error } = await supabase
+        .from('users')
+        .upsert({
+          id: userId,
+          wallet_address: walletAddress,
+          username: username,
+          points: 500,
+          reputation: 0
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error minting points:', error);
+        toast.error('Failed to mint PXB Points');
+        return;
+      }
+      
+      // Record the points transaction
+      await supabase
+        .from('points_history')
+        .insert({
+          user_id: userId,
+          action: 'mint',
+          amount: 500,
+          reference_id: crypto.randomUUID()
+        });
+      
+      // Update the user profile in state
       const newProfile: UserProfile = {
-        id: mockUserId,
-        username,
-        pxbPoints: 500,
-        reputation: 0,
-        createdAt: new Date().toISOString()
+        id: updatedUser.id,
+        username: updatedUser.username || username,
+        pxbPoints: updatedUser.points,
+        reputation: updatedUser.reputation || 0,
+        createdAt: updatedUser.created_at
       };
       
       setUserProfile(newProfile);
-      localStorage.setItem('pxb_user_profile', JSON.stringify(newProfile));
       toast.success(`Successfully minted 500 PXB Points!`);
     } catch (error) {
       console.error('Error minting points:', error);
@@ -85,7 +176,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   ) => {
     setIsLoading(true);
     try {
-      if (!userProfile) {
+      if (!connected || !publicKey || !userProfile) {
         toast.error('You must be logged in to place a bet');
         return;
       }
@@ -95,13 +186,59 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return;
       }
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const walletAddress = publicKey.toString();
       
+      // Create the bet in database
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + duration);
       
+      const betId = crypto.randomUUID();
+      
+      // Insert bet record
+      const { error: betError } = await supabase
+        .from('pxb_bets')
+        .insert({
+          id: betId,
+          user_id: userProfile.id,
+          token_mint: tokenMint,
+          token_name: tokenName,
+          token_symbol: tokenSymbol,
+          bet_amount: betAmount,
+          bet_type: betType,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          expires_at: expiresAt.toISOString()
+        });
+      
+      if (betError) {
+        console.error('Error creating bet:', betError);
+        toast.error('Failed to place bet');
+        return;
+      }
+      
+      // Update user's points
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ points: userProfile.pxbPoints - betAmount })
+        .eq('id', userProfile.id);
+      
+      if (updateError) {
+        console.error('Error updating points:', updateError);
+        toast.error('Failed to update points');
+        return;
+      }
+      
+      // Update local state
+      const updatedProfile = {
+        ...userProfile,
+        pxbPoints: userProfile.pxbPoints - betAmount
+      };
+      
+      setUserProfile(updatedProfile);
+      
+      // Create new bet in local state
       const newBet: PXBBet = {
-        id: `bet-${Date.now()}`,
+        id: betId,
         userId: userProfile.id,
         tokenMint,
         tokenName,
@@ -114,20 +251,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         expiresAt: expiresAt.toISOString()
       };
       
-      const updatedProfile = {
-        ...userProfile,
-        pxbPoints: userProfile.pxbPoints - betAmount
-      };
-      
-      setUserProfile(updatedProfile);
-      localStorage.setItem('pxb_user_profile', JSON.stringify(updatedProfile));
-      
-      const storedBets = localStorage.getItem('pxb_user_bets');
-      const currentBets = storedBets ? JSON.parse(storedBets) : [];
-      const updatedBets = [...currentBets, newBet];
-      localStorage.setItem('pxb_user_bets', JSON.stringify(updatedBets));
-      
-      setBets(updatedBets);
+      setBets(prevBets => [...prevBets, newBet]);
       
       toast.success(`Bet placed successfully! ${betAmount} PXB Points on ${tokenSymbol} to ${betType === 'up' ? 'MOON' : 'DIE'}`);
     } catch (error) {
@@ -141,16 +265,40 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const fetchUserBets = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const storedBets = localStorage.getItem('pxb_user_bets');
-      if (storedBets) {
-        setBets(JSON.parse(storedBets));
-      } else {
+      if (!connected || !publicKey) {
         setBets([]);
+        return;
       }
+      
+      const { data, error } = await supabase
+        .from('pxb_bets')
+        .select('*')
+        .eq('user_id', userProfile?.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching user bets:', error);
+        return;
+      }
+      
+      // Convert to PXBBet format
+      const formattedBets: PXBBet[] = data.map(bet => ({
+        id: bet.id,
+        userId: bet.user_id,
+        tokenMint: bet.token_mint,
+        tokenName: bet.token_name,
+        tokenSymbol: bet.token_symbol,
+        betAmount: bet.bet_amount,
+        betType: bet.bet_type as 'up' | 'down',
+        status: bet.status as 'pending' | 'won' | 'lost',
+        pointsWon: bet.points_won || 0,
+        createdAt: bet.created_at,
+        expiresAt: bet.expires_at
+      }));
+      
+      setBets(formattedBets);
     } catch (error) {
-      console.error('Error fetching user bets:', error);
+      console.error('Error in fetchUserBets:', error);
     } finally {
       setIsLoading(false);
     }
@@ -159,74 +307,94 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const fetchLeaderboard = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('reputation', { ascending: false })
+        .limit(10);
       
-      const mockLeaderboard: UserProfile[] = [
-        { id: 'user-1', username: 'crypto_king', pxbPoints: 1250, reputation: 95, createdAt: new Date().toISOString() },
-        { id: 'user-2', username: 'moon_chaser', pxbPoints: 980, reputation: 82, createdAt: new Date().toISOString() },
-        { id: 'user-3', username: 'degen_trader', pxbPoints: 520, reputation: 65, createdAt: new Date().toISOString() },
-        { id: 'user-4', username: 'diamond_hands', pxbPoints: 475, reputation: 58, createdAt: new Date().toISOString() },
-        { id: 'user-5', username: 'pump_detector', pxbPoints: 390, reputation: 47, createdAt: new Date().toISOString() },
-      ];
-      
-      if (userProfile) {
-        mockLeaderboard.push(userProfile);
+      if (error) {
+        console.error('Error fetching leaderboard:', error);
+        return;
       }
       
-      mockLeaderboard.sort((a, b) => b.reputation - a.reputation);
+      // Convert to UserProfile format
+      const formattedLeaderboard: UserProfile[] = data.map(user => ({
+        id: user.id,
+        username: user.username || user.wallet_address.substring(0, 8),
+        pxbPoints: user.points,
+        reputation: user.reputation || 0,
+        createdAt: user.created_at
+      }));
       
-      setLeaderboard(mockLeaderboard);
+      setLeaderboard(formattedLeaderboard);
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      console.error('Error in fetchLeaderboard:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Process bets at regular intervals
   useEffect(() => {
-    fetchUserProfile();
-    fetchUserBets();
-    fetchLeaderboard();
+    if (!bets.length) return;
     
-    const interval = setInterval(() => {
-      if (bets.length > 0) {
-        const updatedBets = bets.map(bet => {
-          if (bet.status === 'pending' && new Date(bet.expiresAt) < new Date()) {
-            const won = Math.random() > 0.5;
+    const interval = setInterval(async () => {
+      const now = new Date();
+      const pendingBets = bets.filter(bet => 
+        bet.status === 'pending' && new Date(bet.expiresAt) < now
+      );
+      
+      if (!pendingBets.length) return;
+      
+      for (const bet of pendingBets) {
+        try {
+          // Simple 50/50 chance of winning for now
+          const won = Math.random() > 0.5;
+          const pointsWon = won ? bet.betAmount * 2 : 0;
+          const newStatus = won ? 'won' as const : 'lost' as const;
+          const reputationChange = won ? 10 : 0;
+          
+          // Update bet in database
+          await supabase
+            .from('pxb_bets')
+            .update({ 
+              status: newStatus,
+              points_won: pointsWon 
+            })
+            .eq('id', bet.id);
+          
+          if (won && userProfile) {
+            // Update user's points and reputation
+            await supabase
+              .from('users')
+              .update({ 
+                points: userProfile.pxbPoints + pointsWon,
+                reputation: userProfile.reputation + reputationChange
+              })
+              .eq('id', userProfile.id);
             
-            if (won && userProfile) {
-              const pointsWon = bet.betAmount * 2;
-              const updatedProfile = {
-                ...userProfile,
-                pxbPoints: userProfile.pxbPoints + pointsWon,
-                reputation: userProfile.reputation + 10
-              };
-              
-              setUserProfile(updatedProfile);
-              localStorage.setItem('pxb_user_profile', JSON.stringify(updatedProfile));
-              
-              toast.success(`Your bet on ${bet.tokenSymbol} won! +${pointsWon} PXB Points`);
-              
-              return {
-                ...bet,
-                status: 'won' as const,
-                pointsWon
-              };
-            } else {
-              toast.error(`Your bet on ${bet.tokenSymbol} lost!`);
-              
-              return {
-                ...bet,
-                status: 'lost' as const,
-                pointsWon: 0
-              };
-            }
+            // Update local state
+            setUserProfile({
+              ...userProfile,
+              pxbPoints: userProfile.pxbPoints + pointsWon,
+              reputation: userProfile.reputation + reputationChange
+            });
+            
+            toast.success(`Your bet on ${bet.tokenSymbol} won! +${pointsWon} PXB Points`);
+          } else {
+            toast.error(`Your bet on ${bet.tokenSymbol} lost!`);
           }
-          return bet;
-        });
-        
-        setBets(updatedBets);
-        localStorage.setItem('pxb_user_bets', JSON.stringify(updatedBets));
+          
+          // Update bets in local state
+          setBets(prevBets => prevBets.map(b => 
+            b.id === bet.id 
+              ? { ...b, status: newStatus, pointsWon } 
+              : b
+          ));
+        } catch (error) {
+          console.error(`Error processing bet ${bet.id}:`, error);
+        }
       }
     }, 60000);
     
