@@ -30,26 +30,23 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       throw error;
     }
     
-    // Create a new array to avoid type issues
-    const transformedData: TokenVolumeData[] = [];
+    // Create a simple array of token data without complex type transformations
+    let tokens: TokenVolumeData[] = [];
     
-    if (data) {
-      // Use simple for loop instead of forEach to avoid deep type instantiation
-      for (let i = 0; i < data.length; i++) {
-        const token = data[i];
-        transformedData.push({
-          token_mint: token.token_mint,
-          volume_24h: token.volume_24h || 0,
-          current_market_cap: token.current_market_cap,
-          last_trade_price: token.last_trade_price,
-          token_name: token.token_name,
-          token_symbol: token.token_symbol
-        });
-      }
+    if (data && Array.isArray(data)) {
+      // Using a simple map with explicit return type
+      tokens = data.map((item: any): TokenVolumeData => ({
+        token_mint: item.token_mint || '',
+        volume_24h: item.volume_24h || 0,
+        current_market_cap: item.current_market_cap,
+        last_trade_price: item.last_trade_price,
+        token_name: item.token_name,
+        token_symbol: item.token_symbol
+      }));
     }
     
-    console.log(`Found ${transformedData.length} tokens in category ${category}`);
-    return transformedData;
+    console.log(`Found ${tokens.length} tokens in category ${category}`);
+    return tokens;
   } catch (error) {
     console.error(`Error in fetchTokensByVolumeCategory for ${category}:`, error);
     return [];
