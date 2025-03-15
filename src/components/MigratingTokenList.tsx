@@ -67,20 +67,13 @@ const MigratingTokenList = () => {
       setTokens(currentTokens => {
         const existingIds = new Set(currentTokens.map(t => t.id));
         const newUniqueTokens = newTokens.filter(t => !existingIds.has(t.id));
-        if (newUniqueTokens.length > 0) {
-          toast({
-            title: "New tokens created!",
-            description: `${newUniqueTokens.length} new tokens from Pump.fun`,
-            variant: "default"
-          });
-        }
         return [...newUniqueTokens, ...currentTokens];
       });
       if (loading) {
         setLoading(false);
       }
     }
-  }, [pumpPortal.recentTokens, loading, toast]);
+  }, [pumpPortal.recentTokens, loading]);
 
   useEffect(() => {
     const handleRawWebSocketMessages = () => {
@@ -101,13 +94,6 @@ const MigratingTokenList = () => {
         setTokens(currentTokens => {
           const existingIds = new Set(currentTokens.map(t => t.id));
           const newUniqueTokens = processedTokens.filter(t => !existingIds.has(t.id));
-          if (newUniqueTokens.length > 0) {
-            toast({
-              title: "New tokens detected!",
-              description: `${newUniqueTokens.length} new tokens from Pump.fun`,
-              variant: "default"
-            });
-          }
           return [...newUniqueTokens, ...currentTokens];
         });
         if (loading) {
@@ -118,7 +104,7 @@ const MigratingTokenList = () => {
     handleRawWebSocketMessages();
     const interval = setInterval(handleRawWebSocketMessages, 5000);
     return () => clearInterval(interval);
-  }, [loading, toast]);
+  }, [loading]);
 
   const formatTimeSince = (timestamp: number) => {
     const now = new Date().getTime();
