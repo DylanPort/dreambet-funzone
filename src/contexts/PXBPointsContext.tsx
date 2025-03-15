@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PXBBet, SupabaseUserProfile, SupabaseBetsRow } from '@/types/pxb';
 import { toast } from 'sonner';
@@ -76,7 +75,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
-          reputation: supabaseUser.reputation || 0, // Safely access optional reputation field
+          reputation: supabaseUser.reputation || 0, 
           createdAt: supabaseUser.created_at
         });
       }
@@ -111,7 +110,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: existingUser.id,
           username: existingUser.username || username,
           pxbPoints: existingUser.points,
-          reputation: existingUser.reputation || 0, // Safely access optional reputation field
+          reputation: existingUser.reputation || 0,
           createdAt: existingUser.created_at
         });
         return;
@@ -126,7 +125,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           wallet_address: walletAddress,
           username: username,
           points: 500,
-          reputation: 0 // Set default reputation
+          reputation: 0 // Explicitly set default reputation
         })
         .select()
         .single();
@@ -152,7 +151,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: updatedUser.id,
         username: updatedUser.username || username,
         pxbPoints: updatedUser.points,
-        reputation: updatedUser.reputation || 0, // Safely access optional reputation field
+        reputation: updatedUser.reputation || 0,
         createdAt: updatedUser.created_at
       };
       
@@ -324,7 +323,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: user.id,
         username: user.username || user.wallet_address.substring(0, 8),
         pxbPoints: user.points,
-        reputation: user.reputation || 0, // Safely access optional reputation field
+        reputation: user.reputation || 0, // Always provide a default value of 0
         createdAt: user.created_at
       }));
       
