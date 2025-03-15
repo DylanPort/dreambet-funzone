@@ -68,23 +68,21 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, isActi
       {/* Token Info */}
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center">
-          {token.imageUrl ? (
-            <img 
-              src={token.imageUrl} 
-              alt={token.name} 
-              className="w-8 h-8 rounded-full object-cover" 
-              onError={(e) => {
-                const imgElement = e.target as HTMLImageElement;
-                imgElement.style.display = 'none';
-                const nextElement = imgElement.nextElementSibling as HTMLElement;
-                if (nextElement) {
-                  nextElement.style.display = 'flex';
-                }
-              }} 
+          <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden">
+            <motion.img 
+              src="/lovable-uploads/fc77208f-31d5-4f47-ab4c-6194347e930c.png" 
+              alt={token.name || "Token"} 
+              className="w-14 h-14 object-cover"
+              animate={{
+                scale: [1, 1.05, 1],
+                rotate: [0, 2, 0, -2, 0],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
             />
-          ) : null}
-          <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}>
-            <span className="font-display font-bold">{getTokenSymbol(token)}</span>
           </div>
           <span className="ml-2 font-semibold">{token.name}</span>
         </div>
