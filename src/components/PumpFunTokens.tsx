@@ -49,7 +49,7 @@ const PumpFunTokens: React.FC = () => {
     let intervalId: NodeJS.Timeout | null = null;
     if (autoRefresh) {
       intervalId = setInterval(() => {
-        handleRefresh(false);
+        handleRefresh();
       }, 30000); // Refresh every 30 seconds
     }
     return () => {
@@ -57,9 +57,14 @@ const PumpFunTokens: React.FC = () => {
     };
   }, [autoRefresh, activeTab]);
 
-  const handleRefresh = async (showToast = true) => {
+  // Fix: Change the function signature to accept a React MouseEvent instead of boolean
+  const handleRefresh = async (event?: React.MouseEvent) => {
     if (refreshing) return;
     setRefreshing(true);
+    
+    // Determine if we should show a toast based on whether this was triggered by a user click
+    const showToast = !!event;
+    
     try {
       await fetchData();
       if (showToast) {
@@ -118,8 +123,9 @@ const PumpFunTokens: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {tokens.map((token, index) => {
           const cardData = transformBitqueryTokenToCardData(token);
+          // Fix: Use the right property for the key (MintAddress from the Trade.Buy.Currency object)
           return (
-            <div key={`${token.address}-${index}`} className="relative overflow-hidden group">
+            <div key={`${token.Trade.Buy.Currency.MintAddress}-${index}`} className="relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
               <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
               <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
