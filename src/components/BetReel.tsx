@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -16,7 +15,7 @@ const BetReel = () => {
     // Initial fetch of latest bets
     const loadBets = async () => {
       try {
-        const latestBets = await fetchLatestBets(20);
+        const latestBets = await fetchLatestBets(20, true); // Get 20 latest bets, including expired ones
         setBets(latestBets);
       } catch (error) {
         console.error('Error loading bets for reel:', error);
@@ -58,6 +57,10 @@ const BetReel = () => {
             }
           );
           
+          // Calculate the expiry time
+          const createdTime = new Date(newBet.created_at).getTime();
+          const expiresAt = new Date(createdTime + (newBet.duration * 60000));
+          
           // Only keep the most recent 20 bets
           const updatedBets = [
             {
@@ -67,11 +70,11 @@ const BetReel = () => {
               tokenSymbol: newBet.tokens?.token_symbol || '???',
               initiator: newBet.creator,
               amount: newBet.sol_amount,
-              pointsAmount: newBet.points_amount || 0,
+              pointsAmount: 0, // Default to 0 since this column doesn't exist
               prediction: newBet.prediction_bettor1,
-              timestamp: new Date(newBet.created_at).getTime(),
-              expiresAt: new Date(newBet.expires_at).getTime(),
-              timeRemaining: Math.floor((new Date(newBet.created_at).getTime() + (newBet.duration * 60000) - Date.now()) / 60000),
+              timestamp: createdTime,
+              expiresAt: expiresAt.getTime(),
+              timeRemaining: Math.floor((expiresAt.getTime() - Date.now()) / 60000),
               status: newBet.status,
               duration: newBet.duration,
               onChainBetId: newBet.on_chain_id || null,

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 
@@ -356,21 +357,20 @@ export const acceptBet = async (betId: string) => {
  * @param limit Number of bets to return (default: 10)
  * @returns Array of bet objects
  */
-export const fetchLatestBets = async (limit = 10) => {
+export const fetchLatestBets = async (limit = 10, includeExpired = false) => {
   try {
-    const { data, error } = await supabase
+    // Create a query builder that selects everything we need
+    let query = supabase
       .from('bets')
       .select(`
         bet_id,
         token_mint,
         creator,
         sol_amount,
-        points_amount,
         prediction_bettor1,
         created_at,
-        expires_at,
-        status,
         duration,
+        status,
         on_chain_id,
         transaction_signature,
         tokens (
@@ -380,29 +380,42 @@ export const fetchLatestBets = async (limit = 10) => {
       `)
       .order('created_at', { ascending: false })
       .limit(limit);
+      
+    // If we don't want to include expired bets, add a filter
+    if (!includeExpired) {
+      query = query.neq('status', 'expired');
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching latest bets:', error);
       throw error;
     }
 
-    return data.map(bet => ({
-      id: bet.bet_id,
-      tokenId: bet.token_mint,
-      tokenName: bet.tokens?.token_name || 'Unknown Token',
-      tokenSymbol: bet.tokens?.token_symbol || '???',
-      initiator: bet.creator,
-      amount: bet.sol_amount,
-      pointsAmount: bet.points_amount || 0,
-      prediction: bet.prediction_bettor1,
-      timestamp: new Date(bet.created_at).getTime(),
-      expiresAt: new Date(bet.expires_at).getTime(),
-      timeRemaining: Math.floor((new Date(bet.created_at).getTime() + (bet.duration * 60000) - Date.now()) / 60000),
-      status: bet.status,
-      duration: bet.duration,
-      onChainBetId: bet.on_chain_id || null,
-      transactionSignature: bet.transaction_signature || null
-    }));
+    return data.map(bet => {
+      // Calculate the expiry time
+      const createdTime = new Date(bet.created_at).getTime();
+      const expiresAt = new Date(createdTime + (bet.duration * 60000));
+      
+      return {
+        id: bet.bet_id,
+        tokenId: bet.token_mint,
+        tokenName: bet.tokens?.token_name || 'Unknown Token',
+        tokenSymbol: bet.tokens?.token_symbol || '???',
+        initiator: bet.creator,
+        amount: bet.sol_amount,
+        pointsAmount: 0, // Default to 0 since this column doesn't exist
+        prediction: bet.prediction_bettor1,
+        timestamp: createdTime,
+        expiresAt: expiresAt.getTime(),
+        timeRemaining: Math.floor((expiresAt.getTime() - Date.now()) / 60000),
+        status: bet.status,
+        duration: bet.duration,
+        onChainBetId: bet.on_chain_id || null,
+        transactionSignature: bet.transaction_signature || null
+      };
+    });
   } catch (error) {
     console.error('Error in fetchLatestBets:', error);
     return [];
