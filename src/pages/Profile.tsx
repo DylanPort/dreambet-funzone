@@ -1,12 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
-import { Clock, TrendingUp, TrendingDown, Settings, History, Wallet as WalletIcon, Activity, Filter, RefreshCw, User } from 'lucide-react';
+import { Clock, TrendingUp, TrendingDown, Settings, History, Coins, Activity, Filter, RefreshCw, User } from 'lucide-react';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
 import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile, UserBet, UserStats } from '@/services/userService';
-import useSolanaBalance from '@/hooks/useSolanaBalance';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { toast } from 'sonner';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion } from 'framer-motion';
@@ -27,7 +28,7 @@ const Profile = () => {
   const [isActiveBetsLoading, setIsActiveBetsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'history' | 'settings'>('history');
   const [usernameInput, setUsernameInput] = useState('');
-  const { balance: solanaBalance, isLoading: balanceLoading } = useSolanaBalance();
+  const { userProfile, isLoading: pxbLoading } = usePXBPoints();
   const [betsFilter, setBetsFilter] = useState<'all' | 'active' | 'completed'>('all');
   
   useEffect(() => {
@@ -286,16 +287,16 @@ const Profile = () => {
             <div className="ml-auto flex flex-col md:flex-row gap-4">
               <div className="glass-panel p-4 text-center">
                 <p className="text-dream-foreground/60 text-sm flex items-center justify-center">
-                  <WalletIcon className="w-4 h-4 mr-1" />
-                  SOL Balance
+                  <Coins className="w-4 h-4 mr-1 text-yellow-400" />
+                  PXB Points
                 </p>
                 <p className="text-2xl font-display font-bold text-gradient">
-                  {balanceLoading ? (
+                  {pxbLoading ? (
                     <span className="text-sm text-dream-foreground/40">Loading...</span>
-                  ) : solanaBalance !== null ? (
-                    `${solanaBalance.toFixed(4)} SOL`
+                  ) : userProfile !== null ? (
+                    `${userProfile.pxbPoints.toLocaleString()} PXB`
                   ) : (
-                    <span className="text-sm text-dream-foreground/40">Unavailable</span>
+                    <span className="text-sm text-dream-foreground/40">0 PXB</span>
                   )}
                 </p>
               </div>
