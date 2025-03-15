@@ -75,7 +75,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
-          reputation: supabaseUser.reputation || 0, 
+          reputation: supabaseUser.reputation || 0, // Provide default of 0
           createdAt: supabaseUser.created_at
         });
       }
@@ -110,7 +110,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: existingUser.id,
           username: existingUser.username || username,
           pxbPoints: existingUser.points,
-          reputation: existingUser.reputation || 0,
+          reputation: existingUser.reputation || 0, // Provide default of 0
           createdAt: existingUser.created_at
         });
         return;
@@ -151,7 +151,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: updatedUser.id,
         username: updatedUser.username || username,
         pxbPoints: updatedUser.points,
-        reputation: updatedUser.reputation || 0,
+        reputation: updatedUser.reputation || 0, // Provide default of 0
         createdAt: updatedUser.created_at
       };
       
@@ -366,14 +366,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               .from('users')
               .update({ 
                 points: userProfile.pxbPoints + pointsWon,
-                reputation: (userProfile.reputation || 0) + reputationChange
+                reputation: (userProfile.reputation || 0) + reputationChange // Handle potentially undefined reputation
               })
               .eq('id', userProfile.id);
             
             setUserProfile({
               ...userProfile,
               pxbPoints: userProfile.pxbPoints + pointsWon,
-              reputation: (userProfile.reputation || 0) + reputationChange
+              reputation: (userProfile.reputation || 0) + reputationChange // Handle potentially undefined reputation
             });
             
             toast.success(`Your bet on ${bet.tokenSymbol} won! +${pointsWon} PXB Points`);
