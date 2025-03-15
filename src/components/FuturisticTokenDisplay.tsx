@@ -1,15 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { ExternalLink, ArrowUp, ArrowDown, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 interface FuturisticTokenCardProps {
   token: any;
-  index: number;
 }
 
-const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index }) => {
+const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token }) => {
   const [isHovering, setIsHovering] = useState(false);
   const isPositive = token.change24h >= 0;
   
@@ -27,26 +26,25 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index 
     return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
   
-  const cardPosition = index === 0 ? 'left-[10%]' : 'right-[10%]';
-  
   return (
     <motion.div 
-      className={`absolute glass-panel transform transition-all duration-500 w-[260px] p-5 ${isHovering ? 'scale-105 z-50' : 'z-10'} ${cardPosition} top-[20%]`}
-      initial={{ opacity: 0, y: 20, rotateY: -25 }}
+      className="glass-panel w-[280px] p-5 mx-auto"
+      initial={{ opacity: 0, y: 20, rotateY: 0, scale: 0.9 }}
       animate={{ 
         opacity: 1, 
         y: 0, 
-        rotateY: isHovering ? 0 : index === 0 ? -15 : 15,
-        x: isHovering ? (index === 0 ? -10 : 10) : 0
+        rotateY: isHovering ? 10 : 0,
+        scale: isHovering ? 1.05 : 1,
+        z: isHovering ? 50 : 0,
       }}
-      exit={{ opacity: 0, y: -20, rotateY: index === 0 ? -30 : 30 }}
+      exit={{ opacity: 0, y: -20, rotateY: -30 }}
       transition={{ 
         type: "spring", 
         stiffness: 100, 
         damping: 15,
         duration: 0.5
       }}
-      key={`token-card-${token.id || index}`}
+      key={`token-card-${token.id}`}
       style={{
         transformStyle: 'preserve-3d',
         boxShadow: isHovering ? 
@@ -59,7 +57,19 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index 
     >
       {/* Holographic Effect */}
       <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 animate-shine"></div>
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+          initial={{ opacity: 0, x: -200 }}
+          animate={{ 
+            opacity: [0, 0.5, 0], 
+            x: [isHovering ? -200 : -250, isHovering ? 200 : 250, isHovering ? 500 : 550] 
+          }}
+          transition={{ 
+            repeat: Infinity, 
+            duration: isHovering ? 1.5 : 3,
+            ease: "linear"
+          }}
+        />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.1)_0%,_rgba(0,0,0,0)_70%)] pointer-events-none"></div>
       </div>
       
@@ -92,7 +102,10 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index 
       </div>
       
       {/* Price Display */}
-      <div className="relative h-[80px] mb-3 rounded-md overflow-hidden">
+      <motion.div 
+        className="relative h-[90px] mb-3 rounded-md overflow-hidden"
+        whileHover={{ scale: 1.02 }}
+      >
         <div 
           className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40"
           style={{
@@ -101,43 +114,73 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index 
           }}
         ></div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative">
-            <span className={`text-xl font-bold ${isPositive ? 'text-green-300' : 'text-red-300'}`}>
+          <motion.div 
+            className="relative"
+            initial={{ scale: 0.9 }}
+            animate={{ 
+              scale: [0.95, 1.05, 0.95],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <span className={`text-2xl font-bold ${isPositive ? 'text-green-300' : 'text-red-300'}`}>
               ${formatPrice(token.currentPrice)}
             </span>
             <div className="absolute -right-8 -top-4">
-              <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+              <motion.span 
+                className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}
+                animate={{ y: [0, -2, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
                 {isPositive ? '+' : ''}{token.change24h.toFixed(2)}%
-              </span>
+              </motion.span>
             </div>
-          </div>
+          </motion.div>
         </div>
         
         {/* Animated scan line */}
-        <div 
-          className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent opacity-50"
+        <motion.div 
+          className="absolute bg-gradient-to-b from-transparent via-white/10 to-transparent opacity-50"
           style={{
             height: '10px',
             width: '100%',
-            animation: 'scan-line 2s linear infinite'
           }}
-        ></div>
-      </div>
+          animate={{
+            top: ['0%', '100%', '0%'],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        ></motion.div>
+      </motion.div>
       
       {/* Action Buttons */}
       <div className="flex justify-around">
-        <button className="btn-moon py-1 px-3 text-sm relative overflow-hidden group">
+        <motion.button 
+          className="btn-moon py-1 px-3 text-sm relative overflow-hidden group"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           <span className="relative z-10 flex items-center">
             Moon <ArrowUp className="w-3 h-3 ml-1" />
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-green-300/30 group-hover:from-green-500/50 group-hover:to-green-300/50 transition-all duration-300"></div>
-        </button>
-        <button className="btn-die py-1 px-3 text-sm relative overflow-hidden group">
+        </motion.button>
+        <motion.button 
+          className="btn-die py-1 px-3 text-sm relative overflow-hidden group"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           <span className="relative z-10 flex items-center">
             Die <ArrowDown className="w-3 h-3 ml-1" />
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-red-500/30 to-red-300/30 group-hover:from-red-500/50 group-hover:to-red-300/50 transition-all duration-300"></div>
-        </button>
+        </motion.button>
       </div>
       
       {/* Token Links */}
@@ -151,31 +194,81 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index 
       </div>
       
       {/* Data Flow Visualization */}
-      <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent2/20 to-dream-accent3/20 flex items-center justify-center animate-pulse-glow">
+      <motion.div 
+        className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent2/20 to-dream-accent3/20 flex items-center justify-center"
+        animate={{ 
+          scale: [1, 1.2, 1],
+          opacity: [0.7, 1, 0.7],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      >
         <Zap className="w-4 h-4 text-dream-accent2" />
-      </div>
+      </motion.div>
     </motion.div>
   );
 };
 
 const FuturisticTokenDisplay: React.FC<{ tokens: any[] }> = ({ tokens }) => {
-  const [displayTokens, setDisplayTokens] = useState<any[]>([]);
+  const [displayToken, setDisplayToken] = useState<any | null>(null);
+  const [isChanging, setIsChanging] = useState(false);
   
   useEffect(() => {
-    // Only use the first 2 tokens
-    setDisplayTokens(tokens.slice(0, 2));
+    // Pick the first token when tokens array changes
+    if (tokens.length > 0) {
+      // Smooth transition between tokens
+      if (displayToken) {
+        setIsChanging(true);
+        const timer = setTimeout(() => {
+          setDisplayToken(tokens[0]);
+          setIsChanging(false);
+        }, 500);
+        return () => clearTimeout(timer);
+      } else {
+        setDisplayToken(tokens[0]);
+      }
+    } else {
+      setDisplayToken(null);
+    }
   }, [tokens]);
 
+  // Auto-change token every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (tokens.length > 1) {
+        setIsChanging(true);
+        
+        setTimeout(() => {
+          const currentIndex = tokens.findIndex(
+            token => token.id === displayToken?.id
+          );
+          const nextIndex = (currentIndex + 1) % tokens.length;
+          setDisplayToken(tokens[nextIndex]);
+          setIsChanging(false);
+        }, 500);
+      }
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, [tokens, displayToken]);
+
   return (
-    <div className="relative w-full h-[200px] mt-2 mb-8">
+    <div className="relative w-full h-[250px] mt-2 mb-8 flex items-center justify-center perspective-1000">
       <AnimatePresence mode="wait">
-        {displayTokens.map((token, index) => (
-          <FuturisticTokenCard 
-            key={`${token.id || `token-${index}`}-${token.name}`} 
-            token={token} 
-            index={index} 
-          />
-        ))}
+        {displayToken && (
+          <motion.div
+            key={`token-${displayToken.id || 'default'}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isChanging ? 0 : 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <FuturisticTokenCard token={displayToken} />
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
