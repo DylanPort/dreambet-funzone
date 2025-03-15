@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink } from 'lucide-react';
@@ -10,17 +9,14 @@ import AnimatedLogo from '@/components/AnimatedLogo';
 import FuturisticTokenDisplay from '@/components/FuturisticTokenDisplay';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -56,12 +52,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -72,7 +66,6 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -89,27 +82,52 @@ const Index = () => {
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
               <Link to="/betting">
-                <Button className="relative overflow-hidden group bg-gradient-to-r from-dream-accent1/40 to-dream-accent3/40 text-white text-lg px-8 py-6 
-                  rounded-xl transition-all duration-300 border border-white/20 backdrop-blur-md
-                  transform hover:translate-y-[-2px] active:translate-y-[1px]
-                  shadow-[0_8px_20px_rgba(123,97,255,0.3)] hover:shadow-[0_10px_25px_rgba(123,97,255,0.4)]
-                  before:content-[''] before:absolute before:inset-0 before:bg-white/5 before:rounded-xl before:opacity-100 
-                  after:content-[''] after:absolute after:inset-0 after:rounded-xl after:opacity-0 after:transition-opacity after:duration-300
-                  after:bg-gradient-to-b after:from-white/20 after:via-white/10 after:to-transparent hover:after:opacity-100
-                  ">
-                  <span className="relative z-10 flex items-center">
+                <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
+                  rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
+                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
+                  hover:border-purple-400/50
+                  before:content-[''] before:absolute before:inset-0 
+                  before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
+                  before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
+                  after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
+                  after:shadow-[0_0_30px_rgba(139,92,246,0.5)] after:opacity-50 hover:after:opacity-100
+                  after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(139,92,246,0.8)]
+                  [&>span]:relative [&>span]:z-10
+                  group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
+                  group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
+                  <span className="relative z-10 flex items-center font-bold text-transparent bg-gradient-to-r from-green-800 to-green-600 bg-clip-text drop-shadow-[0_0_10px_rgba(22,163,74,0.8)]">
                     Start Betting
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-700 filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
                   </span>
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/5 to-transparent opacity-25"></div>
-                  <div className="absolute -inset-full h-[200%] w-[50%] z-10 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-40 group-hover:animate-shine" />
-                  <div className="absolute inset-[1.5px] rounded-[10px] pointer-events-none z-0 bg-gradient-to-b from-white/10 to-transparent border border-white/10"></div>
+                  
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400 via-yellow-300 to-purple-600
+                    animate-gradient-move bg-[length:400%_100%] opacity-70 transform-gpu"></div>
+                  
+                  <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-green-500 via-yellow-400 via-orange-500 to-purple-600
+                    opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500
+                    group-hover:blur-2xl animate-pulse-glow"></div>
+                  
+                  <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-xl">
+                    <div className="absolute -inset-[10px] bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.5),transparent_60%)]
+                      animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                    
+                    <div className="absolute -bottom-2 left-0 right-0 h-12 bg-gradient-to-t from-green-400 via-yellow-300 to-transparent
+                      filter blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500
+                      animate-bob [mask-image:linear-gradient(to_bottom,transparent,black)]"></div>
+                    
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-700">
+                      <div className="absolute top-[20%] left-[15%] w-4 h-4 rounded-full bg-green-300 filter blur-sm animate-float"></div>
+                      <div className="absolute top-[40%] left-[75%] w-3 h-3 rounded-full bg-yellow-300 filter blur-sm animate-float-delayed"></div>
+                      <div className="absolute top-[70%] left-[30%] w-2 h-2 rounded-full bg-purple-300 filter blur-sm animate-float-delayed-2"></div>
+                    </div>
+                    
+                    <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
+                    <div className="absolute inset-x-8 bottom-0 h-[30%] bg-gradient-to-t from-black/40 to-transparent rounded-b-xl opacity-10 group-hover:opacity-40 transition-opacity duration-500"></div>
+                  </div>
                 </Button>
               </Link>
               <Link to="/betting">
-                <Button variant="outline" className="text-lg px-8 py-6 border-dream-accent2/50 hover:border-dream-accent2 hover:bg-dream-accent2/10">
-                  Explore Tokens
-                </Button>
+                
               </Link>
             </div>
           </div>
@@ -169,5 +187,4 @@ const Index = () => {
       </footer>
     </>;
 };
-
 export default Index;
