@@ -1,15 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
-import { fetchOpenBets } from "@/services/supabaseService";
+import { fetchOpenBets, fetchLatestBets } from "@/services/supabaseService";
 import { toast } from 'sonner';
+
 const BetReel: React.FC = () => {
   const [activeBets, setActiveBets] = useState<Bet[]>([]);
+  const [latestBets, setLatestBets] = useState<Bet[]>([]);
   const [animateIndex, setAnimateIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const data = await fetchLatestBets(5, false);
+      setLatestBets(data);
+    } catch (error) {
+      console.error('Error fetching latest bets:', error);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchBets = async () => {
       try {
@@ -228,4 +240,5 @@ const BetReel: React.FC = () => {
       </div>
     </div>;
 };
+
 export default BetReel;

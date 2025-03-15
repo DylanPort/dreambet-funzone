@@ -130,6 +130,33 @@ export type Database = {
           },
         ]
       }
+      points_history: {
+        Row: {
+          action: string
+          amount: number
+          created_at: string
+          id: string
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          amount: number
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       token_volume_history: {
         Row: {
           id: string
@@ -202,18 +229,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          points: number
           username: string | null
           wallet_address: string
         }
         Insert: {
           created_at?: string
           id: string
+          points?: number
           username?: string | null
           wallet_address: string
         }
         Update: {
           created_at?: string
           id?: string
+          points?: number
           username?: string | null
           wallet_address?: string
         }
@@ -232,6 +262,16 @@ export type Database = {
           p_action: string
           p_details?: Json
           p_market_cap?: number
+        }
+        Returns: undefined
+      }
+      update_user_points_transaction: {
+        Args: {
+          user_id_param: string
+          points_param: number
+          amount_param: number
+          action_param: string
+          reference_id_param: string
         }
         Returns: undefined
       }

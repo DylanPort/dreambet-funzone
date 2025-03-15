@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, ArrowUp, ArrowDown, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface FuturisticTokenCardProps {
   token: any;
@@ -26,18 +27,31 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index 
     return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
   
+  const cardPosition = index === 0 ? 'left-[10%]' : 'right-[10%]';
+  
   return (
-    <div 
-      className={`absolute glass-panel transform transition-all duration-500 w-[280px] p-5 ${isHovering ? 'scale-105 z-50' : 'z-10'}`}
+    <motion.div 
+      className={`absolute glass-panel transform transition-all duration-500 w-[260px] p-5 ${isHovering ? 'scale-105 z-50' : 'z-10'} ${cardPosition} top-[20%]`}
+      initial={{ opacity: 0, y: 20, rotateY: -25 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0, 
+        rotateY: isHovering ? 0 : index === 0 ? -15 : 15,
+        x: isHovering ? (index === 0 ? -10 : 10) : 0
+      }}
+      exit={{ opacity: 0, y: -20, rotateY: index === 0 ? -30 : 30 }}
+      transition={{ 
+        type: "spring", 
+        stiffness: 100, 
+        damping: 15,
+        duration: 0.5
+      }}
+      key={`token-card-${token.id || index}`}
       style={{
-        top: `${10 + (index * 10)}%`,
-        left: `${15 + (index * 20)}%`,
-        transform: `perspective(1000px) rotateY(${isHovering ? '0' : '-15'}deg) rotateX(${isHovering ? '0' : '5'}deg)`,
         transformStyle: 'preserve-3d',
         boxShadow: isHovering ? 
           `0 0 25px rgba(${isPositive ? '0, 255, 120' : '255, 61, 252'}, 0.7)` : 
           `0 0 15px rgba(${isPositive ? '0, 255, 120' : '255, 61, 252'}, 0.3)`,
-        transition: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         borderColor: isHovering ? (isPositive ? 'rgba(0, 255, 120, 0.5)' : 'rgba(255, 61, 252, 0.5)') : 'rgba(255, 255, 255, 0.1)'
       }}
       onMouseEnter={() => setIsHovering(true)}
@@ -140,16 +154,29 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index 
       <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent2/20 to-dream-accent3/20 flex items-center justify-center animate-pulse-glow">
         <Zap className="w-4 h-4 text-dream-accent2" />
       </div>
-    </div>
+    </motion.div>
   );
 };
 
 const FuturisticTokenDisplay: React.FC<{ tokens: any[] }> = ({ tokens }) => {
+  const [displayTokens, setDisplayTokens] = useState<any[]>([]);
+  
+  useEffect(() => {
+    // Only use the first 2 tokens
+    setDisplayTokens(tokens.slice(0, 2));
+  }, [tokens]);
+
   return (
-    <div className="relative w-full h-[300px] md:h-[400px] mb-16">
-      {tokens.map((token, index) => (
-        <FuturisticTokenCard key={token.id || `token-${index}`} token={token} index={index} />
-      ))}
+    <div className="relative w-full h-[200px] mt-2 mb-8">
+      <AnimatePresence mode="wait">
+        {displayTokens.map((token, index) => (
+          <FuturisticTokenCard 
+            key={`${token.id || `token-${index}`}-${token.name}`} 
+            token={token} 
+            index={index} 
+          />
+        ))}
+      </AnimatePresence>
     </div>
   );
 };
