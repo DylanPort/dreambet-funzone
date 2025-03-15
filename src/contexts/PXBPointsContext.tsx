@@ -106,11 +106,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .single();
       
       if (existingUser) {
+        // Use the existingUser.username to ensure username persistence
+        const existingUsername = existingUser.username || username;
+        
         if (existingUser.points >= 500) {
           toast.error('You have already claimed your PXB Points');
           setUserProfile({
             id: existingUser.id,
-            username: existingUser.username || username,
+            username: existingUsername,
             pxbPoints: existingUser.points,
             reputation: existingUser.reputation || 0, // Default to 0 if reputation is undefined
             createdAt: existingUser.created_at
@@ -120,13 +123,15 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       
       let userId = existingUser?.id || crypto.randomUUID();
+      // If we have an existing user, preserve their username, otherwise use the provided one
+      const finalUsername = existingUser?.username || username || publicKey.toString().substring(0, 8);
       
       const { data: updatedUser, error } = await supabase
         .from('users')
         .upsert({
           id: userId,
           wallet_address: walletAddress,
-          username: username,
+          username: finalUsername,
           points: 500,
           reputation: 0 // Explicitly set default reputation
         })
@@ -152,7 +157,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       const newProfile: UserProfile = {
         id: updatedUser.id,
-        username: updatedUser.username || username,
+        username: updatedUser.username || finalUsername,
         pxbPoints: updatedUser.points,
         reputation: updatedUser.reputation || 0, // Default to 0 if reputation is undefined
         createdAt: updatedUser.created_at
@@ -376,7 +381,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             setUserProfile({
               ...userProfile,
               pxbPoints: userProfile.pxbPoints + pointsWon,
-              reputation: userProfile.reputation + reputationChange // We know userProfile.reputation is defined here
+              reputation: (userProfile.reputation || 0) + reputationChange // Handle undefined reputation
             });
             
             toast.success(`Your bet on ${bet.tokenSymbol} won! +${pointsWon} PXB Points`);

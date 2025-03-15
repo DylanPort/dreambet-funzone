@@ -43,7 +43,9 @@ const PXBLeaderboard: React.FC = () => {
             
             <div className="flex-1">
               <div className="flex justify-between">
-                <div className="font-medium">{trader.username}</div>
+                <div className="font-medium truncate max-w-[120px]" title={trader.username}>
+                  {trader.username}
+                </div>
                 <div className="text-dream-accent1">{trader.pxbPoints} PXB</div>
               </div>
               
@@ -54,6 +56,12 @@ const PXBLeaderboard: React.FC = () => {
             </div>
           </div>
         ))}
+
+        {leaderboard.length === 0 && (
+          <div className="text-center py-4 text-dream-foreground/60">
+            No data yet. Be the first on the leaderboard!
+          </div>
+        )}
       </div>
     </div>
   );

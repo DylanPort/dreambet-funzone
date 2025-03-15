@@ -2,8 +2,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const ProfileButton = () => {
+  const { userProfile } = usePXBPoints();
+  const { publicKey } = useWallet();
+  
+  // Show username if available, otherwise show wallet address or default text
+  const displayName = userProfile?.username || 
+                     (publicKey ? publicKey.toString().substring(0, 8) : 'Profile');
+
   return (
     <Link to="/profile">
       <Button 
@@ -17,7 +26,7 @@ const ProfileButton = () => {
             className="w-full h-full object-contain"
           />
         </div>
-        <span>Profile</span>
+        <span>{displayName}</span>
       </Button>
     </Link>
   );

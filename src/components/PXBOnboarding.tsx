@@ -14,18 +14,27 @@ const PXBOnboarding: React.FC = () => {
   const [username, setUsername] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
 
+  // Set default username to wallet address substring when wallet connects
   useEffect(() => {
-    if (connected && userProfile) {
+    if (connected && publicKey) {
+      // If no username is set yet, set it to the wallet address substring
+      if (!username && !userProfile?.username) {
+        setUsername(publicKey.toString().substring(0, 8));
+      } else if (userProfile?.username) {
+        // If user already has a username, use that
+        setUsername(userProfile.username);
+      }
+      
       // Check if user has already claimed points
-      if (userProfile.pxbPoints >= 500) {
+      if (userProfile?.pxbPoints >= 500) {
         setAlreadyClaimed(true);
       }
     } else {
       setAlreadyClaimed(false);
     }
-  }, [connected, userProfile]);
+  }, [connected, publicKey, userProfile, username]);
 
   useEffect(() => {
     if (connected) {
@@ -35,10 +44,15 @@ const PXBOnboarding: React.FC = () => {
 
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) return;
+    
+    // Ensure username is not empty, fallback to wallet address if it is
+    const finalUsername = username.trim() || 
+                         (publicKey ? publicKey.toString().substring(0, 8) : '');
+    
+    if (!finalUsername) return;
     
     try {
-      await mintPoints(username);
+      await mintPoints(finalUsername);
       setShowSuccess(true);
     } catch (error) {
       console.error('Error minting points:', error);
@@ -76,6 +90,9 @@ const PXBOnboarding: React.FC = () => {
             <p className="text-dream-foreground/70 text-sm mt-2">
               Current balance: {userProfile?.pxbPoints || 0} PXB Points
             </p>
+            <p className="text-dream-foreground/70 text-sm mt-2">
+              Username: {userProfile?.username}
+            </p>
           </div>
         ) : (
           <form onSubmit={handleMint} className="space-y-4">
@@ -91,12 +108,17 @@ const PXBOnboarding: React.FC = () => {
                 className="w-full bg-dream-foreground/5"
                 required
               />
+              {username && username === publicKey?.toString().substring(0, 8) && (
+                <p className="text-xs text-dream-foreground/50 mt-1">
+                  Using default username from your wallet address. Feel free to change it.
+                </p>
+              )}
             </div>
             
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
-              disabled={isLoading || !username.trim()}
+              disabled={isLoading}
             >
               {isLoading ? 'Claiming...' : 'Claim 500 PXB Points'}
             </Button>
@@ -146,6 +168,7 @@ const PXBOnboarding: React.FC = () => {
                 <span className="text-3xl font-black text-white">500 PXB Points!</span>
               </div>
               <p className="text-white/80">Your points are now stored securely and ready to use!</p>
+              <p className="text-white/80 mt-2">Username: <span className="font-bold">{username}</span></p>
             </motion.div>
             
             <motion.div

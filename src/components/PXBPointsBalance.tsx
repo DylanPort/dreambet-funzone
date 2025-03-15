@@ -1,14 +1,14 @@
 
 import React, { useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Coins, Trophy, RefreshCw } from 'lucide-react';
+import { Coins, Trophy, RefreshCw, User } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const PXBPointsBalance: React.FC = () => {
   const { userProfile, isLoading, fetchUserProfile } = usePXBPoints();
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
 
   // Fetch user profile when component mounts
   useEffect(() => {
@@ -44,6 +44,10 @@ const PXBPointsBalance: React.FC = () => {
     );
   }
 
+  // Get the display name - use username if available
+  const displayName = userProfile.username || 
+                     (publicKey ? publicKey.toString().substring(0, 8) : 'User');
+
   return (
     <div className="glass-panel p-4 rounded-lg relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/10 to-dream-accent2/10 animate-gradient-move"></div>
@@ -72,8 +76,11 @@ const PXBPointsBalance: React.FC = () => {
         </div>
       </div>
       
-      <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-xs text-dream-foreground/60">
-        <span>@{userProfile.username}</span>
+      <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center text-xs text-dream-foreground/60">
+        <div className="flex items-center">
+          <User className="w-3 h-3 mr-1" />
+          <span className="font-medium text-dream-foreground/80">{displayName}</span>
+        </div>
         <span>#{userProfile.id.substring(0, 8)}</span>
       </div>
     </div>
