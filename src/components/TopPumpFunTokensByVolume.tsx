@@ -93,7 +93,23 @@ const TopPumpFunTokensByVolume: React.FC = () => {
     }
   };
 
-  // Add the JSX return statement
+  // Prepare token data for TokenCard component
+  const prepareTokenForCard = (token: any, index: number) => {
+    return {
+      key: token.token_mint || `token-${index}`,
+      id: token.token_mint || '',
+      name: token.token_name || 'Unknown Token',
+      symbol: token.token_symbol || '',
+      price: token.last_trade_price || 0,
+      priceChange: 0, // Default value if not available
+      timeRemaining: 0,
+      index: index,
+      marketCap: token.current_market_cap,
+      volume24h: token.volume_24h,
+      token: token // Pass the original token data as a fallback
+    };
+  };
+
   return (
     <div className="rounded-lg border border-white/10 bg-black/20 overflow-hidden">
       <div className="p-4 bg-black/30 border-b border-white/10">
@@ -118,8 +134,11 @@ const TopPumpFunTokensByVolume: React.FC = () => {
           </div>
         ) : tokens.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tokens.map((token) => (
-              <TokenCard key={token.token_mint} token={token} />
+            {tokens.map((token, index) => (
+              <TokenCard 
+                key={token.token_mint} 
+                {...prepareTokenForCard(token, index)}
+              />
             ))}
           </div>
         ) : (

@@ -70,7 +70,23 @@ const TrendingTokens: React.FC = () => {
     return `${prefix}${num.toFixed(2)}`;
   };
 
-  // Add the JSX return statement
+  // Ensure the token data has all required props for TokenCard
+  const prepareTokenForCard = (token: any, index: number) => {
+    return {
+      key: token.id || `token-${index}`,
+      id: token.id || '',
+      name: token.name || 'Unknown Token',
+      symbol: token.symbol || '',
+      price: token.currentPrice || 0,
+      priceChange: token.change24h || 0,
+      timeRemaining: 0,
+      index: index,
+      marketCap: token.marketCap,
+      volume24h: token.volume24h,
+      token: token // Pass the original token data as a fallback
+    };
+  };
+
   return (
     <div className="rounded-lg border border-white/10 bg-black/20 overflow-hidden">
       <div className="p-4 bg-black/30 border-b border-white/10">
@@ -103,8 +119,11 @@ const TrendingTokens: React.FC = () => {
           </div>
         ) : tokens.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tokens.map((token) => (
-              <TokenCard key={token.id} token={token} />
+            {tokens.map((token, index) => (
+              <TokenCard 
+                key={token.id || `token-${index}`} 
+                {...prepareTokenForCard(token, index)}
+              />
             ))}
           </div>
         ) : (

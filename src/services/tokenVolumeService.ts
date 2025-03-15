@@ -17,8 +17,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
   try {
     console.log(`Fetching tokens with volume category: ${category}`);
     
-    // Make sure we explicitly select only fields that exist in the database
-    // and match our interface
+    // Explicitly select fields to avoid type instantiation errors
     const { data, error } = await supabase
       .from('tokens')
       .select('token_mint, volume_24h, current_market_cap, last_trade_price, token_name, token_symbol')
@@ -30,7 +29,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       return [];
     }
     
-    return data || [];
+    return data as TokenVolumeData[];
   } catch (error) {
     console.error(`Error in fetchTokensByVolumeCategory for ${category}:`, error);
     return [];
@@ -50,7 +49,7 @@ export const fetchAbove15kTokens = async (): Promise<TokenVolumeData[]> => {
       return [];
     }
     
-    return data || [];
+    return data as TokenVolumeData[];
   } catch (error) {
     console.error('Error in fetchAbove15kTokens:', error);
     return [];
@@ -70,7 +69,7 @@ export const fetchAbove30kTokens = async (): Promise<TokenVolumeData[]> => {
       return [];
     }
     
-    return data || [];
+    return data as TokenVolumeData[];
   } catch (error) {
     console.error('Error in fetchAbove30kTokens:', error);
     return [];

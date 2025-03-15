@@ -10,8 +10,8 @@ export interface TokenCardProps {
   price: number;
   priceChange: number;
   timeRemaining: number; // in minutes
-  imageUrl?: string; // Add optional image URL
-  index?: number; // Add optional index for key generation
+  imageUrl?: string;
+  index?: number;
   liquidity?: number;
   marketCap?: number;
   volume24h?: number;
@@ -20,54 +20,67 @@ export interface TokenCardProps {
   priceChange6h?: number;
   transactions?: number;
   age?: string;
-  token?: any; // Add token prop for backward compatibility
+  token?: any; // For backward compatibility
 }
 
-const TokenCard: React.FC<TokenCardProps> = (props) => {
-  // If token prop is provided, use it to extract individual properties
-  if (props.token) {
-    const { token } = props;
-    return (
-      <TokenCard
-        id={token.id || token.token_mint || ''}
-        name={token.name || token.token_name || 'Unknown Token'}
-        symbol={token.symbol || token.token_symbol || ''}
-        price={token.price || token.last_trade_price || 0}
-        priceChange={token.priceChange || 0}
-        timeRemaining={token.timeRemaining || 0}
-        imageUrl={token.imageUrl}
-        index={token.index}
-        liquidity={token.liquidity}
-        marketCap={token.marketCap || token.current_market_cap}
-        volume24h={token.volume24h || token.volume_24h}
-        pairAddress={token.pairAddress}
-        priceChange1h={token.priceChange1h}
-        priceChange6h={token.priceChange6h}
-        transactions={token.transactions}
-        age={token.age}
-      />
-    );
+const TokenCard: React.FC<TokenCardProps> = ({
+  id,
+  name,
+  symbol,
+  price,
+  priceChange,
+  timeRemaining,
+  imageUrl,
+  index,
+  liquidity,
+  marketCap,
+  volume24h,
+  pairAddress,
+  priceChange1h,
+  priceChange6h,
+  transactions,
+  age,
+  token
+}) => {
+  // If token prop is provided, extract individual properties
+  if (token) {
+    const mappedProps = {
+      id: token.id || token.token_mint || '',
+      name: token.name || token.token_name || 'Unknown Token',
+      symbol: token.symbol || token.token_symbol || '',
+      price: token.price || token.last_trade_price || 0,
+      priceChange: token.priceChange || 0,
+      timeRemaining: token.timeRemaining || 0,
+      imageUrl: token.imageUrl,
+      index: token.index,
+      liquidity: token.liquidity,
+      marketCap: token.marketCap || token.current_market_cap,
+      volume24h: token.volume24h || token.volume_24h,
+      pairAddress: token.pairAddress,
+      priceChange1h: token.priceChange1h,
+      priceChange6h: token.priceChange6h,
+      transactions: token.transactions,
+      age: token.age
+    };
+    
+    // Use the mapped props
+    id = mappedProps.id;
+    name = mappedProps.name;
+    symbol = mappedProps.symbol;
+    price = mappedProps.price;
+    priceChange = mappedProps.priceChange;
+    timeRemaining = mappedProps.timeRemaining;
+    imageUrl = mappedProps.imageUrl;
+    index = mappedProps.index;
+    liquidity = mappedProps.liquidity;
+    marketCap = mappedProps.marketCap;
+    volume24h = mappedProps.volume24h;
+    pairAddress = mappedProps.pairAddress;
+    priceChange1h = mappedProps.priceChange1h;
+    priceChange6h = mappedProps.priceChange6h;
+    transactions = mappedProps.transactions;
+    age = mappedProps.age;
   }
-  
-  // Destructure props
-  const {
-    id,
-    name,
-    symbol,
-    price,
-    priceChange,
-    timeRemaining,
-    imageUrl,
-    index,
-    liquidity,
-    marketCap,
-    volume24h,
-    pairAddress,
-    priceChange1h,
-    priceChange6h,
-    transactions,
-    age,
-  } = props;
   
   const isPositive = priceChange >= 0;
   const isPositive1h = priceChange1h ? priceChange1h >= 0 : true;
