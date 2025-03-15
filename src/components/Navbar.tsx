@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Coins } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 import ProfileButton from './ProfileButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
-  const {
-    balance
-  } = useSolanaBalance();
+  const { balance } = useSolanaBalance();
+  const { userProfile } = usePXBPoints();
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -22,9 +24,11 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
@@ -53,6 +57,15 @@ const Navbar = () => {
             </Link>
             
             <ProfileButton />
+            
+            {userProfile && (
+              <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-yellow-400">
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <Coins className="w-4 h-4" />
+                </div>
+                <span>{userProfile.pxbPoints.toLocaleString()} PXB</span>
+              </div>
+            )}
             
             {balance !== null && <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-green-400">
                 <div className="w-4 h-4 flex items-center justify-center">
@@ -97,6 +110,15 @@ const Navbar = () => {
               </div>
               <span>Profile</span>
             </Link>
+            
+            {userProfile && (
+              <div className="py-2 flex items-center gap-2 text-yellow-400">
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <Coins className="w-5 h-5" />
+                </div>
+                <span>{userProfile.pxbPoints.toLocaleString()} PXB</span>
+              </div>
+            )}
             
             {balance !== null && <div className="py-2 flex items-center gap-2 text-green-400">
                 <div className="w-5 h-5 flex items-center justify-center">

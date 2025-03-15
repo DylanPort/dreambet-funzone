@@ -59,14 +59,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const newProfile: UserProfile = {
         id: mockUserId,
         username,
-        pxbPoints: 50,
+        pxbPoints: 500,
         reputation: 0,
         createdAt: new Date().toISOString()
       };
       
       setUserProfile(newProfile);
       localStorage.setItem('pxb_user_profile', JSON.stringify(newProfile));
-      toast.success(`Successfully minted 50 PXB Points!`);
+      toast.success(`Successfully minted 500 PXB Points!`);
     } catch (error) {
       console.error('Error minting points:', error);
       toast.error('Failed to mint PXB Points');

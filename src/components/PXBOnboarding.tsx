@@ -23,7 +23,7 @@ const PXBOnboarding: React.FC = () => {
         </div>
         <h2 className="text-2xl font-bold mb-2">Get Started with PXB Points</h2>
         <p className="text-dream-foreground/70">
-          Mint 50 PXB Points for free and start betting on tokens!
+          Mint 500 PXB Points for free and start betting on tokens!
         </p>
       </div>
       
@@ -47,7 +47,7 @@ const PXBOnboarding: React.FC = () => {
           className="w-full"
           disabled={isLoading || !username.trim()}
         >
-          {isLoading ? 'Minting...' : 'Mint 50 PXB Points'}
+          {isLoading ? 'Minting...' : 'Mint 500 PXB Points'}
         </Button>
       </form>
       
