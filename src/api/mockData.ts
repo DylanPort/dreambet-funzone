@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -254,6 +255,7 @@ export const createBet = async (
     }
     
     try {
+      // Fix: Add the missing onChainBetId and transactionSignature arguments
       const bet = await createSupabaseBet(
         tokenId, 
         prediction, 
