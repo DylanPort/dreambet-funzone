@@ -1,153 +1,130 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
+// Follow this setup guide to integrate the Deno runtime into your application:
+// https://deno.land/manual/examples/deploy_supabase_deno
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
+
+// Create a Supabase client
+const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
+const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-  
+
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-      throw new Error('Missing environment variables')
-    }
-    
-    // Client for authenticated user operations
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
-    })
-    
-    // Admin client for backend operations that bypass RLS
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
-    
-    // Get user ID from authenticated session
-    const { data: { session }, error: authError } = await supabaseClient.auth.getSession()
-    
-    if (authError || !session) {
-      console.error('Auth error:', authError)
+    // Get the request body
+    const { userId, action, amount, referenceId } = await req.json();
+
+    // Validate request
+    if (!userId || !action || !amount) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ success: false, error: "Missing required parameters" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
     }
-    
-    const userId = session.user.id
-    
-    // Parse request body
-    const { action, amount, betId } = await req.json()
-    
-    if (!action || !amount) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Missing required fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-    
-    console.log(`Processing points transaction: ${action} ${amount} points for user ${userId}`)
-    
+
+    console.log(`Processing points action: ${action}, amount: ${amount}, for user: ${userId}`);
+
     // Get current user points
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('points')
-      .eq('id', userId)
-      .single()
-    
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("points")
+      .eq("id", userId)
+      .single();
+
     if (userError) {
-      console.error('Error fetching user points:', userError)
+      console.error("Error fetching user data:", userError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to fetch user data' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ success: false, error: "Error fetching user data" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
     }
+
+    // Calculate new points balance
+    let currentPoints = userData.points || 0;
+    let newPoints = currentPoints;
     
-    const currentPoints = userData.points || 0
-    let newPoints = currentPoints
-    
-    // Process different actions
     switch (action) {
-      case 'bet':
+      case "bet":
         // Deduct points for placing a bet
         if (currentPoints < amount) {
           return new Response(
-            JSON.stringify({ success: false, error: 'Insufficient points' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
+            JSON.stringify({ success: false, error: "Insufficient points" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+          );
         }
-        newPoints = currentPoints - amount
-        break
+        newPoints = currentPoints - amount;
+        break;
+      
+      case "win":
+        // Add points for winning a bet (double the bet amount)
+        newPoints = currentPoints + (amount * 2);
+        break;
         
-      case 'win':
-        // Add points for winning a bet (original bet + winnings)
-        newPoints = currentPoints + (amount * 2)
-        break
+      case "refund":
+        // Refund points for expired or canceled bets
+        newPoints = currentPoints + amount;
+        break;
         
-      case 'init':
-        // Initialize user with starting points if needed
-        if (currentPoints === 0) {
-          newPoints = 50 // Default starting points
-        } else {
-          // User already has points, no change needed
-          return new Response(
-            JSON.stringify({ 
-              success: true, 
-              message: 'User already has points', 
-              currentPoints 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-        break
+      case "initialize":
+        // Initialize new user with default points
+        newPoints = 50;
+        break;
         
       default:
         return new Response(
-          JSON.stringify({ success: false, error: 'Invalid action' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+          JSON.stringify({ success: false, error: "Invalid action type" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
     }
-    
-    // Update user points in transaction
-    const { error: txError } = await supabaseAdmin.rpc('update_user_points_transaction', {
-      user_id_param: userId,
-      points_param: newPoints,
-      amount_param: action === 'bet' ? -amount : amount,
-      action_param: action,
-      reference_id_param: betId || null
-    })
-    
-    if (txError) {
-      console.error('Transaction error:', txError)
+
+    // Generate UUID for reference if not provided
+    const refId = referenceId || crypto.randomUUID();
+
+    // Use RPC function to update points and record transaction
+    const { error: updateError } = await supabase.rpc(
+      "update_user_points_transaction",
+      {
+        user_id_param: userId,
+        points_param: newPoints,
+        amount_param: amount,
+        action_param: action,
+        reference_id_param: refId
+      }
+    );
+
+    if (updateError) {
+      console.error("Error updating points:", updateError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to update points' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ success: false, error: "Error updating points" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
     }
-    
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        previousPoints: currentPoints,
-        currentPoints: newPoints,
-        action,
-        amount
+        points: newPoints,
+        previous: currentPoints,
+        change: newPoints - currentPoints
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-    
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
-    console.error('Error:', error)
+    console.error("Unexpected error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+      JSON.stringify({ success: false, error: "Internal server error" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+    );
   }
 });

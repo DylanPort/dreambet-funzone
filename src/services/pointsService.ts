@@ -2,21 +2,71 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export interface UserPoints {
-  total: number;
-  available: number;
-}
-
 export interface PointsTransaction {
-  id: string;
-  amount: number;
-  action: string;
-  created_at: string;
-  reference_id?: string | null;
+  success: boolean;
+  points?: number;
+  previous?: number;
+  change?: number;
+  error?: string;
 }
 
-// Get current user's points
-export const getUserPoints = async (): Promise<UserPoints | null> => {
+// Initialize user points to default value if they don't exist
+export const initializeUserPoints = async (): Promise<boolean> => {
+  try {
+    // Get authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error("No authenticated user found");
+      return false;
+    }
+    
+    // Check if user already has points
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("points")
+      .eq("id", user.id)
+      .single();
+    
+    if (userError) {
+      if (userError.code !== "PGRST116") {  // PGRST116 is "no rows returned"
+        console.error("Error checking user points:", userError);
+        return false;
+      }
+    }
+    
+    // If user already has points, no need to initialize
+    if (userData && userData.points > 0) {
+      return true;
+    }
+    
+    // Call our edge function to initialize points
+    const response = await supabase.functions.invoke("update-user-points", {
+      method: "POST",
+      body: {
+        userId: user.id,
+        action: "initialize",
+        amount: 50
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+      console.error("Failed to initialize user points:", result.error);
+      return false;
+    }
+    
+    console.log("User points initialized:", result.points);
+    return true;
+  } catch (error) {
+    console.error("Error initializing user points:", error);
+    return false;
+  }
+};
+
+// Get current user points
+export const getUserPoints = async (): Promise<{ total: number; available: number } | null> => {
   try {
     // Get authenticated user
     const { data: { user } } = await supabase.auth.getUser();
@@ -26,24 +76,24 @@ export const getUserPoints = async (): Promise<UserPoints | null> => {
       return null;
     }
     
-    // Fetch user points from users table
-    const { data, error } = await supabase
-      .from('users')
-      .select('points')
-      .eq('id', user.id)
+    // Get user points from the database
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("points")
+      .eq("id", user.id)
       .single();
     
-    if (error) {
-      console.error("Error fetching user points:", error);
+    if (userError) {
+      console.error("Error fetching user points:", userError);
       return null;
     }
     
-    // Also fetch points that are currently in active bets (locked)
+    // Get points in active bets
     const { data: activeBets, error: betsError } = await supabase
-      .from('bets')
-      .select('points_amount')
-      .eq('creator', user.id)
-      .or('status.eq.open,status.eq.matched');
+      .from("bets")
+      .select("points_amount")
+      .or(`creator.eq.${user.id},counterparty.eq.${user.id}`)
+      .in("status", ["open", "matched"]);
     
     if (betsError) {
       console.error("Error fetching active bets:", betsError);
@@ -51,117 +101,111 @@ export const getUserPoints = async (): Promise<UserPoints | null> => {
     }
     
     // Calculate points in active bets
-    const lockedPoints = activeBets?.reduce((sum, bet) => sum + (bet.points_amount || 0), 0) || 0;
+    const pointsInBets = activeBets?.reduce((total, bet) => total + bet.points_amount, 0) || 0;
     
-    return {
-      total: data.points || 0,
-      available: Math.max(0, (data.points || 0) - lockedPoints)
+    // Return total and available points
+    return { 
+      total: userData.points || 0,
+      available: Math.max(0, (userData.points || 0) - pointsInBets)
     };
   } catch (error) {
-    console.error("Unexpected error in getUserPoints:", error);
+    console.error("Error getting user points:", error);
     return null;
   }
 };
 
-// Get points transaction history
-export const getPointsHistory = async (): Promise<PointsTransaction[]> => {
+// Process a points transaction
+export const processPointsTransaction = async (
+  action: 'bet' | 'win' | 'refund', 
+  amount: number, 
+  referenceId?: string
+): Promise<PointsTransaction> => {
   try {
-    const { data, error } = await supabase
-      .from('points_history')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Get authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
     
-    if (error) {
-      console.error("Error fetching points history:", error);
-      return [];
+    if (!user) {
+      return { 
+        success: false, 
+        error: "No authenticated user found" 
+      };
     }
     
-    return data || [];
-  } catch (error) {
-    console.error("Unexpected error in getPointsHistory:", error);
-    return [];
-  }
-};
-
-// Process a points transaction through the edge function
-export const processPointsTransaction = async (
-  action: 'bet' | 'win' | 'init',
-  amount: number,
-  betId?: string
-): Promise<{ success: boolean; currentPoints?: number; error?: string }> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('update-user-points', {
-      method: 'POST',
-      body: { action, amount, betId }
+    // Call our edge function to process the transaction
+    const response = await supabase.functions.invoke("update-user-points", {
+      method: "POST",
+      body: {
+        userId: user.id,
+        action: action,
+        amount: amount,
+        referenceId: referenceId
+      }
     });
     
-    if (error) {
-      console.error("Error processing points transaction:", error);
-      toast.error(`Failed to process points: ${error.message || 'Unknown error'}`);
-      return { success: false, error: error.message };
+    const result = await response.json();
+    
+    if (!result.success) {
+      toast.error(`Points transaction failed: ${result.error}`);
+      return { 
+        success: false, 
+        error: result.error 
+      };
     }
     
-    if (!data.success) {
-      console.error("Points transaction failed:", data.error);
-      toast.error(`Points transaction failed: ${data.error || 'Unknown error'}`);
-      return { success: false, error: data.error };
-    }
+    // Dispatch points updated event
+    const event = new CustomEvent('pointsUpdated', { 
+      detail: { 
+        points: result.points,
+        previous: result.previous,
+        change: result.change
+      } 
+    });
+    window.dispatchEvent(event);
     
-    if (action === 'bet') {
-      toast.success(`Placed bet with ${amount} PXB Points`);
-    } else if (action === 'win') {
-      toast.success(`Won ${amount} PXB Points!`);
-    } else if (action === 'init') {
-      toast.success(`Received 50 starting PXB Points!`);
-    }
-    
-    return { 
-      success: true, 
-      currentPoints: data.currentPoints 
+    return {
+      success: true,
+      points: result.points,
+      previous: result.previous,
+      change: result.change
     };
   } catch (error) {
-    console.error("Unexpected error in processPointsTransaction:", error);
-    toast.error("Failed to process points transaction");
-    return { success: false, error: error.message };
+    console.error("Error processing points transaction:", error);
+    return { 
+      success: false, 
+      error: "Unexpected error processing transaction" 
+    };
   }
 };
 
-// Initialize user with starting points if they don't have any
-export const initializeUserPoints = async (): Promise<boolean> => {
+// For admin or testing purposes: set user points directly
+export const setUserPoints = async (userId: string, points: number): Promise<boolean> => {
   try {
-    const userPoints = await getUserPoints();
-    
-    // If user already has points, no need to initialize
-    if (userPoints && userPoints.total > 0) {
-      return true;
-    }
-    
-    // Initialize user with starting points
-    const result = await processPointsTransaction('init', 50);
-    return result.success;
-  } catch (error) {
-    console.error("Error initializing user points:", error);
-    return false;
-  }
-};
-
-// Get top users by points (leaderboard)
-export const getPointsLeaderboard = async (limit: number = 10): Promise<any[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, username, points')
-      .order('points', { ascending: false })
-      .limit(limit);
+    const { error } = await supabase
+      .from("users")
+      .update({ points: points })
+      .eq("id", userId);
     
     if (error) {
-      console.error("Error fetching points leaderboard:", error);
-      return [];
+      console.error("Error setting user points:", error);
+      return false;
     }
     
-    return data || [];
+    // Create a history record
+    const { error: historyError } = await supabase
+      .from("points_history")
+      .insert({
+        user_id: userId,
+        amount: points,
+        action: "admin_set"
+      });
+    
+    if (historyError) {
+      console.error("Error recording points history:", historyError);
+    }
+    
+    return true;
   } catch (error) {
-    console.error("Unexpected error in getPointsLeaderboard:", error);
-    return [];
+    console.error("Unexpected error setting user points:", error);
+    return false;
   }
 };

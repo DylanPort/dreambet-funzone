@@ -265,6 +265,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_user_points_transaction: {
+        Args: {
+          user_id_param: string
+          points_param: number
+          amount_param: number
+          action_param: string
+          reference_id_param: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

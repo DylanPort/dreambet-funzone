@@ -42,11 +42,13 @@ export const createPointsBet = async (
       .insert({
         token_mint: tokenId,
         creator: initiator,
+        bettor1_id: initiator,
         prediction_bettor1: prediction,
         points_amount: pointsAmount,
         duration: duration * 60, // Convert to seconds for storage
         status: 'open',
-        expires_at: expiresAt.toISOString()
+        expires_at: expiresAt.toISOString(),
+        sol_amount: 0 // Set to 0 for legacy compatibility
       })
       .select(`
         bet_id,
@@ -168,6 +170,7 @@ export const acceptPointsBet = async (betId: string): Promise<Bet | null> => {
       .from('bets')
       .update({
         status: 'matched',
+        bettor2_id: user.id,
         counterparty: user.id,
         prediction_bettor2: betData.prediction_bettor1 === 'migrate' ? 'die' : 'migrate' // Opposite of initiator's prediction
       })

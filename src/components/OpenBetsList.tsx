@@ -1,63 +1,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchOpenBets } from '@/services/supabaseService';
+import { fetchOpenBets } from '@/services/betService';
 import { Bet } from '@/types/bet';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from '@/hooks/use-toast';
-import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw } from 'lucide-react';
+import { Zap, ArrowUp, ArrowDown, Clock, ExternalLink, Filter, RefreshCw } from 'lucide-react';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BetCard from './BetCard';
+import { acceptPointsBet } from '@/services/betService';
 
 const OpenBetsList = () => {
   const { toast } = useToast();
   const { connected, publicKey } = useWallet();
   const [filter, setFilter] = useState('all');
-  const [localBets, setLocalBets] = useState<Bet[]>([]);
   
-  // Fetch open bets from Supabase
-  const { data: supabaseBets = [], isLoading, error, refetch } = useQuery({
+  // Fetch open bets using React Query
+  const { data: bets = [], isLoading, error, refetch } = useQuery({
     queryKey: ['openBets'],
     queryFn: fetchOpenBets,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
   
-  // Combine Supabase bets with local fallback bets
-  useEffect(() => {
-    try {
-      const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
-      let fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
-      
-      // Filter out expired bets
-      const now = Date.now();
-      fallbackBets = fallbackBets.filter(bet => bet.expiresAt > now && bet.status === 'open');
-      
-      // Only add fallback bets that don't exist in supabaseBets
-      const combinedBets = [...fallbackBets].filter(fallbackBet => {
-        return !supabaseBets.some(
-          bet => bet.id === fallbackBet.id || 
-          (bet.onChainBetId && fallbackBet.onChainBetId && bet.onChainBetId === fallbackBet.onChainBetId)
-        );
-      });
-      
-      setLocalBets(combinedBets);
-      console.log('Combined local bets with Supabase bets:', {
-        supabaseBets,
-        fallbackBets,
-        combinedLocalBets: combinedBets
-      });
-    } catch (error) {
-      console.error('Error loading local bets:', error);
-      setLocalBets([]);
-    }
-  }, [supabaseBets]);
-  
-  // All bets to display (Supabase + local)
-  const allBets = [...supabaseBets, ...localBets];
-  
-  const filteredBets = allBets.filter(bet => {
+  const filteredBets = bets.filter(bet => {
     if (filter === 'all') return true;
     return filter === bet.prediction;
   });
@@ -68,6 +35,29 @@ const OpenBetsList = () => {
       description: "Fetching the latest open bets..."
     });
     refetch();
+  };
+
+  const handleAcceptBet = async (bet: Bet) => {
+    if (!connected) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to accept bets",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await acceptPointsBet(bet.id);
+      refetch(); // Refresh the list after accepting
+    } catch (error) {
+      console.error("Error accepting bet:", error);
+      toast({
+        title: "Error accepting bet",
+        description: "There was a problem accepting this bet. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoading) {
@@ -207,55 +197,12 @@ const OpenBetsList = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <Link 
-                  to={`/betting/token/${bet.tokenId}`}
-                  className="block w-full"
-                >
-                  <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
-                    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
-                    <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
-                    
-                    <div className="flex items-center justify-between gap-4 relative z-10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
-                          <span className="font-display font-bold text-lg">{bet.tokenSymbol.charAt(0)}</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1">
-                            <h3 className="font-display font-semibold text-lg">{bet.tokenName}</h3>
-                            <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
-                          </div>
-                          <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
-                        </div>
-                      </div>
-                      
-                      <div className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm
-                        ${bet.prediction === 'migrate' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {bet.prediction === 'migrate' 
-                          ? <ArrowUp className="h-3.5 w-3.5 mr-1" /> 
-                          : <ArrowDown className="h-3.5 w-3.5 mr-1" />}
-                        <span>{bet.prediction === 'migrate' ? 'Moon' : 'Die'}</span>
-                      </div>
-                      
-                      <div className="flex items-center text-sm bg-dream-accent2/10 px-3 py-1 rounded-lg">
-                        <Wallet className="h-3.5 w-3.5 mr-1.5 text-dream-accent2" />
-                        <span className="font-semibold">{bet.amount} SOL</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
-                        <Clock className="w-3 h-3 mr-1" />
-                        <span>{formatTimeRemaining(bet.expiresAt)}</span>
-                      </div>
-                      
-                      <div className="ml-auto">
-                        <button className="px-4 py-2 rounded-lg bg-dream-accent1/10 hover:bg-dream-accent1/20 text-dream-accent1 text-sm font-medium transition-colors">
-                          Accept Bet
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                <BetCard
+                  bet={bet}
+                  connected={connected}
+                  publicKeyString={publicKey?.toString() || null}
+                  onAcceptBet={handleAcceptBet}
+                />
               </motion.div>
             ))}
           </AnimatePresence>
