@@ -1,10 +1,28 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Coins, Trophy } from 'lucide-react';
+import { Coins, Trophy, RefreshCw } from 'lucide-react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const PXBPointsBalance: React.FC = () => {
-  const { userProfile, isLoading } = usePXBPoints();
+  const { userProfile, isLoading, fetchUserProfile } = usePXBPoints();
+  const { connected } = useWallet();
+
+  // Fetch user profile when component mounts
+  useEffect(() => {
+    if (connected) {
+      fetchUserProfile();
+    }
+  }, [connected, fetchUserProfile]);
+
+  const handleRefresh = () => {
+    if (!connected) return;
+    
+    toast.info("Refreshing PXB points...");
+    fetchUserProfile();
+  };
 
   if (isLoading) {
     return (
@@ -38,12 +56,18 @@ const PXBPointsBalance: React.FC = () => {
         <div className="flex-1">
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-bold">{userProfile.pxbPoints.toLocaleString()}</h3>
-            <span className="text-xs text-dream-foreground/60">PXB Points</span>
+            <button 
+              onClick={handleRefresh} 
+              className="p-1 rounded-full hover:bg-dream-accent1/10 transition-colors"
+              title="Refresh PXB Points"
+            >
+              <RefreshCw className="w-4 h-4 text-dream-accent1" />
+            </button>
           </div>
           
           <div className="flex items-center mt-1 text-dream-foreground/80">
             <Trophy className="w-4 h-4 mr-1 text-dream-accent1" />
-            <span className="text-sm">{userProfile.reputation} Rep</span>
+            <span className="text-sm">{userProfile.reputation || 0} Rep</span>
           </div>
         </div>
       </div>
