@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PXBBet, SupabaseUserProfile, SupabaseBetsRow } from '@/types/pxb';
 import { toast } from 'sonner';
@@ -76,7 +75,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
-          reputation: supabaseUser.reputation || 0, // Set default value if undefined
+          reputation: supabaseUser.reputation || 0, // Default to 0 if undefined
           createdAt: supabaseUser.created_at
         });
       }
@@ -106,14 +105,13 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .single();
       
       if (existingUser) {
-        // Need to safely handle potentially missing reputation property
         if (existingUser.points >= 500) {
           toast.error('You have already claimed your PXB Points');
           setUserProfile({
             id: existingUser.id,
             username: existingUser.username || username,
             pxbPoints: existingUser.points,
-            reputation: existingUser.reputation || 0, // Handle potential undefined
+            reputation: existingUser.reputation || 0, // Default to 0 if undefined
             createdAt: existingUser.created_at
           });
           return;
@@ -155,7 +153,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: updatedUser.id,
         username: updatedUser.username || username,
         pxbPoints: updatedUser.points,
-        reputation: updatedUser.reputation || 0, // Handle potential undefined
+        reputation: updatedUser.reputation || 0, // Default to 0 if undefined
         createdAt: updatedUser.created_at
       };
       
@@ -370,14 +368,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               .from('users')
               .update({ 
                 points: userProfile.pxbPoints + pointsWon,
-                reputation: (userProfile.reputation || 0) + reputationChange // Handle potentially undefined reputation
+                reputation: userProfile.reputation + reputationChange // Now reputation is required
               })
               .eq('id', userProfile.id);
             
             setUserProfile({
               ...userProfile,
               pxbPoints: userProfile.pxbPoints + pointsWon,
-              reputation: (userProfile.reputation || 0) + reputationChange // Handle potentially undefined reputation
+              reputation: userProfile.reputation + reputationChange // Now reputation is required
             });
             
             toast.success(`Your bet on ${bet.tokenSymbol} won! +${pointsWon} PXB Points`);

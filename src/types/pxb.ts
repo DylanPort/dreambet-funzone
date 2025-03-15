@@ -3,7 +3,7 @@ export interface UserProfile {
   id: string;
   username: string;
   pxbPoints: number;
-  reputation?: number; // Make reputation optional
+  reputation: number; // Make reputation required
   createdAt: string;
 }
 
@@ -28,7 +28,7 @@ export interface SupabaseUserProfile {
   username: string; 
   wallet_address: string;
   points: number;
-  reputation?: number; // Optional reputation property
+  reputation: number; // Added reputation property as required
   created_at: string;
 }
 
