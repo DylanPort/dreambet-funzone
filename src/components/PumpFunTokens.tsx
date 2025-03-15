@@ -1,6 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { fetchTopTokensByMarketCap, fetchTokensAbove10kMarketCap, fetchTokensAbove15kMarketCap, transformBitqueryTokenToCardData, BitqueryToken } from '@/services/bitqueryService';
+import { 
+  fetchTopTokensByMarketCap, 
+  fetchTokensAbove10kMarketCap, 
+  fetchTokensAbove15kMarketCap,
+  transformBitqueryTokenToCardData, 
+  BitqueryToken 
+} from '@/services/bitqueryService';
 import TokenCard from './TokenCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, TrendingUp, RefreshCw, ChevronsUp } from 'lucide-react';
@@ -19,7 +25,7 @@ const PumpFunTokens: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-
+      
       // Fetch data based on active tab to optimize performance
       if (activeTab === 'top') {
         const topTokensData = await fetchTopTokensByMarketCap();
@@ -47,11 +53,13 @@ const PumpFunTokens: React.FC = () => {
   // Auto refresh timer
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
+    
     if (autoRefresh) {
       intervalId = setInterval(() => {
         handleRefresh(false);
       }, 30000); // Refresh every 30 seconds
     }
+    
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
@@ -59,7 +67,9 @@ const PumpFunTokens: React.FC = () => {
 
   const handleRefresh = async (showToast = true) => {
     if (refreshing) return;
+    
     setRefreshing(true);
+    
     try {
       await fetchData();
       if (showToast) {
@@ -79,47 +89,116 @@ const PumpFunTokens: React.FC = () => {
     toast.info(`Auto refresh ${!autoRefresh ? 'enabled' : 'disabled'}`);
   };
 
-  // Add the JSX return statement
   return (
-    <div className="rounded-lg border border-white/10 bg-black/20 overflow-hidden">
-      <div className="p-4 bg-black/30 border-b border-white/10">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">PumpFun Tokens</h2>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline" 
-              size="sm"
-              onClick={() => handleRefresh()}
-              disabled={refreshing}
-              className="flex items-center"
-            >
-              <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button
-              variant={autoRefresh ? "default" : "outline"}
-              size="sm"
-              onClick={toggleAutoRefresh}
-              className="flex items-center"
-            >
-              <ChevronsUp className="w-4 h-4 mr-1" />
-              Auto {autoRefresh ? 'ON' : 'OFF'}
-            </Button>
-          </div>
+    <div className="glass-panel p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-display font-bold text-dream-foreground">
+          PumpFun Tokens <span className="text-xs bg-dream-accent1/20 text-dream-accent1 px-2 py-1 rounded-full ml-2">Live Data</span>
+        </h2>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={toggleAutoRefresh}
+            className={`text-xs ${autoRefresh ? 'bg-dream-accent2/20 text-dream-accent2' : ''}`}
+          >
+            {autoRefresh ? 'Auto Refreshing' : 'Auto Refresh'}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleRefresh()}
+            disabled={refreshing}
+            className="text-xs"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
       </div>
-      <div className="p-4">
-        {/* Placeholder content - you can expand this */}
-        <div className="text-center p-4">
+
+      <Tabs defaultValue="top" onValueChange={setActiveTab}>
+        <TabsList className="w-full mb-6 bg-dream-foreground/5">
+          <TabsTrigger value="top" className="flex items-center gap-2">
+            <BarChart3 size={16} />
+            <span>Top by Market Cap</span>
+          </TabsTrigger>
+          <TabsTrigger value="10k" className="flex items-center gap-2">
+            <TrendingUp size={16} />
+            <span>Above 10k MCAP</span>
+          </TabsTrigger>
+          <TabsTrigger value="15k" className="flex items-center gap-2">
+            <ChevronsUp size={16} />
+            <span>Above 15k MCAP</span>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="top">
           {loading ? (
-            <div className="flex justify-center">
-              <div className="animate-spin w-6 h-6 border-2 border-current border-t-transparent rounded-full"></div>
+            <div className="flex justify-center py-20">
+              <div className="animate-spin w-8 h-8 border-2 border-dream-accent1 border-t-transparent rounded-full"></div>
+            </div>
+          ) : topTokens.length === 0 ? (
+            <div className="text-center py-10 text-dream-foreground/60">
+              No tokens found. Try refreshing later.
             </div>
           ) : (
-            <p>Token data loaded successfully.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {topTokens.map((token, index) => (
+                <TokenCard 
+                  key={`top-${token.Trade.Buy.Currency.MintAddress}-${index}`}
+                  {...transformBitqueryTokenToCardData(token)}
+                  index={index}
+                />
+              ))}
+            </div>
           )}
-        </div>
-      </div>
+        </TabsContent>
+        
+        <TabsContent value="10k">
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin w-8 h-8 border-2 border-dream-accent1 border-t-transparent rounded-full"></div>
+            </div>
+          ) : tokensWith10kMcap.length === 0 ? (
+            <div className="text-center py-10 text-dream-foreground/60">
+              No tokens found. Try refreshing later.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tokensWith10kMcap.map((token, index) => (
+                <TokenCard 
+                  key={`10k-${token.Trade.Buy.Currency.MintAddress}-${index}`}
+                  {...transformBitqueryTokenToCardData(token)}
+                  index={index}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="15k">
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin w-8 h-8 border-2 border-dream-accent1 border-t-transparent rounded-full"></div>
+            </div>
+          ) : tokensWith15kMcap.length === 0 ? (
+            <div className="text-center py-10 text-dream-foreground/60">
+              No tokens found above 15k market cap. Try refreshing later.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tokensWith15kMcap.map((token, index) => (
+                <TokenCard 
+                  key={`15k-${token.Trade.Buy.Currency.MintAddress}-${index}`}
+                  {...transformBitqueryTokenToCardData(token)}
+                  index={index}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

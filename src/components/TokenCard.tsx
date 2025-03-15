@@ -3,15 +3,15 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame } from 'lucide-react';
 
-export interface TokenCardProps {
+interface TokenCardProps {
   id: string;
   name: string;
   symbol: string;
   price: number;
   priceChange: number;
   timeRemaining: number; // in minutes
-  imageUrl?: string;
-  index?: number;
+  imageUrl?: string; // Add optional image URL
+  index?: number; // Add optional index for key generation
   liquidity?: number;
   marketCap?: number;
   volume24h?: number;
@@ -20,7 +20,6 @@ export interface TokenCardProps {
   priceChange6h?: number;
   transactions?: number;
   age?: string;
-  token?: any; // For backward compatibility
 }
 
 const TokenCard: React.FC<TokenCardProps> = ({
@@ -40,48 +39,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
   priceChange6h,
   transactions,
   age,
-  token
 }) => {
-  // If token prop is provided, extract individual properties
-  if (token) {
-    const mappedProps = {
-      id: token.id || token.token_mint || '',
-      name: token.name || token.token_name || 'Unknown Token',
-      symbol: token.symbol || token.token_symbol || '',
-      price: token.price || token.last_trade_price || 0,
-      priceChange: token.priceChange || 0,
-      timeRemaining: token.timeRemaining || 0,
-      imageUrl: token.imageUrl,
-      index: token.index,
-      liquidity: token.liquidity,
-      marketCap: token.marketCap || token.current_market_cap,
-      volume24h: token.volume24h || token.volume_24h,
-      pairAddress: token.pairAddress,
-      priceChange1h: token.priceChange1h,
-      priceChange6h: token.priceChange6h,
-      transactions: token.transactions,
-      age: token.age
-    };
-    
-    // Use the mapped props
-    id = mappedProps.id;
-    name = mappedProps.name;
-    symbol = mappedProps.symbol;
-    price = mappedProps.price;
-    priceChange = mappedProps.priceChange;
-    timeRemaining = mappedProps.timeRemaining;
-    imageUrl = mappedProps.imageUrl;
-    index = mappedProps.index;
-    liquidity = mappedProps.liquidity;
-    marketCap = mappedProps.marketCap;
-    volume24h = mappedProps.volume24h;
-    pairAddress = mappedProps.pairAddress;
-    priceChange1h = mappedProps.priceChange1h;
-    priceChange6h = mappedProps.priceChange6h;
-    transactions = mappedProps.transactions;
-    age = mappedProps.age;
-  }
-  
   const isPositive = priceChange >= 0;
   const isPositive1h = priceChange1h ? priceChange1h >= 0 : true;
   const isPositive6h = priceChange6h ? priceChange6h >= 0 : true;

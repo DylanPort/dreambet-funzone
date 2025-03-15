@@ -65,29 +65,6 @@ export const calculateEarlyClosurePayout = (
   }
 };
 
-// Function to calculate bet outcome (placeholder, will need to be updated)
-export const calculateBetOutcome = (bet: Bet, finalMarketCap: number): { winner: string, loser: string, winAmount: number } => {
-  // Default to initiator as winner for now
-  const winner = bet.initiator;
-  const loser = bet.counterParty || '';
-  
-  // In a real implementation, compare initial and final market caps to determine outcome
-  // For now, just return a placeholder
-  const initialMarketCap = bet.initialMarketCap || 0;
-  
-  console.log(`Calculating outcome: Initial MC = ${initialMarketCap}, Final MC = ${finalMarketCap}`);
-  
-  // Logic would be something like:
-  // If prediction is 'migrate' and final > initial, initiator wins
-  // If prediction is 'migrate' and final < initial, counterParty wins
-  // If prediction is 'die' and final < initial, initiator wins
-  // If prediction is 'die' and final > initial, counterParty wins
-  
-  const winAmount = bet.points_amount || 0; // Using points amount
-  
-  return { winner, loser, winAmount };
-};
-
 // Sort bets based on different criteria
 export const getSortedBets = (bets: Bet[], sortBy: 'newest' | 'expiring' | 'amount') => {
   switch(sortBy) {
@@ -96,7 +73,7 @@ export const getSortedBets = (bets: Bet[], sortBy: 'newest' | 'expiring' | 'amou
     case 'expiring':
       return [...bets].sort((a, b) => a.expiresAt - b.expiresAt);
     case 'amount':
-      return [...bets].sort((a, b) => (b.points_amount || 0) - (a.points_amount || 0));
+      return [...bets].sort((a, b) => b.amount - a.amount);
     default:
       return bets;
   }
