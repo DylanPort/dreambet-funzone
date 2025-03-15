@@ -3,7 +3,7 @@ export interface UserProfile {
   id: string;
   username: string;
   pxbPoints: number;
-  reputation: number;
+  reputation?: number; // Make reputation optional
   createdAt: string;
 }
 

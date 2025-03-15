@@ -1,4 +1,3 @@
-
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -255,7 +254,6 @@ export const createBet = async (
     }
     
     try {
-      // Fixed: Pass all 7 required arguments to createSupabaseBet
       const bet = await createSupabaseBet(
         tokenId, 
         prediction, 

@@ -76,7 +76,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
-          reputation: supabaseUser.reputation || 0,
+          reputation: supabaseUser.reputation,
           createdAt: supabaseUser.created_at
         });
       }
@@ -111,7 +111,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: existingUser.id,
           username: existingUser.username || username,
           pxbPoints: existingUser.points,
-          reputation: existingUser.reputation || 0,
+          reputation: existingUser.reputation,
           createdAt: existingUser.created_at
         });
         return;
@@ -127,7 +127,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           wallet_address: walletAddress,
           username: username,
           points: 500,
-          reputation: 0
         })
         .select()
         .single();
@@ -153,7 +152,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: updatedUser.id,
         username: updatedUser.username || username,
         pxbPoints: updatedUser.points,
-        reputation: updatedUser.reputation || 0,
+        reputation: updatedUser.reputation,
         createdAt: updatedUser.created_at
       };
       
@@ -202,15 +201,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .insert({
           bet_id: betId,
           creator: walletAddress,
-          user_id: userProfile.id,
+          bettor1_id: userProfile.id,
           token_mint: tokenMint,
           token_name: tokenName,
           token_symbol: tokenSymbol,
           sol_amount: betAmount,  // Use sol_amount as the field name
           prediction_bettor1: betType,  // Use prediction_bettor1 as the field name
           status: 'pending',
-          created_at: new Date().toISOString(),
-          duration: duration
+          duration: duration * 60 // Convert to seconds
         });
       
       if (betError) {
@@ -276,8 +274,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Use the 'bets' table instead of 'pxb_bets'
       const { data, error } = await supabase
         .from('bets')
-        .select('*')
-        .eq('user_id', userProfile.id)
+        .select('*, tokens(token_name, token_symbol)')
+        .eq('bettor1_id', userProfile.id)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -286,19 +284,25 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       
       // Convert to PXBBet format
-      const formattedBets: PXBBet[] = data.map(bet => ({
-        id: bet.bet_id, // Use bet_id as the ID field
-        userId: bet.user_id,
-        tokenMint: bet.token_mint,
-        tokenName: bet.token_name,
-        tokenSymbol: bet.token_symbol,
-        betAmount: bet.sol_amount, // Use sol_amount as the bet amount
-        betType: bet.prediction_bettor1 as 'up' | 'down', // Use prediction_bettor1 as bet type
-        status: bet.status as 'pending' | 'won' | 'lost',
-        pointsWon: bet.points_won || 0,
-        createdAt: bet.created_at,
-        expiresAt: new Date(new Date(bet.created_at).getTime() + (bet.duration * 60 * 1000)).toISOString()
-      }));
+      const formattedBets: PXBBet[] = data.map(bet => {
+        // Get token info from relation if available
+        const tokenName = bet.tokens?.token_name || bet.token_name || 'Unknown Token';
+        const tokenSymbol = bet.tokens?.token_symbol || bet.token_symbol || 'UNKNOWN';
+        
+        return {
+          id: bet.bet_id,
+          userId: bet.bettor1_id,
+          tokenMint: bet.token_mint,
+          tokenName: tokenName,
+          tokenSymbol: tokenSymbol,
+          betAmount: bet.sol_amount, // Use sol_amount as the bet amount
+          betType: bet.prediction_bettor1 as 'up' | 'down', // Use prediction_bettor1 as bet type
+          status: bet.status === 'pending' ? 'pending' : (bet.status === 'won' ? 'won' : 'lost'),
+          pointsWon: bet.points_won || 0,
+          createdAt: bet.created_at,
+          expiresAt: new Date(new Date(bet.created_at).getTime() + (bet.duration * 1000)).toISOString()
+        };
+      });
       
       setBets(formattedBets);
     } catch (error) {
@@ -327,7 +331,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: user.id,
         username: user.username || user.wallet_address.substring(0, 8),
         pxbPoints: user.points,
-        reputation: user.reputation || 0,
+        reputation: user.reputation,
         createdAt: user.created_at
       }));
       
