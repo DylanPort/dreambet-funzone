@@ -133,7 +133,7 @@ const PumpFunTokens: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {topTokens.map((token, index) => (
                 <TokenCard 
-                  key={token.tokenAddress || `top-token-${index}`}
+                  key={token.Trade?.Buy?.Currency?.MintAddress || `top-token-${index}`}
                   {...transformBitqueryTokenToCardData(token)}
                 />
               ))}
@@ -157,7 +157,7 @@ const PumpFunTokens: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {tokensWith10kMcap.map((token, index) => (
                 <TokenCard 
-                  key={token.tokenAddress || `10k-token-${index}`}
+                  key={token.Trade?.Buy?.Currency?.MintAddress || `10k-token-${index}`}
                   {...transformBitqueryTokenToCardData(token)}
                 />
               ))}
@@ -181,7 +181,7 @@ const PumpFunTokens: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {tokensWith15kMcap.map((token, index) => (
                 <TokenCard 
-                  key={token.tokenAddress || `15k-token-${index}`}
+                  key={token.Trade?.Buy?.Currency?.MintAddress || `15k-token-${index}`}
                   {...transformBitqueryTokenToCardData(token)}
                 />
               ))}

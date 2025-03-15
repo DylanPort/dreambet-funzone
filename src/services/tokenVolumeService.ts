@@ -20,7 +20,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
     // Make sure we explicitly select only fields that exist in the database
     const { data, error } = await supabase
       .from('tokens')
-      .select('token_mint, volume_24h, liquidity, current_market_cap, last_trade_price, token_name, token_symbol')
+      .select('token_mint, volume_24h, current_market_cap, last_trade_price, token_name, token_symbol')
       .eq('volume_category', category)
       .order('volume_24h', { ascending: false });
     
@@ -30,15 +30,14 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       throw error;
     }
     
-    // Properly convert data without using spread operator to avoid deep type instantiation
+    // Safely handle the data
     const transformedData: TokenVolumeData[] = [];
     
     if (data) {
       data.forEach(token => {
         transformedData.push({
           token_mint: token.token_mint,
-          volume_24h: token.volume_24h,
-          liquidity: token.liquidity,
+          volume_24h: token.volume_24h || 0,
           current_market_cap: token.current_market_cap,
           last_trade_price: token.last_trade_price,
           token_name: token.token_name,
