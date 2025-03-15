@@ -1,6 +1,5 @@
 
-export type BetPrediction = 'migrate' | 'die' | 'up' | 'down';
-
+export type BetPrediction = 'migrate' | 'die';
 export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed';
 
 export interface Bet {
@@ -9,46 +8,23 @@ export interface Bet {
   tokenName: string;
   tokenSymbol: string;
   initiator: string;
-  counterParty?: string;
-  amount: number;
+  amount?: number; // Solana amount (legacy)
+  points_amount: number; // New PXB Points amount
   prediction: BetPrediction;
   timestamp: number;
   expiresAt: number;
   status: BetStatus;
-  initialMarketCap?: number;
-  duration: number;
+  duration?: number; // in minutes
+  counterParty?: string;
   winner?: string;
-  onChainBetId: string; // Changed from optional to required
-  transactionSignature: string; // Changed from optional to required
+  onChainBetId?: string;
+  transactionSignature?: string;
 }
 
-// Smart contract state types to match the Rust program
-export enum SolanaContractPrediction {
-  Migrate = 0,
-  Die = 1,
-  Up = 2,
-  Down = 3,
-}
-
-export enum SolanaContractStatus {
-  Open = 0,
-  Confirmed = 1,
-  Closed = 2,
-  Resolved = 3,
-  Expired = 4,
-}
-
-export interface SolanaBetData {
-  betId: number;
-  tokenMint: string;
-  bettor1: string;
-  bettor2: string | null;
-  predictionBettor1: SolanaContractPrediction;
-  duration: number;
-  creationTime: number;
-  startTime: number;
-  endTime: number;
-  initialMarketCap: number;
-  solAmount: number;
-  status: SolanaContractStatus;
+export interface BetResults {
+  won: number;
+  lost: number;
+  open: number;
+  total: number;
+  winRate: number;
 }

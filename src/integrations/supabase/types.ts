@@ -130,6 +130,33 @@ export type Database = {
           },
         ]
       }
+      points_history: {
+        Row: {
+          action: string
+          amount: number
+          created_at: string
+          id: string
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          amount: number
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       token_volume_history: {
         Row: {
           id: string
@@ -202,18 +229,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          points: number
           username: string | null
           wallet_address: string
         }
         Insert: {
           created_at?: string
           id: string
+          points?: number
           username?: string | null
           wallet_address: string
         }
         Update: {
           created_at?: string
           id?: string
+          points?: number
           username?: string | null
           wallet_address?: string
         }

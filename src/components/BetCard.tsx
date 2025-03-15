@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, AlertTriangle, Users, Timer, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
+import useUserPoints from '@/hooks/useUserPoints';
 
 interface BetCardProps {
   bet: Bet;
@@ -21,6 +22,7 @@ const BetCard: React.FC<BetCardProps> = ({
   onBetAccepted
 }) => {
   const isExpiringSoon = bet.expiresAt - new Date().getTime() < 3600000; // less than 1 hour
+  const { points } = useUserPoints();
   
   const handleAcceptBet = async () => {
     try {
@@ -33,6 +35,8 @@ const BetCard: React.FC<BetCardProps> = ({
       console.error("Error accepting bet:", error);
     }
   };
+  
+  const insufficientPoints = connected && points && points.available < bet.points_amount;
   
   // Ensure we're not using bet.id directly as a key in parent components
   return (
@@ -83,10 +87,10 @@ const BetCard: React.FC<BetCardProps> = ({
               )}
             </div>
             <div className="flex items-center text-sm text-dream-foreground/70">
-              <Wallet className="w-3 h-3 mr-1" />
-              <span>{bet.amount} SOL</span>
+              <Zap className="w-3 h-3 mr-1 text-yellow-400" />
+              <span>{bet.points_amount} Points</span>
               <span className="mx-1">•</span>
-              <span>Potential win: {bet.amount * 2} SOL</span>
+              <span>Potential win: {bet.points_amount * 2} Points</span>
             </div>
           </div>
         </div>
@@ -98,9 +102,13 @@ const BetCard: React.FC<BetCardProps> = ({
               ? 'bg-red-500 hover:bg-red-600'  // If they bet migrate, you bet die (red)
               : 'bg-green-500 hover:bg-green-600'  // If they bet die, you bet migrate (green)
           }`}
-          disabled={!connected || bet.initiator === publicKeyString}
+          disabled={!connected || bet.initiator === publicKeyString || insufficientPoints}
         >
-          Take {bet.prediction === 'migrate' ? 'DIE 💀' : 'MIGRATE 🚀'} Position
+          {insufficientPoints ? (
+            'Insufficient Points'
+          ) : (
+            `Take ${bet.prediction === 'migrate' ? 'DIE 💀' : 'MIGRATE 🚀'} Position`
+          )}
         </Button>
       </div>
     </div>
