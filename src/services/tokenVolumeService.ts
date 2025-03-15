@@ -27,16 +27,32 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       return [];
     }
     
-    // Filter and transform the data based on volume category
-    const transformedData: TokenVolumeData[] = (data || []).map(token => ({
-      ...token,
-      volume_category: token.volume_24h >= 30000 ? 'above_30k' : 
-                      token.volume_24h >= 15000 ? 'above_15k' : 'below_15k'
-    })).filter(token => {
-      if (category === 'above_30k') return token.volume_24h >= 30000;
-      if (category === 'above_15k') return token.volume_24h >= 15000;
-      return true;
-    });
+    // Simplify the transformation to avoid deep type recursion
+    const transformedData: TokenVolumeData[] = [];
+    
+    if (data) {
+      for (let i = 0; i < data.length; i++) {
+        const token = data[i];
+        let volumeCategory = 'below_15k';
+        
+        if (token.volume_24h >= 30000) {
+          volumeCategory = 'above_30k';
+        } else if (token.volume_24h >= 15000) {
+          volumeCategory = 'above_15k';
+        }
+        
+        // Only add tokens that match the requested category
+        if ((category === 'above_30k' && volumeCategory === 'above_30k') ||
+            (category === 'above_15k' && volumeCategory === 'above_15k') ||
+            (category === 'below_15k')) {
+          
+          transformedData.push({
+            ...token,
+            volume_category: volumeCategory
+          });
+        }
+      }
+    }
     
     console.log(`Found ${transformedData.length} tokens in category ${category}`);
     return transformedData;
