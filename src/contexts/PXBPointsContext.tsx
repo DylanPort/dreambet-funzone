@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { toast } from 'sonner';
@@ -31,17 +30,13 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [bets, setBets] = useState<PXBBet[]>([]);
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
 
-  // Mock user ID for demo purposes
   const mockUserId = 'user-123';
 
-  // Simulate fetching user profile
   const fetchUserProfile = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Check if user exists in localStorage
       const storedProfile = localStorage.getItem('pxb_user_profile');
       if (storedProfile) {
         setUserProfile(JSON.parse(storedProfile));
@@ -56,11 +51,9 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // Simulate minting points
   const mintPoints = async (username: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const newProfile: UserProfile = {
@@ -82,7 +75,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // Simulate placing a bet
   const placeBet = async (
     tokenMint: string,
     tokenName: string,
@@ -103,10 +95,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return;
       }
       
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Create new bet
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + duration);
       
@@ -124,23 +114,19 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         expiresAt: expiresAt.toISOString()
       };
       
-      // Update user's points balance
       const updatedProfile = {
         ...userProfile,
         pxbPoints: userProfile.pxbPoints - betAmount
       };
       
-      // Update state and localStorage
       setUserProfile(updatedProfile);
       localStorage.setItem('pxb_user_profile', JSON.stringify(updatedProfile));
       
-      // Add bet to storage
       const storedBets = localStorage.getItem('pxb_user_bets');
       const currentBets = storedBets ? JSON.parse(storedBets) : [];
       const updatedBets = [...currentBets, newBet];
       localStorage.setItem('pxb_user_bets', JSON.stringify(updatedBets));
       
-      // Update state
       setBets(updatedBets);
       
       toast.success(`Bet placed successfully! ${betAmount} PXB Points on ${tokenSymbol} to ${betType === 'up' ? 'MOON' : 'DIE'}`);
@@ -152,11 +138,9 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // Fetch user bets
   const fetchUserBets = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 800));
       
       const storedBets = localStorage.getItem('pxb_user_bets');
@@ -172,14 +156,11 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // Fetch leaderboard
   const fetchLeaderboard = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Mock leaderboard data
       const mockLeaderboard: UserProfile[] = [
         { id: 'user-1', username: 'crypto_king', pxbPoints: 1250, reputation: 95, createdAt: new Date().toISOString() },
         { id: 'user-2', username: 'moon_chaser', pxbPoints: 980, reputation: 82, createdAt: new Date().toISOString() },
@@ -188,12 +169,10 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         { id: 'user-5', username: 'pump_detector', pxbPoints: 390, reputation: 47, createdAt: new Date().toISOString() },
       ];
       
-      // Add current user if they exist
       if (userProfile) {
         mockLeaderboard.push(userProfile);
       }
       
-      // Sort by reputation
       mockLeaderboard.sort((a, b) => b.reputation - a.reputation);
       
       setLeaderboard(mockLeaderboard);
@@ -204,22 +183,18 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // Initialize on mount
   useEffect(() => {
     fetchUserProfile();
     fetchUserBets();
     fetchLeaderboard();
     
-    // Simulate bet resolution every minute
     const interval = setInterval(() => {
       if (bets.length > 0) {
         const updatedBets = bets.map(bet => {
           if (bet.status === 'pending' && new Date(bet.expiresAt) < new Date()) {
-            // Randomly determine win or loss
             const won = Math.random() > 0.5;
             
             if (won && userProfile) {
-              // Update user profile with winnings
               const pointsWon = bet.betAmount * 2;
               const updatedProfile = {
                 ...userProfile,
@@ -234,7 +209,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               
               return {
                 ...bet,
-                status: 'won',
+                status: 'won' as const,
                 pointsWon
               };
             } else {
@@ -242,7 +217,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               
               return {
                 ...bet,
-                status: 'lost',
+                status: 'lost' as const,
                 pointsWon: 0
               };
             }
