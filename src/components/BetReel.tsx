@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -15,7 +16,7 @@ const BetReel = () => {
     // Initial fetch of latest bets
     const loadBets = async () => {
       try {
-        const latestBets = await fetchLatestBets();
+        const latestBets = await fetchLatestBets(20);
         setBets(latestBets);
       } catch (error) {
         console.error('Error loading bets for reel:', error);

@@ -350,3 +350,61 @@ export const acceptBet = async (betId: string) => {
     transactionSignature: data.transaction_signature || ''
   };
 };
+
+/**
+ * Fetches the most recent bets from the database
+ * @param limit Number of bets to return (default: 10)
+ * @returns Array of bet objects
+ */
+export const fetchLatestBets = async (limit = 10) => {
+  try {
+    const { data, error } = await supabase
+      .from('bets')
+      .select(`
+        bet_id,
+        token_mint,
+        creator,
+        sol_amount,
+        points_amount,
+        prediction_bettor1,
+        created_at,
+        expires_at,
+        status,
+        duration,
+        on_chain_id,
+        transaction_signature,
+        tokens (
+          token_name,
+          token_symbol
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching latest bets:', error);
+      throw error;
+    }
+
+    return data.map(bet => ({
+      id: bet.bet_id,
+      tokenId: bet.token_mint,
+      tokenName: bet.tokens?.token_name || 'Unknown Token',
+      tokenSymbol: bet.tokens?.token_symbol || '???',
+      initiator: bet.creator,
+      amount: bet.sol_amount,
+      pointsAmount: bet.points_amount || 0,
+      prediction: bet.prediction_bettor1,
+      timestamp: new Date(bet.created_at).getTime(),
+      expiresAt: new Date(bet.expires_at).getTime(),
+      timeRemaining: Math.floor((new Date(bet.created_at).getTime() + (bet.duration * 60000) - Date.now()) / 60000),
+      status: bet.status,
+      duration: bet.duration,
+      onChainBetId: bet.on_chain_id || null,
+      transactionSignature: bet.transaction_signature || null
+    }));
+  } catch (error) {
+    console.error('Error in fetchLatestBets:', error);
+    return [];
+  }
+};
