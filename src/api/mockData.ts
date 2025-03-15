@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -163,7 +164,6 @@ export const createBet = async (
 ): Promise<Bet> => {
   try {
     console.log(`Creating bet with tokenId=${tokenId}, amount=${amount}, prediction=${prediction}, duration=${duration}`);
-    console.log(`Using Devnet for transaction`);
     
     if (!wallet) {
       console.error("Wallet object is null or undefined");
