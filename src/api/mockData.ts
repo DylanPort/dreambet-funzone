@@ -255,7 +255,7 @@ export const createBet = async (
     }
     
     try {
-      // Fix: Add the missing onChainBetId and transactionSignature arguments
+      // Fixed: Pass all 7 required arguments to createSupabaseBet
       const bet = await createSupabaseBet(
         tokenId, 
         prediction, 
