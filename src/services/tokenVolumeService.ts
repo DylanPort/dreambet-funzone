@@ -30,7 +30,6 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       return [];
     }
     
-    // Return the data directly without attempting additional transformations
     return data || [];
   } catch (error) {
     console.error(`Error in fetchTokensByVolumeCategory for ${category}:`, error);
