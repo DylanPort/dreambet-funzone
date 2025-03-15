@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PXBBet, SupabaseUserProfile, SupabaseBetsRow } from '@/types/pxb';
 import { toast } from 'sonner';
@@ -68,7 +69,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           toast.error('Failed to load user profile');
         }
       } else if (userData) {
-        const supabaseUser = userData as SupabaseUserProfile;
+        // Cast userData to unknown first to avoid TypeScript errors
+        const supabaseUser = userData as any;
         console.log("User profile data from Supabase:", supabaseUser);
         
         setUserProfile({
