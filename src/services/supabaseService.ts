@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 
@@ -45,9 +46,11 @@ export const fetchOpenBets = async () => {
         creator,
         prediction_bettor1,
         sol_amount,
+        points_amount,
         duration,
         status,
         created_at,
+        expires_at,
         on_chain_id,
         transaction_signature
       `)
@@ -93,9 +96,11 @@ export const fetchOpenBets = async () => {
         tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
         initiator: bet.creator || 'Unknown',
         amount: bet.sol_amount,
+        points_amount: bet.points_amount || 0,
         prediction: predictionValue,
         timestamp: new Date(bet.created_at).getTime(),
-        expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
+        expiresAt: bet.expires_at ? new Date(bet.expires_at).getTime() : 
+                  new Date(bet.created_at).getTime() + (bet.duration * 1000),
         status: status,
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
@@ -126,9 +131,11 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         creator,
         prediction_bettor1,
         sol_amount,
+        points_amount,
         duration,
         status,
         created_at,
+        expires_at,
         on_chain_id,
         transaction_signature
       `)
@@ -163,9 +170,11 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
         initiator: bet.creator,
         amount: bet.sol_amount,
+        points_amount: bet.points_amount || 0,
         prediction: predictionValue,
         timestamp: new Date(bet.created_at).getTime(),
-        expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
+        expiresAt: bet.expires_at ? new Date(bet.expires_at).getTime() : 
+                  new Date(bet.created_at).getTime() + (bet.duration * 1000),
         status: status,
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
@@ -209,6 +218,9 @@ export const createSupabaseBet = async (
     if (prediction === 'migrate') dbPrediction = 'up';
     else if (prediction === 'die') dbPrediction = 'down';
     else dbPrediction = prediction;
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + (durationInSeconds * 1000));
     
     // Insert the bet
     const { data, error } = await supabase
@@ -220,11 +232,13 @@ export const createSupabaseBet = async (
         prediction_bettor1: dbPrediction,
         duration: durationInSeconds,
         sol_amount: amount,
+        points_amount: amount, // Set points_amount to same as amount
         status: 'open',
         on_chain_id: onChainId,
-        transaction_signature: transactionSignature
+        transaction_signature: transactionSignature,
+        expires_at: expiresAt.toISOString()
       })
-      .select('bet_id, created_at')
+      .select('bet_id, created_at, expires_at')
       .single();
     
     if (error) {
@@ -242,13 +256,15 @@ export const createSupabaseBet = async (
       tokenSymbol: tokenData.token_symbol,
       initiator: creatorWalletAddress,
       amount: amount,
+      points_amount: amount, // Set points_amount to same as amount
       prediction: prediction,
       timestamp: new Date(data.created_at).getTime(),
-      expiresAt: new Date(data.created_at).getTime() + (durationInSeconds * 1000),
+      expiresAt: new Date(data.expires_at).getTime(),
       status: 'open' as BetStatus,
       duration: duration,
       onChainBetId: onChainId || '',
-      transactionSignature: transactionSignature || ''
+      transactionSignature: transactionSignature || '',
+      initialMarketCap: tokenData.current_market_cap
     };
     
     console.log('Returning new bet:', newBet);
@@ -281,8 +297,10 @@ export const acceptBet = async (betId: string) => {
       creator,
       prediction_bettor1,
       sol_amount,
+      points_amount,
       duration,
-      created_at
+      created_at,
+      expires_at
     `)
     .eq('bet_id', betId)
     .eq('status', 'open')
@@ -291,15 +309,17 @@ export const acceptBet = async (betId: string) => {
   if (betError) throw betError;
   if (betData.creator === user.id) throw new Error('Cannot accept your own bet');
   
-  // Calculate start and end times
+  // Calculate end time
   const now = new Date();
-  const endTime = new Date(now.getTime() + betData.duration * 1000);
+  const endTime = betData.expires_at ? new Date(betData.expires_at) :
+                  new Date(now.getTime() + betData.duration * 1000);
   
   // Update the bet with counter-party info
   const { data, error } = await supabase
     .from('bets')
     .update({
       bettor2_id: user.id,
+      counterparty: user.id,
       status: 'matched',
       start_time: now.toISOString(),
       end_time: endTime.toISOString(),
@@ -340,6 +360,7 @@ export const acceptBet = async (betId: string) => {
     initiator: betData.creator,
     counterParty: user.id,
     amount: data.sol_amount,
+    points_amount: data.points_amount || betData.points_amount || 0,
     prediction: predictionValue,
     timestamp: new Date(betData.created_at).getTime(),
     expiresAt: new Date(data.end_time).getTime(),

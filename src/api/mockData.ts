@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -46,7 +47,8 @@ const getFallbackBets = (): Bet[] => {
       return bets.filter(bet => bet.expiresAt > now).map(bet => ({
         ...bet,
         onChainBetId: bet.onChainBetId || '',
-        transactionSignature: bet.transactionSignature || ''
+        transactionSignature: bet.transactionSignature || '',
+        points_amount: bet.points_amount || 0 // Ensure points_amount is always set
       }));
     }
   } catch (error) {
@@ -96,7 +98,8 @@ export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
     
     return allBets.map(bet => ({
       ...bet,
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
+      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed",
+      points_amount: bet.points_amount || 0 // Ensure points_amount is always set
     }));
   } catch (error) {
     console.error('Error fetching bets by token:', error);
@@ -130,7 +133,8 @@ export const fetchOpenBets = async (): Promise<Bet[]> => {
     
     return allBets.map(bet => ({
       ...bet,
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
+      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed",
+      points_amount: bet.points_amount || 0 // Ensure points_amount is always set
     }));
   } catch (error) {
     console.error('Error fetching open bets:', error);
@@ -143,7 +147,8 @@ export const fetchUserBets = async (userAddress: string): Promise<Bet[]> => {
     const bets = await fetchSupabaseUserBets(userAddress);
     return bets.map(bet => ({
       ...bet,
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
+      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed",
+      points_amount: bet.points_amount || 0 // Ensure points_amount is always set
     }));
   } catch (error) {
     console.error('Error fetching user bets:', error);
@@ -226,6 +231,7 @@ export const createBet = async (
       tokenSymbol,
       initiator: effectivePublicKey.toString(),
       amount,
+      points_amount: amount, // Set points_amount to same as amount for legacy support
       prediction,
       timestamp: Date.now(),
       expiresAt: Date.now() + (duration * 60 * 1000),
@@ -271,7 +277,8 @@ export const createBet = async (
         ...bet,
         onChainBetId: betId?.toString() || '',
         transactionSignature: txSignature || '',
-        status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
+        status: bet.status as "open" | "matched" | "completed" | "expired" | "closed",
+        points_amount: bet.points_amount || amount // Ensure points_amount is set
       };
     } catch (supabaseError) {
       console.warn("Failed to create bet in Supabase, using fallback data:", supabaseError);
@@ -332,7 +339,8 @@ export const acceptBet = async (
     
     return {
       ...updatedBet,
-      status: updatedBet.status as "open" | "matched" | "completed" | "expired" | "closed"
+      status: updatedBet.status as "open" | "matched" | "completed" | "expired" | "closed",
+      points_amount: updatedBet.points_amount || bet.points_amount || 0 // Ensure points_amount is set
     };
   } catch (error) {
     console.error('Error accepting bet:', error);

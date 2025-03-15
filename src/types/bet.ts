@@ -19,6 +19,7 @@ export interface Bet {
   winner?: string;
   onChainBetId?: string;
   transactionSignature?: string;
+  initialMarketCap?: number; // Add missing property
 }
 
 export interface BetResults {
