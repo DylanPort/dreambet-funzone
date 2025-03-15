@@ -17,7 +17,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
   try {
     console.log(`Fetching tokens with volume category: ${category}`);
     
-    // Explicitly select fields to avoid type instantiation errors
+    // Fix the type instantiation error by using explicit type casting
     const { data, error } = await supabase
       .from('tokens')
       .select('token_mint, volume_24h, current_market_cap, last_trade_price, token_name, token_symbol')
@@ -29,7 +29,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       return [];
     }
     
-    return data as TokenVolumeData[];
+    return (data || []) as TokenVolumeData[];
   } catch (error) {
     console.error(`Error in fetchTokensByVolumeCategory for ${category}:`, error);
     return [];
@@ -38,6 +38,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
 
 export const fetchAbove15kTokens = async (): Promise<TokenVolumeData[]> => {
   try {
+    // Fix the type instantiation error by using explicit type casting
     const { data, error } = await supabase
       .from('tokens')
       .select('token_mint, volume_24h, current_market_cap, last_trade_price, token_name, token_symbol')
@@ -49,7 +50,7 @@ export const fetchAbove15kTokens = async (): Promise<TokenVolumeData[]> => {
       return [];
     }
     
-    return data as TokenVolumeData[];
+    return (data || []) as TokenVolumeData[];
   } catch (error) {
     console.error('Error in fetchAbove15kTokens:', error);
     return [];
@@ -58,6 +59,7 @@ export const fetchAbove15kTokens = async (): Promise<TokenVolumeData[]> => {
 
 export const fetchAbove30kTokens = async (): Promise<TokenVolumeData[]> => {
   try {
+    // Fix the type instantiation error by using explicit type casting
     const { data, error } = await supabase
       .from('tokens')
       .select('token_mint, volume_24h, current_market_cap, last_trade_price, token_name, token_symbol')
@@ -69,7 +71,7 @@ export const fetchAbove30kTokens = async (): Promise<TokenVolumeData[]> => {
       return [];
     }
     
-    return data as TokenVolumeData[];
+    return (data || []) as TokenVolumeData[];
   } catch (error) {
     console.error('Error in fetchAbove30kTokens:', error);
     return [];
