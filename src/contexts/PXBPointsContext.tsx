@@ -368,14 +368,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               .from('users')
               .update({ 
                 points: userProfile.pxbPoints + pointsWon,
-                reputation: userProfile.reputation + reputationChange // Now reputation is required
+                reputation: (userProfile.reputation || 0) + reputationChange // Handle the case where reputation might be undefined
               })
               .eq('id', userProfile.id);
             
             setUserProfile({
               ...userProfile,
               pxbPoints: userProfile.pxbPoints + pointsWon,
-              reputation: userProfile.reputation + reputationChange // Now reputation is required
+              reputation: userProfile.reputation + reputationChange // We know userProfile.reputation is defined here
             });
             
             toast.success(`Your bet on ${bet.tokenSymbol} won! +${pointsWon} PXB Points`);

@@ -28,7 +28,7 @@ export interface SupabaseUserProfile {
   username: string; 
   wallet_address: string;
   points: number;
-  reputation: number; // Added reputation property as required
+  reputation?: number; // Add reputation as optional to match actual database schema
   created_at: string;
 }
 
