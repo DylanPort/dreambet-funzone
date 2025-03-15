@@ -1,3 +1,4 @@
+
 import { Bet } from '@/types/bet';
 
 // Format time remaining for a bet
@@ -95,7 +96,7 @@ export const getSortedBets = (bets: Bet[], sortBy: 'newest' | 'expiring' | 'amou
     case 'expiring':
       return [...bets].sort((a, b) => a.expiresAt - b.expiresAt);
     case 'amount':
-      return [...bets].sort((a, b) => b.amount - a.amount);
+      return [...bets].sort((a, b) => (b.points_amount || 0) - (a.points_amount || 0));
     default:
       return bets;
   }

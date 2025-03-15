@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { getUserPoints, initializeUserPoints } from '@/services/pointsService';
+import { getUserPoints } from '@/services/pointsService';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 export const useUserPoints = () => {
@@ -17,12 +17,14 @@ export const useUserPoints = () => {
     
     setLoading(true);
     try {
-      // Initialize points if needed
-      await initializeUserPoints();
-      
       // Get current points
       const userPoints = await getUserPoints();
-      setPoints(userPoints);
+      if (userPoints) {
+        setPoints({
+          total: userPoints.total || 0,
+          available: userPoints.available || 0
+        });
+      }
     } catch (error) {
       console.error('Error fetching user points:', error);
     } finally {

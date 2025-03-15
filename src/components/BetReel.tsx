@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -19,7 +20,9 @@ const BetReel: React.FC = () => {
         const bets = await fetchOpenBets();
 
         // Include open, matched, and expired bets in the reel
-        const active = bets.filter(bet => bet.status === 'open' || bet.status === 'matched' || bet.status === 'expired');
+        const active = bets.filter(bet => 
+          bet.status === 'open' || bet.status === 'matched' || bet.status === 'expired'
+        );
         console.log('Active and expired bets for reel:', active);
         setActiveBets(active);
       } catch (error) {

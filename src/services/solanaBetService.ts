@@ -103,7 +103,7 @@ export const getSolanaBetData = async (betId: number) => {
     prediction: predictions[randomSeed],
     timestamp,
     expiresAt,
-    status: 'open',
+    status: 'open' as const,
     duration: durations[randomSeed],
     counterParty: Math.random() > 0.5 ? counterParties[randomSeed] : undefined,
     onChainBetId: betId.toString(),

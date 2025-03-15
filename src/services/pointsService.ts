@@ -102,6 +102,32 @@ export const processPointsTransaction = async (
   }
 };
 
+// Initialize user points (new user)
+export const initializeUserPoints = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    
+    // Check if user already has points
+    const { data: userData } = await supabase
+      .from('users')
+      .select('points')
+      .eq('id', user.id)
+      .single();
+    
+    // If user already has points set up, no need to initialize
+    if (userData && userData.points !== null) {
+      return true;
+    }
+    
+    // If user doesn't have points, initialize with 50 points
+    return await processPointsTransaction('initialize', 50);
+  } catch (error) {
+    console.error("Error initializing user points:", error);
+    return false;
+  }
+};
+
 /**
  * Gets all bets with their points for a user
  * @param userId The user ID to get bets for
@@ -171,7 +197,10 @@ export const getUserPoints = async () => {
       return null;
     }
     
-    return data.points;
+    return {
+      total: data.points,
+      available: data.points
+    };
   } catch (error) {
     console.error("Error in getUserPoints:", error);
     return null;
