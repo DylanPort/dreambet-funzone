@@ -30,11 +30,13 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       throw error;
     }
     
-    // Safely handle the data
+    // Create a new array to avoid type issues
     const transformedData: TokenVolumeData[] = [];
     
     if (data) {
-      data.forEach(token => {
+      // Manually map each token to avoid type issues
+      for (let i = 0; i < data.length; i++) {
+        const token = data[i];
         transformedData.push({
           token_mint: token.token_mint,
           volume_24h: token.volume_24h || 0,
@@ -43,7 +45,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
           token_name: token.token_name,
           token_symbol: token.token_symbol
         });
-      });
+      }
     }
     
     console.log(`Found ${transformedData.length} tokens in category ${category}`);
