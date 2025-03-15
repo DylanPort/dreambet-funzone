@@ -9,28 +9,24 @@ import AnimatedLogo from '@/components/AnimatedLogo';
 import FuturisticTokenDisplay from '@/components/FuturisticTokenDisplay';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
-      for (let i = 0; i < Math.min(2, pumpPortal.recentTokens.length); i++) {
+      for (let i = 0; i < Math.min(3, pumpPortal.recentTokens.length); i++) {
         const formattedToken = formatWebSocketTokenData(pumpPortal.recentTokens[i]);
         tokens.push(formattedToken);
       }
     }
-    
-    if (tokens.length < 2 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
-      for (let i = 0; i < Math.min(2 - tokens.length, pumpPortal.rawTokens.length); i++) {
+    if (tokens.length < 3 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
+      for (let i = 0; i < Math.min(3 - tokens.length, pumpPortal.rawTokens.length); i++) {
         const rawToken = pumpPortal.rawTokens[i];
         tokens.push({
           id: rawToken.mint,
@@ -43,8 +39,7 @@ const Index = () => {
         });
       }
     }
-    
-    while (tokens.length < 2) {
+    while (tokens.length < 3) {
       tokens.push({
         id: `placeholder-${tokens.length}`,
         name: `Token ${tokens.length + 1}`,
@@ -55,15 +50,12 @@ const Index = () => {
         change24h: Math.random() * 40 - 20
       });
     }
-    
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -74,9 +66,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
-  return (
-    <>
+  return <>
       <OrbitingParticles />
       <Navbar />
       <BetReel />
@@ -87,19 +77,10 @@ const Index = () => {
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
           <FloatingImages />
           
-          <div className="text-center mb-8 animate-fade-in relative z-10">
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              <div className="md:w-1/2">
-                <AnimatedLogo />
-              </div>
-              <div className="md:w-1/2">
-                <FuturisticTokenDisplay tokens={latestTokens} />
-              </div>
-            </div>
-            <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8 mt-2">
-              PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
+          <div className="text-center mb-16 animate-fade-in relative z-10">
+            <AnimatedLogo />
+            <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.</p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
               <Link to="/betting">
                 <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
                   rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
@@ -151,7 +132,11 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4 mt-12">
+          <div className="relative max-w-5xl mx-auto h-[300px] md:h-[400px] mb-16">
+            <FuturisticTokenDisplay tokens={latestTokens} />
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent1/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
                 <img src="/lovable-uploads/c40baa88-ed47-4c9b-bbd9-d248df1c7863.png" alt="P2P Betting Icon" className="h-20 w-20 filter drop-shadow-[0_0_8px_rgba(255,61,252,0.8)] transition-transform hover:scale-110 duration-300" />
@@ -200,8 +185,6 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </>
-  );
+    </>;
 };
-
 export default Index;

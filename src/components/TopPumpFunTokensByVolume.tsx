@@ -89,46 +89,38 @@ const TopPumpFunTokensByVolume: React.FC = () => {
   };
 
   return (
-    <div className="top-pumpfun-tokens">
-      <div className="mb-4 flex justify-between items-center">
-        <div className="flex items-center">
-          <BarChart2 className="mr-2 h-5 w-5 text-green-400" />
-          <h2 className="text-lg font-bold">Top Volume PumpFun Tokens</h2>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-dream-accent2" />
+          <h2 className="text-xl font-semibold">Top Volume Tokens</h2>
         </div>
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh} 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center text-xs"
         >
-          <RefreshCw className={`h-3 w-3 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing ? 'Refreshing...' : 'Refresh'}
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
         </Button>
       </div>
-      
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, index) => (
-            <div key={index} className="bg-dream-background/40 rounded-lg p-4 animate-pulse h-44"></div>
-          ))}
-        </div>
-      ) : tokens.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {tokens.map((token, index) => (
-            <TokenCard 
-              key={token.token_mint || index}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? (
+          <p>Loading...</p>
+        ) : tokens.length > 0 ? (
+          tokens.map((token, index) => (
+            <TokenCard
+              key={token.token_mint}
               {...transformSupabaseTokenToCardData(token)}
+              index={index}
             />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-dream-foreground/60">
-          <p>No top volume tokens found at the moment.</p>
-          <p className="text-sm mt-2">Check back later or refresh!</p>
-        </div>
-      )}
+          ))
+        ) : (
+          <p>No tokens found</p>
+        )}
+      </div>
     </div>
   );
 };

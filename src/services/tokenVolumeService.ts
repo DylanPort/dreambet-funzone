@@ -4,49 +4,42 @@ import { toast } from "sonner";
 
 export interface TokenVolumeData {
   token_mint: string;
+  token_name: string;
+  token_symbol: string;
   volume_24h: number;
-  liquidity?: number;
-  current_market_cap?: number;
-  last_trade_price?: number;
-  token_name?: string;
-  token_symbol?: string;
-  created_time?: string;
+  current_market_cap: number;
+  last_trade_price: number;
+  volume_category: string;
 }
 
 export const fetchTokensByVolumeCategory = async (category: string): Promise<TokenVolumeData[]> => {
   try {
     console.log(`Fetching tokens with volume category: ${category}`);
     
-    // Make sure we explicitly select only fields that exist in the database
     const { data, error } = await supabase
       .from('tokens')
-      .select('token_mint, volume_24h, current_market_cap, last_trade_price, token_name, token_symbol')
-      .eq('volume_category', category)
+      .select('token_mint, token_name, token_symbol, volume_24h, current_market_cap, last_trade_price')
       .order('volume_24h', { ascending: false });
     
     if (error) {
       console.error(`Error fetching ${category} tokens:`, error);
       toast.error(`Failed to fetch ${category} tokens`);
-      throw error;
+      return [];
     }
     
-    // Create a simple array of token data without complex type transformations
-    let tokens: TokenVolumeData[] = [];
+    // Filter and transform the data based on volume category
+    const transformedData: TokenVolumeData[] = (data || []).map(token => ({
+      ...token,
+      volume_category: token.volume_24h >= 30000 ? 'above_30k' : 
+                      token.volume_24h >= 15000 ? 'above_15k' : 'below_15k'
+    })).filter(token => {
+      if (category === 'above_30k') return token.volume_24h >= 30000;
+      if (category === 'above_15k') return token.volume_24h >= 15000;
+      return true;
+    });
     
-    if (data && Array.isArray(data)) {
-      // Using a simple map with explicit return type
-      tokens = data.map((item: any): TokenVolumeData => ({
-        token_mint: item.token_mint || '',
-        volume_24h: item.volume_24h || 0,
-        current_market_cap: item.current_market_cap,
-        last_trade_price: item.last_trade_price,
-        token_name: item.token_name,
-        token_symbol: item.token_symbol
-      }));
-    }
-    
-    console.log(`Found ${tokens.length} tokens in category ${category}`);
-    return tokens;
+    console.log(`Found ${transformedData.length} tokens in category ${category}`);
+    return transformedData;
   } catch (error) {
     console.error(`Error in fetchTokensByVolumeCategory for ${category}:`, error);
     return [];

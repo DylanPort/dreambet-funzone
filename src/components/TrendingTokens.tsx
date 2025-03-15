@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, TrendingUp, Clock, ExternalLink, Zap, Flame } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import TokenCard from '@/components/TokenCard';
 import { fetchTrendingTokens } from '@/services/dexScreenerService';
 import { useVisibilityChange } from '@/hooks/useVisibilityChange';
@@ -11,7 +12,9 @@ const TrendingTokens: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
 
   const fetchData = useCallback(async () => {
     setRefreshing(true);
@@ -80,66 +83,38 @@ const TrendingTokens: React.FC = () => {
   };
 
   return (
-    <div className="trending-tokens">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center">
-          <TrendingUp className="mr-2 h-5 w-5 text-dream-accent1" />
-          <h2 className="text-lg font-bold">Trending Tokens</h2>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Flame className="w-5 h-5 text-dream-accent2" />
+          <h2 className="text-xl font-semibold">Trending Tokens</h2>
         </div>
-
-        <div className="flex items-center space-x-2">
-          {lastUpdated && (
-            <div className="text-xs text-dream-foreground/60 flex items-center">
-              <Clock className="h-3 w-3 mr-1" />
-              {formatLastUpdated()}
-            </div>
-          )}
-          <button
-            onClick={handleRefresh}
-            className="flex items-center space-x-1 px-2 py-1 text-xs rounded-md bg-dream-background/40 hover:bg-dream-background/60 transition-colors"
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-          </button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, index) => (
-            <div key={index} className="bg-dream-background/40 rounded-lg p-4 animate-pulse h-44"></div>
-          ))}
-        </div>
-      ) : tokens.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {tokens.map((token, index) => (
-            <TokenCard 
-              key={token.baseToken?.address || index}
-              id={token.baseToken?.address || `trending-${index}`}
-              name={token.baseToken?.name || 'Unknown Token'}
-              symbol={token.baseToken?.symbol || '???'}
-              price={token.priceUsd || 0}
-              priceChange={token.priceChange?.h24 || 0}
-              timeRemaining={0} // Added required prop
-              imageUrl={token.baseToken?.logoURI || ''}
-              liquidity={token.liquidity?.usd || 0}
-              marketCap={token.marketCap || 0}
-              volume24h={token.volume?.h24 || 0}
-              pairAddress={token.pairAddress || ''}
-              priceChange1h={token.priceChange?.h1 || 0}
-              priceChange6h={token.priceChange?.h6 || 0}
-              transactions={token.txns?.h24?.buys || 0 + token.txns?.h24?.sells || 0}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? (
+          <p>Loading...</p>
+        ) : tokens.length > 0 ? (
+          tokens.map((token, index) => (
+            <TokenCard
+              key={token.id}
+              {...token}
+              index={index}
             />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-dream-foreground/60">
-          <Flame className="mx-auto h-12 w-12 mb-4 text-dream-accent3/50" />
-          <p>No trending tokens found at the moment.</p>
-          <p className="text-sm mt-2">Check back later or refresh!</p>
-        </div>
-      )}
+          ))
+        ) : (
+          <p>No trending tokens found</p>
+        )}
+      </div>
     </div>
   );
 };
