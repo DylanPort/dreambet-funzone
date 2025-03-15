@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -31,10 +32,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
     }
     
     // Transform the data to include the volume_category field
-    const transformedData: TokenVolumeData[] = data?.map(token => ({
-      ...token,
-      volume_category: category
-    })) || [];
+    const transformedData: TokenVolumeData[] = data || [];
     
     console.log(`Found ${transformedData.length} tokens in category ${category}`);
     return transformedData;

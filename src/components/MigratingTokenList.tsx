@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, Clock, AlertCircle, Zap, Sparkles, ExternalLink, Filter, ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Rocket, Sparkles, ExternalLink, Filter, ArrowUpDown, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
@@ -285,6 +285,25 @@ const MigratingTokenList = () => {
     };
   }, [sortMenuOpen]);
 
+  const handleBetClick = (tokenId: string, prediction: 'moon' | 'dust') => {
+    if (!tokenId || tokenId.startsWith('placeholder-') || tokenId.startsWith('empty-')) {
+      toast({
+        title: "Cannot place bet",
+        description: "This token is not available for betting",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: `${prediction === 'moon' ? 'MOON' : 'DUST'} bet selected`,
+      description: `Redirecting to place a ${prediction} bet on this token`,
+      variant: "default"
+    });
+    
+    window.location.href = `/token/${tokenId}/bet?prediction=${prediction}`;
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex justify-between items-center">
@@ -299,7 +318,7 @@ const MigratingTokenList = () => {
                 variant="outline" 
                 size="sm" 
                 className="text-xs gap-1.5 h-8"
-                onClick={toggleSortMenu}
+                onClick={() => setSortMenuOpen(!sortMenuOpen)}
               >
                 <ArrowUpDown className="w-3.5 h-3.5" />
                 <span>Sort By: {sortBy.replace('-', ' ')}</span>
@@ -340,7 +359,7 @@ const MigratingTokenList = () => {
           
           <div className="flex items-center text-sm bg-dream-background/30 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent2/20">
             <span className={`flex items-center gap-1 ${pumpPortal.connected ? 'text-green-400' : 'text-yellow-400'}`}>
-              <Zap className="w-4 h-4" />
+              <Sparkles className="w-4 h-4" />
               <span>{pumpPortal.connected ? 'Connected' : 'Connecting...'}</span>
             </span>
           </div>
@@ -353,9 +372,8 @@ const MigratingTokenList = () => {
             <tr>
               <th className="py-3 px-4 text-left text-xs font-semibold text-dream-foreground/70">Token</th>
               <th className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Market Cap</th>
-              <th className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Change</th>
-              <th className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Time</th>
-              <th className="py-3 px-4 text-center text-xs font-semibold text-dream-foreground/70">Actions</th>
+              <th className="py-3 px-4 text-center text-xs font-semibold text-dream-foreground/70 bg-green-500/10">MOON</th>
+              <th className="py-3 px-4 text-center text-xs font-semibold text-dream-foreground/70 bg-red-500/10">DUST</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-dream-accent1/10">
@@ -385,25 +403,29 @@ const MigratingTokenList = () => {
                 <td className="py-3 px-4 text-right font-medium">
                   {formatMarketCap(token.marketCap || (token.currentPrice && token.supply ? token.currentPrice * token.supply : 0))}
                 </td>
-                <td className="py-3 px-4 text-right">
-                  <span className={`${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {token.change24h >= 0 ? '+' : ''}{token.change24h || 0}%
-                  </span>
+                <td className="py-3 px-4 text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-green-500/10 hover:bg-green-500/20 border-green-500/30 text-green-500 h-8 px-3 w-full max-w-24"
+                    onClick={() => handleBetClick(token.id, 'moon')}
+                    disabled={token.isPlaceholder}
+                  >
+                    <Rocket className="h-3.5 w-3.5 mr-1" />
+                    <span>MOON</span>
+                  </Button>
                 </td>
-                <td className="py-3 px-4 text-right text-xs text-dream-foreground/70">
-                  {token.migrationTime ? formatTimeSince(token.migrationTime) : 'New'}
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex justify-center gap-2">
-                    <button className="btn-moon py-1 px-2 text-xs flex items-center gap-1" disabled={token.isPlaceholder}>
-                      <ArrowUp className="w-3 h-3" />
-                      <span>Moon</span>
-                    </button>
-                    <button className="btn-die py-1 px-2 text-xs flex items-center gap-1" disabled={token.isPlaceholder}>
-                      <ArrowDown className="w-3 h-3" />
-                      <span>Die</span>
-                    </button>
-                  </div>
+                <td className="py-3 px-4 text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-red-500/10 hover:bg-red-500/20 border-red-500/30 text-red-500 h-8 px-3 w-full max-w-24"
+                    onClick={() => handleBetClick(token.id, 'dust')}
+                    disabled={token.isPlaceholder}
+                  >
+                    <ArrowDown className="h-3.5 w-3.5 mr-1" />
+                    <span>DUST</span>
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -415,4 +437,3 @@ const MigratingTokenList = () => {
 };
 
 export default MigratingTokenList;
-
