@@ -187,6 +187,24 @@ export const updateUsername = async (walletAddress: string, username: string): P
       return false;
     }
     
+    // First check if the user exists
+    const { data: existingUser, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('wallet_address', walletAddress)
+      .single();
+    
+    if (fetchError) {
+      console.error("Error fetching user profile:", fetchError);
+      if (fetchError.code === 'PGRST116') {
+        // User doesn't exist, create a new profile with this username
+        toast.error("No profile found for this wallet address");
+        return false;
+      }
+      toast.error("Error fetching user profile");
+      return false;
+    }
+    
     // Update the username in the users table
     const { error } = await supabase
       .from('users')
@@ -199,7 +217,7 @@ export const updateUsername = async (walletAddress: string, username: string): P
       return false;
     }
     
-    toast.success("Username updated successfully");
+    console.log("Username updated successfully for wallet:", walletAddress);
     return true;
   } catch (error) {
     console.error("Unexpected error in updateUsername:", error);

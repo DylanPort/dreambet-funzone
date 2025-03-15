@@ -25,7 +25,7 @@ export interface PXBBet {
 // Database schema interfaces for type safety with Supabase
 export interface SupabaseUserProfile {
   id: string;
-  username: string; 
+  username: string | null; 
   wallet_address: string;
   points: number;
   reputation?: number; // Make reputation optional to match actual database schema

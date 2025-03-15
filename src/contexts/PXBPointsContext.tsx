@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PXBBet, SupabaseUserProfile, SupabaseBetsRow } from '@/types/pxb';
 import { toast } from 'sonner';
@@ -106,7 +105,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .single();
       
       if (existingUser) {
-        // Use the existingUser.username to ensure username persistence
         const existingUsername = existingUser.username || username;
         
         if (existingUser.points >= 500) {
@@ -123,7 +121,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       
       let userId = existingUser?.id || crypto.randomUUID();
-      // If we have an existing user, preserve their username, otherwise use the provided one
       const finalUsername = existingUser?.username || username || publicKey.toString().substring(0, 8);
       
       const { data: updatedUser, error } = await supabase
@@ -166,7 +163,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setUserProfile(newProfile);
       toast.success(`Successfully minted 500 PXB Points!`);
       
-      // Force refresh the profile
       await fetchUserProfile();
     } catch (error) {
       console.error('Error minting points:', error);
