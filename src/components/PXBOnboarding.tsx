@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Coins, PartyPopper, AlertCircle, CheckCircle } from 'lucide-react';
+import { Coins, PartyPopper, AlertCircle, CheckCircle, Save } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,12 +8,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { motion } from 'framer-motion';
 import { useWallet } from '@solana/wallet-adapter-react';
 import WalletConnectButton from './WalletConnectButton';
+import { toast } from 'sonner';
+import { updateUsername } from '@/services/userService';
 
 const PXBOnboarding: React.FC = () => {
   const { mintPoints, isLoading, userProfile, fetchUserProfile } = usePXBPoints();
   const [username, setUsername] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   const { connected, publicKey } = useWallet();
 
   // Set default username to wallet address substring when wallet connects
@@ -59,6 +62,35 @@ const PXBOnboarding: React.FC = () => {
     }
   };
 
+  const handleSaveUsername = async () => {
+    if (!connected || !publicKey) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    if (!username.trim()) {
+      toast.error("Username cannot be empty");
+      return;
+    }
+
+    setIsUpdatingUsername(true);
+    try {
+      const walletAddress = publicKey.toString();
+      const success = await updateUsername(walletAddress, username);
+      
+      if (success) {
+        toast.success("Username updated successfully");
+        // Refresh user profile to get updated data
+        await fetchUserProfile();
+      }
+    } catch (error) {
+      console.error("Error updating username:", error);
+      toast.error("Failed to update username");
+    } finally {
+      setIsUpdatingUsername(false);
+    }
+  };
+
   return (
     <>
       <div className="glass-panel p-6 max-w-md mx-auto">
@@ -92,15 +124,37 @@ const PXBOnboarding: React.FC = () => {
             <p className="text-dream-foreground/70 text-sm mt-2">
               Current balance: {userProfile?.pxbPoints || 0} PXB Points
             </p>
-            <p className="text-dream-foreground/70 text-sm mt-2">
-              Username: {userProfile?.username}
-            </p>
-            <Button 
-              className="w-full mt-4 bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-all duration-300"
-              disabled={true}
-            >
-              Points Already Claimed
-            </Button>
+            
+            <div className="mt-4 space-y-4">
+              <div>
+                <label htmlFor="username-update" className="block text-sm text-dream-foreground/70 mb-1 text-left">
+                  Your Username
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    id="username-update"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter your username"
+                    className="w-full bg-dream-foreground/5"
+                  />
+                  <Button 
+                    onClick={handleSaveUsername}
+                    disabled={isUpdatingUsername || username === userProfile?.username}
+                    className="bg-green-500/80 hover:bg-green-500 text-white"
+                  >
+                    {isUpdatingUsername ? "Saving..." : <Save className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              
+              <Button 
+                className="w-full bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-all duration-300"
+                disabled={true}
+              >
+                Points Already Claimed
+              </Button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleMint} className="space-y-4">
