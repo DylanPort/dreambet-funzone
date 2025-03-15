@@ -34,7 +34,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
     const transformedData: TokenVolumeData[] = [];
     
     if (data) {
-      // Manually map each token to avoid type issues
+      // Use simple for loop instead of forEach to avoid deep type instantiation
       for (let i = 0; i < data.length; i++) {
         const token = data[i];
         transformedData.push({
