@@ -56,7 +56,7 @@ export interface SupabaseBetsRow {
   token_name?: string; 
   token_symbol?: string;
   sol_amount: number;
-  prediction_bettor1: 'up' | 'down';
+  prediction_bettor1: 'up' | 'down'; // Fixed to match the expected type
   status: string;
   points_won?: number;
   created_at: string;

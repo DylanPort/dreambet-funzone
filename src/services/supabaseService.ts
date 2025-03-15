@@ -180,6 +180,8 @@ export const fetchUserBets = async (userWalletAddress: string) => {
 
 export const createSupabaseBet = async (
   tokenMint: string,
+  tokenName: string,
+  tokenSymbol: string,
   prediction: BetPrediction,
   duration: number, // in minutes
   amount: number,
@@ -215,6 +217,8 @@ export const createSupabaseBet = async (
       .from('bets')
       .insert({
         token_mint: tokenMint,
+        token_name: tokenName,
+        token_symbol: tokenSymbol,
         creator: creatorWalletAddress,
         bettor1_id: creatorWalletAddress,
         prediction_bettor1: dbPrediction,
@@ -238,8 +242,8 @@ export const createSupabaseBet = async (
     const newBet = {
       id: data.bet_id,
       tokenId: tokenMint,
-      tokenName: tokenData.token_name,
-      tokenSymbol: tokenData.token_symbol,
+      tokenName: tokenName,
+      tokenSymbol: tokenSymbol,
       initiator: creatorWalletAddress,
       amount: amount,
       prediction: prediction,

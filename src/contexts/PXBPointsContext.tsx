@@ -267,9 +267,9 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return;
       }
       
-      const formattedBets: PXBBet[] = data.map((bet: SupabaseBetsRow) => {
-        const tokenName = bet.tokens?.token_name || bet.token_name || 'Unknown Token';
-        const tokenSymbol = bet.tokens?.token_symbol || bet.token_symbol || 'UNKNOWN';
+      const formattedBets: PXBBet[] = data.map((bet: any) => {
+        const tokenName = bet.token_name || bet.tokens?.token_name || 'Unknown Token';
+        const tokenSymbol = bet.token_symbol || bet.tokens?.token_symbol || 'UNKNOWN';
         
         return {
           id: bet.bet_id,
