@@ -167,15 +167,19 @@ const MigratingTokenList = () => {
     return uniqueTokens.sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime());
   };
 
-  const formatPrice = (price: number | string) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    if (isNaN(numPrice)) return "0.000000";
-    if (numPrice < 0.01) return numPrice.toFixed(6);
-    if (numPrice < 1) return numPrice.toFixed(4);
-    if (numPrice < 1000) return numPrice.toFixed(2);
-    return numPrice.toLocaleString('en-US', {
-      maximumFractionDigits: 2
-    });
+  const formatMarketCap = (marketCap: number | undefined) => {
+    if (marketCap === undefined || isNaN(marketCap)) return "$0";
+    
+    if (marketCap >= 1000000000) {
+      return `$${(marketCap / 1000000000).toFixed(2)}B`;
+    }
+    if (marketCap >= 1000000) {
+      return `$${(marketCap / 1000000).toFixed(2)}M`;
+    }
+    if (marketCap >= 1000) {
+      return `$${(marketCap / 1000).toFixed(2)}K`;
+    }
+    return `$${marketCap.toFixed(2)}`;
   };
 
   const getTokensForDisplay = () => {
@@ -348,7 +352,7 @@ const MigratingTokenList = () => {
           <thead className="bg-dream-background/50 backdrop-blur-sm">
             <tr>
               <th className="py-3 px-4 text-left text-xs font-semibold text-dream-foreground/70">Token</th>
-              <th className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Price</th>
+              <th className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Market Cap</th>
               <th className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Change</th>
               <th className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Time</th>
               <th className="py-3 px-4 text-center text-xs font-semibold text-dream-foreground/70">Actions</th>
@@ -378,7 +382,9 @@ const MigratingTokenList = () => {
                     </div>
                   </Link>
                 </td>
-                <td className="py-3 px-4 text-right font-medium">${formatPrice(token.currentPrice || 0)}</td>
+                <td className="py-3 px-4 text-right font-medium">
+                  {formatMarketCap(token.marketCap || (token.currentPrice && token.supply ? token.currentPrice * token.supply : 0))}
+                </td>
                 <td className="py-3 px-4 text-right">
                   <span className={`${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {token.change24h >= 0 ? '+' : ''}{token.change24h || 0}%
@@ -409,3 +415,4 @@ const MigratingTokenList = () => {
 };
 
 export default MigratingTokenList;
+

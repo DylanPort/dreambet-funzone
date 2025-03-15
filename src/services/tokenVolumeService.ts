@@ -1,15 +1,15 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export interface TokenVolumeData {
   token_mint: string;
-  token_name: string;
-  token_symbol: string;
   volume_24h: number;
-  current_market_cap: number;
-  last_trade_price: number;
-  volume_category: string;
+  liquidity?: number;
+  current_market_cap?: number;
+  last_trade_price?: number;
+  token_name?: string;
+  token_symbol?: string;
+  created_time?: string;
 }
 
 export const fetchTokensByVolumeCategory = async (category: string): Promise<TokenVolumeData[]> => {
@@ -20,7 +20,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
     // and match our interface
     const { data, error } = await supabase
       .from('tokens')
-      .select('token_mint, token_name, token_symbol, volume_24h, current_market_cap, last_trade_price')
+      .select('token_mint, volume_24h, liquidity, current_market_cap, last_trade_price')
       .eq('volume_category', category)
       .order('volume_24h', { ascending: false });
     
