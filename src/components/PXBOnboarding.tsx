@@ -1,19 +1,37 @@
 
-import React, { useState } from 'react';
-import { Coins, PartyPopper } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Coins, PartyPopper, AlertCircle } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { useWallet } from '@solana/wallet-adapter-react';
 import WalletConnectButton from './WalletConnectButton';
 
 const PXBOnboarding: React.FC = () => {
-  const { mintPoints, isLoading } = usePXBPoints();
+  const { mintPoints, isLoading, userProfile, fetchUserProfile } = usePXBPoints();
   const [username, setUsername] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
   const { connected } = useWallet();
+
+  useEffect(() => {
+    if (connected && userProfile) {
+      // Check if user has already claimed points
+      if (userProfile.pxbPoints >= 500) {
+        setAlreadyClaimed(true);
+      }
+    } else {
+      setAlreadyClaimed(false);
+    }
+  }, [connected, userProfile]);
+
+  useEffect(() => {
+    if (connected) {
+      fetchUserProfile();
+    }
+  }, [connected, fetchUserProfile]);
 
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +66,16 @@ const PXBOnboarding: React.FC = () => {
             <div className="flex justify-center">
               <WalletConnectButton />
             </div>
+          </div>
+        ) : alreadyClaimed ? (
+          <div className="p-4 border border-dream-accent1/20 rounded-lg bg-dream-accent1/5 text-center">
+            <AlertCircle className="w-6 h-6 text-dream-accent1 mx-auto mb-2" />
+            <p className="text-dream-foreground/90 font-medium">
+              You've already claimed your PXB Points!
+            </p>
+            <p className="text-dream-foreground/70 text-sm mt-2">
+              Current balance: {userProfile?.pxbPoints || 0} PXB Points
+            </p>
           </div>
         ) : (
           <form onSubmit={handleMint} className="space-y-4">
@@ -86,6 +114,9 @@ const PXBOnboarding: React.FC = () => {
             <DialogTitle className="text-2xl font-bold text-center text-white">
               Congratulations!
             </DialogTitle>
+            <DialogDescription className="text-white/80 text-center">
+              You've successfully claimed your PXB Points!
+            </DialogDescription>
           </DialogHeader>
           
           <div className="flex flex-col items-center py-6">
