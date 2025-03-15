@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -17,10 +18,9 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
     console.log(`Fetching tokens with volume category: ${category}`);
     
     // Make sure we explicitly select only fields that exist in the database
-    // and match our interface
     const { data, error } = await supabase
       .from('tokens')
-      .select('token_mint, volume_24h, liquidity, current_market_cap, last_trade_price')
+      .select('token_mint, volume_24h, liquidity, current_market_cap, last_trade_price, token_name, token_symbol')
       .eq('volume_category', category)
       .order('volume_24h', { ascending: false });
     
@@ -30,10 +30,15 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       throw error;
     }
     
-    // Transform the data to include the volume_category field
+    // Transform the data but without using spread to avoid type issues
     const transformedData: TokenVolumeData[] = data?.map(token => ({
-      ...token,
-      volume_category: category
+      token_mint: token.token_mint,
+      volume_24h: token.volume_24h,
+      liquidity: token.liquidity,
+      current_market_cap: token.current_market_cap,
+      last_trade_price: token.last_trade_price,
+      token_name: token.token_name,
+      token_symbol: token.token_symbol
     })) || [];
     
     console.log(`Found ${transformedData.length} tokens in category ${category}`);

@@ -7,11 +7,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
 import { triggerTokenVolumeUpdate } from '@/services/tokenVolumeService';
+
 const TopVolumeTokens: React.FC = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const pumpPortal = usePumpPortalWebSocket();
+
   const fetchHighMarketCapTokens = async () => {
     try {
       setLoading(true);
@@ -114,6 +116,7 @@ const TopVolumeTokens: React.FC = () => {
       fetchHighMarketCapTokens();
     }
   }, [pumpPortal.rawTokens]);
+
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
@@ -143,6 +146,50 @@ const TopVolumeTokens: React.FC = () => {
       setRefreshing(false);
     }
   };
-  return;
+
+  return (
+    <div className="top-volume-tokens">
+      <div className="mb-4 flex justify-between items-center">
+        <div className="flex items-center">
+          <BarChart3 className="mr-2 h-5 w-5 text-dream-accent2" />
+          <h2 className="text-lg font-bold">High Market Cap Tokens</h2>
+        </div>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh} 
+          disabled={refreshing}
+          className="flex items-center text-xs"
+        >
+          <RefreshCw className={`h-3 w-3 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </Button>
+      </div>
+      
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, index) => (
+            <div key={index} className="bg-dream-background/40 rounded-lg p-4 animate-pulse h-44"></div>
+          ))}
+        </div>
+      ) : tokens.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {tokens.map((token, index) => (
+            <TokenCard 
+              key={token.token_mint || index}
+              {...transformSupabaseTokenToCardData(token)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-dream-foreground/60">
+          <p>No high market cap tokens found at the moment.</p>
+          <p className="text-sm mt-2">Check back later or refresh!</p>
+        </div>
+      )}
+    </div>
+  );
 };
+
 export default TopVolumeTokens;
