@@ -9,7 +9,7 @@ export interface TokenVolumeData {
   volume_24h: number;
   current_market_cap: number;
   last_trade_price: number;
-  volume_category?: string;
+  volume_category: string;
 }
 
 export const fetchTokensByVolumeCategory = async (category: string): Promise<TokenVolumeData[]> => {
@@ -44,13 +44,13 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
   }
 };
 
-export const fetchAbove15kTokens = (): Promise<TokenVolumeData[]> => fetchTokensByVolumeCategory('above_15k');
-export const fetchAbove30kTokens = (): Promise<TokenVolumeData[]> => fetchTokensByVolumeCategory('above_30k');
+export const fetchAbove15kTokens = () => fetchTokensByVolumeCategory('above_15k');
+export const fetchAbove30kTokens = () => fetchTokensByVolumeCategory('above_30k');
 
 export const subscribeToTokenVolumeUpdates = (
   category: string,
   callback: (tokens: TokenVolumeData[]) => void
-): (() => void) => {
+) => {
   // Initial fetch
   fetchTokensByVolumeCategory(category).then(callback);
   
