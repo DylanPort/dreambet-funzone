@@ -256,6 +256,8 @@ export const createBet = async (
     try {
       const bet = await createSupabaseBet(
         tokenId, 
+        tokenName,
+        tokenSymbol,
         prediction, 
         duration, 
         amount,

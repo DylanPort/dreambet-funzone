@@ -45,3 +45,24 @@ export interface SupabasePXBBet {
   created_at: string;
   expires_at: string;
 }
+
+// Add a type definition for the tokens relation in the bets table
+export interface SupabaseBetsRow {
+  bet_id: string;
+  bettor1_id: string;
+  bettor2_id?: string;
+  creator: string;
+  token_mint: string;
+  token_name?: string; 
+  token_symbol?: string;
+  sol_amount: number;
+  prediction_bettor1: 'up' | 'down';
+  status: string;
+  points_won?: number;
+  created_at: string;
+  duration: number;
+  tokens?: {
+    token_name: string;
+    token_symbol: string;
+  };
+}
