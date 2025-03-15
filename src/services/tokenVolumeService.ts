@@ -21,7 +21,7 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
     // and match our interface
     const { data, error } = await supabase
       .from('tokens')
-      .select('token_mint, volume_24h, current_market_cap, last_trade_price')
+      .select('token_mint, volume_24h, current_market_cap, last_trade_price, token_name, token_symbol')
       .eq('volume_category', category)
       .order('volume_24h', { ascending: false });
     
@@ -30,19 +30,53 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
       return [];
     }
     
-    // Transform the data to include the volume_category field
-    const transformedData: TokenVolumeData[] = data || [];
-    
-    console.log(`Found ${transformedData.length} tokens in category ${category}`);
-    return transformedData;
+    // Return the data directly without attempting additional transformations
+    return data || [];
   } catch (error) {
     console.error(`Error in fetchTokensByVolumeCategory for ${category}:`, error);
     return [];
   }
 };
 
-export const fetchAbove15kTokens = () => fetchTokensByVolumeCategory('above_15k');
-export const fetchAbove30kTokens = () => fetchTokensByVolumeCategory('above_30k');
+export const fetchAbove15kTokens = async (): Promise<TokenVolumeData[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('tokens')
+      .select('token_mint, volume_24h, current_market_cap, last_trade_price, token_name, token_symbol')
+      .gte('volume_24h', 15000)
+      .order('volume_24h', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching tokens above 15k:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchAbove15kTokens:', error);
+    return [];
+  }
+};
+
+export const fetchAbove30kTokens = async (): Promise<TokenVolumeData[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('tokens')
+      .select('token_mint, volume_24h, current_market_cap, last_trade_price, token_name, token_symbol')
+      .gte('volume_24h', 30000)
+      .order('volume_24h', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching tokens above 30k:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchAbove30kTokens:', error);
+    return [];
+  }
+};
 
 export const subscribeToTokenVolumeUpdates = (
   category: string,

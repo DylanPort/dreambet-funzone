@@ -1,5 +1,5 @@
 
 // Re-export from the correct location
-import { useToast, toast } from "sonner";
+import { toast } from "sonner";
 
-export { useToast, toast };
+export { toast };
