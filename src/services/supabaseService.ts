@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 
@@ -355,6 +354,7 @@ export const acceptBet = async (betId: string) => {
 /**
  * Fetches the most recent bets from the database
  * @param limit Number of bets to return (default: 10)
+ * @param includeExpired Whether to include expired bets (default: false)
  * @returns Array of bet objects
  */
 export const fetchLatestBets = async (limit = 10, includeExpired = false) => {
@@ -396,7 +396,7 @@ export const fetchLatestBets = async (limit = 10, includeExpired = false) => {
     return data.map(bet => {
       // Calculate the expiry time
       const createdTime = new Date(bet.created_at).getTime();
-      const expiresAt = new Date(createdTime + (bet.duration * 60000));
+      const expiresAt = new Date(createdTime + (bet.duration * 1000));
       
       return {
         id: bet.bet_id,
@@ -411,7 +411,7 @@ export const fetchLatestBets = async (limit = 10, includeExpired = false) => {
         expiresAt: expiresAt.getTime(),
         timeRemaining: Math.floor((expiresAt.getTime() - Date.now()) / 60000),
         status: bet.status,
-        duration: bet.duration,
+        duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id || null,
         transactionSignature: bet.transaction_signature || null
       };
