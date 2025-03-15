@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PXBBet, SupabaseUserProfile, SupabaseBetsRow } from '@/types/pxb';
 import { toast } from 'sonner';
@@ -104,16 +105,19 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .eq('wallet_address', walletAddress)
         .single();
       
-      if (existingUser && existingUser.points >= 500) {
-        toast.error('You have already claimed your PXB Points');
-        setUserProfile({
-          id: existingUser.id,
-          username: existingUser.username || username,
-          pxbPoints: existingUser.points,
-          reputation: existingUser.reputation || 0, // Provide default of 0
-          createdAt: existingUser.created_at
-        });
-        return;
+      if (existingUser) {
+        // Need to safely handle potentially missing reputation property
+        if (existingUser.points >= 500) {
+          toast.error('You have already claimed your PXB Points');
+          setUserProfile({
+            id: existingUser.id,
+            username: existingUser.username || username,
+            pxbPoints: existingUser.points,
+            reputation: existingUser.reputation || 0, // Handle potential undefined
+            createdAt: existingUser.created_at
+          });
+          return;
+        }
       }
       
       let userId = existingUser?.id || crypto.randomUUID();
@@ -151,7 +155,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: updatedUser.id,
         username: updatedUser.username || username,
         pxbPoints: updatedUser.points,
-        reputation: updatedUser.reputation || 0, // Provide default of 0
+        reputation: updatedUser.reputation || 0, // Handle potential undefined
         createdAt: updatedUser.created_at
       };
       
