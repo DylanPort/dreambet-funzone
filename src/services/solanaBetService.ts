@@ -89,6 +89,8 @@ export const createSolanaBet = async (
       try {
         await createSupabaseBet(
           tokenMint,
+          tokenName,
+          tokenSymbol,
           prediction,
           durationMinutes,
           solAmount,
@@ -188,6 +190,8 @@ export const createSolanaBet = async (
           try {
             await createSupabaseBet(
               tokenMint,
+              tokenName,
+              tokenSymbol,
               prediction,
               durationMinutes,
               solAmount,
@@ -228,6 +232,8 @@ export const createSolanaBet = async (
         try {
           await createSupabaseBet(
             tokenMint,
+            tokenName,
+            tokenSymbol,
             prediction,
             durationMinutes,
             solAmount,
@@ -251,6 +257,8 @@ export const createSolanaBet = async (
           try {
             await createSupabaseBet(
               tokenMint,
+              tokenName,
+              tokenSymbol,
               prediction,
               durationMinutes,
               solAmount,

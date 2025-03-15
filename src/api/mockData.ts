@@ -198,6 +198,8 @@ export const createBet = async (
       const result = await createSolanaBet(
         wallet,
         tokenId,
+        tokenName,
+        tokenSymbol,
         prediction,
         duration,
         amount

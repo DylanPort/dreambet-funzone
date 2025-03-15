@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PXBBet, SupabaseUserProfile, SupabaseBetsRow } from '@/types/pxb';
 import { toast } from 'sonner';
@@ -278,7 +277,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return;
       }
       
-      const formattedBets: PXBBet[] = data.map((bet: any) => {
+      const formattedBets: PXBBet[] = (data as any[]).map((bet: any) => {
         const tokenName = bet.token_name || bet.tokens?.token_name || 'Unknown Token';
         const tokenSymbol = bet.token_symbol || bet.tokens?.token_symbol || 'UNKNOWN';
         
