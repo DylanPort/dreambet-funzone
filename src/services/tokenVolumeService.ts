@@ -5,9 +5,9 @@ import { toast } from "sonner";
 export interface TokenVolumeData {
   token_mint: string;
   volume_24h: number;
-  liquidity?: number;
-  current_market_cap?: number;
-  last_trade_price?: number;
+  liquidity?: number | null;
+  current_market_cap?: number | null;
+  last_trade_price?: number | null;
   token_name?: string;
   token_symbol?: string;
   created_time?: string;
@@ -21,14 +21,13 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
     // and match our interface
     const { data, error } = await supabase
       .from('tokens')
-      .select('token_mint, volume_24h, liquidity, current_market_cap, last_trade_price')
+      .select('token_mint, volume_24h, current_market_cap, last_trade_price')
       .eq('volume_category', category)
       .order('volume_24h', { ascending: false });
     
     if (error) {
       console.error(`Error fetching ${category} tokens:`, error);
-      toast.error(`Failed to fetch ${category} tokens`);
-      throw error;
+      return [];
     }
     
     // Transform the data to include the volume_category field
@@ -87,22 +86,22 @@ export const triggerTokenVolumeUpdate = async (): Promise<boolean> => {
     
     if (error) {
       console.error("Error triggering token volume update:", error);
-      toast.error("Failed to update token volumes");
+      // Only show toast for new bets, not for token volume updates
       return false;
     }
     
     console.log("Token volume update response:", data);
     
     if (data?.success) {
-      toast.success(`Updated ${data.tokensProcessed} tokens (${data.tokensAbove15k} above 15k, ${data.tokensAbove30k} above 30k)`);
+      // Only log to console, don't show toast
+      console.log(`Updated ${data.tokensProcessed} tokens (${data.tokensAbove15k} above 15k, ${data.tokensAbove30k} above 30k)`);
       return true;
     } else {
-      toast.error(`Failed to update tokens: ${data?.message || 'Unknown error'}`);
+      console.error(`Failed to update tokens: ${data?.message || 'Unknown error'}`);
       return false;
     }
   } catch (error) {
     console.error("Exception in triggerTokenVolumeUpdate:", error);
-    toast.error("Failed to update token volumes");
     return false;
   }
 };
