@@ -75,7 +75,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
-          reputation: supabaseUser.reputation || 0, // Provide default of 0
+          reputation: supabaseUser.reputation || 0, // Set default value if undefined
           createdAt: supabaseUser.created_at
         });
       }
