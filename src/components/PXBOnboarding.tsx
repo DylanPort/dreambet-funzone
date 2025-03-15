@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Coins, PartyPopper, AlertCircle } from 'lucide-react';
+import { Coins, PartyPopper, AlertCircle, CheckCircle } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,7 +68,9 @@ const PXBOnboarding: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold mb-2">Get Started with PXB Points</h2>
           <p className="text-dream-foreground/70">
-            Claim 500 PXB Points and start betting on tokens!
+            {alreadyClaimed 
+              ? "You've already claimed your PXB Points!"
+              : "Claim 500 PXB Points and start betting on tokens!"}
           </p>
         </div>
         
@@ -82,8 +84,8 @@ const PXBOnboarding: React.FC = () => {
             </div>
           </div>
         ) : alreadyClaimed ? (
-          <div className="p-4 border border-dream-accent1/20 rounded-lg bg-dream-accent1/5 text-center">
-            <AlertCircle className="w-6 h-6 text-dream-accent1 mx-auto mb-2" />
+          <div className="p-4 border border-green-500/20 rounded-lg bg-green-500/5 text-center">
+            <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
             <p className="text-dream-foreground/90 font-medium">
               You've already claimed your PXB Points!
             </p>
@@ -93,6 +95,12 @@ const PXBOnboarding: React.FC = () => {
             <p className="text-dream-foreground/70 text-sm mt-2">
               Username: {userProfile?.username}
             </p>
+            <Button 
+              className="w-full mt-4 bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-all duration-300"
+              disabled={true}
+            >
+              Points Already Claimed
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleMint} className="space-y-4">
