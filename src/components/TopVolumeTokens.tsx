@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { transformSupabaseTokenToCardData } from '@/services/bitqueryService';
 import TokenCard from './TokenCard';
@@ -7,11 +8,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
 import { triggerTokenVolumeUpdate } from '@/services/tokenVolumeService';
+
 const TopVolumeTokens: React.FC = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const pumpPortal = usePumpPortalWebSocket();
+
   const fetchHighMarketCapTokens = async () => {
     try {
       setLoading(true);
@@ -114,6 +117,7 @@ const TopVolumeTokens: React.FC = () => {
       fetchHighMarketCapTokens();
     }
   }, [pumpPortal.rawTokens]);
+
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
@@ -143,6 +147,53 @@ const TopVolumeTokens: React.FC = () => {
       setRefreshing(false);
     }
   };
-  return;
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-display font-bold flex items-center gap-2">
+          <BarChart3 className="text-dream-accent2" />
+          Top Volume Tokens
+        </h2>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw className={refreshing ? "animate-spin" : ""} size={16} />
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="glass-panel p-4 animate-pulse h-44" />
+          ))}
+        </div>
+      ) : tokens.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tokens.map((token, index) => {
+            const cardData = transformSupabaseTokenToCardData(token);
+            return (
+              <TokenCard
+                key={`${cardData.id}-${index}`}
+                {...cardData}
+                index={index}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div className="glass-panel p-6 text-center">
+          <p>No high market cap tokens found. Try refreshing or check back later.</p>
+          <Button onClick={handleRefresh} className="mt-4" disabled={refreshing}>
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </Button>
+        </div>
+      )}
+    </section>
+  );
 };
+
 export default TopVolumeTokens;
