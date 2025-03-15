@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, PXBBet } from '@/types/pxb';
+import { UserProfile, PXBBet, SupabaseUserProfile, SupabasePXBBet } from '@/types/pxb';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -71,12 +71,13 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       } else if (userData) {
         // Transform the Supabase user data to our UserProfile format
+        const supabaseUser = userData as SupabaseUserProfile;
         setUserProfile({
-          id: userData.id,
-          username: userData.username || walletAddress.substring(0, 8),
-          pxbPoints: userData.points || 0,
-          reputation: userData.reputation || 0,
-          createdAt: userData.created_at
+          id: supabaseUser.id,
+          username: supabaseUser.username || walletAddress.substring(0, 8),
+          pxbPoints: supabaseUser.points || 0,
+          reputation: supabaseUser.reputation || 0,
+          createdAt: supabaseUser.created_at
         });
       }
     } catch (error) {
@@ -194,20 +195,22 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       const betId = crypto.randomUUID();
       
-      // Insert bet record
+      // Insert bet record - Use 'bets' table instead of 'pxb_bets'
+      // This is to match the actual Supabase schema
       const { error: betError } = await supabase
-        .from('pxb_bets')
+        .from('bets')
         .insert({
-          id: betId,
+          bet_id: betId,
+          creator: walletAddress,
           user_id: userProfile.id,
           token_mint: tokenMint,
           token_name: tokenName,
           token_symbol: tokenSymbol,
-          bet_amount: betAmount,
-          bet_type: betType,
+          sol_amount: betAmount,  // Use sol_amount as the field name
+          prediction_bettor1: betType,  // Use prediction_bettor1 as the field name
           status: 'pending',
           created_at: new Date().toISOString(),
-          expires_at: expiresAt.toISOString()
+          duration: duration
         });
       
       if (betError) {
@@ -265,15 +268,16 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const fetchUserBets = async () => {
     setIsLoading(true);
     try {
-      if (!connected || !publicKey) {
+      if (!connected || !publicKey || !userProfile) {
         setBets([]);
         return;
       }
       
+      // Use the 'bets' table instead of 'pxb_bets'
       const { data, error } = await supabase
-        .from('pxb_bets')
+        .from('bets')
         .select('*')
-        .eq('user_id', userProfile?.id)
+        .eq('user_id', userProfile.id)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -283,17 +287,17 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       // Convert to PXBBet format
       const formattedBets: PXBBet[] = data.map(bet => ({
-        id: bet.id,
+        id: bet.bet_id, // Use bet_id as the ID field
         userId: bet.user_id,
         tokenMint: bet.token_mint,
         tokenName: bet.token_name,
         tokenSymbol: bet.token_symbol,
-        betAmount: bet.bet_amount,
-        betType: bet.bet_type as 'up' | 'down',
+        betAmount: bet.sol_amount, // Use sol_amount as the bet amount
+        betType: bet.prediction_bettor1 as 'up' | 'down', // Use prediction_bettor1 as bet type
         status: bet.status as 'pending' | 'won' | 'lost',
         pointsWon: bet.points_won || 0,
         createdAt: bet.created_at,
-        expiresAt: bet.expires_at
+        expiresAt: new Date(new Date(bet.created_at).getTime() + (bet.duration * 60 * 1000)).toISOString()
       }));
       
       setBets(formattedBets);
@@ -310,7 +314,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .order('reputation', { ascending: false })
+        .order('points', { ascending: false }) // Order by points instead of reputation
         .limit(10);
       
       if (error) {
@@ -355,14 +359,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const newStatus = won ? 'won' as const : 'lost' as const;
           const reputationChange = won ? 10 : 0;
           
-          // Update bet in database
+          // Update bet in database - use 'bets' table instead of 'pxb_bets'
           await supabase
-            .from('pxb_bets')
+            .from('bets')
             .update({ 
               status: newStatus,
               points_won: pointsWon 
             })
-            .eq('id', bet.id);
+            .eq('bet_id', bet.id); // Use bet_id as the ID field
           
           if (won && userProfile) {
             // Update user's points and reputation
@@ -370,7 +374,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               .from('users')
               .update({ 
                 points: userProfile.pxbPoints + pointsWon,
-                reputation: userProfile.reputation + reputationChange
+                reputation: (userProfile.reputation || 0) + reputationChange
               })
               .eq('id', userProfile.id);
             
@@ -378,7 +382,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             setUserProfile({
               ...userProfile,
               pxbPoints: userProfile.pxbPoints + pointsWon,
-              reputation: userProfile.reputation + reputationChange
+              reputation: (userProfile.reputation || 0) + reputationChange
             });
             
             toast.success(`Your bet on ${bet.tokenSymbol} won! +${pointsWon} PXB Points`);
