@@ -20,9 +20,7 @@ const BettingDashboard = () => {
           {/* Hero Section */}
           <section className="mb-12 text-center">
             <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 text-gradient">SHOW YOUR TRADING SKILLS</h1>
-            <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-6">
-              Bet on whether tokens will go up or down after migrating from PumpFun to Raydium
-            </p>
+            <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-6">Bet on whether tokens will go up or down and earn more PXB Points</p>
             
             {/* Simple explanation of how the betting system works */}
             <div className="glass-panel max-w-3xl mx-auto p-6 rounded-lg">
