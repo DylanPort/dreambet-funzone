@@ -13,20 +13,17 @@ import PXBOnboarding from '@/components/PXBOnboarding';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import RecentTokenTrades from '@/components/RecentTokenTrades';
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
   const {
     userProfile
   } = usePXBPoints();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -67,12 +64,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -83,7 +78,6 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -130,18 +124,14 @@ const Index = () => {
                 or turn to 
                 
                 <span className="relative inline-flex items-center gap-1 text-red-400 font-bold">
-                  <img 
-                    src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" 
-                    alt="Skull" 
-                    className="h-8 w-8 animate-pulse filter drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" 
-                  />
+                  <img src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" alt="Skull" className="h-8 w-8 animate-pulse filter drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
                   DUST
                   <span className="absolute inset-0 bg-red-400/10 blur-sm animate-pulse-glow rounded-full"></span>
                 </span> 
                 
                 in just 
                 
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold"> 60 minutes</span>
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold"> 60 minutes</span>
                 
                 . It's that simple - 
                 
@@ -153,7 +143,7 @@ const Index = () => {
                 
                 alongside future 
                 
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold"> life-changing perks!</span>
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold"> life-changing perks!</span>
               </p>
             </div>
             
@@ -323,5 +313,4 @@ const Index = () => {
       </footer>
     </>;
 };
-
 export default Index;
