@@ -1,304 +1,633 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users } from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import BetReel from '@/components/BetReel';
-import OrbitingParticles from '@/components/OrbitingParticles';
-import FloatingImages from '@/components/FloatingImages';
-import AnimatedLogo from '@/components/AnimatedLogo';
-import FuturisticTokenDisplay from '@/components/FuturisticTokenDisplay';
-import { Button } from '@/components/ui/button';
-import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
-import PXBOnboarding from '@/components/PXBOnboarding';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import RecentTokenTrades from '@/components/RecentTokenTrades';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PXBPointsProvider } from '@/contexts/pxb/PXBPointsContext';
-import PXBLeaderboard from "@/components/PXBLeaderboard";
-import PXBUserStats from "@/components/PXBUserStats";
-import PXBSupplyProgress from "@/components/PXBSupplyProgress";
-const Index = () => {
-  const [latestTokens, setLatestTokens] = useState<any[]>([]);
-  const pumpPortal = usePumpPortalWebSocket();
-  const {
-    userProfile
-  } = usePXBPoints();
-  const isMobile = useIsMobile();
-  useEffect(() => {
-    if (pumpPortal.connected) {
-      pumpPortal.subscribeToNewTokens();
-    }
-  }, [pumpPortal.connected]);
-  useEffect(() => {
-    const tokens = [];
-    if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
-      for (let i = 0; i < Math.min(3, pumpPortal.recentTokens.length); i++) {
-        const formattedToken = formatWebSocketTokenData(pumpPortal.recentTokens[i]);
-        tokens.push(formattedToken);
-      }
-    }
-    if (tokens.length < 3 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
-      for (let i = 0; i < Math.min(3 - tokens.length, pumpPortal.rawTokens.length); i++) {
-        const rawToken = pumpPortal.rawTokens[i];
-        if (!tokens.some(t => t.id === rawToken.mint)) {
-          tokens.push({
-            id: rawToken.mint,
-            name: rawToken.name || 'Unknown Token',
-            symbol: rawToken.symbol || '',
-            logo: '🪙',
-            imageUrl: rawToken.uri || '',
-            currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
-            change24h: Math.random() * 40 - 20
-          });
-        }
-      }
-    }
-    while (tokens.length < 3) {
-      const placeholderId = `placeholder-${tokens.length}`;
-      if (!tokens.some(t => t.id === placeholderId)) {
-        tokens.push({
-          id: placeholderId,
-          name: `Token ${tokens.length + 1}`,
-          symbol: `T${tokens.length + 1}`,
-          logo: '🪙',
-          imageUrl: '',
-          currentPrice: Math.random() * 0.1,
-          change24h: Math.random() * 40 - 20
-        });
-      }
-    }
-    setLatestTokens(tokens);
-  }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-  const getTokenSymbol = (token: any) => {
-    if (!token) return 'T';
-    return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
-  };
-  const formatPrice = (price: number | string) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    if (isNaN(numPrice)) return "0.000000";
-    if (numPrice < 0.01) return numPrice.toFixed(6);
-    if (numPrice < 1) return numPrice.toFixed(4);
-    if (numPrice < 1000) return numPrice.toFixed(2);
-    return numPrice.toLocaleString('en-US', {
-      maximumFractionDigits: 2
-    });
-  };
-  return <>
-      <OrbitingParticles />
-      <Navbar />
-      <BetReel />
-      
-      <div className="h-20 py-0 my-0"></div>
-      
-      <main className="min-h-screen overflow-hidden">
-        <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
-          <FloatingImages />
-          
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
-            <div className="text-center md:text-left md:flex-1">
-              <AnimatedLogo />
-              
-              <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
-                bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
-                backdrop-blur-[1px] rounded-xl border border-white/5
-                animate-entrance overflow-hidden
-                before:content-[''] before:absolute before:inset-0 
-                before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
-                before:animate-pulse-glow">
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-4 border-b border-white/10">
-                  <div className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
-                    <img src="/lovable-uploads/8334bc57-6487-4a01-b85d-684370bfe2f8.png" alt="Lightning" className="h-6 w-6 animate-float filter drop-shadow-[0_0_8px_rgba(0,238,255,0.8)]" />
-                    <span className="bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
-                      Grab some PXB
-                    </span>
-                  </div>
-                  
-                  <div className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
-                    <span className="bg-gradient-to-r from-dream-accent1 via-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold">
-                      Connect your Wallet
-                    </span>
-                    <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="h-6 w-6 animate-bob filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
-                  </div>
-                  
-                  <div className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
-                    <img src="/lovable-uploads/7f8a29b9-8cfb-42ce-ab80-9c9a0f5e42a4.png" alt="Holographic Diamond" className="h-6 w-6 animate-pulse filter drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]" />
-                    <span className="bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
-                      Mint PXB Points
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-black/20">
-                  <h3 className="text-center font-bold mb-2 text-white text-lg">
-                    <span className="inline-block relative">
-                      Bet on tokens
-                      <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-dream-accent2 to-dream-accent1"></div>
-                    </span>
-                  </h3>
-                  
-                  <div className="flex justify-center items-center gap-6 my-2">
-                    <div className="relative group cursor-pointer">
-                      <span className="relative inline-flex items-center gap-1 text-green-400 font-bold animate-bob">
-                        <img src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" alt="Rocket" className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
-                        <span className="bg-green-500/80 px-2 py-0.5 rounded-lg text-white group-hover:bg-green-500 transition-colors">MOON</span>
-                      </span>
-                      <div className="absolute inset-0 bg-green-400/10 blur-md rounded-full scale-0 group-hover:scale-125 transition-transform duration-300"></div>
-                    </div>
-                    
-                    <div className="text-white/80 text-2xl font-light">or</div>
-                    
-                    <div className="relative group cursor-pointer">
-                      <span className="relative inline-flex items-center gap-1 text-red-400 font-bold">
-                        <img src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" alt="Skull" className="h-8 w-8 animate-pulse filter drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                        <span className="bg-red-500/80 px-2 py-0.5 rounded-lg text-white group-hover:bg-red-500 transition-colors">DUST</span>
-                      </span>
-                      <div className="absolute inset-0 bg-red-400/10 blur-md rounded-full scale-0 group-hover:scale-125 transition-transform duration-300"></div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-gradient-to-b from-black/5 to-black/20">
-                  <h3 className="text-center font-bold mb-3 text-white">
-                    <span className="relative inline-block">
-                      It's that simple
-                      <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-dream-accent1 to-dream-accent2"></div>
-                    </span>
-                  </h3>
-                  
-                  <div className="flex justify-around flex-wrap gap-2">
-                    <div className="relative px-4 py-2 glass-panel hover:bg-white/10 transition-colors rounded-lg">
-                      <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-dream-accent1/30 flex items-center justify-center text-sm font-bold">1</div>
-                      <span className="text-white">predict</span>
-                    </div>
-                    
-                    <div className="relative px-4 py-2 glass-panel hover:bg-white/10 transition-colors rounded-lg">
-                      <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-dream-accent2/30 flex items-center justify-center text-sm font-bold">2</div>
-                      <span className="text-white">place your bet</span>
-                    </div>
-                    
-                    <div className="relative px-4 py-2 glass-panel hover:bg-white/10 transition-colors rounded-lg">
-                      <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-dream-accent3/30 flex items-center justify-center text-sm font-bold">3</div>
-                      <span className="text-white">build your reputation</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-gradient-to-t from-white/5 to-transparent">
-                  <div className="text-center">
-                    <div className="relative inline-flex items-center justify-center gap-1 px-6 py-2 rounded-full
-                      bg-gradient-to-r from-dream-accent2/20 via-yellow-400/20 to-dream-accent1/20 group">
-                      <span className="bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold text-lg">
-                        Unlock life-changing perks!
-                      </span>
-                      <span className="ml-1 animate-pulse">✨</span>
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-dream-accent2/0 via-dream-accent3/10 to-dream-accent1/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="md:flex-1 flex justify-center mt-8 md:mt-0">
-              <FuturisticTokenDisplay tokens={latestTokens} />
-            </div>
-          </div>
-          
-          <div className="flex justify-center gap-4 mt-10 mb-16">
-            <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
-              <Link to="/betting">
-                <div className="relative overflow-hidden group transition-all duration-500
-                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
-                  
-                  <img src="/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png" alt="Start Betting" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(139,92,246,0.7)]
-                    transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(139,92,246,0.9)]" />
-                  
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-blue-400/10 to-purple-500/10 
-                    opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                  
-                  <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
-                    text-xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent
-                    drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
-                    Start Betting
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-                  </div>
-                </div>
-              </Link>
-              
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div className="relative overflow-hidden group transition-all duration-500
-                    transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
-                    
-                    <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
-                      transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" />
-                    
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/10 to-dream-accent1/10 
-                      opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                    
-                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
-                      text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
-                      drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
-                      {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
-                      <Sparkles className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-                    </div>
-                  </div>
-                </DialogTrigger>
-                <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
-                  <PXBOnboarding />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-          
-          <div className="max-w-5xl mx-auto mb-16">
-            <RecentTokenTrades className="py-[50px]" />
-          </div>
-          
-          <div className="max-w-7xl mx-auto px-4 py-10">
-            <h2 className="text-2xl font-bold text-center mb-8 text-dream-foreground">
-              <span className="bg-gradient-to-r from-dream-accent1 to-dream-accent2 text-transparent bg-clip-text">
-                Real-Time Market Data
-              </span>
-            </h2>
-            
-            <PXBPointsProvider>
-              <div className="glass-panel p-6 rounded-lg mb-8">
-                <PXBSupplyProgress />
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 my-[-56px] py-[2px]">
-                <div className="glass-panel p-6">
-                  <PXBUserStats />
-                </div>
-                
-                <div className="glass-panel p-6">
-                  <PXBLeaderboard />
-                </div>
-              </div>
-            </PXBPointsProvider>
-          </div>
-        
-        </section>
-      </main>
-      
-      <footer className="glass-panel mt-20 px-6 py-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <Link to="/" className="text-xl font-display font-bold text-gradient mb-3 inline-block">
-              PumpXBounty
-            </Link>
-            <p className="text-white/80 max-w-md mx-auto text-sm">
-              PumpXBounty is a platform for predicting the future of tokens migrating from PumpFun to Raydium. This is for entertainment purposes only.
-            </p>
-            <div className="mt-6 border-t border-white/10 pt-6 text-sm text-white/60">
-              © {new Date().getFullYear()} PumpXBounty. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
-    </>;
-};
-export default Index;
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
+import { Program, AnchorProvider, web3 } from '@project-serum/anchor';
+import idl from '../idl.json';
+import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from '@solana/spl-token';
+import {
+  getMetadata,
+  createMetadataAccountV3,
+  createVerifyCollectionInstruction,
+  createUpdateMetadataAccountV2Instruction,
+  createSignMetadataInstruction,
+  Metaplex,
+  keypairIdentity,
+  bundlrStorage,
+  mockStorage,
+  findAssociatedTokenAccountPda,
+  findMasterEditionV2Pda,
+  findMetadataPda,
+  GuestIdentityDriver,
+  walletAdapterIdentity,
+} from "@metaplex-foundation/js";
+import {
+  createUmi,
+  generateSigner,
+  percentAmount,
+  publicKey,
+  signerIdentity,
+} from "@metaplex-foundation/umi";
+import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
+import { useToast } from "@/hooks/use-toast"
+import {
+  findCandyMachineV2Pda,
+  getCandyMachineV2,
+  CandyMachineV2Program,
+} from "@metaplex-foundation/mpl-candy-machine";
+import {
+  PROGRAM_ID as BUBBLEGUM_PROGRAM_ID,
+  createCreateTreeInstruction,
+  createMintToCollectionV1Instruction,
+  createTransferInstruction,
+  createBurnInstruction,
+  BubblegumProgram,
+  Metadata,
+  TokenProgram,
+  createCompressNftInstruction,
+  createDecompressNftInstruction,
+  getAsset,
+  getAssetProof,
+  ConcurrentMerkleTree,
+  SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+  SPL_NOOP_PROGRAM_ID,
+  PROGRAM_ID,
+  TokenMetadataProgram,
+  createVerifyCreatorInstruction,
+  createUnverifyCreatorInstruction,
+  createUpdateFieldInstruction,
+  createRemoveKeyInstruction,
+  createUpdateAuthorityInstruction,
+  createTransferAuthorityInstruction,
+  createDelegateInstruction,
+  createRevokeInstruction,
+  createUpdateComputeUnitsInstruction,
+  createSetAndVerifySizedCollectionItemInstruction,
+  createSetAndVerifyCollectionInstruction,
+  createThawDelegatedAccountInstruction,
+  createFreezeDelegatedAccountInstruction,
+  createBurnDelegatedInstruction,
+  createMintInstruction,
+  createMintToInstruction,
+  createApproveInstruction,
+  createRevokeDelegatedInstruction,
+  createTransferCheckedInstruction,
+  createApproveCheckedInstruction,
+  createMintCheckedInstruction,
+  createBurnCheckedInstruction,
+  createCloseAccountInstruction,
+  createTransferHookInstruction,
+  createInitializeMintInstruction,
+  createInitializeAccountInstruction,
+  createInitializeMint2Instruction,
+  createInitializeAccount2Instruction,
+  createInitializeAccount3Instruction,
+  createInitializeAccount4Instruction,
+  createInitializeAccount5Instruction,
+  createSyncNativeInstruction,
+  createEmptyAccountInstruction,
+  createMemoInstruction,
+  createMemo2Instruction,
+  createMemo3Instruction,
+  createMemo4Instruction,
+  createMemo5Instruction,
+  createMemo6Instruction,
+  createMemo7Instruction,
+  createMemo8Instruction,
+  createMemo9Instruction,
+  createMemo10Instruction,
+  createMemo11Instruction,
+  createMemo12Instruction,
+  createMemo13Instruction,
+  createMemo14Instruction,
+  createMemo15Instruction,
+  createMemo16Instruction,
+  createMemo17Instruction,
+  createMemo18Instruction,
+  createMemo19Instruction,
+  createMemo20Instruction,
+  createMemo21Instruction,
+  createMemo22Instruction,
+  createMemo23Instruction,
+  createMemo24Instruction,
+  createMemo25Instruction,
+  createMemo26Instruction,
+  createMemo27Instruction,
+  createMemo28Instruction,
+  createMemo29Instruction,
+  createMemo30Instruction,
+  createMemo31Instruction,
+  createMemo32Instruction,
+  createMemo33Instruction,
+  createMemo34Instruction,
+  createMemo35Instruction,
+  createMemo36Instruction,
+  createMemo37Instruction,
+  createMemo38Instruction,
+  createMemo39Instruction,
+  createMemo40Instruction,
+  createMemo41Instruction,
+  createMemo42Instruction,
+  createMemo43Instruction,
+  createMemo44Instruction,
+  createMemo45Instruction,
+  createMemo46Instruction,
+  createMemo47Instruction,
+  createMemo48Instruction,
+  createMemo49Instruction,
+  createMemo50Instruction,
+  createMemo51Instruction,
+  createMemo52Instruction,
+  createMemo53Instruction,
+  createMemo54Instruction,
+  createMemo55Instruction,
+  createMemo56Instruction,
+  createMemo57Instruction,
+  createMemo58Instruction,
+  createMemo59Instruction,
+  createMemo60Instruction,
+  createMemo61Instruction,
+  createMemo62Instruction,
+  createMemo63Instruction,
+  createMemoInstructionData,
+  createMemo2InstructionData,
+  createMemo3InstructionData,
+  createMemo4InstructionData,
+  createMemo5InstructionData,
+  createMemo6InstructionData,
+  createMemo7InstructionData,
+  createMemo8InstructionData,
+  createMemo9InstructionData,
+  createMemo10InstructionData,
+  createMemo11InstructionData,
+  createMemo12InstructionData,
+  createMemo13InstructionData,
+  createMemo14InstructionData,
+  createMemo15InstructionData,
+  createMemo16InstructionData,
+  createMemo17InstructionData,
+  createMemo18InstructionData,
+  createMemo19InstructionData,
+  createMemo20InstructionData,
+  createMemo21InstructionData,
+  createMemo22InstructionData,
+  createMemo23InstructionData,
+  createMemo24InstructionData,
+  createMemo25InstructionData,
+  createMemo26InstructionData,
+  createMemo27InstructionData,
+  createMemo28InstructionData,
+  createMemo29InstructionData,
+  createMemo30InstructionData,
+  createMemo31InstructionData,
+  createMemo32InstructionData,
+  createMemo33InstructionData,
+  createMemo34InstructionData,
+  createMemo35InstructionData,
+  createMemo36InstructionData,
+  createMemo37InstructionData,
+  createMemo38InstructionData,
+  createMemo39InstructionData,
+  createMemo40InstructionData,
+  createMemo41InstructionData,
+  createMemo42InstructionData,
+  createMemo43InstructionData,
+  createMemo44InstructionData,
+  createMemo45InstructionData,
+  createMemo46InstructionData,
+  createMemo47InstructionData,
+  createMemo48InstructionData,
+  createMemo49InstructionData,
+  createMemo50InstructionData,
+  createMemo51InstructionData,
+  createMemo52InstructionData,
+  createMemo53InstructionData,
+  createMemo54InstructionData,
+  createMemo55InstructionData,
+  createMemo56InstructionData,
+  createMemo57InstructionData,
+  createMemo58InstructionData,
+  createMemo59InstructionData,
+  createMemo60InstructionData,
+  createMemo61InstructionData,
+  createMemo62InstructionData,
+  createMemo63InstructionData,
+} from "@solana/spl-memo";
+import {
+  createTransferCheckedInstruction as createTransferCheckedInstruction2,
+  createApproveCheckedInstruction as createApproveCheckedInstruction2,
+  createMintCheckedInstruction as createMintCheckedInstruction2,
+  createBurnCheckedInstruction as createBurnCheckedInstruction2,
+  createCloseAccountInstruction as createCloseAccountInstruction2,
+  createSyncNativeInstruction as createSyncNativeInstruction2,
+  createEmptyAccountInstruction as createEmptyAccountInstruction2,
+  createMemoInstruction as createMemoInstruction2,
+  createMemo2Instruction as createMemo2Instruction2,
+  createMemo3Instruction as createMemo3Instruction2,
+  createMemo4Instruction as createMemo4Instruction2,
+  createMemo5Instruction as createMemo5Instruction2,
+  createMemo6Instruction as createMemo6Instruction2,
+  createMemo7Instruction as createMemo7Instruction2,
+  createMemo8Instruction as createMemo8Instruction2,
+  createMemo9Instruction as createMemo9Instruction2,
+  createMemo10Instruction as createMemo10Instruction2,
+  createMemo11Instruction as createMemo11Instruction2,
+  createMemo12Instruction as createMemo12Instruction2,
+  createMemo13Instruction as createMemo13Instruction2,
+  createMemo14Instruction as createMemo14Instruction2,
+  createMemo15Instruction as createMemo15Instruction2,
+  createMemo16Instruction as createMemo16Instruction2,
+  createMemo17Instruction as createMemo17Instruction2,
+  createMemo18Instruction as createMemo18Instruction2,
+  createMemo19Instruction as createMemo19Instruction2,
+  createMemo20Instruction as createMemo20Instruction2,
+  createMemo21Instruction as createMemo21Instruction2,
+  createMemo22Instruction as createMemo22Instruction2,
+  createMemo23Instruction as createMemo23Instruction2,
+  createMemo24Instruction as createMemo24Instruction2,
+  createMemo25Instruction as createMemo25Instruction2,
+  createMemo26Instruction as createMemo26Instruction2,
+  createMemo27Instruction as createMemo27Instruction2,
+  createMemo28Instruction as createMemo28Instruction2,
+  createMemo29Instruction as createMemo29Instruction2,
+  createMemo30Instruction as createMemo30Instruction2,
+  createMemo31Instruction as createMemo31Instruction2,
+  createMemo32Instruction as createMemo32Instruction2,
+  createMemo33Instruction as createMemo33Instruction2,
+  createMemo34Instruction as createMemo34Instruction2,
+  createMemo35Instruction as createMemo35Instruction2,
+  createMemo36Instruction as createMemo36Instruction2,
+  createMemo37Instruction as createMemo37Instruction2,
+  createMemo38Instruction as createMemo38Instruction2,
+  createMemo39Instruction as createMemo39Instruction2,
+  createMemo40Instruction as createMemo40Instruction2,
+  createMemo41Instruction as createMemo41Instruction2,
+  createMemo42Instruction as createMemo42Instruction2,
+  createMemo43Instruction as createMemo43Instruction2,
+  createMemo44Instruction as createMemo44Instruction2,
+  createMemo45Instruction as createMemo45Instruction2,
+  createMemo46Instruction as createMemo46Instruction2,
+  createMemo47Instruction as createMemo47Instruction2,
+  createMemo48Instruction as createMemo48Instruction2,
+  createMemo49Instruction as createMemo49Instruction2,
+  createMemo50Instruction as createMemo50Instruction2,
+  createMemo51Instruction as createMemo51Instruction2,
+  createMemo52Instruction as createMemo52Instruction2,
+  createMemo53Instruction as createMemo53Instruction2,
+  createMemo54Instruction as createMemo54Instruction2,
+  createMemo55Instruction as createMemo55Instruction2,
+  createMemo56Instruction as createMemo56Instruction2,
+  createMemo57Instruction as createMemo57Instruction2,
+  createMemo58Instruction as createMemo58Instruction2,
+  createMemo59Instruction as createMemo59Instruction2,
+  createMemo60Instruction as createMemo60Instruction2,
+  createMemo61Instruction as createMemo61Instruction2,
+  createMemo62Instruction as createMemo62Instruction2,
+  createMemo63Instruction as createMemo63Instruction2,
+  createMemoInstructionData as createMemoInstructionData2,
+  createMemo2InstructionData as createMemo2InstructionData2,
+  createMemo3InstructionData as createMemo3InstructionData2,
+  createMemo4InstructionData as createMemo4InstructionData2,
+  createMemo5InstructionData as createMemo5InstructionData2,
+  createMemo6InstructionData as createMemo6InstructionData2,
+  createMemo7InstructionData as createMemo7InstructionData2,
+  createMemo8InstructionData as createMemo8InstructionData2,
+  createMemo9InstructionData as createMemo9InstructionData2,
+  createMemo10InstructionData as createMemo10InstructionData2,
+  createMemo11InstructionData as createMemo11InstructionData2,
+  createMemo12InstructionData as createMemo12InstructionData2,
+  createMemo13InstructionData as createMemo13InstructionData2,
+  createMemo14InstructionData as createMemo14InstructionData2,
+  createMemo15InstructionData as createMemo15InstructionData2,
+  createMemo16InstructionData as createMemo16InstructionData2,
+  createMemo17InstructionData as createMemo17InstructionData2,
+  createMemo18InstructionData as createMemo18InstructionData2,
+  createMemo19InstructionData as createMemo19InstructionData2,
+  createMemo20InstructionData as createMemo20InstructionData2,
+  createMemo21InstructionData as createMemo21InstructionData2,
+  createMemo22InstructionData as createMemo22InstructionData2,
+  createMemo23InstructionData as createMemo23InstructionData2,
+  createMemo24InstructionData as createMemo24InstructionData2,
+  createMemo25InstructionData as createMemo25InstructionData2,
+  createMemo26InstructionData as createMemo26InstructionData2,
+  createMemo27InstructionData as createMemo27InstructionData2,
+  createMemo28InstructionData as createMemo28InstructionData2,
+  createMemo29InstructionData as createMemo29InstructionData2,
+  createMemo30InstructionData as createMemo30InstructionData2,
+  createMemo31InstructionData as createMemo31InstructionData2,
+  createMemo32InstructionData as createMemo32InstructionData2,
+  createMemo33InstructionData as createMemo33InstructionData2,
+  createMemo34InstructionData as createMemo34InstructionData2,
+  createMemo35InstructionData as createMemo35InstructionData2,
+  createMemo36InstructionData as createMemo36InstructionData2,
+  createMemo37InstructionData as createMemo37InstructionData2,
+  createMemo38InstructionData as createMemo38InstructionData2,
+  createMemo39InstructionData as createMemo39InstructionData2,
+  createMemo40InstructionData as createMemo40InstructionData2,
+  createMemo41InstructionData as createMemo41InstructionData2,
+  createMemo42InstructionData as createMemo42InstructionData2,
+  createMemo43InstructionData as createMemo43InstructionData2,
+  createMemo44InstructionData as createMemo44InstructionData2,
+  createMemo45InstructionData as createMemo45InstructionData2,
+  createMemo46InstructionData as createMemo46InstructionData2,
+  createMemo47InstructionData as createMemo47InstructionData2,
+  createMemo48InstructionData as createMemo48InstructionData2,
+  createMemo49InstructionData as createMemo49InstructionData2,
+  createMemo50InstructionData as createMemo50InstructionData2,
+  createMemo51InstructionData as createMemo51InstructionData2,
+  createMemo52InstructionData as createMemo52InstructionData2,
+  createMemo53InstructionData as createMemo53InstructionData2,
+  createMemo54InstructionData as createMemo54InstructionData2,
+  createMemo55InstructionData as createMemo55InstructionData2,
+  createMemo56InstructionData as createMemo56InstructionData2,
+  createMemo57InstructionData as createMemo57InstructionData2,
+  createMemo58InstructionData as createMemo58InstructionData2,
+  createMemo59InstructionData as createMemo59InstructionData2,
+  createMemo60InstructionData as createMemo60InstructionData2,
+  createMemo61InstructionData as createMemo61InstructionData2,
+  createMemo62InstructionData as createMemo62InstructionData2,
+  createMemo63InstructionData as createMemo63InstructionData2,
+} from "@solana/spl-memo";
+import {
+  createTransferHookInstruction as createTransferHookInstruction2,
+} from "@solana/spl-transfer-hook";
+import {
+  createInitializeMintInstruction as createInitializeMintInstruction3,
+  createInitializeAccountInstruction as createInitializeAccountInstruction3,
+  createInitializeMint2Instruction as createInitializeMint2Instruction3,
+  createInitializeAccount2Instruction as createInitializeAccount2Instruction3,
+  createInitializeAccount3Instruction as createInitializeAccount3Instruction3,
+  createInitializeAccount4Instruction as createInitializeAccount4Instruction3,
+  createInitializeAccount5Instruction as createInitializeAccount5Instruction3,
+} from "@solana/spl-token";
+import {
+  createSyncNativeInstruction as createSyncNativeInstruction3,
+  createEmptyAccountInstruction as createEmptyAccountInstruction3,
+  createMemoInstruction as createMemoInstruction3,
+  createMemo2Instruction as createMemo2Instruction3,
+  createMemo3Instruction as createMemo3Instruction3,
+  createMemo4Instruction as createMemo4Instruction3,
+  createMemo5Instruction as createMemo5Instruction3,
+  createMemo6Instruction as createMemo6Instruction3,
+  createMemo7Instruction as createMemo7Instruction3,
+  createMemo8Instruction as createMemo8Instruction3,
+  createMemo9Instruction as createMemo9Instruction3,
+  createMemo10Instruction as createMemo10Instruction3,
+  createMemo11Instruction as createMemo11Instruction3,
+  createMemo12Instruction as createMemo12Instruction3,
+  createMemo13Instruction as createMemo13Instruction3,
+  createMemo14Instruction as createMemo14Instruction3,
+  createMemo15Instruction as createMemo15Instruction3,
+  createMemo16Instruction as createMemo16Instruction3,
+  createMemo17Instruction as createMemo17Instruction3,
+  createMemo18Instruction as createMemo18Instruction3,
+  createMemo19Instruction as createMemo19Instruction3,
+  createMemo20Instruction as createMemo20Instruction3,
+  createMemo21Instruction as createMemo21Instruction3,
+  createMemo22Instruction as createMemo22Instruction3,
+  createMemo23Instruction as createMemo23Instruction3,
+  createMemo24Instruction as createMemo24Instruction3,
+  createMemo25Instruction as createMemo25Instruction3,
+  createMemo26Instruction as createMemo26Instruction3,
+  createMemo27Instruction as createMemo27Instruction3,
+  createMemo28Instruction as createMemo28Instruction3,
+  createMemo29Instruction as createMemo29Instruction3,
+  createMemo30Instruction as createMemo30Instruction3,
+  createMemo31Instruction as createMemo31Instruction3,
+  createMemo32Instruction as createMemo32Instruction3,
+  createMemo33Instruction as createMemo33Instruction3,
+  createMemo34Instruction as createMemo34Instruction3,
+  createMemo35Instruction as createMemo35Instruction3,
+  createMemo36Instruction as createMemo36Instruction3,
+  createMemo37Instruction as createMemo37Instruction3,
+  createMemo38Instruction as createMemo38Instruction3,
+  createMemo39Instruction as createMemo39Instruction3,
+  createMemo40Instruction as createMemo40Instruction3,
+  createMemo41Instruction as createMemo41Instruction3,
+  createMemo42Instruction as createMemo42Instruction3,
+  createMemo43Instruction as createMemo43Instruction3,
+  createMemo44Instruction as createMemo44Instruction3,
+  createMemo45Instruction as createMemo45Instruction3,
+  createMemo46Instruction as createMemo46Instruction3,
+  createMemo47Instruction as createMemo47Instruction3,
+  createMemo48Instruction as createMemo48Instruction3,
+  createMemo49Instruction as createMemo49Instruction3,
+  createMemo50Instruction as createMemo50Instruction3,
+  createMemo51Instruction as createMemo51Instruction3,
+  createMemo52Instruction as createMemo52Instruction3,
+  createMemo53Instruction as createMemo53Instruction3,
+  createMemo54Instruction as createMemo54Instruction3,
+  createMemo55Instruction as createMemo55Instruction3,
+  createMemo56Instruction as createMemo56Instruction3,
+  createMemo57Instruction as createMemo57Instruction3,
+  createMemo58Instruction as createMemo58Instruction3,
+  createMemo59Instruction as createMemo59Instruction3,
+  createMemo60Instruction as createMemo60Instruction3,
+  createMemo61Instruction as createMemo61Instruction3,
+  createMemo62Instruction as createMemo62Instruction3,
+  createMemo63Instruction as createMemo63Instruction3,
+  createMemoInstructionData as createMemoInstructionData3,
+  createMemo2InstructionData as createMemo2InstructionData3,
+  createMemo3InstructionData as createMemo3InstructionData3,
+  createMemo4InstructionData as createMemo4InstructionData3,
+  createMemo5InstructionData as createMemo5InstructionData3,
+  createMemo6InstructionData as createMemo6InstructionData3,
+  createMemo7InstructionData as createMemo7InstructionData3,
+  createMemo8InstructionData as createMemo8InstructionData3,
+  createMemo9InstructionData as createMemo9InstructionData3,
+  createMemo10InstructionData as createMemo10InstructionData3,
+  createMemo11InstructionData as createMemo11InstructionData3,
+  createMemo12InstructionData as createMemo12InstructionData3,
+  createMemo13InstructionData as createMemo13InstructionData3,
+  createMemo14InstructionData as createMemo14InstructionData3,
+  createMemo15InstructionData as createMemo15InstructionData3,
+  createMemo16InstructionData as createMemo16InstructionData3,
+  createMemo17InstructionData as createMemo17InstructionData3,
+  createMemo18InstructionData as createMemo18InstructionData3,
+  createMemo19InstructionData as createMemo19InstructionData3,
+  createMemo20InstructionData as createMemo20InstructionData3,
+  createMemo21InstructionData as createMemo21InstructionData3,
+  createMemo22InstructionData as createMemo22InstructionData3,
+  createMemo23InstructionData as createMemo23InstructionData3,
+  createMemo24InstructionData as createMemo24InstructionData3,
+  createMemo25InstructionData as createMemo25InstructionData3,
+  createMemo26InstructionData as createMemo26InstructionData3,
+  createMemo27InstructionData as createMemo27InstructionData3,
+  createMemo28InstructionData as createMemo28InstructionData3,
+  createMemo29InstructionData as createMemo29InstructionData3,
+  createMemo30InstructionData as createMemo30InstructionData3,
+  createMemo31InstructionData as createMemo31InstructionData3,
+  createMemo32InstructionData as createMemo32InstructionData3,
+  createMemo33InstructionData as createMemo33InstructionData3,
+  createMemo34InstructionData as createMemo34InstructionData3,
+  createMemo35InstructionData as createMemo35InstructionData3,
+  createMemo36InstructionData as createMemo36InstructionData3,
+  createMemo37InstructionData as createMemo37InstructionData3,
+  createMemo38InstructionData as createMemo38InstructionData3,
+  createMemo39InstructionData as createMemo39InstructionData3,
+  createMemo40InstructionData as createMemo40InstructionData3,
+  createMemo41InstructionData as createMemo41InstructionData3,
+  createMemo42InstructionData as createMemo42InstructionData3,
+  createMemo43InstructionData as createMemo43InstructionData3,
+  createMemo44InstructionData as createMemo44InstructionData3,
+  createMemo45InstructionData as createMemo45InstructionData3,
+  createMemo46InstructionData as createMemo46InstructionData3,
+  createMemo47InstructionData as createMemo47InstructionData3,
+  createMemo48InstructionData as createMemo48InstructionData3,
+  createMemo49InstructionData as createMemo49InstructionData3,
+  createMemo50InstructionData as createMemo50InstructionData3,
+  createMemo51InstructionData as createMemo51InstructionData3,
+  createMemo52InstructionData as createMemo52InstructionData3,
+  createMemo53InstructionData as createMemo53InstructionData3,
+  createMemo54InstructionData as createMemo54InstructionData3,
+  createMemo55InstructionData as createMemo55InstructionData3,
+  createMemo56InstructionData as createMemo56InstructionData3,
+  createMemo57InstructionData as createMemo57InstructionData3,
+  createMemo58InstructionData as createMemo58InstructionData3,
+  createMemo59InstructionData as createMemo59InstructionData3,
+  createMemo60InstructionData as createMemo60InstructionData3,
+  createMemo61InstructionData as createMemo61InstructionData3,
+  createMemo62InstructionData as createMemo62InstructionData3,
+  createMemo63InstructionData as createMemo63InstructionData3,
+} from "@solana/spl-memo";
+import {
+  createTransferHookInstruction as createTransferHookInstruction3,
+} from "@solana/spl-transfer-hook";
+import {
+  createInitializeMintInstruction as createInitializeMintInstruction4,
+  createInitializeAccountInstruction as createInitializeAccountInstruction4,
+  createInitializeMint2Instruction as createInitializeMint2Instruction4,
+  createInitializeAccount2Instruction as createInitializeAccount2Instruction4,
+  createInitializeAccount3Instruction as createInitializeAccount3Instruction4,
+  createInitializeAccount4Instruction as createInitializeAccount4Instruction4,
+  createInitializeAccount5Instruction as createInitializeAccount5Instruction4,
+} from "@solana/spl-token";
+import {
+  createSyncNativeInstruction as createSyncNativeInstruction4,
+  createEmptyAccountInstruction as createEmptyAccountInstruction4,
+  createMemoInstruction as createMemoInstruction4,
+  createMemo2Instruction as createMemo2Instruction4,
+  createMemo3Instruction as createMemo3Instruction4,
+  createMemo4Instruction as createMemo4Instruction4,
+  createMemo5Instruction as createMemo5Instruction4,
+  createMemo6Instruction as createMemo6Instruction4,
+  createMemo7Instruction as createMemo7Instruction4,
+  createMemo8Instruction as createMemo8Instruction4,
+  createMemo9Instruction as createMemo9Instruction4,
+  createMemo10Instruction as createMemo10Instruction4,
+  createMemo11Instruction as createMemo11Instruction4,
+  createMemo12Instruction as createMemo12Instruction4,
+  createMemo13Instruction as createMemo13Instruction4,
+  createMemo14Instruction as createMemo14Instruction4,
+  createMemo15Instruction as createMemo15Instruction4,
+  createMemo16Instruction as createMemo16Instruction4,
+  createMemo17Instruction as createMemo17Instruction4,
+  createMemo18Instruction as createMemo18Instruction4,
+  createMemo19Instruction as createMemo19Instruction4,
+  createMemo20Instruction as createMemo20Instruction4,
+  createMemo21Instruction as createMemo21Instruction4,
+  createMemo22Instruction as createMemo22Instruction4,
+  createMemo23Instruction as createMemo23Instruction4,
+  createMemo24Instruction as createMemo24Instruction4,
+  createMemo25Instruction as createMemo25Instruction4,
+  createMemo26Instruction as createMemo26Instruction4,
+  createMemo27Instruction as createMemo27Instruction4,
+  createMemo28Instruction as createMemo28Instruction4,
+  createMemo29Instruction as createMemo29Instruction4,
+  createMemo30Instruction as createMemo30Instruction4,
+  createMemo31Instruction as createMemo31Instruction4,
+  createMemo32Instruction as createMemo32Instruction4,
+  createMemo33Instruction as createMemo33Instruction4,
+  createMemo34Instruction as createMemo34Instruction4,
+  createMemo35Instruction as createMemo35Instruction4,
+  createMemo36Instruction as createMemo36Instruction4,
+  createMemo37Instruction as createMemo37Instruction4,
+  createMemo38Instruction as createMemo38Instruction4,
+  createMemo39Instruction as createMemo39Instruction4,
+  createMemo40Instruction as createMemo40Instruction4,
+  createMemo41Instruction as createMemo41Instruction4,
+  createMemo42Instruction as createMemo42Instruction4,
+  createMemo43Instruction as createMemo43Instruction4,
+  createMemo44Instruction as createMemo44Instruction4,
+  createMemo45Instruction as createMemo45Instruction4,
+  createMemo46Instruction as createMemo46Instruction4,
+  createMemo47Instruction as createMemo47Instruction4,
+  createMemo48Instruction as createMemo48Instruction4,
+  createMemo49Instruction as createMemo49Instruction4,
+  createMemo50Instruction as createMemo50Instruction4,
+  createMemo51Instruction as createMemo51Instruction4,
+  createMemo52Instruction as createMemo52Instruction4,
+  createMemo53Instruction as createMemo53Instruction4,
+  createMemo54Instruction as createMemo54Instruction4,
+  createMemo55Instruction as createMemo55Instruction4,
+  createMemo56Instruction as createMemo56Instruction4,
+  createMemo57Instruction as createMemo57Instruction4,
+  createMemo58Instruction as createMemo58Instruction4,
+  createMemo59Instruction as createMemo59Instruction4,
+  createMemo60Instruction as createMemo60Instruction4,
+  createMemo61Instruction as createMemo61Instruction4,
+  createMemo62Instruction as createMemo62Instruction4,
+  createMemo63Instruction as createMemo63Instruction4,
+  createMemoInstructionData as createMemoInstructionData4,
+  createMemo2InstructionData as createMemo2InstructionData4,
+  createMemo3InstructionData as createMemo3InstructionData4,
+  createMemo4InstructionData as createMemo4InstructionData4,
+  createMemo5InstructionData as createMemo5InstructionData4,
+  createMemo6InstructionData as createMemo6InstructionData4,
+  createMemo7InstructionData as createMemo7InstructionData4,
+  createMemo8InstructionData as createMemo8InstructionData4,
+  createMemo9InstructionData as createMemo9InstructionData4,
+  createMemo10InstructionData as createMemo10InstructionData4,
+  createMemo11InstructionData as createMemo11InstructionData4,
+  createMemo12InstructionData as createMemo12InstructionData4,
+  createMemo13InstructionData as createMemo13InstructionData4,
+  createMemo14InstructionData as createMemo14InstructionData4,
+  createMemo15InstructionData as createMemo15InstructionData4,
+  createMemo16InstructionData as createMemo16InstructionData4,
+  createMemo17InstructionData as createMemo17InstructionData4,
+  createMemo18InstructionData as createMemo18InstructionData4,
+  createMemo19InstructionData as createMemo19InstructionData4,
+  createMemo20InstructionData as createMemo20InstructionData4,
+  createMemo21InstructionData as createMemo21InstructionData4,
+  createMemo22InstructionData as createMemo22InstructionData4,
+  createMemo23InstructionData as createMemo23InstructionData4,
+  createMemo24InstructionData as createMemo24InstructionData4,
+  createMemo25InstructionData as createMemo25InstructionData4,
+  createMemo26InstructionData as createMemo26InstructionData4,
+  createMemo27InstructionData as createMemo27InstructionData4,
+  createMemo28InstructionData as createMemo28InstructionData4,
+  createMemo29InstructionData as createMemo29InstructionData4,
+  createMemo30InstructionData as createMemo30InstructionData4,
+  createMemo31InstructionData as createMemo31InstructionData4,
+  createMemo32InstructionData as createMemo32InstructionData4,
+  createMemo33InstructionData as createMemo33InstructionData4,
+  createMemo34InstructionData as createMemo34InstructionData4,
+  createMemo35InstructionData as createMemo35InstructionData4,
+  createMemo36InstructionData as createMemo36InstructionData4,
+  createMemo37InstructionData as createMemo37InstructionData4,
+  createMemo38InstructionData as createMemo38InstructionData4,
+  createMemo39InstructionData as createMemo39InstructionData4,
+  createMemo40InstructionData as createMemo40InstructionData4,
+  createMemo41InstructionData as createMemo41InstructionData4,
+  createMemo42InstructionData as createMemo42InstructionData4,
+  createMemo43InstructionData as createMemo43InstructionData4,
+  createMemo44InstructionData as createMemo44InstructionData4,
+  createMemo45InstructionData as createMemo45InstructionData4,
+  createMemo46InstructionData as createMemo46InstructionData4,
+  createMemo47InstructionData as createMemo47InstructionData4,
+  createMemo48InstructionData as createMemo48InstructionData4,
+  createMemo49InstructionData as createMemo49InstructionData4,
+  createMemo50InstructionData as createMemo50InstructionData4,
+  createMemo51InstructionData as createMemo51InstructionData4,
+  createMemo52InstructionData as createMemo52InstructionData4,
+  createMemo53InstructionData as createMemo53InstructionData4,
+  createMemo54InstructionData as createMemo54InstructionData4,
+  createMemo55InstructionData as createMemo55InstructionData4,
+  createMemo56InstructionData as createMemo56InstructionData4,
+  createMemo57InstructionData as createMemo57InstructionData4,
+  createMemo58InstructionData as createMemo58InstructionData4,
+  createMemo59InstructionData as createMemo59InstructionData4,
+  createMemo60InstructionData as createMemo60InstructionData4,
+  createMemo61InstructionData as createMemo61InstructionData4,
+  createMemo62InstructionData as createMemo62InstructionData4,

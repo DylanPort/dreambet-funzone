@@ -101,10 +101,17 @@ const TokenChart = ({
           />
         </button>
         
-        <Button variant="destructive" onClick={() => refreshData('down')}>
-          <ArrowDown className="w-4 h-4 mr-2" />
-          Dust
-        </Button>
+        <button 
+          onClick={() => refreshData('down')}
+          className="p-0 w-full h-20 flex justify-center items-center transition-transform hover:scale-105 active:scale-95 rounded-lg overflow-hidden"
+          aria-label="Dust"
+        >
+          <img 
+            src="/lovable-uploads/8f53feb1-8a85-4bed-9810-b3c1d4fde132.png" 
+            alt="Dust" 
+            className="h-16 object-contain" 
+          />
+        </button>
       </div>
     </div>;
 };
@@ -776,3 +783,4 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
+
