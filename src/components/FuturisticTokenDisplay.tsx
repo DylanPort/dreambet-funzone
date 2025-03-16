@@ -31,7 +31,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
     });
   };
   
-  return <div className={`glass-panel transform transition-all duration-500 w-[280px] p-5 ${flipping ? 'animate-flip' : ''} ${isHovering ? 'scale-105 z-50' : 'z-10'}`} style={{
+  return <div className={`glass-panel transform transition-all duration-500 w-[280px] p-5 h-[420px] flex flex-col justify-between ${flipping ? 'animate-flip' : ''} ${isHovering ? 'scale-105 z-50' : 'z-10'}`} style={{
     transform: `perspective(1000px) rotateY(${isHovering ? '0' : '-15'}deg) rotateX(${isHovering ? '0' : '5'}deg)`,
     transformStyle: 'preserve-3d',
     boxShadow: isHovering ? `0 0 25px rgba(${isPositive ? '0, 255, 120' : '255, 61, 252'}, 0.7)` : `0 0 15px rgba(${isPositive ? '0, 255, 120' : '255, 61, 252'}, 0.3)`,
@@ -45,9 +45,9 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       </div>
       
       {/* Token Info */}
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between items-center mb-5">
         <div className="flex items-center">
-          {token.imageUrl ? <img src={token.imageUrl} alt={token.name} className="w-8 h-8 rounded-full object-cover" onError={e => {
+          {token.imageUrl ? <img src={token.imageUrl} alt={token.name} className="w-10 h-10 rounded-full object-cover" onError={e => {
           const imgElement = e.target as HTMLImageElement;
           imgElement.style.display = 'none';
           const nextElement = imgElement.nextElementSibling as HTMLElement;
@@ -55,10 +55,10 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
             nextElement.style.display = 'flex';
           }
         }} /> : null}
-          <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}>
+          <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}>
             <span className="font-display font-bold">{getTokenSymbol(token)}</span>
           </div>
-          <span className="ml-2 font-semibold">{token.name}</span>
+          <span className="ml-2 font-semibold text-lg">{token.name}</span>
         </div>
         <div className="flex items-center">
           <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">PumpFun</span>
@@ -66,14 +66,14 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       </div>
       
       {/* Price Display */}
-      <div className="relative h-[80px] mb-3 rounded-md overflow-hidden">
+      <div className="relative h-[120px] mb-6 rounded-md overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" style={{
         backgroundSize: '200% 100%',
         animation: 'border-flow 15s linear infinite'
       }}></div>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
-            <span className={`text-xl font-bold ${isPositive ? 'text-green-300' : 'text-red-300'}`}>
+            <span className={`text-3xl font-bold ${isPositive ? 'text-green-300' : 'text-red-300'}`}>
               ${formatPrice(token.currentPrice)}
             </span>
             <div className="absolute -right-8 -top-4">
@@ -93,12 +93,12 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       </div>
       
       {/* Action Buttons - Rocket for MOON and Skull for DUST */}
-      <div className="flex justify-around">
+      <div className="flex justify-around py-4">
         <button className="relative group">
           <img 
             src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
             alt="MOON" 
-            className="w-14 h-14 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]"
+            className="w-16 h-16 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]"
           />
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/0 via-cyan-400/20 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
           <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent">MOON</span>
@@ -108,7 +108,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
           <img 
             src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
             alt="DUST" 
-            className="w-14 h-14 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]"
+            className="w-16 h-16 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]"
           />
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/0 via-cyan-400/20 to-magenta-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
           <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent">DUST</span>
@@ -116,7 +116,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       </div>
       
       {/* Token Links */}
-      <div className="flex justify-between items-center mt-3">
+      <div className="flex justify-between items-center mt-auto">
         <Link to={`/token/${token.id}`} className="text-xs text-dream-foreground/70 hover:text-dream-foreground transition-colors duration-300">
           View Details
         </Link>
