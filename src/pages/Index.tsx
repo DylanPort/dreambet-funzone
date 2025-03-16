@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users } from 'lucide-react';
@@ -239,15 +240,25 @@ const Index = () => {
               
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="relative cursor-pointer group transition-all duration-300 hover:scale-110 active:scale-95">
-                    <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-16 h-16 md:w-20 md:h-20 animate-float filter drop-shadow-[0_0_15px_rgba(246,148,92,0.8)]" />
-                    <div className="absolute inset-0 bg-yellow-500/30 rounded-full blur-xl animate-pulse-glow opacity-60"></div>
-                    <div className="absolute -inset-1 bg-gradient-to-r from-dream-accent1 to-dream-accent2 rounded-full blur-md opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
-                    <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 whitespace-nowrap text-sm font-bold
-                      bg-gradient-to-r from-dream-accent2 via-white to-dream-accent1 bg-clip-text text-transparent
-                      drop-shadow-[0_0_5px_rgba(255,255,255,0.6)] animate-gradient-move bg-[length:200%_auto]">
+                  <div className="relative overflow-hidden group transition-all duration-500
+                    transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
+                    
+                    <img 
+                      src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" 
+                      alt="Mint PXB Points" 
+                      className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
+                      transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]"
+                    />
+                    
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/10 to-dream-accent1/10 
+                      opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    
+                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
+                      text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
+                      drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
                       {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
-                    </span>
+                      <Sparkles className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                    </div>
                   </div>
                 </DialogTrigger>
                 <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
