@@ -692,7 +692,7 @@ const TokenDetail = () => {
     const { recentRawTrades } = usePumpPortal(tokenId);
     
     const tokenTrades = recentRawTrades.filter(trade => 
-      trade.mint === tokenId
+      trade && trade.mint === tokenId
     ).slice(0, 10);
     
     if (!tokenTrades || tokenTrades.length === 0) {
@@ -718,39 +718,44 @@ const TokenDetail = () => {
           </thead>
           <tbody>
             {tokenTrades.map((trade, index) => {
-              const formattedTrade = formatRawTrade(trade);
-              return (
-                <tr key={`${trade.signature}-${index}`} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="py-2 px-3">
-                    <div className="flex items-center">
-                      {trade.txType === 'buy' ? (
-                        <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 text-red-500 mr-1" />
-                      )}
-                      <span className={trade.txType === 'buy' ? 'text-green-500' : 'text-red-500'}>
-                        {trade.txType.toUpperCase()}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-2 px-3 text-right font-mono text-sm">{formattedTrade.amount}</td>
-                  <td className="py-2 px-3 text-right font-mono text-sm">{formattedTrade.price}</td>
-                  <td className="py-2 px-3 text-right font-mono text-sm">{formattedTrade.solAmount}</td>
-                  <td className="py-2 px-3 text-sm">
-                    <a 
-                      href={`https://solscan.io/account/${trade.traderPublicKey}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-dream-accent2 transition-colors"
-                    >
-                      {formattedTrade.trader}
-                    </a>
-                  </td>
-                  <td className="py-2 px-3 text-sm text-dream-foreground/70">
-                    {trade.timestamp ? new Date(trade.timestamp).toLocaleTimeString() : 'Just now'}
-                  </td>
-                </tr>
-              );
+              try {
+                const formattedTrade = formatRawTrade(trade);
+                return (
+                  <tr key={`${trade.signature}-${index}`} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="py-2 px-3">
+                      <div className="flex items-center">
+                        {trade.txType === 'buy' ? (
+                          <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
+                        ) : (
+                          <ArrowDownRight className="w-4 h-4 text-red-500 mr-1" />
+                        )}
+                        <span className={trade.txType === 'buy' ? 'text-green-500' : 'text-red-500'}>
+                          {trade.txType.toUpperCase()}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono text-sm">{formattedTrade.amount}</td>
+                    <td className="py-2 px-3 text-right font-mono text-sm">{formattedTrade.price}</td>
+                    <td className="py-2 px-3 text-right font-mono text-sm">{formattedTrade.solAmount}</td>
+                    <td className="py-2 px-3 text-sm">
+                      <a 
+                        href={`https://solscan.io/account/${trade.traderPublicKey}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-dream-accent2 transition-colors"
+                      >
+                        {formattedTrade.trader}
+                      </a>
+                    </td>
+                    <td className="py-2 px-3 text-sm text-dream-foreground/70">
+                      {trade.timestamp ? new Date(trade.timestamp).toLocaleTimeString() : 'Just now'}
+                    </td>
+                  </tr>
+                );
+              } catch (error) {
+                console.error("Error rendering trade:", error, trade);
+                return null;
+              }
             })}
           </tbody>
         </table>
