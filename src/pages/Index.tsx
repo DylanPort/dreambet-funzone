@@ -221,7 +221,9 @@ const Index = () => {
                   />
                   <div className="absolute inset-0 bg-yellow-500/30 rounded-full blur-xl animate-pulse-glow opacity-60"></div>
                   <div className="absolute -inset-1 bg-gradient-to-r from-dream-accent1 to-dream-accent2 rounded-full blur-md opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
-                  <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 whitespace-nowrap text-sm bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent font-bold">
+                  <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 whitespace-nowrap text-sm font-bold
+                    bg-gradient-to-r from-dream-accent2 via-white to-dream-accent1 bg-clip-text text-transparent
+                    drop-shadow-[0_0_5px_rgba(255,255,255,0.6)] animate-gradient-move bg-[length:200%_auto]">
                     {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
                   </span>
                 </div>
