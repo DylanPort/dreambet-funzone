@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins } from 'lucide-react';
@@ -35,27 +36,34 @@ const Index = () => {
     if (tokens.length < 3 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
       for (let i = 0; i < Math.min(3 - tokens.length, pumpPortal.rawTokens.length); i++) {
         const rawToken = pumpPortal.rawTokens[i];
-        tokens.push({
-          id: rawToken.mint,
-          name: rawToken.name || 'Unknown Token',
-          symbol: rawToken.symbol || '',
-          logo: '🪙',
-          imageUrl: rawToken.uri || '',
-          currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
-          change24h: Math.random() * 40 - 20
-        });
+        // Ensure we don't add tokens with duplicate IDs
+        if (!tokens.some(t => t.id === rawToken.mint)) {
+          tokens.push({
+            id: rawToken.mint,
+            name: rawToken.name || 'Unknown Token',
+            symbol: rawToken.symbol || '',
+            logo: '🪙',
+            imageUrl: rawToken.uri || '',
+            currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
+            change24h: Math.random() * 40 - 20
+          });
+        }
       }
     }
     while (tokens.length < 3) {
-      tokens.push({
-        id: `placeholder-${tokens.length}`,
-        name: `Token ${tokens.length + 1}`,
-        symbol: `T${tokens.length + 1}`,
-        logo: '🪙',
-        imageUrl: '',
-        currentPrice: Math.random() * 0.1,
-        change24h: Math.random() * 40 - 20
-      });
+      const placeholderId = `placeholder-${tokens.length}`;
+      // Check if placeholder already exists
+      if (!tokens.some(t => t.id === placeholderId)) {
+        tokens.push({
+          id: placeholderId,
+          name: `Token ${tokens.length + 1}`,
+          symbol: `T${tokens.length + 1}`,
+          logo: '🪙',
+          imageUrl: '',
+          currentPrice: Math.random() * 0.1,
+          change24h: Math.random() * 40 - 20
+        });
+      }
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
@@ -89,7 +97,9 @@ const Index = () => {
           
           <div className="text-center mb-16 animate-fade-in relative z-10">
             <AnimatedLogo />
-            <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-8">PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.</p>
+            <p className="text-lg md:text-xl text-white max-w-3xl mx-auto mb-8 font-semibold">
+              PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.
+            </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
               <Link to="/betting">
                 <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
@@ -105,9 +115,9 @@ const Index = () => {
                   [&>span]:relative [&>span]:z-10
                   group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
                   group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
-                  <span className="relative z-10 flex items-center font-bold text-transparent bg-gradient-to-r from-green-800 to-green-600 bg-clip-text drop-shadow-[0_0_10px_rgba(22,163,74,0.8)]">
+                  <span className="relative z-10 flex items-center font-bold text-white bg-gradient-to-r from-green-400 to-green-300 bg-clip-text drop-shadow-[0_0_10px_rgba(22,163,74,0.8)]">
                     Start Betting
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-700 filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-400 filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
                   </span>
                   
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400 via-yellow-300 to-purple-600
@@ -137,58 +147,56 @@ const Index = () => {
                 </Button>
               </Link>
               
-              {!userProfile && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
-                      rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
-                      transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
-                      hover:border-purple-400/50
-                      before:content-[''] before:absolute before:inset-0 
-                      before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
-                      before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
-                      after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
-                      after:shadow-[0_0_30px_rgba(246,148,92,0.5)] after:opacity-50 hover:after:opacity-100
-                      after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(246,148,92,0.8)]
-                      [&>span]:relative [&>span]:z-10
-                      group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
-                      group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
-                      <span className="relative z-10 flex items-center font-bold text-transparent bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text drop-shadow-[0_0_10px_rgba(246,148,92,0.8)]">
-                        Mint PXBPoints
-                        <Coins className="ml-2 h-5 w-5 group-hover:animate-bounce transition-transform duration-300 text-yellow-600 filter drop-shadow-[0_0_8px_rgba(246,148,92,0.8)]" />
-                      </span>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
+                    rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
+                    transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
+                    hover:border-purple-400/50
+                    before:content-[''] before:absolute before:inset-0 
+                    before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
+                    before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
+                    after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
+                    after:shadow-[0_0_30px_rgba(246,148,92,0.5)] after:opacity-50 hover:after:opacity-100
+                    after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(246,148,92,0.8)]
+                    [&>span]:relative [&>span]:z-10
+                    group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
+                    group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
+                    <span className="relative z-10 flex items-center font-bold text-white bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text drop-shadow-[0_0_10px_rgba(246,148,92,0.8)]">
+                      {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
+                      <Coins className="ml-2 h-5 w-5 group-hover:animate-bounce transition-transform duration-300 text-yellow-500 filter drop-shadow-[0_0_8px_rgba(246,148,92,0.8)]" />
+                    </span>
+                    
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400 via-orange-300 to-yellow-600
+                      animate-gradient-move bg-[length:400%_100%] opacity-70 transform-gpu"></div>
+                    
+                    <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-yellow-500 via-orange-400 via-yellow-500 to-orange-600
+                      opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500
+                      group-hover:blur-2xl animate-pulse-glow"></div>
+                    
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-xl">
+                      <div className="absolute -inset-[10px] bg-[radial-gradient(circle_at_50%_50%,rgba(246,148,92,0.5),transparent_60%)]
+                        animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                       
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400 via-orange-300 to-yellow-600
-                        animate-gradient-move bg-[length:400%_100%] opacity-70 transform-gpu"></div>
+                      <div className="absolute -bottom-2 left-0 right-0 h-12 bg-gradient-to-t from-yellow-400 via-orange-300 to-transparent
+                        filter blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500
+                        animate-bob [mask-image:linear-gradient(to_bottom,transparent,black)]"></div>
                       
-                      <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-yellow-500 via-orange-400 via-yellow-500 to-orange-600
-                        opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500
-                        group-hover:blur-2xl animate-pulse-glow"></div>
-                      
-                      <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-xl">
-                        <div className="absolute -inset-[10px] bg-[radial-gradient(circle_at_50%_50%,rgba(246,148,92,0.5),transparent_60%)]
-                          animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                        
-                        <div className="absolute -bottom-2 left-0 right-0 h-12 bg-gradient-to-t from-yellow-400 via-orange-300 to-transparent
-                          filter blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500
-                          animate-bob [mask-image:linear-gradient(to_bottom,transparent,black)]"></div>
-                        
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-700">
-                          <div className="absolute top-[20%] left-[15%] w-4 h-4 rounded-full bg-yellow-300 filter blur-sm animate-float"></div>
-                          <div className="absolute top-[40%] left-[75%] w-3 h-3 rounded-full bg-orange-300 filter blur-sm animate-float-delayed"></div>
-                          <div className="absolute top-[70%] left-[30%] w-2 h-2 rounded-full bg-yellow-300 filter blur-sm animate-float-delayed-2"></div>
-                        </div>
-                        
-                        <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
-                        <div className="absolute inset-x-8 bottom-0 h-[30%] bg-gradient-to-t from-black/40 to-transparent rounded-b-xl opacity-10 group-hover:opacity-40 transition-opacity duration-500"></div>
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-700">
+                        <div className="absolute top-[20%] left-[15%] w-4 h-4 rounded-full bg-yellow-300 filter blur-sm animate-float"></div>
+                        <div className="absolute top-[40%] left-[75%] w-3 h-3 rounded-full bg-orange-300 filter blur-sm animate-float-delayed"></div>
+                        <div className="absolute top-[70%] left-[30%] w-2 h-2 rounded-full bg-yellow-300 filter blur-sm animate-float-delayed-2"></div>
                       </div>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
-                    <PXBOnboarding />
-                  </DialogContent>
-                </Dialog>
-              )}
+                      
+                      <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
+                      <div className="absolute inset-x-8 bottom-0 h-[30%] bg-gradient-to-t from-black/40 to-transparent rounded-b-xl opacity-10 group-hover:opacity-40 transition-opacity duration-500"></div>
+                    </div>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
+                  <PXBOnboarding />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           
@@ -202,7 +210,7 @@ const Index = () => {
                 <img src="/lovable-uploads/c40baa88-ed47-4c9b-bbd9-d248df1c7863.png" alt="P2P Betting Icon" className="h-20 w-20 filter drop-shadow-[0_0_8px_rgba(255,61,252,0.8)] transition-transform hover:scale-110 duration-300" />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">P2P Betting</h3>
-              <p className="text-dream-foreground/70">
+              <p className="text-white/90">
                 Bet directly against other users with a simple up or down position on migrating tokens.
               </p>
             </div>
@@ -212,7 +220,7 @@ const Index = () => {
                 <img src="/lovable-uploads/996f7a3a-2e7a-4c12-bcd7-8af762f1087a.png" alt="One-Hour Window Icon" className="h-16 w-16 filter drop-shadow-[0_0_8px_rgba(0,255,240,0.8)] transition-transform hover:scale-110 duration-300" />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">One-Hour Window</h3>
-              <p className="text-dream-foreground/70">
+              <p className="text-white/90">
                 Quick one-hour betting windows for fast-paced and exciting predictions on token migrations.
               </p>
             </div>
@@ -222,7 +230,7 @@ const Index = () => {
                 <img src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" alt="Solana Logo" className="h-24 w-24 filter drop-shadow-[0_0_8px_rgba(64,224,208,0.8)] transition-transform hover:scale-110 duration-300" />
               </div>
               <h3 className="text-xl font-display font-semibold mb-3">Solana Powered</h3>
-              <p className="text-dream-foreground/70">
+              <p className="text-white/90">
                 Fast, secure betting with low fees powered by Solana smart contracts and blockchain technology.
               </p>
             </div>
@@ -236,10 +244,10 @@ const Index = () => {
             <Link to="/" className="text-xl font-display font-bold text-gradient mb-3 inline-block">
               PumpXBounty
             </Link>
-            <p className="text-dream-foreground/60 max-w-md mx-auto text-sm">
+            <p className="text-white/80 max-w-md mx-auto text-sm">
               PumpXBounty is a platform for predicting the future of tokens migrating from PumpFun to Raydium. This is for entertainment purposes only.
             </p>
-            <div className="mt-6 border-t border-white/10 pt-6 text-sm text-dream-foreground/40">
+            <div className="mt-6 border-t border-white/10 pt-6 text-sm text-white/60">
               © {new Date().getFullYear()} PumpXBounty. All rights reserved.
             </div>
           </div>
