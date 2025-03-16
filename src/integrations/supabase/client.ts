@@ -25,3 +25,22 @@ export const checkSupabaseTables = async () => {
     return false;
   }
 };
+
+// Check if we're hitting rate limits for Supabase authentication
+export const isAuthRateLimited = async () => {
+  try {
+    // Try a lightweight query that doesn't require auth
+    const { error } = await supabase.from('tokens').select('count').limit(1);
+    
+    // If we get a rate limit error, return true
+    if (error && error.message.includes('rate limit')) {
+      console.warn('Supabase API rate limit detected:', error);
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Exception checking rate limits:', error);
+    return false;
+  }
+};

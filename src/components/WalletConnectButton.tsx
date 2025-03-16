@@ -12,6 +12,7 @@ const WalletConnectButton = () => {
   const [isFullyConnected, setIsFullyConnected] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authRetryCount, setAuthRetryCount] = useState(0);
   const { toast } = useToast();
   
   // Authenticate with Supabase when wallet is connected
@@ -28,39 +29,25 @@ const WalletConnectButton = () => {
           if (!sessionData.session) {
             console.log('No Supabase session, attempting to sign in with wallet', walletAddress);
             
-            // Try to sign in with the wallet address
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-              email: `${walletAddress}@solana.wallet`, // Use wallet address as email
-              password: walletAddress, // Use wallet address as password
-            });
-            
-            if (signInError) {
-              console.log('Sign in failed, attempting to create account', signInError);
-              
-              // If sign in fails, try to sign up the user
-              const { error: signUpError } = await supabase.auth.signUp({
-                email: `${walletAddress}@solana.wallet`,
-                password: walletAddress,
-                options: {
-                  data: {
-                    wallet_address: walletAddress
-                  }
-                }
-              });
-              
-              if (signUpError) {
-                console.error('Failed to authenticate with wallet:', signUpError);
-              } else {
-                console.log('Successfully created account for wallet', walletAddress);
-              }
-            } else {
-              console.log('Successfully signed in with wallet', walletAddress);
+            // Try to use the checkSupabaseTables function from the client to see if we can connect at all
+            const tablesExist = await checkSupabaseConnection();
+            if (!tablesExist) {
+              console.log('Unable to connect to Supabase, proceeding without authentication');
+              // Allow the app to function without Supabase auth
+              setIsFullyConnected(true);
+              setIsAuthenticating(false);
+              return;
             }
+            
+            // Try to sign in with the wallet address with exponential backoff
+            await authenticateWithRetry(walletAddress);
           } else {
             console.log('Already authenticated with Supabase');
           }
         } catch (error) {
           console.error('Error syncing wallet with auth:', error);
+          // Even if auth fails, we still want to let the user use the app
+          setIsFullyConnected(true);
         } finally {
           setIsAuthenticating(false);
         }
@@ -68,7 +55,113 @@ const WalletConnectButton = () => {
     };
     
     syncWalletWithAuth();
-  }, [connected, publicKey, isAuthenticating]);
+  }, [connected, publicKey, isAuthenticating, authRetryCount]);
+  
+  // Check if Supabase is available and accessible
+  const checkSupabaseConnection = async () => {
+    try {
+      const { data, error } = await supabase.from('users').select('count').limit(1).single();
+      if (error && error.code !== 'PGRST116') {
+        console.warn('Supabase connection test failed:', error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.warn('Exception checking Supabase connection:', error);
+      return false;
+    }
+  };
+  
+  // Authenticate with retry logic and exponential backoff
+  const authenticateWithRetry = async (walletAddress) => {
+    const maxRetries = 3;
+    const baseDelay = 2000; // 2 seconds initial delay
+    
+    if (authRetryCount >= maxRetries) {
+      console.log(`Max retries (${maxRetries}) reached, proceeding without authentication`);
+      // Allow the app to function without authentication
+      setIsFullyConnected(true);
+      return;
+    }
+    
+    try {
+      // Try to sign in with wallet address
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: `${walletAddress}@solana.wallet`, // Use wallet address as email
+        password: walletAddress, // Use wallet address as password
+      });
+      
+      if (signInError) {
+        console.log('Sign in failed, checking error type:', signInError);
+        
+        if (signInError.message === 'Email logins are disabled') {
+          console.log('Email authentication is disabled in Supabase, proceeding without login');
+          // Allow the app to function without authentication
+          setIsFullyConnected(true);
+          return;
+        }
+        
+        if (signInError.message === 'Request rate limit reached') {
+          const delay = baseDelay * Math.pow(2, authRetryCount);
+          console.log(`Rate limit reached, retrying in ${delay}ms (attempt ${authRetryCount + 1}/${maxRetries})`);
+          
+          // Schedule a retry with exponential backoff
+          setTimeout(() => {
+            setAuthRetryCount(prev => prev + 1);
+          }, delay);
+          
+          return;
+        }
+        
+        // Try to sign up if it's not a rate limit error
+        console.log('Attempting to create account', signInError);
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: `${walletAddress}@solana.wallet`,
+          password: walletAddress,
+          options: {
+            data: {
+              wallet_address: walletAddress
+            }
+          }
+        });
+        
+        if (signUpError) {
+          if (signUpError.message === 'Signups not allowed for this instance') {
+            console.log('Signups are disabled in Supabase, proceeding without account creation');
+            // Allow the app to function without authentication
+            setIsFullyConnected(true);
+            return;
+          }
+          
+          if (signUpError.message === 'Request rate limit reached') {
+            const delay = baseDelay * Math.pow(2, authRetryCount);
+            console.log(`Rate limit reached, retrying in ${delay}ms (attempt ${authRetryCount + 1}/${maxRetries})`);
+            
+            // Schedule a retry with exponential backoff
+            setTimeout(() => {
+              setAuthRetryCount(prev => prev + 1);
+            }, delay);
+            
+            return;
+          }
+          
+          console.error('Failed to authenticate with wallet:', signUpError);
+        } else {
+          console.log('Successfully created account for wallet', walletAddress);
+        }
+      } else {
+        console.log('Successfully signed in with wallet', walletAddress);
+      }
+      
+      // Reset retry count on success
+      setAuthRetryCount(0);
+      setIsFullyConnected(true);
+    } catch (error) {
+      console.error('Unexpected error during authentication:', error);
+      // Allow the app to function despite auth errors
+      setIsFullyConnected(true);
+    }
+  };
   
   useEffect(() => {
     // Check if wallet is actually ready for transactions
@@ -211,6 +304,9 @@ const WalletConnectButton = () => {
           description: "Please reconnect your wallet",
         });
       }
+      
+      // Reset retry count when disconnecting
+      setAuthRetryCount(0);
     } catch (error) {
       console.error("Error disconnecting wallet:", error);
     }
