@@ -1,14 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, ArrowUp, ArrowDown, Zap } from 'lucide-react';
+import { ExternalLink, ArrowUp, ArrowDown, Zap, RefreshCw } from 'lucide-react';
 
 interface FuturisticTokenCardProps {
   token: any;
-  index: number;
+  flipping: boolean;
 }
 
-const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index }) => {
+const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, flipping }) => {
   const [isHovering, setIsHovering] = useState(false);
   const isPositive = token.change24h >= 0;
   
@@ -28,10 +28,8 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index 
   
   return (
     <div 
-      className={`absolute glass-panel transform transition-all duration-500 w-[280px] p-5 ${isHovering ? 'scale-105 z-50' : 'z-10'}`}
+      className={`glass-panel transform transition-all duration-500 w-[280px] p-5 ${flipping ? 'animate-flip' : ''} ${isHovering ? 'scale-105 z-50' : 'z-10'}`}
       style={{
-        top: `${10 + (index * 10)}%`,
-        left: `${15 + (index * 20)}%`,
         transform: `perspective(1000px) rotateY(${isHovering ? '0' : '-15'}deg) rotateX(${isHovering ? '0' : '5'}deg)`,
         transformStyle: 'preserve-3d',
         boxShadow: isHovering ? 
@@ -145,11 +143,54 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({ token, index 
 };
 
 const FuturisticTokenDisplay: React.FC<{ tokens: any[] }> = ({ tokens }) => {
+  const [currentTokenIndex, setCurrentTokenIndex] = useState(0);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Function to rotate to the next token
+  const rotateToNextToken = () => {
+    if (tokens.length <= 1) return;
+    
+    setIsFlipping(true);
+    setTimeout(() => {
+      setCurrentTokenIndex((prevIndex) => (prevIndex + 1) % tokens.length);
+      setIsFlipping(false);
+    }, 500); // Half the duration of the flip animation
+  };
+  
+  // Set up interval to rotate tokens
+  useEffect(() => {
+    if (tokens.length > 1) {
+      intervalRef.current = setInterval(rotateToNextToken, 5000); // Rotate every 5 seconds
+    }
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [tokens.length]);
+  
+  // Don't render anything if there are no tokens
+  if (!tokens.length) return null;
+  
   return (
-    <div className="relative w-full h-[300px] md:h-[400px] mb-16">
-      {tokens.map((token, index) => (
-        <FuturisticTokenCard key={token.id || `token-${index}`} token={token} index={index} />
-      ))}
+    <div className="flex items-center justify-center">
+      <div className="relative">
+        <FuturisticTokenCard 
+          key={tokens[currentTokenIndex]?.id || `token-${currentTokenIndex}`} 
+          token={tokens[currentTokenIndex]} 
+          flipping={isFlipping} 
+        />
+        
+        <button 
+          onClick={rotateToNextToken}
+          className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-dream-accent2/20 p-2 rounded-full hover:bg-dream-accent2/40 transition-colors"
+          title="Show next token"
+        >
+          <RefreshCw className="w-4 h-4 text-dream-accent2" />
+        </button>
+      </div>
     </div>
   );
 };

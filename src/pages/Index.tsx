@@ -93,32 +93,41 @@ const Index = () => {
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
           <FloatingImages />
           
-          <div className="text-center mb-16 animate-fade-in relative z-10">
-            <AnimatedLogo />
-            <p className="text-lg md:text-xl text-white max-w-3xl mx-auto mb-8 font-semibold">
-              PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
-              <Link to="/betting">
-                <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
-                  rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
-                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
-                  hover:border-purple-400/50
-                  before:content-[''] before:absolute before:inset-0 
-                  before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
-                  before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
-                  after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
-                  after:shadow-[0_0_30px_rgba(139,92,246,0.5)] after:opacity-50 hover:after:opacity-100
-                  after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(139,92,246,0.8)]
-                  [&>span]:relative [&>span]:z-10
-                  group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
-                  group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
-                  <span className="relative z-10 flex items-center font-bold text-white bg-gradient-to-r from-green-400 to-green-300 bg-clip-text drop-shadow-[0_0_10px_rgba(22,163,74,0.8)]">
-                    Start Betting
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-400 filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
-                  </span>
-                  
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400 via-yellow-300 to-purple-600
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
+            <div className="text-center md:text-left md:flex-1">
+              <AnimatedLogo />
+              <p className="text-lg md:text-xl text-white max-w-3xl mx-auto md:mx-0 mb-8 font-semibold">
+                PumpXBounty lets you bet on tokens on PumpFun and Raydium. Predict whether they'll moon or die within the hour.
+              </p>
+            </div>
+            
+            <div className="md:flex-1 flex justify-center mt-8 md:mt-0">
+              <FuturisticTokenDisplay tokens={latestTokens} />
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10 mb-16">
+            <Link to="/betting">
+              <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
+                rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
+                transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
+                hover:border-purple-400/50
+                before:content-[''] before:absolute before:inset-0 
+                before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
+                before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
+                after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
+                after:shadow-[0_0_30px_rgba(139,92,246,0.5)] after:opacity-50 hover:after:opacity-100
+                after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(139,92,246,0.8)]
+                [&>span]:relative [&>span]:z-10
+                group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
+                group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
+                <span className="relative z-10 flex items-center font-bold text-white bg-gradient-to-r from-green-400 to-green-300 bg-clip-text drop-shadow-[0_0_10px_rgba(22,163,74,0.8)]">
+                  Start Betting
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-400 filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
+                </span>
+                
+                
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400 via-yellow-300 to-purple-600
                     animate-gradient-move bg-[length:400%_100%] opacity-70 transform-gpu"></div>
                   
                   <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-green-500 via-yellow-400 via-orange-500 to-purple-600
@@ -142,30 +151,32 @@ const Index = () => {
                     <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
                     <div className="absolute inset-x-8 bottom-0 h-[30%] bg-gradient-to-t from-black/40 to-transparent rounded-b-xl opacity-10 group-hover:opacity-40 transition-opacity duration-500"></div>
                   </div>
-                </Button>
-              </Link>
-              
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
-                    rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
-                    transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
-                    hover:border-purple-400/50
-                    before:content-[''] before:absolute before:inset-0 
-                    before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
-                    before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
-                    after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
-                    after:shadow-[0_0_30px_rgba(246,148,92,0.5)] after:opacity-50 hover:after:opacity-100
-                    after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(246,148,92,0.8)]
-                    [&>span]:relative [&>span]:z-10
-                    group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
-                    group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
-                    <span className="relative z-10 flex items-center font-bold text-white bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text drop-shadow-[0_0_10px_rgba(246,148,92,0.8)]">
-                      {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
-                      <Coins className="ml-2 h-5 w-5 group-hover:animate-bounce transition-transform duration-300 text-yellow-500 filter drop-shadow-[0_0_8px_rgba(246,148,92,0.8)]" />
-                    </span>
-                    
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400 via-orange-300 to-yellow-600
+                
+              </Button>
+            </Link>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
+                  rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
+                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
+                  hover:border-purple-400/50
+                  before:content-[''] before:absolute before:inset-0 
+                  before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
+                  before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
+                  after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
+                  after:shadow-[0_0_30px_rgba(246,148,92,0.5)] after:opacity-50 hover:after:opacity-100
+                  after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(246,148,92,0.8)]
+                  [&>span]:relative [&>span]:z-10
+                  group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
+                  group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
+                  <span className="relative z-10 flex items-center font-bold text-white bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text drop-shadow-[0_0_10px_rgba(246,148,92,0.8)]">
+                    {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
+                    <Coins className="ml-2 h-5 w-5 group-hover:animate-bounce transition-transform duration-300 text-yellow-500 filter drop-shadow-[0_0_8px_rgba(246,148,92,0.8)]" />
+                  </span>
+                  
+                  
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400 via-orange-300 to-yellow-600
                       animate-gradient-move bg-[length:400%_100%] opacity-70 transform-gpu"></div>
                     
                     <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-yellow-500 via-orange-400 via-yellow-500 to-orange-600
@@ -189,22 +200,19 @@ const Index = () => {
                       <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
                       <div className="absolute inset-x-8 bottom-0 h-[30%] bg-gradient-to-t from-black/40 to-transparent rounded-b-xl opacity-10 group-hover:opacity-40 transition-opacity duration-500"></div>
                     </div>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
-                  <PXBOnboarding />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-          
-          <div className="relative max-w-5xl mx-auto h-[300px] md:h-[400px] mb-16">
-            <FuturisticTokenDisplay tokens={latestTokens} />
+                  
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
+                <PXBOnboarding />
+              </DialogContent>
+            </Dialog>
           </div>
           
           <div className="max-w-5xl mx-auto mb-16">
             <RecentTokenTrades />
           </div>
+          
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
             <div className="glass-panel p-6 text-center">
@@ -237,8 +245,10 @@ const Index = () => {
               </p>
             </div>
           </div>
+        
         </section>
       </main>
+      
       
       <footer className="glass-panel mt-20 px-6 py-10">
         <div className="max-w-7xl mx-auto">
