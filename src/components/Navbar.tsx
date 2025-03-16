@@ -7,7 +7,6 @@ import useSolanaBalance from '@/hooks/useSolanaBalance';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -20,7 +19,6 @@ const Navbar = () => {
     fetchUserProfile
   } = usePXBPoints();
   const [pxbPoints, setPxbPoints] = useState<number | null>(null);
-
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -32,20 +30,16 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
-
   useEffect(() => {
     if (userProfile) {
       setPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
-
   useEffect(() => {
     if (!userProfile) return;
-
     const channel = supabase.channel('public:users').on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
@@ -62,7 +56,6 @@ const Navbar = () => {
       supabase.removeChannel(channel);
     };
   }, [userProfile, fetchUserProfile]);
-
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
@@ -93,22 +86,14 @@ const Navbar = () => {
             <ProfileButton />
             
             {pxbPoints !== null && pxbPoints > 0 ? <div className="glass-panel relative overflow-hidden py-1 px-3 flex items-center gap-1.5 text-yellow-400 group animate-pulse-subtle">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300 py-[-7px]"></div>
                 <div className="w-4 h-4 flex items-center justify-center">
-                  <img 
-                    src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" 
-                    alt="PXB Coin" 
-                    className="w-5 h-5 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" 
-                  />
+                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
                 <span className="relative z-10">{pxbPoints.toLocaleString()} PXB</span>
               </div> : userProfile && <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-yellow-400/70">
                 <div className="w-4 h-4 flex items-center justify-center">
-                  <img 
-                    src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" 
-                    alt="PXB Coin" 
-                    className="w-5 h-5 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" 
-                  />
+                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
                 <span>0 PXB</span>
               </div>}
@@ -159,20 +144,12 @@ const Navbar = () => {
             
             {pxbPoints !== null && pxbPoints > 0 ? <div className="py-2 flex items-center gap-2 text-yellow-400 animate-pulse-subtle">
                 <div className="w-5 h-5 flex items-center justify-center">
-                  <img 
-                    src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" 
-                    alt="PXB Coin" 
-                    className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" 
-                  />
+                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
                 <span>{pxbPoints.toLocaleString()} PXB</span>
               </div> : userProfile && <div className="py-2 flex items-center gap-2 text-yellow-400/70">
                 <div className="w-5 h-5 flex items-center justify-center">
-                  <img 
-                    src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" 
-                    alt="PXB Coin" 
-                    className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" 
-                  />
+                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
                 <span>0 PXB</span>
               </div>}
@@ -191,5 +168,4 @@ const Navbar = () => {
         </div>}
     </header>;
 };
-
 export default Navbar;
