@@ -277,12 +277,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       setTransactionStatus('Processing your bet...');
       
+      // Convert prediction to betType for API call
+      const betType = prediction === 'moon' ? 'up' : 'down';
+      
       await placeBet(
         tokenId,
         tokenData.name,
         tokenData.symbol,
         amountValue,
-        prediction === 'moon' ? 'up' : 'down',
+        betType,
         parseInt(percentageChange, 10),
         duration
       );

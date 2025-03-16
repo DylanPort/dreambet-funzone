@@ -74,7 +74,8 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
     }
     
     try {
-      await placeBet(id, name, symbol, 10, betType, 60);
+      // Add a default percentage change of 10% for quick betting
+      await placeBet(id, name, symbol, 10, betType, 10, 30);
     } catch (error) {
       console.error('Error placing bet:', error);
       toast.error('Failed to place bet');

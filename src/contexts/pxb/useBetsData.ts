@@ -40,10 +40,13 @@ export const useBetsData = (userProfile: any) => {
           tokenSymbol: tokenSymbol,
           betAmount: bet.sol_amount,
           betType: bet.prediction_bettor1 as 'up' | 'down',
+          percentageChange: bet.percentage_change || 0,
           status: bet.status === 'pending' ? 'pending' : (bet.status === 'won' ? 'won' : 'lost'),
           pointsWon: bet.points_won || 0,
           createdAt: bet.created_at,
-          expiresAt: new Date(new Date(bet.created_at).getTime() + (bet.duration * 1000)).toISOString()
+          expiresAt: new Date(new Date(bet.created_at).getTime() + (bet.duration * 1000)).toISOString(),
+          initialMarketCap: bet.initial_market_cap,
+          currentMarketCap: bet.current_market_cap
         };
       });
       
