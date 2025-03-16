@@ -68,11 +68,6 @@ const PXBPointsBalance: React.FC = () => {
               <RefreshCw className="w-4 h-4 text-dream-accent1" />
             </button>
           </div>
-          
-          <div className="flex items-center mt-1 text-dream-foreground/80">
-            <Trophy className="w-4 h-4 mr-1 text-dream-accent1" />
-            <span className="text-sm">{userProfile.reputation || 0} Rep</span>
-          </div>
         </div>
       </div>
       

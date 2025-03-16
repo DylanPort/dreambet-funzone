@@ -48,11 +48,6 @@ const PXBLeaderboard: React.FC = () => {
                 </div>
                 <div className="text-dream-accent1">{trader.pxbPoints} PXB</div>
               </div>
-              
-              <div className="flex items-center text-xs text-dream-foreground/60">
-                <ArrowUp className="w-3 h-3 mr-1 text-green-400" />
-                <span>{trader.reputation} reputation</span>
-              </div>
             </div>
           </div>
         ))}

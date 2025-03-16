@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Coins, PartyPopper, AlertCircle, CheckCircle, Save } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -19,18 +18,14 @@ const PXBOnboarding: React.FC = () => {
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   const { connected, publicKey } = useWallet();
 
-  // Set default username to wallet address substring when wallet connects
   useEffect(() => {
     if (connected && publicKey) {
-      // If no username is set yet, set it to the wallet address substring
       if (!username && !userProfile?.username) {
         setUsername(publicKey.toString().substring(0, 8));
       } else if (userProfile?.username) {
-        // If user already has a username, use that
         setUsername(userProfile.username);
       }
       
-      // Check if user has already claimed points
       if (userProfile?.pxbPoints >= 500) {
         setAlreadyClaimed(true);
       }
@@ -48,7 +43,6 @@ const PXBOnboarding: React.FC = () => {
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Ensure username is not empty, fallback to wallet address if it is
     const finalUsername = username.trim() || 
                          (publicKey ? publicKey.toString().substring(0, 8) : '');
     
@@ -80,7 +74,6 @@ const PXBOnboarding: React.FC = () => {
       
       if (success) {
         toast.success("Username updated successfully");
-        // Refresh user profile to get updated data
         await fetchUserProfile();
       }
     } catch (error) {

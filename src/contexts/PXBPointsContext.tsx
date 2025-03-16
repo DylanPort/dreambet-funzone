@@ -69,15 +69,13 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           toast.error('Failed to load user profile');
         }
       } else if (userData) {
-        // Cast userData to unknown first to avoid TypeScript errors
-        const supabaseUser = userData as any;
+        const supabaseUser = userData as SupabaseUserProfile;
         console.log("User profile data from Supabase:", supabaseUser);
         
         setUserProfile({
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
-          reputation: supabaseUser.reputation || 0, // Use a default value of 0 if reputation is undefined
           createdAt: supabaseUser.created_at
         });
       }
@@ -115,7 +113,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             id: existingUser.id,
             username: existingUsername,
             pxbPoints: existingUser.points,
-            reputation: existingUser.reputation || 0, // Default to 0 if reputation is undefined
             createdAt: existingUser.created_at
           });
           return;
@@ -131,8 +128,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: userId,
           wallet_address: walletAddress,
           username: finalUsername,
-          points: 500,
-          reputation: 0 // Explicitly set default reputation
+          points: 500
         })
         .select()
         .single();
@@ -158,7 +154,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: updatedUser.id,
         username: updatedUser.username || finalUsername,
         pxbPoints: updatedUser.points,
-        reputation: updatedUser.reputation || 0, // Default to 0 if reputation is undefined
         createdAt: updatedUser.created_at
       };
       
@@ -329,7 +324,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: user.id,
         username: user.username || user.wallet_address.substring(0, 8),
         pxbPoints: user.points,
-        reputation: user.reputation || 0, // Always provide a default value of 0
         createdAt: user.created_at
       }));
       
@@ -357,7 +351,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const won = Math.random() > 0.5;
           const pointsWon = won ? bet.betAmount * 2 : 0;
           const newStatus = won ? 'won' as const : 'lost' as const;
-          const reputationChange = won ? 10 : 0;
           
           await supabase
             .from('bets')
@@ -371,15 +364,13 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             await supabase
               .from('users')
               .update({ 
-                points: userProfile.pxbPoints + pointsWon,
-                reputation: (userProfile.reputation || 0) + reputationChange // Handle the case where reputation might be undefined
+                points: userProfile.pxbPoints + pointsWon
               })
               .eq('id', userProfile.id);
             
             setUserProfile({
               ...userProfile,
-              pxbPoints: userProfile.pxbPoints + pointsWon,
-              reputation: (userProfile.reputation || 0) + reputationChange // Handle undefined reputation
+              pxbPoints: userProfile.pxbPoints + pointsWon
             });
             
             toast.success(`Your bet on ${bet.tokenSymbol} won! +${pointsWon} PXB Points`);
