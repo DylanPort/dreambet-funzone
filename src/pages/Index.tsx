@@ -253,7 +253,7 @@ const Index = () => {
               <PXBSupplyProgress />
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 my-[-56px] py-[2px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 py-[2px] my-0">
               <div className="glass-panel p-6">
                 <PXBUserStats />
               </div>
