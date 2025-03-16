@@ -75,8 +75,8 @@ export const useBetProcessor = (
             .update({
               status: betWon ? 'won' : 'lost',
               points_won: pointsWon,
-              initial_market_cap: initialMarketCap,
-              current_market_cap: currentMarketCap
+              // Fix: Use the property that the TypeScript interface expects
+              currentMarketCap: currentMarketCap
             })
             .eq('bet_id', bet.id);
             
@@ -141,7 +141,7 @@ export const useBetProcessor = (
           // Update bet in state
           setBets(prevBets => prevBets.map(b => 
             b.id === bet.id 
-              ? { ...b, status: betWon ? 'won' : 'lost', pointsWon, currentMarketCap } 
+              ? { ...b, status: newStatus, pointsWon, currentMarketCap } 
               : b
           ));
         } else {
@@ -160,8 +160,8 @@ export const useBetProcessor = (
               await supabase
                 .from('bets')
                 .update({
-                  initial_market_cap: bet.initialMarketCap,
-                  current_market_cap: tokenData.marketCap
+                  // Fix: Use the property that the TypeScript interface expects
+                  currentMarketCap: tokenData.marketCap 
                 })
                 .eq('bet_id', bet.id);
             }
