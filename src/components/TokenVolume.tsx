@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, ExternalLink } from 'lucide-react';
 import { subscribeToVolume } from '@/services/dexScreenerService';
@@ -6,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 interface TokenVolumeProps {
   tokenId: string;
 }
+
+const LOCAL_STORAGE_KEY = "volume_";
 
 const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
   const [volume, setVolume] = useState<number | null>(null);
@@ -16,31 +19,55 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
   useEffect(() => {
     if (!tokenId) return;
     
-    setLoading(true);
+    // Immediately try to load from localStorage for instant display
+    try {
+      const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY + tokenId);
+      if (cachedData) {
+        const { value, timestamp } = JSON.parse(cachedData);
+        // Only use if less than 15 minutes old
+        if (Date.now() - timestamp < 15 * 60 * 1000) {
+          setVolume(value);
+          setLastUpdated(new Date(timestamp));
+          setLoading(false);
+        }
+      }
+    } catch (e) {
+      console.error("Error loading cached volume:", e);
+    }
     
     // Only use DexScreener as data source
     const cleanupDexScreener = subscribeToVolume(tokenId, (newVolume) => {
       setVolume(newVolume);
       setLastUpdated(new Date());
       setLoading(false);
+      
+      // Cache in localStorage
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY + tokenId, JSON.stringify({
+          value: newVolume,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.error("Error caching volume:", e);
+      }
     });
     
-    // If we don't have data after 10 seconds, show a toast
+    // Shorter timeout for toast (5 seconds instead of 10)
     const timeoutId = setTimeout(() => {
-      if (loading) {
+      if (loading && !volume) {
         toast({
-          title: "Data loading slowly",
-          description: "Volume data is taking longer than expected to load",
+          title: "Still loading data",
+          description: "Volume data is taking longer than expected",
           variant: "default",
         });
       }
-    }, 10000);
+    }, 5000);
     
     return () => {
       cleanupDexScreener();
       clearTimeout(timeoutId);
     };
-  }, [tokenId, loading, toast]);
+  }, [tokenId, loading, toast, volume]);
 
   const formatLargeNumber = (num: number | null) => {
     if (num === null) return "Loading...";
@@ -83,7 +110,7 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
         )}
       </div>
       <div className="text-3xl font-bold relative z-10 flex items-center">
-        {loading ? (
+        {loading && !volume ? (
           <span className="animate-pulse">Loading...</span>
         ) : (
           <>
