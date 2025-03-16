@@ -78,15 +78,16 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
       toast.dismiss();
       
       // Show initial betting notification
+      const toastId = `bet-${id}-${Date.now()}`;
       toast.loading(`Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${symbol}...`, {
-        id: `bet-${id}-${Date.now()}`
+        id: toastId
       });
       
       // Add a default percentage change of 10% for quick betting
       await placeBet(id, name, symbol, 10, betType, 10, 30);
       
       // Show success notification after bet is placed
-      toast.success(`Bet placed! 10 PXB Points deducted. Your prediction: ${symbol} will ${betType === 'up' ? 'MOON' : 'DIE'} by 10% within 30 minutes.`);
+      // Note: No need to show success here as placeBet will handle it
     } catch (error) {
       console.error('Error placing bet:', error);
       toast.error('Failed to place bet. Please try again.');

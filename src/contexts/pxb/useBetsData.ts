@@ -30,6 +30,12 @@ export const useBetsData = (userProfile: any) => {
       
       console.log('Raw bets data from Supabase:', data);
       
+      if (!data || data.length === 0) {
+        console.log('No bets found in database');
+        setBets([]);
+        return;
+      }
+      
       const formattedBets: PXBBet[] = (data as any[]).map((bet: any) => {
         const tokenName = bet.token_name || bet.tokens?.token_name || 'Unknown Token';
         const tokenSymbol = bet.token_symbol || bet.tokens?.token_symbol || 'UNKNOWN';

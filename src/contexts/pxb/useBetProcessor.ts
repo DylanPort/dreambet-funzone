@@ -106,10 +106,12 @@ export const useBetProcessor = (
           
           // If bet won, update user points
           if (betWon) {
+            const updatedPoints = userProfile.pxbPoints + pointsWon;
+            
             const { error: userUpdateError } = await supabase
               .from('users')
               .update({
-                points: userProfile.pxbPoints + pointsWon
+                points: updatedPoints
               })
               .eq('id', userProfile.id);
               
@@ -122,7 +124,7 @@ export const useBetProcessor = (
             // Update user profile in state
             setUserProfile({
               ...userProfile,
-              pxbPoints: userProfile.pxbPoints + pointsWon
+              pxbPoints: updatedPoints
             });
             
             // Show win notification
