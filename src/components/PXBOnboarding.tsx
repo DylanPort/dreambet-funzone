@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Coins, PartyPopper, AlertCircle, CheckCircle, UserCheck } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -21,9 +22,9 @@ const PXBOnboarding: React.FC = () => {
   } = usePXBPoints();
   const [username, setUsername] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+  const [alreadyMinted, setAlreadyMinted] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
-  const [hasClaimedPoints, setHasClaimedPoints] = useState(false);
+  const [hasMintedPoints, setHasMintedPoints] = useState(false);
   const {
     connected,
     publicKey
@@ -38,10 +39,10 @@ const PXBOnboarding: React.FC = () => {
         setUsername(publicKey.toString().substring(0, 8));
       }
       if (userProfile?.pxbPoints >= 500) {
-        setAlreadyClaimed(true);
+        setAlreadyMinted(true);
       }
     } else {
-      setAlreadyClaimed(false);
+      setAlreadyMinted(false);
     }
   }, [connected, publicKey, userProfile, username]);
 
@@ -59,13 +60,13 @@ const PXBOnboarding: React.FC = () => {
     }
 
     const finalUsername = username.trim() || publicKey.toString().substring(0, 8);
-    setHasClaimedPoints(true);
+    setHasMintedPoints(true);
     try {
       await mintPoints(finalUsername);
       setShowSuccess(true);
     } catch (error) {
       console.error('Error minting points:', error);
-      setHasClaimedPoints(false);
+      setHasMintedPoints(false);
       toast.error('Failed to mint PXB Points');
     }
   };
@@ -104,7 +105,7 @@ const PXBOnboarding: React.FC = () => {
             data: existingUser
           } = await supabase.from('users').select('points').eq('wallet_address', walletAddress).single();
           if (existingUser && existingUser.points >= 500) {
-            setAlreadyClaimed(true);
+            setAlreadyMinted(true);
             fetchUserProfile();
           }
         } catch (error) {
@@ -117,7 +118,7 @@ const PXBOnboarding: React.FC = () => {
 
   const handleGoToBettingPage = () => {
     setShowSuccess(false);
-    setHasClaimedPoints(false);
+    setHasMintedPoints(false);
     fetchUserProfile();
     navigate('/betting');
   };
@@ -130,13 +131,13 @@ const PXBOnboarding: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold mb-2">Get Started with PXB Points</h2>
           <p className="text-dream-foreground/70">
-            {alreadyClaimed ? "You've already claimed your PXB Points!" : "Claim 500 PXB Points and start betting on tokens!"}
+            {alreadyMinted ? "You've already minted your PXB Points!" : "Mint 500 PXB Points and start betting on tokens!"}
           </p>
         </div>
         
         {!connected ? <div className="space-y-4">
             <p className="text-center text-dream-foreground/70 mb-4">
-              Connect your wallet to claim your PXB Points
+              Connect your wallet to mint your PXB Points
             </p>
             <div className="flex justify-center">
               <WalletConnectButton />
@@ -144,30 +145,30 @@ const PXBOnboarding: React.FC = () => {
           </div> : <div className="space-y-4">
             
             
-            {alreadyClaimed ? <div className="p-4 border border-green-500/20 rounded-lg bg-green-500/5 text-center">
+            {alreadyMinted ? <div className="p-4 border border-green-500/20 rounded-lg bg-green-500/5 text-center">
                 <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
                 <p className="text-dream-foreground/90 font-medium">
-                  You've already claimed your PXB Points!
+                  You've already minted your PXB Points!
                 </p>
                 <p className="text-dream-foreground/70 text-sm mt-2">
                   Current balance: {userProfile?.pxbPoints || 0} PXB Points
                 </p>
                 
                 <Button className="w-full mt-4 bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-all duration-300" disabled={true}>
-                  Points Already Claimed
+                  Points Already Minted
                 </Button>
               </div> : <form onSubmit={handleMint} className="space-y-4">
-                <Button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300" disabled={isLoading || hasClaimedPoints}>
+                <Button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300" disabled={isLoading || hasMintedPoints}>
                   {isLoading ? <div className="flex items-center justify-center">
                       <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      <span>Claiming...</span>
-                    </div> : hasClaimedPoints ? "Points Claimed!" : 'Claim 500 PXB Points'}
+                      <span>Minting...</span>
+                    </div> : hasMintedPoints ? "Points Minted!" : 'Mint 500 PXB Points'}
                 </Button>
               </form>}
           </div>}
         
         <div className="mt-6 text-sm text-dream-foreground/50 text-center">
-          By claiming PXB Points, you can participate in the betting platform and grow your reputation.
+          By minting PXB Points, you can participate in the betting platform and grow your reputation.
         </div>
       </div>
 
@@ -178,7 +179,7 @@ const PXBOnboarding: React.FC = () => {
               Congratulations!
             </DialogTitle>
             <DialogDescription className="text-white/80 text-center">
-              You've successfully claimed your PXB Points!
+              You've successfully minted your PXB Points!
             </DialogDescription>
           </DialogHeader>
           
@@ -247,3 +248,4 @@ const PXBOnboarding: React.FC = () => {
     </>;
 };
 export default PXBOnboarding;
+

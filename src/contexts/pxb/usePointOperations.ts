@@ -43,7 +43,7 @@ export const usePointOperations = (
       if (existingUser) {
         // User exists, check if they already have points
         if (existingUser.points > 0) {
-          toast.error('You have already claimed your PXB Points');
+          toast.error('You have already minted your PXB Points');
           setUserProfile({
             id: existingUser.id,
             username: existingUser.username || username,
