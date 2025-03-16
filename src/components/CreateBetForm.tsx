@@ -296,7 +296,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       // Convert prediction to betType for API call
       const betType = prediction === 'moon' ? 'up' : 'down';
       
-      await placeBet(
+      const newBet = await placeBet(
         tokenId,
         tokenData.name,
         tokenData.symbol,
@@ -622,3 +622,4 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
 };
 
 export default CreateBetForm;
+
