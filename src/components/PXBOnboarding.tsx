@@ -10,6 +10,8 @@ import WalletConnectButton from './WalletConnectButton';
 import { toast } from 'sonner';
 import { updateUsername } from '@/services/userService';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+
 const PXBOnboarding: React.FC = () => {
   const {
     mintPoints,
@@ -26,6 +28,8 @@ const PXBOnboarding: React.FC = () => {
     connected,
     publicKey
   } = useWallet();
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (connected && publicKey) {
       if (!username && userProfile?.username) {
@@ -40,11 +44,13 @@ const PXBOnboarding: React.FC = () => {
       setAlreadyClaimed(false);
     }
   }, [connected, publicKey, userProfile, username]);
+
   useEffect(() => {
     if (connected) {
       fetchUserProfile();
     }
   }, [connected, fetchUserProfile]);
+
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connected || !publicKey) {
@@ -52,7 +58,6 @@ const PXBOnboarding: React.FC = () => {
       return;
     }
 
-    // Use wallet address as default username if none provided
     const finalUsername = username.trim() || publicKey.toString().substring(0, 8);
     setHasClaimedPoints(true);
     try {
@@ -64,6 +69,7 @@ const PXBOnboarding: React.FC = () => {
       toast.error('Failed to mint PXB Points');
     }
   };
+
   const handleSaveUsername = async () => {
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
@@ -89,7 +95,6 @@ const PXBOnboarding: React.FC = () => {
     }
   };
 
-  // Check if user exists in database but not loaded in context
   useEffect(() => {
     const checkUserExists = async () => {
       if (connected && publicKey && !userProfile && !isLoading) {
@@ -103,13 +108,20 @@ const PXBOnboarding: React.FC = () => {
             fetchUserProfile();
           }
         } catch (error) {
-          // User likely doesn't exist yet
           console.log("User check error (likely doesn't exist yet):", error);
         }
       }
     };
     checkUserExists();
   }, [connected, publicKey, userProfile, isLoading, fetchUserProfile]);
+
+  const handleGoToBettingPage = () => {
+    setShowSuccess(false);
+    setHasClaimedPoints(false);
+    fetchUserProfile();
+    navigate('/betting');
+  };
+
   return <>
       <div className="glass-panel p-6 max-w-md mx-auto">
         <div className="text-center mb-6">
@@ -226,11 +238,7 @@ const PXBOnboarding: React.FC = () => {
             }} />)}
             </motion.div>
             
-            <Button onClick={() => {
-            setShowSuccess(false);
-            setHasClaimedPoints(false);
-            fetchUserProfile(); // Fetch user profile instead of reloading page
-          }} className="mt-6 bg-white text-purple-600 hover:bg-white/90 hover:text-purple-700 transition-all">
+            <Button onClick={handleGoToBettingPage} className="mt-6 bg-white text-purple-600 hover:bg-white/90 hover:text-purple-700 transition-all">
               Start Betting Now!
             </Button>
           </div>
