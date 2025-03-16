@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SolanaWalletProvider from "./providers/SolanaWalletProvider";
-import { PXBPointsProvider } from "./contexts/PXBPointsContext";
+import { PXBPointsProvider } from "./contexts/pxb/PXBPointsContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
