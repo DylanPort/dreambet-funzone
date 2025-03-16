@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -18,15 +17,33 @@ import TokenMarketCap from '@/components/TokenMarketCap';
 import TokenVolume from '@/components/TokenVolume';
 import TokenComments from '@/components/TokenComments';
 
-const TokenChart = ({ tokenId, tokenName, refreshData, loading }) => {
+const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate }) => {
   const [timeInterval, setTimeInterval] = useState('15');
   const [chartTheme, setChartTheme] = useState('dark');
   
   const handleRefreshChart = () => {
     refreshData();
   };
+
+  useEffect(() => {
+    const handleMessage = (event) => {
+      try {
+        if (event.data && typeof event.data === 'string') {
+          const data = JSON.parse(event.data);
+          if (data.type === 'price_update' && data.price) {
+            onPriceUpdate(data.price, data.change || 0);
+          }
+        }
+      } catch (error) {
+        console.error("Error handling chart message:", error);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onPriceUpdate]);
   
-  const chartUrl = `https://www.gmgn.cc/kline/sol/${tokenId}?theme=${chartTheme}&interval=${timeInterval}`;
+  const chartUrl = `https://www.gmgn.cc/kline/sol/${tokenId}?theme=${chartTheme}&interval=${timeInterval}&send_price=true`;
   
   return (
     <div className="glass-panel p-6 mb-8">
@@ -138,8 +155,32 @@ const TokenDetail = () => {
           change24h: change24h
         };
       });
+      
+      setPriceData(current => {
+        const newPoint = {
+          time: new Date().toISOString(),
+          price: price
+        };
+        
+        return [...current, newPoint].slice(-60);
+      });
     }
   }, []);
+  
+  const handleChartPriceUpdate = useCallback((price: number, change24h: number = 0) => {
+    console.log("Received price update from chart:", price, change24h);
+    updateTokenPrice(price, change24h);
+    
+    try {
+      localStorage.setItem(`token_price_${id}`, JSON.stringify({
+        price,
+        change24h,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.error("Error caching price:", error);
+    }
+  }, [id, updateTokenPrice]);
   
   const updateTokenMetrics = useCallback((newMetrics: any) => {
     const now = Date.now();
@@ -159,6 +200,25 @@ const TokenDetail = () => {
       try {
         setLoading(true);
         console.log("Loading token with ID:", id);
+        
+        try {
+          const cachedPrice = localStorage.getItem(`token_price_${id}`);
+          if (cachedPrice) {
+            const { price, change24h, timestamp } = JSON.parse(cachedPrice);
+            if (Date.now() - timestamp < 5 * 60 * 1000) {
+              setToken(current => {
+                if (!current) return null;
+                return {
+                  ...current,
+                  currentPrice: price,
+                  change24h: change24h
+                };
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Error loading cached price:", e);
+        }
         
         let tokenData = null;
         let isWebSocketToken = false;
@@ -627,7 +687,10 @@ const TokenDetail = () => {
                 </div>
                 
                 <div className="flex flex-col items-end">
-                  <div className="text-3xl font-bold">${formatPrice(token.currentPrice)}</div>
+                  <div className="text-3xl font-bold">
+                    ${formatPrice(token.currentPrice)}
+                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">LIVE</span>
+                  </div>
                   <div className={`flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
                     {Math.abs(token.change24h).toFixed(2)}%
@@ -665,6 +728,7 @@ const TokenDetail = () => {
                 tokenName={token.name}
                 refreshData={refreshData}
                 loading={loading}
+                onPriceUpdate={handleChartPriceUpdate}
               />
               
               {showCreateBet && (
