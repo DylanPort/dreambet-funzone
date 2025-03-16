@@ -1,10 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, ExternalLink } from 'lucide-react';
-import { subscribeToGMGNTokenData } from '@/services/gmgnService';
-import { subscribeToTokenMetric } from '@/services/tokenDataCache';
-import { useToast } from '@/hooks/use-toast';
 import { subscribeToVolume } from '@/services/dexScreenerService';
+import { useToast } from '@/hooks/use-toast';
 
 interface TokenVolumeProps {
   tokenId: string;
@@ -21,32 +18,14 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
     
     setLoading(true);
     
-    // Try to get data from DexScreener (primary source)
+    // Only use DexScreener as data source
     const cleanupDexScreener = subscribeToVolume(tokenId, (newVolume) => {
       setVolume(newVolume);
       setLastUpdated(new Date());
       setLoading(false);
     });
     
-    // Fallback to GMGN API if DexScreener doesn't provide data
-    const cleanupGMGN = subscribeToGMGNTokenData(tokenId, (data) => {
-      if (volume === null && data.volume24h) {
-        setVolume(data.volume24h);
-        setLastUpdated(new Date());
-        setLoading(false);
-      }
-    });
-    
-    // Final fallback to existing service
-    const cleanupTokenCache = subscribeToTokenMetric(tokenId, 'volume24h', (newVolume) => {
-      if (volume === null) { // Only update if we don't have data from primary sources
-        setVolume(newVolume);
-        setLastUpdated(new Date());
-        setLoading(false);
-      }
-    });
-    
-    // If we still don't have data after 10 seconds, show a toast
+    // If we don't have data after 10 seconds, show a toast
     const timeoutId = setTimeout(() => {
       if (loading) {
         toast({
@@ -59,11 +38,9 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
     
     return () => {
       cleanupDexScreener();
-      cleanupGMGN();
-      cleanupTokenCache();
       clearTimeout(timeoutId);
     };
-  }, [tokenId, volume, loading, toast]);
+  }, [tokenId, loading, toast]);
 
   const formatLargeNumber = (num: number | null) => {
     if (num === null) return "Loading...";
