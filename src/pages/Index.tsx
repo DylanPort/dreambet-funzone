@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import RecentTokenTrades from '@/components/RecentTokenTrades';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -21,11 +22,13 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -66,10 +69,12 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -80,6 +85,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -95,95 +101,104 @@ const Index = () => {
             <div className="text-center md:text-left md:flex-1">
               <AnimatedLogo />
               
-              {/* Updated paragraph with more dynamic, futuristic styling */}
-              <p className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 font-semibold 
+              <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
                 bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
-                backdrop-blur-[1px] p-4 rounded-xl border border-white/5
+                backdrop-blur-[1px] rounded-xl border border-white/5
                 animate-entrance overflow-hidden
                 before:content-[''] before:absolute before:inset-0 
                 before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
                 before:animate-pulse-glow">
                 
-                <span className="inline-flex items-center gap-1 
-                  relative px-1.5 py-1 rounded-md 
-                  before:absolute before:inset-0 before:bg-dream-accent2/10 before:rounded-md before:animate-pulse-glow">
-                  <img src="/lovable-uploads/8334bc57-6487-4a01-b85d-684370bfe2f8.png" alt="Lightning" className="h-6 w-6 animate-float filter drop-shadow-[0_0_8px_rgba(0,238,255,0.8)]" />
-                  <span className="bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
-                    Grab some PXB
-                  </span>
-                </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-4 border-b border-white/10">
+                  <div className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
+                    <img src="/lovable-uploads/8334bc57-6487-4a01-b85d-684370bfe2f8.png" alt="Lightning" className="h-6 w-6 animate-float filter drop-shadow-[0_0_8px_rgba(0,238,255,0.8)]" />
+                    <span className="bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
+                      Grab some PXB
+                    </span>
+                  </div>
+                  
+                  <div className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
+                    <span className="bg-gradient-to-r from-dream-accent1 via-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold">
+                      Connect your Wallet
+                    </span>
+                    <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="h-6 w-6 animate-bob filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                  </div>
+                  
+                  <div className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
+                    <span className="bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
+                      Mint PXB Points
+                    </span>
+                  </div>
+                </div>
                 
-                <span className="mx-2 text-white/80 tracking-wider">•</span>
-                
-                <span className="inline-flex items-center gap-1 
-                  relative px-1.5 py-1 rounded-md
-                  before:absolute before:inset-0 before:bg-dream-accent3/10 before:rounded-md before:animate-pulse-glow">
-                  <span className="bg-gradient-to-r from-dream-accent1 via-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold">
-                    Connect your Wallet
-                  </span>
-                  <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="h-6 w-6 animate-bob filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
-                </span>
-                
-                <span className="mx-2 text-white/80 tracking-wider">•</span>
-                
-                <span className="inline-flex items-center gap-1 
-                  relative px-1.5 py-1 rounded-md
-                  before:absolute before:inset-0 before:bg-yellow-400/10 before:rounded-md before:animate-pulse-glow">
-                  <span className="bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
-                    Mint PXB Points
-                  </span>
-                </span>
-                
-                <div className="my-2 bg-white/5 h-[1px] w-full rounded-full"></div>
-                
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <div className="glass-panel p-3 backdrop-blur-sm">
-                    <div className="text-center font-bold mb-1 text-white/90">Bet on tokens:</div>
-                    <div className="flex justify-center gap-4">
+                <div className="p-4 bg-black/20">
+                  <h3 className="text-center font-bold mb-2 text-white text-lg">
+                    <span className="inline-block relative">
+                      Bet on tokens
+                      <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-dream-accent2 to-dream-accent1"></div>
+                    </span>
+                  </h3>
+                  
+                  <div className="flex justify-center items-center gap-6 my-2">
+                    <div className="relative group cursor-pointer">
                       <span className="relative inline-flex items-center gap-1 text-green-400 font-bold animate-bob">
                         <img src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" alt="Rocket" className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
-                        <span className="bg-green-500/80 px-2 py-0.5 rounded-lg text-white">MOON</span>
-                        <span className="absolute inset-0 bg-green-400/10 blur-sm animate-pulse-glow rounded-full"></span>
+                        <span className="bg-green-500/80 px-2 py-0.5 rounded-lg text-white group-hover:bg-green-500 transition-colors">MOON</span>
                       </span>
-                      
-                      <span className="text-white/80">or</span>
-                      
+                      <div className="absolute inset-0 bg-green-400/10 blur-md rounded-full scale-0 group-hover:scale-125 transition-transform duration-300"></div>
+                    </div>
+                    
+                    <div className="text-white/80 text-2xl font-light">or</div>
+                    
+                    <div className="relative group cursor-pointer">
                       <span className="relative inline-flex items-center gap-1 text-red-400 font-bold">
                         <img src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" alt="Skull" className="h-8 w-8 animate-pulse filter drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                        <span className="bg-red-500/80 px-2 py-0.5 rounded-lg text-white">DUST</span>
-                        <span className="absolute inset-0 bg-red-400/10 blur-sm animate-pulse-glow rounded-full"></span>
+                        <span className="bg-red-500/80 px-2 py-0.5 rounded-lg text-white group-hover:bg-red-500 transition-colors">DUST</span>
                       </span>
+                      <div className="absolute inset-0 bg-red-400/10 blur-md rounded-full scale-0 group-hover:scale-125 transition-transform duration-300"></div>
                     </div>
                   </div>
-                  
-                  
                 </div>
                 
-                <div className="mt-4 text-center bg-white/5 backdrop-blur-sm py-2 px-4 rounded-xl border border-white/10 shadow-inner">
-                  <div className="text-white/90 font-medium">It's that simple:</div>
-                  <div className="flex flex-wrap justify-center gap-x-4 mt-1">
-                    <span className="text-white animate-float-delayed relative px-2 inline-block">
-                      <span className="absolute -top-1 -left-1 text-xs bg-dream-accent1/20 w-5 h-5 rounded-full flex items-center justify-center">1</span>
-                      predict
+                <div className="p-4 bg-gradient-to-b from-black/5 to-black/20">
+                  <h3 className="text-center font-bold mb-3 text-white">
+                    <span className="relative inline-block">
+                      It's that simple
+                      <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-dream-accent1 to-dream-accent2"></div>
                     </span>
-                    <span className="text-white animate-float-delayed-2 relative px-2 inline-block">
-                      <span className="absolute -top-1 -left-1 text-xs bg-dream-accent2/20 w-5 h-5 rounded-full flex items-center justify-center">2</span>
-                      place your bet
-                    </span>
-                    <span className="text-white animate-float relative px-2 inline-block">
-                      <span className="absolute -top-1 -left-1 text-xs bg-dream-accent3/20 w-5 h-5 rounded-full flex items-center justify-center">3</span>
-                      build your reputation
-                    </span>
+                  </h3>
+                  
+                  <div className="flex justify-around flex-wrap gap-2">
+                    <div className="relative px-4 py-2 glass-panel hover:bg-white/10 transition-colors rounded-lg">
+                      <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-dream-accent1/30 flex items-center justify-center text-sm font-bold">1</div>
+                      <span className="text-white">predict</span>
+                    </div>
+                    
+                    <div className="relative px-4 py-2 glass-panel hover:bg-white/10 transition-colors rounded-lg">
+                      <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-dream-accent2/30 flex items-center justify-center text-sm font-bold">2</div>
+                      <span className="text-white">place your bet</span>
+                    </div>
+                    
+                    <div className="relative px-4 py-2 glass-panel hover:bg-white/10 transition-colors rounded-lg">
+                      <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-dream-accent3/30 flex items-center justify-center text-sm font-bold">3</div>
+                      <span className="text-white">build your reputation</span>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="mt-3 text-center">
-                  <span className="inline-flex items-center justify-center w-full gap-1 bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold text-lg">
-                    Unlock life-changing perks!
-                    <span className="ml-1 animate-pulse">✨</span>
-                  </span>
+                <div className="p-4 bg-gradient-to-t from-white/5 to-transparent">
+                  <div className="text-center">
+                    <div className="relative inline-flex items-center justify-center gap-1 px-6 py-2 rounded-full
+                      bg-gradient-to-r from-dream-accent2/20 via-yellow-400/20 to-dream-accent1/20 group">
+                      <span className="bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold text-lg">
+                        Unlock life-changing perks!
+                      </span>
+                      <span className="ml-1 animate-pulse">✨</span>
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-dream-accent2/0 via-dream-accent3/10 to-dream-accent1/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    </div>
+                  </div>
                 </div>
-              </p>
+              </div>
             </div>
             
             <div className="md:flex-1 flex justify-center mt-8 md:mt-0">
@@ -259,7 +274,6 @@ const Index = () => {
             <RecentTokenTrades />
           </div>
           
-          
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
             <div className="glass-panel p-6 text-center">
               <div className="bg-dream-accent1/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
@@ -295,7 +309,6 @@ const Index = () => {
         </section>
       </main>
       
-      
       <footer className="glass-panel mt-20 px-6 py-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
@@ -313,4 +326,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
