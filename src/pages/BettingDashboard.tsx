@@ -1,12 +1,13 @@
 
 import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Wallet, HelpCircle, ArrowDown } from 'lucide-react';
+import { Wallet, HelpCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import MigratingTokenList from '@/components/MigratingTokenList';
 import OpenBetsList from '@/components/OpenBetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
+
 const BettingDashboard = () => {
   const {
     connected
@@ -58,7 +59,11 @@ const BettingDashboard = () => {
                       <span className="text-sm">MOON</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <ArrowDown className="w-4 h-4 text-red-400" />
+                      <img 
+                        src="/lovable-uploads/d4517df7-78f7-4229-a4d5-0e4cba7bdbf1.png" 
+                        alt="Skull" 
+                        className="w-4 h-4" 
+                      />
                       <span className="text-sm">DUST</span>
                     </div>
                   </div>

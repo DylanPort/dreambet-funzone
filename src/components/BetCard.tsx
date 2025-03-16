@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowUp, Clock, AlertTriangle, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
@@ -39,28 +38,23 @@ const BetCard: React.FC<BetCardProps> = ({
     }
   };
   
-  // Calculate bet progress if available
   const calculateProgress = () => {
     if (!bet.initialMarketCap || !bet.currentMarketCap) return null;
     
     const actualChange = ((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
     const targetChange = 10; // Default target change percentage
     
-    // For "up" bets (migrate)
     if (bet.prediction === 'migrate') {
-      if (actualChange < 0) return 0; // If price is going down, progress is 0
+      if (actualChange < 0) return 0;
       return Math.min(100, (actualChange / targetChange) * 100);
-    } 
-    // For "down" bets (die)
-    else {
-      if (actualChange > 0) return 0; // If price is going up, progress is 0
+    } else {
+      if (actualChange > 0) return 0;
       return Math.min(100, (Math.abs(actualChange) / targetChange) * 100);
     }
   };
   
   const progress = calculateProgress();
   
-  // Determine status icon and class
   let statusIcon;
   let statusClass;
   
@@ -75,7 +69,6 @@ const BetCard: React.FC<BetCardProps> = ({
     statusClass = 'text-red-400';
   }
   
-  // Format large numbers with appropriate units (K, M, B)
   const formatLargeNumber = (num) => {
     if (num === null || num === undefined) return "N/A";
     
@@ -90,13 +83,12 @@ const BetCard: React.FC<BetCardProps> = ({
     }
   };
   
-  // Calculate target market cap for winning
   const calculateWinningMarketCap = () => {
     if (!bet.initialMarketCap) return null;
     
     return bet.prediction === 'migrate'
-      ? bet.initialMarketCap * 1.1  // 10% increase
-      : bet.initialMarketCap * 0.9; // 10% decrease
+      ? bet.initialMarketCap * 1.1
+      : bet.initialMarketCap * 0.9;
   };
   
   const winningMarketCap = calculateWinningMarketCap();
@@ -115,8 +107,8 @@ const BetCard: React.FC<BetCardProps> = ({
         <div className="flex items-center">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2">
             {bet.prediction === 'migrate' 
-              ? <ArrowUp className="h-4 w-4 text-green-400" />
-              : <ArrowDown className="h-4 w-4 text-red-400" />
+              ? <img src="/lovable-uploads/8b54a80c-266a-4fcc-8f22-788cab6ce1b4.png" alt="Rocket" className="h-4 w-4" />
+              : <img src="/lovable-uploads/d4517df7-78f7-4229-a4d5-0e4cba7bdbf1.png" alt="Skull" className="h-4 w-4" />
             }
           </div>
           <div>
@@ -133,7 +125,6 @@ const BetCard: React.FC<BetCardProps> = ({
         </div>
       </div>
       
-      {/* Market Cap Info */}
       <div className="grid grid-cols-2 gap-2 mb-3 mt-2 text-xs">
         <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
           <div className="text-dream-foreground/50 mb-1">Entry MCAP</div>
@@ -149,7 +140,6 @@ const BetCard: React.FC<BetCardProps> = ({
         </div>
       </div>
       
-      {/* Progress Indicator - only for active bets */}
       {isActive && progress !== null && (
         <div className="mb-3 mt-3">
           <div className="flex justify-between text-xs mb-1">
@@ -172,7 +162,6 @@ const BetCard: React.FC<BetCardProps> = ({
       )}
       
       <div className="flex justify-between items-center text-xs">
-        {/* For active bets, show status and time left */}
         {isActive ? (
           <>
             <div className="flex items-center">
@@ -187,7 +176,6 @@ const BetCard: React.FC<BetCardProps> = ({
             </span>
           </>
         ) : (
-          /* For expired bets, simply show win/loss status */
           <div className="w-full flex justify-center items-center py-1">
             {bet.status === 'completed' && bet.winner === publicKeyString ? (
               <span className="text-green-400 font-semibold flex items-center">
@@ -202,15 +190,12 @@ const BetCard: React.FC<BetCardProps> = ({
         )}
       </div>
       
-      {/* Additional info only for active bets */}
       {isActive && (
         <>
-          {/* House betting explanation */}
           <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
             <p>Betting against the house: If you win, you'll earn {bet.amount} SOL from the house.</p>
           </div>
           
-          {/* Accept bet button */}
           {publicKeyString !== bet.initiator && (
             <Button 
               onClick={handleAcceptBet}

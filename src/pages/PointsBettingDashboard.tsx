@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Coins, ArrowDown, Trophy, Wallet } from 'lucide-react';
+import { Coins, Trophy, Wallet } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import PumpFunTokens from '@/components/PumpFunTokens';
