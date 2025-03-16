@@ -89,8 +89,14 @@ export const usePointOperations = (
     }
 
     setIsPlacingBet(true);
+    
     try {
-      const walletAddress = publicKey.toString();
+      console.log('Starting bet placement with:', {
+        tokenId, tokenName, tokenSymbol, betAmount, betType, percentageChange, durationMinutes,
+        userProfileId: userProfile.id,
+        walletAddress: publicKey.toString(),
+        currentPoints: userProfile.pxbPoints
+      });
       
       // Get the current authenticated user's session
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -104,12 +110,12 @@ export const usePointOperations = (
       
       // If no session exists, try to create one using the wallet address
       if (!sessionData.session) {
-        console.log('No session found, attempting to sign in with wallet', walletAddress);
+        console.log('No session found, attempting to sign in with wallet', publicKey.toString());
         
         // Try to sign in with the wallet address
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: `${walletAddress}@solana.wallet`, // Use wallet address as email
-          password: walletAddress, // Use wallet address as password
+          email: `${publicKey.toString()}@solana.wallet`, // Use wallet address as email
+          password: publicKey.toString(), // Use wallet address as password
         });
         
         if (signInError) {
@@ -117,11 +123,11 @@ export const usePointOperations = (
           console.log('Sign in failed, attempting to create account', signInError);
           
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: `${walletAddress}@solana.wallet`,
-            password: walletAddress,
+            email: `${publicKey.toString()}@solana.wallet`,
+            password: publicKey.toString(),
             options: {
               data: {
-                wallet_address: walletAddress
+                wallet_address: publicKey.toString()
               }
             }
           });
@@ -161,12 +167,10 @@ export const usePointOperations = (
       
       // First, update the user points immediately in the UI for better UX
       const updatedPoints = userProfile.pxbPoints - betAmount;
-      setUserProfile({
-        ...userProfile,
-        pxbPoints: updatedPoints
-      });
       
-      // Update user's points in the database
+      console.log(`Deducting points: ${userProfile.pxbPoints} -> ${updatedPoints}`);
+      
+      // Update user's points in the database FIRST before creating the bet
       const { error: pointsError } = await supabase
         .from('users')
         .update({
@@ -175,15 +179,18 @@ export const usePointOperations = (
         .eq('id', userProfile.id);
       
       if (pointsError) {
-        // Revert the UI change if the database update fails
-        setUserProfile({
-          ...userProfile,
-          pxbPoints: userProfile.pxbPoints
-        });
         console.error('Error updating points:', pointsError);
         toast.error('Failed to deduct PXB points for bet');
         return;
       }
+      
+      // Update the user profile in the state after successful database update
+      setUserProfile({
+        ...userProfile,
+        pxbPoints: updatedPoints
+      });
+      
+      console.log('Points updated successfully in database, now recording in history');
       
       // Record the point deduction in the history
       await supabase
@@ -194,6 +201,8 @@ export const usePointOperations = (
           action: 'bet_placed',
           reference_id: tokenId
         });
+      
+      console.log('Point history recorded, now creating bet in database');
       
       // Create the bet in the database
       // Make sure to use the user ID from userProfile for bettor1_id
@@ -217,6 +226,8 @@ export const usePointOperations = (
       
       if (betError) {
         // Attempt to revert the points if bet creation fails
+        console.error('Error creating bet, attempting to revert points:', betError);
+        
         await supabase
           .from('users')
           .update({
@@ -230,10 +241,11 @@ export const usePointOperations = (
           pxbPoints: userProfile.pxbPoints
         });
         
-        console.error('Error creating bet:', betError);
         toast.error('Failed to create bet. Your points have been returned.');
         return;
       }
+      
+      console.log('Bet created successfully in database:', betData);
       
       // Record the bet creation in history
       await supabase
@@ -272,6 +284,8 @@ export const usePointOperations = (
         currentMarketCap: initialMarketCap
       };
       
+      console.log('Adding new bet to local state:', newBet);
+      
       // Add the new bet to the local state
       setBets(prevBets => [newBet, ...prevBets]);
       
@@ -282,7 +296,7 @@ export const usePointOperations = (
         tokenId: tokenId,
         tokenName: tokenName,
         tokenSymbol: tokenSymbol,
-        initiator: walletAddress,
+        initiator: publicKey.toString(),
         amount: betAmount,
         prediction: betType === 'up' ? 'migrate' : 'die',
         timestamp: new Date().getTime(),
@@ -300,6 +314,9 @@ export const usePointOperations = (
       window.dispatchEvent(newBetCreatedEvent);
       
       toast.success(`${betType === 'up' ? 'MOON' : 'DIE'} bet placed on ${tokenSymbol}!`);
+      
+      // Refresh user profile to ensure points are updated
+      fetchUserProfile();
       
       return newBet;
     } catch (error) {
