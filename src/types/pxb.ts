@@ -55,4 +55,9 @@ export interface SupabaseBetsRow {
     token_name: string;
     token_symbol: string;
   };
+  // Include all other columns from the bets table
+  on_chain_id?: string;
+  transaction_signature?: string;
+  end_time?: string;
+  start_time?: string;
 }
