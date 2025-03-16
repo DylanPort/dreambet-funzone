@@ -54,6 +54,8 @@ interface TrendingToken {
   imageUrl?: string;
 }
 
+type PriceCallback = (price: number) => void;
+
 const CACHE_EXPIRY_TIME = 30000; // 30 seconds
 const TRENDING_CACHE_EXPIRY = 10000; // 10 seconds
 const tokenDataCache = new Map<string, {
