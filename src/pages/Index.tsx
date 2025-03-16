@@ -162,7 +162,7 @@ const Index = () => {
                     <span className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-200 via-pink-300 to-yellow-200 bg-clip-text text-transparent font-bold text-2xl pb-2">
                       
                       It's that simple
-                      <PartyPopper className="h-6 w-6 text-yellow-300" />
+                      
                     </span>
                   </h3>
                   
