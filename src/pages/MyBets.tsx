@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -45,7 +44,10 @@ const PXBSpace = () => {
             <PXBUserStats />
           </div>
           
-          {/* Active Bets Reel */}
+          {/* Notice: BetReel actually renders itself as a fixed position bar at the top of the page */}
+          <BetReel />
+          
+          {/* Active Bets Section (Placeholder) */}
           <div className="glass-panel p-6 mb-6 overflow-hidden relative">
             <h2 className="font-semibold text-lg mb-4 flex items-center">
               <Activity className="mr-2 h-5 w-5 text-dream-accent1" />
@@ -53,12 +55,8 @@ const PXBSpace = () => {
                 Active Bets
               </span>
             </h2>
-            <div className="overflow-hidden relative">
-              <div className="w-full overflow-x-auto pb-4">
-                <div className="flex space-x-4 animate-scroll">
-                  <BetReel />
-                </div>
-              </div>
+            <div className="text-dream-foreground/70 text-sm">
+              Active bets are displayed in the reel at the top of the page. Check there for the latest betting activity.
             </div>
           </div>
           
