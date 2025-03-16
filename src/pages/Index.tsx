@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users } from 'lucide-react';
@@ -20,7 +19,6 @@ import { PXBPointsProvider } from '@/contexts/pxb/PXBPointsContext';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -28,13 +26,11 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -75,12 +71,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -91,7 +85,6 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -100,7 +93,7 @@ const Index = () => {
       <div className="h-20 py-0 my-0"></div>
       
       <main className="min-h-screen overflow-hidden">
-        <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
+        <section className="relative px-6 py-16 max-w-7xl mx-auto my-[-55px] md:py-0">
           <FloatingImages />
           
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
@@ -219,12 +212,8 @@ const Index = () => {
                 <div className="relative overflow-hidden group transition-all duration-500
                   transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
                   
-                  <img 
-                    src="/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png" 
-                    alt="Start Betting" 
-                    className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(139,92,246,0.7)]
-                    transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(139,92,246,0.9)]"
-                  />
+                  <img src="/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png" alt="Start Betting" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(139,92,246,0.7)]
+                    transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(139,92,246,0.9)]" />
                   
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-blue-400/10 to-purple-500/10 
                     opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
@@ -243,12 +232,8 @@ const Index = () => {
                   <div className="relative overflow-hidden group transition-all duration-500
                     transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
                     
-                    <img 
-                      src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" 
-                      alt="Mint PXB Points" 
-                      className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
-                      transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]"
-                    />
+                    <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
+                      transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" />
                     
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/10 to-dream-accent1/10 
                       opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
