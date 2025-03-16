@@ -88,6 +88,11 @@ const PXBBetsList = () => {
           // Calculate progress percentage
           const progressPercentage = calculateProgress(bet);
           
+          // Calculate market cap change percentage if data is available
+          const marketCapChangePercentage = bet.currentMarketCap && bet.initialMarketCap 
+            ? ((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100
+            : null;
+          
           // Determine progress bar color based on bet type
           const progressColor = bet.betType === 'up' ? 'bg-green-500' : 'bg-red-500';
           
@@ -134,9 +139,9 @@ const PXBBetsList = () => {
                     </span>
                   </div>
                   <Progress value={progressPercentage} className="h-2" />
-                  {bet.currentMarketCap && bet.initialMarketCap && (
+                  {marketCapChangePercentage !== null && (
                     <div className="text-xs text-dream-foreground/60 mt-1">
-                      Market cap change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
+                      Market cap change: {marketCapChangePercentage.toFixed(2)}%
                       {bet.betType === 'up'
                         ? ` / Target: +${bet.percentageChange}%`
                         : ` / Target: -${bet.percentageChange}%`
@@ -165,9 +170,9 @@ const PXBBetsList = () => {
                   </span>
                 )}
                 
-                {!isActive && bet.currentMarketCap && bet.initialMarketCap && (
+                {!isActive && marketCapChangePercentage !== null && (
                   <span className="text-dream-foreground/60">
-                    Final market cap change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
+                    Final market cap change: {marketCapChangePercentage.toFixed(2)}%
                   </span>
                 )}
               </div>
