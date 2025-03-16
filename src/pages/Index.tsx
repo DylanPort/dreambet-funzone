@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap } from 'lucide-react';
@@ -15,7 +14,6 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import RecentTokenTrades from '@/components/RecentTokenTrades';
 import { useIsMobile } from '@/hooks/use-mobile';
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -23,13 +21,11 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -70,12 +66,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -86,7 +80,6 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -114,11 +107,7 @@ const Index = () => {
                 <span className="inline-flex items-center gap-1 
                   relative px-1.5 py-1 rounded-md 
                   before:absolute before:inset-0 before:bg-dream-accent2/10 before:rounded-md before:animate-pulse-glow">
-                  <img 
-                    src="/lovable-uploads/8334bc57-6487-4a01-b85d-684370bfe2f8.png" 
-                    alt="Lightning" 
-                    className="h-6 w-6 animate-float filter drop-shadow-[0_0_8px_rgba(0,238,255,0.8)]" 
-                  />
+                  <img src="/lovable-uploads/8334bc57-6487-4a01-b85d-684370bfe2f8.png" alt="Lightning" className="h-6 w-6 animate-float filter drop-shadow-[0_0_8px_rgba(0,238,255,0.8)]" />
                   <span className="bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
                     Grab some PXB
                   </span>
@@ -132,11 +121,7 @@ const Index = () => {
                   <span className="bg-gradient-to-r from-dream-accent1 via-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold">
                     Connect your Wallet
                   </span>
-                  <img 
-                    src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" 
-                    alt="Wallet" 
-                    className="h-6 w-6 animate-bob filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" 
-                  />
+                  <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="h-6 w-6 animate-bob filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </span>
                 
                 <span className="mx-2 text-white/80 tracking-wider">•</span>
@@ -171,11 +156,7 @@ const Index = () => {
                     </div>
                   </div>
                   
-                  <div className="glass-panel p-3 backdrop-blur-sm flex items-center justify-center">
-                    <span className="inline-flex items-center gap-2 before:content-['⏱️'] before:animate-spin-slow before:inline-block">
-                      <span className="bg-gradient-to-r from-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold text-lg"> 60 minutes</span>
-                    </span>
-                  </div>
+                  
                 </div>
                 
                 <div className="mt-4 text-center bg-white/5 backdrop-blur-sm py-2 px-4 rounded-xl border border-white/10 shadow-inner">
@@ -244,11 +225,7 @@ const Index = () => {
                         <div className="absolute top-[20%] left-[15%] w-4 h-4 rounded-full bg-green-300 filter blur-sm animate-float"></div>
                         <div className="absolute top-[40%] left-[75%] w-3 h-3 rounded-full bg-yellow-300 filter blur-sm animate-float-delayed"></div>
                         <div className="absolute top-[70%] left-[30%] w-2 h-2 rounded-full bg-purple-300 filter blur-sm animate-float-delayed-2"></div>
-                        <img 
-                          src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" 
-                          alt="Diamond" 
-                          className="absolute top-[45%] left-[50%] w-12 h-12 transform -translate-x-1/2 -translate-y-1/2 animate-float filter drop-shadow-[0_0_10px_rgba(139,92,246,0.8)]" 
-                        />
+                        <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Diamond" className="absolute top-[45%] left-[50%] w-12 h-12 transform -translate-x-1/2 -translate-y-1/2 animate-float filter drop-shadow-[0_0_10px_rgba(139,92,246,0.8)]" />
                       </div>
                       
                       <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
@@ -261,11 +238,7 @@ const Index = () => {
               <Dialog>
                 <DialogTrigger asChild>
                   <div className="relative cursor-pointer group transition-all duration-300 hover:scale-110 active:scale-95">
-                    <img 
-                      src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" 
-                      alt="Mint PXB Points" 
-                      className="w-16 h-16 md:w-20 md:h-20 animate-float filter drop-shadow-[0_0_15px_rgba(246,148,92,0.8)]" 
-                    />
+                    <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-16 h-16 md:w-20 md:h-20 animate-float filter drop-shadow-[0_0_15px_rgba(246,148,92,0.8)]" />
                     <div className="absolute inset-0 bg-yellow-500/30 rounded-full blur-xl animate-pulse-glow opacity-60"></div>
                     <div className="absolute -inset-1 bg-gradient-to-r from-dream-accent1 to-dream-accent2 rounded-full blur-md opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
                     <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 whitespace-nowrap text-sm font-bold
@@ -340,5 +313,4 @@ const Index = () => {
       </footer>
     </>;
 };
-
 export default Index;
