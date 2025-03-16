@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, HelpCircle, Rocket, Skull, Trophy, Zap, Check, Gift, Star } from 'lucide-react';
@@ -9,24 +10,25 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+
 const BettingDashboard = () => {
-  const {
-    connected
-  } = useWallet();
-  const {
-    toast
-  } = useToast();
+  const { connected } = useWallet();
+  const { toast } = useToast();
+  
   const [readSteps, setReadSteps] = useState({
     selectToken: false,
     placeBet: false,
     collectRewards: false
   });
+  
   const [showGift, setShowGift] = useState(false);
   const [unlockAnimation, setUnlockAnimation] = useState(false);
+  
   console.log("BettingDashboard rendering, wallet connected:", connected);
 
   // Check if all steps have been read
   const allStepsCompleted = Object.values(readSteps).every(step => step);
+  
   useEffect(() => {
     if (allStepsCompleted && !showGift) {
       setTimeout(() => {
@@ -39,6 +41,7 @@ const BettingDashboard = () => {
       }, 500);
     }
   }, [readSteps, showGift, toast]);
+  
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -84,20 +87,22 @@ const BettingDashboard = () => {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left relative z-10">
-                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(255,61,252,0.3)] ${readSteps.selectToken ? 'border-dream-accent1/50' : 'border-dream-accent1/20'}`} whileHover={{
-                y: -5
-              }} onClick={() => {
-                if (!readSteps.selectToken) {
-                  setReadSteps(prev => ({
-                    ...prev,
-                    selectToken: true
-                  }));
-                  toast({
-                    title: "Step 1 Completed!",
-                    description: "You've learned how to select tokens!"
-                  });
-                }
-              }}>
+                <motion.div 
+                  className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(255,61,252,0.3)] ${readSteps.selectToken ? 'border-dream-accent1/50' : 'border-dream-accent1/20'} ${!readSteps.selectToken ? 'blur-[3px]' : ''}`} 
+                  whileHover={{ y: -5 }} 
+                  onClick={() => {
+                    if (!readSteps.selectToken) {
+                      setReadSteps(prev => ({
+                        ...prev,
+                        selectToken: true
+                      }));
+                      toast({
+                        title: "Step 1 Completed!",
+                        description: "You've learned how to select tokens!"
+                      });
+                    }
+                  }}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-10 h-10 rounded-full bg-dream-accent1/20 flex items-center justify-center animate-pulse-subtle">
                       <Zap className="h-6 w-6 text-dream-accent1" />
@@ -116,29 +121,31 @@ const BettingDashboard = () => {
                       </motion.div>}
                   </div>
                   <p className="text-sm text-dream-foreground/80">Analyze market data and token you want to bet on.</p>
-                  {!readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent1 animate-pulse">Click if understand this step</div>}
+                  {!readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent1 animate-pulse">Click to reveal this step</div>}
                 </motion.div>
                 
-                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(0,238,255,0.3)] ${readSteps.placeBet ? 'border-dream-accent2/50' : 'border-dream-accent2/20'}`} whileHover={{
-                y: -5
-              }} onClick={() => {
-                if (readSteps.selectToken && !readSteps.placeBet) {
-                  setReadSteps(prev => ({
-                    ...prev,
-                    placeBet: true
-                  }));
-                  toast({
-                    title: "Step 2 Completed!",
-                    description: "You've learned how to place bets!"
-                  });
-                } else if (!readSteps.selectToken) {
-                  toast({
-                    title: "Complete step 1 first!",
-                    description: "You need to understand token selection before placing bets.",
-                    variant: "destructive"
-                  });
-                }
-              }}>
+                <motion.div 
+                  className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(0,238,255,0.3)] ${readSteps.placeBet ? 'border-dream-accent2/50' : 'border-dream-accent2/20'} ${!readSteps.placeBet ? 'blur-[3px]' : ''}`} 
+                  whileHover={{ y: -5 }} 
+                  onClick={() => {
+                    if (readSteps.selectToken && !readSteps.placeBet) {
+                      setReadSteps(prev => ({
+                        ...prev,
+                        placeBet: true
+                      }));
+                      toast({
+                        title: "Step 2 Completed!",
+                        description: "You've learned how to place bets!"
+                      });
+                    } else if (!readSteps.selectToken) {
+                      toast({
+                        title: "Complete step 1 first!",
+                        description: "You need to understand token selection before placing bets.",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-10 h-10 rounded-full bg-dream-accent2/20 flex items-center justify-center animate-pulse-subtle">
                       <div className="relative">
@@ -169,29 +176,31 @@ const BettingDashboard = () => {
                     </div>
                   </div>
                   <p className="text-sm text-dream-foreground/80">Bet whether the token will rise or fall by at least 10% after migration.</p>
-                  {!readSteps.placeBet && readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent2 animate-pulse">Click if understand this step</div>}
+                  {!readSteps.placeBet && readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent2 animate-pulse">Click to reveal this step</div>}
                 </motion.div>
                 
-                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(123,97,255,0.3)] ${readSteps.collectRewards ? 'border-dream-accent3/50' : 'border-dream-accent3/20'}`} whileHover={{
-                y: -5
-              }} onClick={() => {
-                if (readSteps.selectToken && readSteps.placeBet && !readSteps.collectRewards) {
-                  setReadSteps(prev => ({
-                    ...prev,
-                    collectRewards: true
-                  }));
-                  toast({
-                    title: "Step 3 Completed!",
-                    description: "You've learned how to collect rewards!"
-                  });
-                } else if (!readSteps.placeBet) {
-                  toast({
-                    title: "Complete previous steps first!",
-                    description: "You need to understand betting before collecting rewards.",
-                    variant: "destructive"
-                  });
-                }
-              }}>
+                <motion.div 
+                  className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(123,97,255,0.3)] ${readSteps.collectRewards ? 'border-dream-accent3/50' : 'border-dream-accent3/20'} ${!readSteps.collectRewards ? 'blur-[3px]' : ''}`} 
+                  whileHover={{ y: -5 }} 
+                  onClick={() => {
+                    if (readSteps.selectToken && readSteps.placeBet && !readSteps.collectRewards) {
+                      setReadSteps(prev => ({
+                        ...prev,
+                        collectRewards: true
+                      }));
+                      toast({
+                        title: "Step 3 Completed!",
+                        description: "You've learned how to collect rewards!"
+                      });
+                    } else if (!readSteps.placeBet) {
+                      toast({
+                        title: "Complete previous steps first!",
+                        description: "You need to understand betting before collecting rewards.",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-10 h-10 rounded-full bg-dream-accent3/20 flex items-center justify-center animate-pulse-subtle">
                       <Trophy className="h-6 w-6 text-dream-accent3" />
@@ -216,7 +225,7 @@ const BettingDashboard = () => {
                   <p className="text-sm text-dream-foreground/80">
                     Correct predictions double your bet in PXB Points. Wrong predictions? Your points return to the house.
                   </p>
-                  {!readSteps.collectRewards && readSteps.placeBet && <div className="mt-3 text-xs text-dream-accent3 animate-pulse">Click if understand this step</div>}
+                  {!readSteps.collectRewards && readSteps.placeBet && <div className="mt-3 text-xs text-dream-accent3 animate-pulse">Click to reveal this step</div>}
                 </motion.div>
               </div>
               
