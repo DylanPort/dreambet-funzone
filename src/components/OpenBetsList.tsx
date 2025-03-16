@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BetCard from './BetCard';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
+
 const OpenBetsList = () => {
   const {
     toast
@@ -22,9 +23,8 @@ const OpenBetsList = () => {
   const [localBets, setLocalBets] = useState<Bet[]>([]);
   const {
     bets: pxbBets
-  } = usePXBPoints(); // Get PXB bets from context
+  } = usePXBPoints();
 
-  // Fetch open bets from Supabase with debug info
   const {
     data: supabaseBets = [],
     isLoading,
@@ -43,10 +43,9 @@ const OpenBetsList = () => {
         throw err;
       }
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   });
 
-  // Add debug console logs
   useEffect(() => {
     console.log('OpenBetsList - Component state:', {
       connected,
@@ -59,17 +58,14 @@ const OpenBetsList = () => {
     });
   }, [connected, publicKey, supabaseBets, pxbBets, localBets, filter]);
 
-  // Combine Supabase bets with local fallback bets
   useEffect(() => {
     try {
       const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
       let fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
 
-      // Filter out expired bets
       const now = Date.now();
       fallbackBets = fallbackBets.filter(bet => bet.expiresAt > now && bet.status === 'open');
 
-      // Convert PXB bets to regular Bet format if they exist
       const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
         id: pb.id,
         tokenId: pb.tokenMint,
@@ -82,13 +78,10 @@ const OpenBetsList = () => {
         expiresAt: new Date(pb.expiresAt).getTime(),
         status: 'open',
         duration: 30,
-        // Default duration in minutes
-        // Add the required properties with default values
         onChainBetId: '',
         transactionSignature: ''
       }));
 
-      // Only add fallback bets and PXB bets that don't exist in supabaseBets
       const combinedBets = [...fallbackBets, ...convertedPXBBets].filter(localBet => {
         return !supabaseBets.some(bet => bet.id === localBet.id || bet.onChainBetId && localBet.onChainBetId && bet.onChainBetId === localBet.onChainBetId);
       });
@@ -106,7 +99,6 @@ const OpenBetsList = () => {
     }
   }, [supabaseBets, pxbBets, publicKey]);
 
-  // Listen for new bet events
   useEffect(() => {
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in OpenBetsList:", event.detail);
@@ -114,18 +106,15 @@ const OpenBetsList = () => {
         bet
       } = event.detail;
 
-      // Add the new bet to local storage to ensure persistence
       try {
         const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
         const fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
 
-        // Check if this bet already exists
         const exists = fallbackBets.some(existingBet => existingBet.id === bet.id);
         if (!exists) {
           fallbackBets.push(bet);
           localStorage.setItem('pumpxbounty_fallback_bets', JSON.stringify(fallbackBets));
 
-          // Update the local state
           setLocalBets(prev => {
             const exists = prev.some(existingBet => existingBet.id === bet.id);
             if (!exists) {
@@ -149,12 +138,12 @@ const OpenBetsList = () => {
     };
   }, [toast]);
 
-  // All bets to display (Supabase + local)
   const allBets = [...supabaseBets, ...localBets];
   const filteredBets = allBets.filter(bet => {
     if (filter === 'all') return true;
     return filter === bet.prediction;
   });
+
   const handleRefresh = () => {
     toast({
       title: "Refreshing open bets",
@@ -162,6 +151,7 @@ const OpenBetsList = () => {
     });
     refetch();
   };
+
   if (isLoading) {
     return <div className="space-y-5">
         <div className="flex justify-between items-center">
@@ -193,6 +183,7 @@ const OpenBetsList = () => {
         </div>
       </div>;
   }
+
   if (error) {
     console.error('Error in OpenBetsList:', error);
     return <div className="glass-panel p-6 text-center">
@@ -206,6 +197,7 @@ const OpenBetsList = () => {
         </button>
       </div>;
   }
+
   return <div className="space-y-5">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
@@ -223,7 +215,7 @@ const OpenBetsList = () => {
             </button>
             <button onClick={() => setFilter('migrate')} className={`px-3 py-1 text-sm rounded-full transition-colors ${filter === 'migrate' ? 'bg-green-500/20 text-green-400 border border-green-400/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
               <ArrowUp className="w-3 h-3 inline mr-1" />
-              Migrate
+              Moon
             </button>
             <button onClick={() => setFilter('die')} className={`px-3 py-1 text-sm rounded-full transition-colors ${filter === 'die' ? 'bg-red-500/20 text-red-400 border border-red-400/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
               <ArrowDown className="w-3 h-3 inline mr-1" />
@@ -303,4 +295,5 @@ const OpenBetsList = () => {
         </div>}
     </div>;
 };
+
 export default OpenBetsList;
