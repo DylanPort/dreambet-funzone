@@ -109,9 +109,7 @@ const Index = () => {
                 
                 , and Mint 
                 
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold px-1">
-                  PXBP Points
-                </span>
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold px-1">PXB Points</span>
                 
                 . Bet on whether new tokens will 
                 
