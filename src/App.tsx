@@ -1,54 +1,47 @@
 
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
-
-import SolanaWalletProvider from './providers/SolanaWalletProvider';
-import { PXBPointsProvider } from './contexts/PXBPointsContext';
-import Navbar from './components/Navbar';
-import Index from './pages/Index';
-import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile';
-import BettingDashboard from './pages/BettingDashboard';
-import TokenBetting from './pages/TokenBetting';
-import MyBets from './pages/MyBets';
-import PointsBettingDashboard from './pages/PointsBettingDashboard';
-import TokenDetail from './pages/TokenDetail';
-import NotFound from './pages/NotFound';
-import BetReel from './components/BetReel';
-import PXBBetCreatedAlert from './components/PXBBetCreatedAlert';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import SolanaWalletProvider from "./providers/SolanaWalletProvider";
+import { PXBPointsProvider } from "./contexts/pxb/PXBPointsContext";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
+import TokenDetail from "./pages/TokenDetail";
+import BettingDashboard from "./pages/BettingDashboard";
+import TokenBetting from "./pages/TokenBetting";
+import PXBSpace from "./pages/MyBets";
 
 const queryClient = new QueryClient();
 
 function App() {
+  console.log("App rendering");
+  
   return (
     <QueryClientProvider client={queryClient}>
-      <SolanaWalletProvider>
-        <PXBPointsProvider>
-          <Router>
-            <div className="min-h-screen bg-dream-background text-dream-foreground overflow-x-hidden">
-              <Navbar />
-              <BetReel />
-              
+      <TooltipProvider>
+        <SolanaWalletProvider>
+          <PXBPointsProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/token/:id" element={<TokenDetail />} />
                 <Route path="/betting" element={<BettingDashboard />} />
-                <Route path="/betting/token/:tokenId" element={<TokenBetting />} />
-                <Route path="/my-bets" element={<MyBets />} />
-                <Route path="/betting/points" element={<PointsBettingDashboard />} />
-                <Route path="/token/:tokenId" element={<TokenDetail />} />
+                <Route path="/betting/token/:id" element={<TokenBetting />} />
+                <Route path="/betting/my-bets" element={<PXBSpace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              
-              <PXBBetCreatedAlert />
-              <Toaster position="bottom-right" />
-            </div>
-          </Router>
-        </PXBPointsProvider>
-      </SolanaWalletProvider>
+            </BrowserRouter>
+          </PXBPointsProvider>
+        </SolanaWalletProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

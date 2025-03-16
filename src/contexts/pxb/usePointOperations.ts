@@ -79,12 +79,12 @@ export const usePointOperations = (
   ) => {
     if (!userProfile || !publicKey) {
       toast.error('Connect your wallet to place a bet');
-      return null;
+      return;
     }
     
     if (userProfile.pxbPoints < betAmount) {
       toast.error(`Not enough PXB points. You need ${betAmount} but only have ${userProfile.pxbPoints}.`);
-      return null;
+      return;
     }
 
     setIsPlacingBet(true);
@@ -96,7 +96,7 @@ export const usePointOperations = (
       
       if (!tokenData || !tokenData.marketCap) {
         toast.error(`Could not fetch market cap data for ${tokenSymbol}`);
-        return null;
+        return;
       }
       
       const initialMarketCap = tokenData.marketCap;
@@ -129,7 +129,7 @@ export const usePointOperations = (
         });
         console.error('Error updating points:', pointsError);
         toast.error('Failed to deduct PXB points for bet');
-        return null;
+        return;
       }
       
       // Record the point deduction in the history
@@ -178,7 +178,7 @@ export const usePointOperations = (
         
         console.error('Error creating bet:', betError);
         toast.error('Failed to create bet. Your points have been returned.');
-        return null;
+        return;
       }
       
       // Record the bet creation in history
@@ -221,19 +221,12 @@ export const usePointOperations = (
       // Add the new bet to the local state
       setBets(prevBets => [newBet, ...prevBets]);
       
-      // Dispatch a custom event for any listening components to pick up
-      const betCreatedEvent = new CustomEvent('pxbBetCreated', {
-        detail: { bet: newBet }
-      });
-      window.dispatchEvent(betCreatedEvent);
-      
       return newBet;
     } catch (error) {
       console.error('Unexpected error in placeBet:', error);
       // Attempt to revert points on unexpected error
       fetchUserProfile();
       toast.error('Failed to place bet due to an unexpected error. Refreshing your balance...');
-      return null;
     } finally {
       setIsPlacingBet(false);
     }
