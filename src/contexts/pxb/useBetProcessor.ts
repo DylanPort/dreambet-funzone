@@ -1,6 +1,6 @@
 
 import { useEffect, useCallback } from 'react';
-import { UserProfile, PXBBet } from '@/types/pxb';
+import { UserProfile, PXBBet, SupabaseBetsRow } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
@@ -69,14 +69,14 @@ export const useBetProcessor = (
           // Calculate points won (double for winning)
           const pointsWon = betWon ? bet.betAmount * 2 : 0;
           
-          // Update bet status in database - using database column naming convention
+          // Update bet status in database - using database column naming convention but with type assertion
           const { error: betUpdateError } = await supabase
             .from('bets')
             .update({
               status: betWon ? 'won' : 'lost',
               points_won: pointsWon,
               current_market_cap: currentMarketCap
-            } as any) // Use type assertion to bypass TypeScript checking
+            } as Partial<SupabaseBetsRow>) // Use Partial with SupabaseBetsRow type
             .eq('bet_id', bet.id);
             
           if (betUpdateError) {
@@ -155,12 +155,12 @@ export const useBetProcessor = (
                   : b
               ));
               
-              // Update in database - using the database column name with type assertion
+              // Update in database - using the database column name with proper typing
               await supabase
                 .from('bets')
                 .update({
                   current_market_cap: tokenData.marketCap
-                } as any) // Use type assertion to bypass TypeScript checking
+                } as Partial<SupabaseBetsRow>) // Use Partial with SupabaseBetsRow type
                 .eq('bet_id', bet.id);
             }
           } catch (error) {

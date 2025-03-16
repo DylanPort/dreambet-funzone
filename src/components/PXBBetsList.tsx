@@ -1,18 +1,73 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
+import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { toast } from 'sonner';
 
 const PXBBetsList = () => {
   const { bets, fetchUserBets } = usePXBPoints();
+  const [loadingMarketCaps, setLoadingMarketCaps] = useState<Record<string, boolean>>({});
+  const [marketCapData, setMarketCapData] = useState<Record<string, { initialMarketCap: number | null, currentMarketCap: number | null }>>({});
 
   useEffect(() => {
     fetchUserBets();
   }, [fetchUserBets]);
+
+  // Fetch real market cap data
+  useEffect(() => {
+    const fetchMarketCapData = async () => {
+      if (!bets || bets.length === 0) return;
+
+      // Process bets in small batches to avoid rate limits
+      for (const bet of bets) {
+        if (!bet.tokenMint) continue;
+        
+        // Skip if we already have data for this token
+        if (marketCapData[bet.id]?.currentMarketCap) continue;
+        
+        // Mark as loading
+        setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: true }));
+        
+        try {
+          const data = await fetchDexScreenerData(bet.tokenMint);
+          
+          if (data) {
+            setMarketCapData(prev => ({
+              ...prev,
+              [bet.id]: {
+                initialMarketCap: bet.initialMarketCap || data.marketCap,
+                currentMarketCap: data.marketCap
+              }
+            }));
+          }
+        } catch (error) {
+          console.error(`Error fetching data for token ${bet.tokenSymbol}:`, error);
+        } finally {
+          setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: false }));
+        }
+        
+        // Small delay between requests to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    };
+
+    fetchMarketCapData();
+    
+    // Set up polling for active bets
+    const interval = setInterval(() => {
+      const pendingBets = bets.filter(bet => bet.status === 'pending');
+      if (pendingBets.length > 0) {
+        fetchMarketCapData();
+      }
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [bets]);
 
   if (!bets || bets.length === 0) {
     return (
@@ -37,9 +92,12 @@ const PXBBetsList = () => {
       return bet.status === 'won' ? 100 : 0;
     }
     
-    // Get current market cap change percentage if available
-    if (bet.currentMarketCap && bet.initialMarketCap) {
-      const actualChange = ((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
+    // Get current market cap from our fetched data or fallback to bet data
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
+    
+    if (currentMarketCap && initialMarketCap) {
+      const actualChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
       const targetChange = bet.percentageChange;
       
       // For "up" bets, progress is the percentage of target achieved
@@ -60,14 +118,16 @@ const PXBBetsList = () => {
 
   // Calculate the target market cap for a bet
   const calculateTargetMarketCap = (bet) => {
-    if (!bet.initialMarketCap) return null;
+    // Use our fetched initial market cap or fallback to bet data
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    if (!initialMarketCap) return null;
     
     if (bet.betType === 'up') {
       // For UP bets, target is initial + percentage increase
-      return bet.initialMarketCap * (1 + bet.percentageChange / 100);
+      return initialMarketCap * (1 + bet.percentageChange / 100);
     } else {
       // For DOWN bets, target is initial - percentage decrease
-      return bet.initialMarketCap * (1 - bet.percentageChange / 100);
+      return initialMarketCap * (1 - bet.percentageChange / 100);
     }
   };
 
@@ -84,6 +144,17 @@ const PXBBetsList = () => {
     } else {
       return `$${num.toFixed(2)}`;
     }
+  };
+
+  // Calculate market cap change percentage
+  const calculateMarketCapChange = (bet) => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
+    
+    if (currentMarketCap && initialMarketCap) {
+      return ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
+    }
+    return null;
   };
 
   return (
@@ -117,12 +188,15 @@ const PXBBetsList = () => {
           const progressPercentage = calculateProgress(bet);
           
           // Calculate market cap change percentage if data is available
-          const marketCapChangePercentage = bet.currentMarketCap && bet.initialMarketCap 
-            ? ((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100
-            : null;
+          const marketCapChangePercentage = calculateMarketCapChange(bet);
           
           // Calculate target market cap
           const targetMarketCap = calculateTargetMarketCap(bet);
+          
+          // Use fetched market cap data or fallback to bet data
+          const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+          const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
+          const isLoading = loadingMarketCaps[bet.id];
           
           return (
             <div 
@@ -161,15 +235,30 @@ const PXBBetsList = () => {
               <div className="grid grid-cols-3 gap-2 mb-3 mt-2 text-xs">
                 <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
                   <div className="text-dream-foreground/50 mb-1">Start MCAP</div>
-                  <div className="font-medium">{formatLargeNumber(bet.initialMarketCap)}</div>
+                  <div className="font-medium">
+                    {isLoading && !initialMarketCap 
+                      ? <span className="animate-pulse">Loading...</span>
+                      : formatLargeNumber(initialMarketCap)
+                    }
+                  </div>
                 </div>
                 <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
                   <div className="text-dream-foreground/50 mb-1">Current MCAP</div>
-                  <div className="font-medium">{formatLargeNumber(bet.currentMarketCap)}</div>
+                  <div className="font-medium">
+                    {isLoading && !currentMarketCap 
+                      ? <span className="animate-pulse">Loading...</span>
+                      : formatLargeNumber(currentMarketCap)
+                    }
+                  </div>
                 </div>
                 <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
                   <div className="text-dream-foreground/50 mb-1">Target MCAP</div>
-                  <div className="font-medium">{formatLargeNumber(targetMarketCap)}</div>
+                  <div className="font-medium">
+                    {isLoading && !targetMarketCap 
+                      ? <span className="animate-pulse">Loading...</span>
+                      : formatLargeNumber(targetMarketCap)
+                    }
+                  </div>
                 </div>
               </div>
               

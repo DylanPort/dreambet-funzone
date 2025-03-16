@@ -33,7 +33,7 @@ export interface SupabaseUserProfile {
   created_at: string;
 }
 
-// Add a type definition for the tokens relation in the bets table
+// Updated to include current_market_cap in the database schema
 export interface SupabaseBetsRow {
   bet_id: string;
   bettor1_id: string;
