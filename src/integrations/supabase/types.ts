@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bet_history: {
+        Row: {
+          action: string
+          bet_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          market_cap_at_action: number | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          bet_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          market_cap_at_action?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          bet_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          market_cap_at_action?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bet_history_bet_id_fkey"
+            columns: ["bet_id"]
+            isOneToOne: false
+            referencedRelation: "bets"
+            referencedColumns: ["bet_id"]
+          },
+          {
+            foreignKeyName: "bet_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bets: {
         Row: {
           bet_id: string
@@ -17,10 +62,13 @@ export type Database = {
           created_at: string | null
           creator: string
           duration: number
+          end_time: string | null
+          initial_market_cap: number | null
           on_chain_id: string | null
           points_won: number | null
           prediction_bettor1: string
           sol_amount: number
+          start_time: string | null
           status: string | null
           token_mint: string
           token_name: string | null
@@ -34,10 +82,13 @@ export type Database = {
           created_at?: string | null
           creator: string
           duration?: number
+          end_time?: string | null
+          initial_market_cap?: number | null
           on_chain_id?: string | null
           points_won?: number | null
           prediction_bettor1: string
           sol_amount: number
+          start_time?: string | null
           status?: string | null
           token_mint: string
           token_name?: string | null
@@ -51,10 +102,13 @@ export type Database = {
           created_at?: string | null
           creator?: string
           duration?: number
+          end_time?: string | null
+          initial_market_cap?: number | null
           on_chain_id?: string | null
           points_won?: number | null
           prediction_bettor1?: string
           sol_amount?: number
+          start_time?: string | null
           status?: string | null
           token_mint?: string
           token_name?: string | null
@@ -323,29 +377,70 @@ export type Database = {
           },
         ]
       }
+      token_volume_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          token_mint: string
+          volume_24h: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          token_mint: string
+          volume_24h?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          token_mint?: string
+          volume_24h?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_volume_history_token_mint_fkey"
+            columns: ["token_mint"]
+            isOneToOne: false
+            referencedRelation: "tokens"
+            referencedColumns: ["token_mint"]
+          },
+        ]
+      }
       tokens: {
         Row: {
+          created_on: string | null
+          current_market_cap: number | null
+          initial_market_cap: number | null
           last_trade_price: number | null
           last_updated_time: string | null
           token_mint: string
           token_name: string
           token_symbol: string
+          total_supply: number | null
           volume_24h: number | null
         }
         Insert: {
+          created_on?: string | null
+          current_market_cap?: number | null
+          initial_market_cap?: number | null
           last_trade_price?: number | null
           last_updated_time?: string | null
           token_mint: string
           token_name: string
           token_symbol: string
+          total_supply?: number | null
           volume_24h?: number | null
         }
         Update: {
+          created_on?: string | null
+          current_market_cap?: number | null
+          initial_market_cap?: number | null
           last_trade_price?: number | null
           last_updated_time?: string | null
           token_mint?: string
           token_name?: string
           token_symbol?: string
+          total_supply?: number | null
           volume_24h?: number | null
         }
         Relationships: []

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 
@@ -238,6 +239,24 @@ export const createSupabaseBet = async (
     
     console.log('Bet created successfully in Supabase:', data);
     
+    // Create history record in bet_history table
+    if (data && data.bet_id) {
+      try {
+        await supabase
+          .from('bet_history')
+          .insert({
+            bet_id: data.bet_id,
+            action: 'created',
+            user_id: creatorWalletAddress,
+            details: { prediction: dbPrediction, amount: amount },
+            market_cap_at_action: tokenData.current_market_cap || 0
+          });
+      } catch (historyError) {
+        console.error('Error creating bet history:', historyError);
+        // Continue even if history creation fails
+      }
+    }
+    
     // Return in the format expected by our frontend
     const newBet = {
       id: data.bet_id,
@@ -307,7 +326,7 @@ export const acceptBet = async (betId: string) => {
       status: 'matched',
       start_time: now.toISOString(),
       end_time: endTime.toISOString(),
-      initial_market_cap: betData.tokens.current_market_cap
+      initial_market_cap: betData.tokens?.current_market_cap || 0
     })
     .eq('bet_id', betId)
     .select()
@@ -323,7 +342,7 @@ export const acceptBet = async (betId: string) => {
       action: 'matched',
       user_id: user.id,
       details: { counter_party: user.id },
-      market_cap_at_action: betData.tokens.current_market_cap
+      market_cap_at_action: betData.tokens?.current_market_cap || 0
     });
   
   // Map prediction values from database to our frontend format
@@ -339,8 +358,8 @@ export const acceptBet = async (betId: string) => {
   return {
     id: data.bet_id,
     tokenId: data.token_mint,
-    tokenName: betData.tokens.token_name,
-    tokenSymbol: betData.tokens.token_symbol,
+    tokenName: betData.tokens?.token_name || 'Unknown',
+    tokenSymbol: betData.tokens?.token_symbol || 'UNKNOWN',
     initiator: betData.creator,
     counterParty: user.id,
     amount: data.sol_amount,

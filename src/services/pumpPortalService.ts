@@ -92,7 +92,7 @@ export class PumpPortalService {
       
       // Calculate initial values
       const initialPrice = tokenData.price || 0;
-      const totalSupply = tokenData.supply || 0;
+      const totalSupply = tokenData.supply || 1000000000; // Default if not provided
       const marketCap = initialPrice * totalSupply;
       
       // Insert the new token

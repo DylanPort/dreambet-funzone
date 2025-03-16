@@ -35,19 +35,27 @@ export const fetchTokensByVolumeCategory = async (category: string): Promise<Tok
         const token = data[i];
         let volumeCategory = 'below_15k';
         
-        if (token.volume_24h >= 30000) {
+        // Use nullish coalescing to handle potential undefined/null values
+        const volume24h = token.volume_24h ?? 0;
+        
+        if (volume24h >= 30000) {
           volumeCategory = 'above_30k';
-        } else if (token.volume_24h >= 15000) {
+        } else if (volume24h >= 15000) {
           volumeCategory = 'above_15k';
         }
         
         // Only add tokens that match the requested category
         if ((category === 'above_30k' && volumeCategory === 'above_30k') ||
             (category === 'above_15k' && volumeCategory === 'above_15k') ||
-            (category === 'below_15k')) {
+            (category === 'below_15k' && volumeCategory === 'below_15k')) {
           
           transformedData.push({
-            ...token,
+            token_mint: token.token_mint,
+            token_name: token.token_name,
+            token_symbol: token.token_symbol,
+            volume_24h: volume24h,
+            current_market_cap: token.current_market_cap ?? 0,
+            last_trade_price: token.last_trade_price ?? 0,
             volume_category: volumeCategory
           });
         }
@@ -80,8 +88,7 @@ export const subscribeToTokenVolumeUpdates = (
       {
         event: '*',
         schema: 'public',
-        table: 'tokens',
-        filter: `volume_category=eq.${category}`
+        table: 'tokens'
       },
       () => {
         // When we get any changes, fetch the full updated list
