@@ -92,16 +92,16 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       }}></div>
       </div>
       
-      {/* Action Buttons - Replaced with Flame Images */}
+      {/* Action Buttons - Rocket for MOON and Flame for DUST */}
       <div className="flex justify-around">
         <button className="relative group">
           <img 
-            src="/lovable-uploads/2b1546ad-becf-4939-b314-fab90c243cfa.png" 
+            src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
             alt="MOON" 
-            className="w-14 h-14 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(155,135,245,0.7)]"
+            className="w-14 h-14 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]"
           />
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/0 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
-          <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">MOON</span>
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/0 via-cyan-400/20 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent">MOON</span>
         </button>
         
         <button className="relative group">
