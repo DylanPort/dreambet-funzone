@@ -69,14 +69,14 @@ export const useBetProcessor = (
           // Calculate points won (double for winning)
           const pointsWon = betWon ? bet.betAmount * 2 : 0;
           
-          // Update bet status in database - using database column naming convention
+          // Update bet status in database - using database column naming convention but with type assertion
           const { error: betUpdateError } = await supabase
             .from('bets')
             .update({
               status: betWon ? 'won' : 'lost',
-              points_won: pointsWon
-              // Note: Removed 'current_market_cap' which doesn't exist in the bets table
-            })
+              points_won: pointsWon,
+              current_market_cap: currentMarketCap
+            } as Partial<SupabaseBetsRow>) // Use Partial with SupabaseBetsRow type
             .eq('bet_id', bet.id);
             
           if (betUpdateError) {
@@ -144,7 +144,7 @@ export const useBetProcessor = (
               : b
           ));
         } else {
-          // For active bets, update the token's current market cap in tokens table, not bets
+          // For active bets, update the current market cap for progress tracking
           try {
             const tokenData = await fetchDexScreenerData(bet.tokenMint);
             if (tokenData && tokenData.marketCap && bet.initialMarketCap) {
@@ -155,16 +155,16 @@ export const useBetProcessor = (
                   : b
               ));
               
-              // Update token's market cap in the tokens table (not the bets table)
+              // Update in database - using the database column name with proper typing
               await supabase
-                .from('tokens')
+                .from('bets')
                 .update({
                   current_market_cap: tokenData.marketCap
-                })
-                .eq('token_mint', bet.tokenMint);
+                } as Partial<SupabaseBetsRow>) // Use Partial with SupabaseBetsRow type
+                .eq('bet_id', bet.id);
             }
           } catch (error) {
-            console.error(`Error updating current market cap for token ${bet.tokenMint}:`, error);
+            console.error(`Error updating current market cap for bet ${bet.id}:`, error);
             // Non-critical error, continue processing
           }
         }

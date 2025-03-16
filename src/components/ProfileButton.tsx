@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 const ProfileButton = () => {

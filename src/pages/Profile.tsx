@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -7,7 +6,7 @@ import { Clock, TrendingUp, TrendingDown, Settings, History, Coins, Activity, Fi
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
 import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile, UserBet, UserStats } from '@/services/userService';
-import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { toast } from 'sonner';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion, AnimatePresence } from 'framer-motion';
