@@ -14,8 +14,11 @@ export const useBetProcessor = (
   const processBets = useCallback(async () => {
     if (!bets.length || !userProfile) return;
 
+    console.log('Processing pending bets...', bets.length);
+    
     // Get pending bets that need to be checked
     const pendingBets = bets.filter(bet => bet.status === 'pending');
+    console.log(`Found ${pendingBets.length} pending bets to process`);
     
     // Process each pending bet
     for (const bet of pendingBets) {
@@ -27,11 +30,16 @@ export const useBetProcessor = (
         if (now >= expiresAt) {
           console.log(`Processing expired bet ${bet.id} for token ${bet.tokenSymbol}`);
           
+          // Show processing notification
+          const toastId = `processing-bet-${bet.id}`;
+          toast.loading(`Processing your bet on ${bet.tokenSymbol}...`, { id: toastId });
+          
           // Get the current market cap from DexScreener
           const tokenData = await fetchDexScreenerData(bet.tokenMint);
           
           if (!tokenData || !tokenData.marketCap) {
             console.error(`Unable to fetch current market cap for ${bet.tokenSymbol}`);
+            toast.error(`Could not process bet for ${bet.tokenSymbol} - market data unavailable`, { id: toastId });
             continue;
           }
           
@@ -74,6 +82,7 @@ export const useBetProcessor = (
             
           if (betUpdateError) {
             console.error(`Error updating bet ${bet.id}:`, betUpdateError);
+            toast.error(`Error updating bet for ${bet.tokenSymbol}`, { id: toastId });
             continue;
           }
           
@@ -106,6 +115,7 @@ export const useBetProcessor = (
               
             if (userUpdateError) {
               console.error(`Error updating user points for bet ${bet.id}:`, userUpdateError);
+              toast.error(`Error awarding points for ${bet.tokenSymbol} bet`, { id: toastId });
               continue;
             }
             
@@ -116,10 +126,11 @@ export const useBetProcessor = (
             });
             
             // Show win notification
-            toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points.`);
+            toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points.`, { id: toastId });
           } else {
             // Show loss notification with a less alarming tone
             toast(`Your bet on ${bet.tokenSymbol} didn't win this time.`, {
+              id: toastId,
               description: `Market cap changed by ${actualChange.toFixed(2)}%, which didn't meet your ${bet.percentageChange}% prediction.`
             });
           }

@@ -28,6 +28,8 @@ export const useBetsData = (userProfile: any) => {
         return;
       }
       
+      console.log('Raw bets data from Supabase:', data);
+      
       const formattedBets: PXBBet[] = (data as any[]).map((bet: any) => {
         const tokenName = bet.token_name || bet.tokens?.token_name || 'Unknown Token';
         const tokenSymbol = bet.token_symbol || bet.tokens?.token_symbol || 'UNKNOWN';
@@ -50,6 +52,7 @@ export const useBetsData = (userProfile: any) => {
         };
       });
       
+      console.log('Formatted bets:', formattedBets);
       setBets(formattedBets);
     } catch (error) {
       console.error('Error in fetchUserBets:', error);
