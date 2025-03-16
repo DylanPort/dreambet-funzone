@@ -1,9 +1,7 @@
 
 import React from 'react';
-import BetCard from './BetCard';
 import { Bet } from '@/types/bet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from './ui/card';
 import { ArrowUp, ArrowDown, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -55,28 +53,30 @@ const BetsListView: React.FC<BetsListViewProps> = ({
               transition={{ duration: 0.3 }}
             >
               <Link to={`/token/${bet.tokenId}`} className="block w-full">
-                <div className="bg-black/40 rounded-md p-4 hover:bg-black/50 transition-colors group">
-                  <div className="flex items-center gap-4 justify-between">
+                <div className="bg-dream-foreground/5 rounded-md p-4 border border-dream-foreground/10 hover:bg-dream-foreground/10 transition-colors">
+                  <div className="flex items-center gap-4 justify-between mb-2">
                     <div className="flex items-center gap-3">
-                      <div className="bg-purple-700 rounded-full w-12 h-12 flex items-center justify-center text-xl">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center">
                         {bet.tokenSymbol.charAt(0)}
                       </div>
                       <div>
                         <div className="flex items-center gap-1">
-                          <h3 className="font-medium text-white">{bet.tokenName} <ExternalLink className="w-3.5 h-3.5 inline text-gray-400" /></h3>
+                          <h3 className="font-medium text-white">
+                            {bet.tokenName} <ExternalLink className="w-3.5 h-3.5 inline text-gray-400" />
+                          </h3>
                         </div>
-                        <p className="text-gray-400">{bet.tokenSymbol}</p>
+                        <p className="text-dream-foreground/60">{bet.tokenSymbol}</p>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-3">
                       {bet.prediction === 'migrate' ? (
-                        <div className="bg-green-700 text-white rounded-md px-4 py-2">
-                          <ArrowUp className="w-4 h-4 inline mr-1" /> Moon
+                        <div className="bg-green-700 text-white rounded-md px-3 py-1.5 text-sm">
+                          <ArrowUp className="w-3.5 h-3.5 inline mr-1" /> Moon
                         </div>
                       ) : (
-                        <div className="bg-cyan-700 text-white rounded-md px-4 py-2">
-                          <ArrowDown className="w-4 h-4 inline mr-1" /> Die
+                        <div className="bg-cyan-700 text-white rounded-md px-3 py-1.5 text-sm">
+                          <ArrowDown className="w-3.5 h-3.5 inline mr-1" /> Die
                         </div>
                       )}
                       
@@ -86,12 +86,16 @@ const BetsListView: React.FC<BetsListViewProps> = ({
                             e.preventDefault();
                             onAcceptBet(bet);
                           }}
-                          className="bg-dream-accent1/80 hover:bg-dream-accent1 text-white rounded-md px-4 py-2 transition-colors"
+                          className="bg-dream-accent1/80 hover:bg-dream-accent1 text-white rounded-md px-3 py-1.5 text-sm transition-colors"
                         >
                           Accept Bet
                         </button>
                       )}
                     </div>
+                  </div>
+                  
+                  <div className="text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2 mt-2">
+                    <p>Betting {bet.amount} SOL that this token will {bet.prediction === 'migrate' ? 'migrate' : 'fail'}</p>
                   </div>
                 </div>
               </Link>
