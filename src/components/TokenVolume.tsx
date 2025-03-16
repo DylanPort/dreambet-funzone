@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, ExternalLink } from 'lucide-react';
-import { subscribeToVolume } from '@/services/dexScreenerService';
+import { subscribeToTokenMetric } from '@/services/tokenDataCache';
 
 interface TokenVolumeProps {
   tokenId: string;
@@ -16,35 +16,12 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
     
     setLoading(true);
     
-    // Immediately check cache
-    const cachedData = localStorage.getItem(`volume_${tokenId}`);
-    if (cachedData) {
-      try {
-        const { value, timestamp } = JSON.parse(cachedData);
-        // Use cache if less than 2 minutes old
-        if (Date.now() - timestamp < 120000) {
-          setVolume(value);
-          setLoading(false);
-        }
-      } catch (e) {
-        console.error("Error parsing cached volume data:", e);
-      }
-    }
-    
-    const cleanup = subscribeToVolume(tokenId, (newVolume) => {
+    const cleanup = subscribeToTokenMetric(tokenId, 'volume24h', (newVolume) => {
       setVolume(newVolume);
       setLoading(false);
-      
-      // Cache the result
-      localStorage.setItem(`volume_${tokenId}`, JSON.stringify({
-        value: newVolume,
-        timestamp: Date.now()
-      }));
     });
     
-    return () => {
-      cleanup();
-    };
+    return cleanup;
   }, [tokenId]);
 
   const formatLargeNumber = (num: number | null) => {
@@ -97,4 +74,4 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
   );
 };
 
-export default TokenVolume;
+export default React.memo(TokenVolume);

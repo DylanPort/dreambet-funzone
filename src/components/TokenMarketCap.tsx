@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BarChart3, ExternalLink } from 'lucide-react';
-import { subscribeToMarketCap } from '@/services/dexScreenerService';
+import { subscribeToTokenMetric } from '@/services/tokenDataCache';
 
 interface TokenMarketCapProps {
   tokenId: string;
@@ -16,35 +16,12 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
     
     setLoading(true);
     
-    // Immediately check cache
-    const cachedData = localStorage.getItem(`marketcap_${tokenId}`);
-    if (cachedData) {
-      try {
-        const { value, timestamp } = JSON.parse(cachedData);
-        // Use cache if less than 2 minutes old
-        if (Date.now() - timestamp < 120000) {
-          setMarketCap(value);
-          setLoading(false);
-        }
-      } catch (e) {
-        console.error("Error parsing cached market cap data:", e);
-      }
-    }
-    
-    const cleanup = subscribeToMarketCap(tokenId, (newMarketCap) => {
+    const cleanup = subscribeToTokenMetric(tokenId, 'marketCap', (newMarketCap) => {
       setMarketCap(newMarketCap);
       setLoading(false);
-      
-      // Cache the result
-      localStorage.setItem(`marketcap_${tokenId}`, JSON.stringify({
-        value: newMarketCap,
-        timestamp: Date.now()
-      }));
     });
     
-    return () => {
-      cleanup();
-    };
+    return cleanup;
   }, [tokenId]);
 
   const formatLargeNumber = (num: number | null) => {
@@ -97,4 +74,4 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   );
 };
 
-export default TokenMarketCap;
+export default React.memo(TokenMarketCap);

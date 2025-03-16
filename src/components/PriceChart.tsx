@@ -17,7 +17,7 @@ const useSampleData = () => {
     const data = [];
     let price = 1.0 + Math.random() * 0.5;
     
-    for (let i = -60; i <= 0; i++) {
+    for (let i = -30; i <= 0; i++) { // Reduced from 60 to 30 points for better performance
       // Create some random movement
       price = price + (Math.random() - 0.5) * 0.2;
       // Make sure price doesn't go below 0.1
@@ -36,7 +36,32 @@ const useSampleData = () => {
   }, []);
 };
 
-const PriceChart: React.FC<PriceChartProps> = ({ 
+const MemoizedTooltip = React.memo(({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const formatTime = (timeStr: string) => {
+      const date = new Date(timeStr);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+    
+    const formatPrice = (price: number) => {
+      return `$${price.toFixed(4)}`;
+    };
+    
+    return (
+      <div className="glass-panel p-3">
+        <p className="font-medium text-sm">{formatTime(label)}</p>
+        <p className="text-dream-accent1 text-sm font-semibold">
+          {formatPrice(payload[0].value)}
+        </p>
+      </div>
+    );
+  }
+  return null;
+});
+
+MemoizedTooltip.displayName = 'MemoizedTooltip';
+
+const PriceChart: React.FC<PriceChartProps> = React.memo(({ 
   data: propData, 
   color = "url(#colorGradient)", 
   isLoading = false 
@@ -55,28 +80,6 @@ const PriceChart: React.FC<PriceChartProps> = ({
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   
-  const formatPrice = (price: number) => {
-    return `$${price.toFixed(2)}`;
-  };
-  
-  // Memoize the tooltip to prevent re-renders
-  const MemoizedTooltip = useMemo(() => {
-    const CustomTooltip = ({ active, payload, label }: any) => {
-      if (active && payload && payload.length) {
-        return (
-          <div className="glass-panel p-3">
-            <p className="font-medium text-sm">{formatTime(label)}</p>
-            <p className="text-dream-accent1 text-sm font-semibold">
-              {formatPrice(payload[0].value)}
-            </p>
-          </div>
-        );
-      }
-      return null;
-    };
-    return CustomTooltip;
-  }, []);
-  
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -85,11 +88,16 @@ const PriceChart: React.FC<PriceChartProps> = ({
     );
   }
   
+  // Performance optimization: Only show a limited subset of points
+  const optimizedData = data.length > 30 ? 
+    data.filter((_, index) => index % Math.ceil(data.length / 30) === 0 || index === data.length - 1) : 
+    data;
+  
   return (
     <div className="w-full h-64 md:h-80">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
-          data={data}
+          data={optimizedData}
           margin={{
             top: 20,
             right: 30,
@@ -113,7 +121,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
             minTickGap={30}
           />
           <YAxis 
-            tickFormatter={formatPrice} 
+            tickFormatter={(value) => `$${parseFloat(value).toFixed(2)}`}
             stroke="rgba(255,255,255,0.5)"
             tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
             domain={['auto', 'auto']}
@@ -133,6 +141,8 @@ const PriceChart: React.FC<PriceChartProps> = ({
       </ResponsiveContainer>
     </div>
   );
-};
+});
 
-export default React.memo(PriceChart);
+PriceChart.displayName = 'PriceChart';
+
+export default PriceChart;
