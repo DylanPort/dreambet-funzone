@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
 import { fetchTokenById } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
-import { Bet } from '@/types/bet';
+import { Bet, BetStatus } from '@/types/bet';
 import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CreateBetForm from '@/components/CreateBetForm';
@@ -16,6 +16,8 @@ import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScr
 import TokenMarketCap from '@/components/TokenMarketCap';
 import TokenVolume from '@/components/TokenVolume';
 import TokenComments from '@/components/TokenComments';
+import PriceChart from '@/components/PriceChart';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 
 const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate }) => {
   const [timeInterval, setTimeInterval] = useState('15');
@@ -632,6 +634,62 @@ const TokenDetail = () => {
     );
   };
   
+  const { userProfile, bets: userPXBBets, fetchUserBets, isLoading } = usePXBPoints();
+  const [lastCreatedBet, setLastCreatedBet] = useState(null);
+  
+  // Effect to find the last created bet by the user for this token
+  useEffect(() => {
+    if (userProfile && userPXBBets && userPXBBets.length > 0 && id) {
+      // Filter bets for the current token and sort by creation date (newest first)
+      const tokenBets = userPXBBets
+        .filter(bet => bet.tokenMint === id)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      if (tokenBets.length > 0) {
+        setLastCreatedBet(tokenBets[0]);
+      }
+    }
+  }, [userProfile, userPXBBets, id]);
+  
+  const renderYourLastBet = () => {
+    if (!lastCreatedBet) {
+      return (
+        <div className="text-center py-8 text-dream-foreground/70">
+          You haven't placed any bets on this token yet.
+        </div>
+      );
+    }
+
+    // Convert PXBBet to Bet format for BetCard
+    const betForCard: Bet = {
+      id: lastCreatedBet.id,
+      tokenId: lastCreatedBet.tokenMint,
+      tokenName: lastCreatedBet.tokenName,
+      tokenSymbol: lastCreatedBet.tokenSymbol,
+      initiator: userProfile?.id || '',
+      amount: lastCreatedBet.betAmount,
+      prediction: lastCreatedBet.betType === 'up' ? 'migrate' : 'die',
+      timestamp: new Date(lastCreatedBet.createdAt).getTime(),
+      expiresAt: new Date(lastCreatedBet.expiresAt).getTime(),
+      status: lastCreatedBet.status as BetStatus,
+      duration: 30, // Default value
+      onChainBetId: '',
+      transactionSignature: ''
+    };
+
+    return (
+      <div className="mb-4">
+        <BetCard 
+          key={betForCard.id}
+          bet={betForCard}
+          connected={connected}
+          publicKeyString={publicKey ? publicKey.toString() : null}
+          onAcceptBet={() => {}}
+        />
+      </div>
+    );
+  };
+  
   return (
     <>
       <OrbitingParticles />
@@ -731,6 +789,35 @@ const TokenDetail = () => {
                 onPriceUpdate={handleChartPriceUpdate}
               />
               
+              {/* Your last bet section */}
+              <div className="glass-panel p-6 mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-display font-bold">Your Latest Bet on {token.symbol}</h2>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => fetchUserBets()}
+                    className="text-sm"
+                  >
+                    <RefreshCw className={`w-3 h-3 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+                
+                {renderYourLastBet()}
+                
+                {!lastCreatedBet && (
+                  <div className="text-center">
+                    <Button 
+                      onClick={() => setShowCreateBet(true)}
+                      className="bg-gradient-to-r from-dream-accent1 to-dream-accent3"
+                    >
+                      Place Your First Bet
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
               {showCreateBet && (
                 <div className="glass-panel p-6 mb-8">
                   <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
@@ -753,36 +840,4 @@ const TokenDetail = () => {
                 </div>
                 
                 {bets.length === 0 ? (
-                  <div className="text-center py-8 text-dream-foreground/70">
-                    No active bets for this token yet.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {bets.map(bet => (
-                      <BetCard 
-                        key={bet.id}
-                        bet={bet}
-                        connected={connected}
-                        publicKeyString={publicKey ? publicKey.toString() : null}
-                        onAcceptBet={handleAcceptBet}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div className="glass-panel p-6 mt-8">
-                <TokenComments 
-                  tokenId={token.id}
-                  tokenName={token.name}
-                />
-              </div>
-            </>
-          )}
-        </div>
-      </main>
-    </>
-  );
-};
-
-export default TokenDetail;
+                  <div className="text-center py-8 text-dream-
