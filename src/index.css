@@ -139,8 +139,8 @@
 }
 
 @keyframes scan-line {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(500%); }
 }
 
 @keyframes pulse-subtle {
@@ -150,6 +150,12 @@
   50% {
     opacity: 0.85;
   }
+}
+
+@keyframes gradient-move {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @layer utilities {
@@ -318,6 +324,15 @@
   
   .memescope-time {
     @apply flex items-center justify-between text-xs text-dream-foreground/60;
+  }
+  
+  .animate-gradient-move {
+    animation: gradient-move 8s ease infinite;
+    background-size: 200% 200%;
+  }
+  
+  .animate-scan-line {
+    animation: scan-line 3s ease-in-out infinite;
   }
 }
 

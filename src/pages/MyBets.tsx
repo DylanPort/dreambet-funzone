@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import PXBLeaderboard from '@/components/PXBLeaderboard';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
 import PXBBetsList from '@/components/PXBBetsList';
+import PXBSupplyProgress from '@/components/PXBSupplyProgress';
 
 const PXBSpace = () => {
   const { connected, publicKey } = useWallet();
@@ -30,6 +31,11 @@ const PXBSpace = () => {
           
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-display font-bold">PXB Space</h1>
+          </div>
+          
+          {/* Total Supply Progress Bar - Visible whether connected or not */}
+          <div className="glass-panel p-6 mb-6 overflow-hidden relative">
+            <PXBSupplyProgress />
           </div>
           
           {!connected ? (
