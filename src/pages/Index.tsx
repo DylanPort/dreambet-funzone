@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Clock, ExternalLink, Coins } from 'lucide-react';
+import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Rocket, Zap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
@@ -97,8 +96,61 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
             <div className="text-center md:text-left md:flex-1">
               <AnimatedLogo />
-              <p className="text-lg md:text-xl text-white max-w-3xl mx-auto md:mx-0 mb-8 font-semibold">
-                Grab some PXB, connect your Wallet, and Mint PXBP Points. Bet on whether new tokens will <span className="text-green-400">MOON</span> or turn to <span className="text-red-400">DUST</span> in just 60 minutes. It's that simple - predict, place your bet, and build your reputation alongside future life-changing perks!
+              <p className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 font-semibold animate-entrance overflow-hidden
+                before:content-[''] before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] before:animate-pulse-glow">
+                
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
+                  <Sparkles className="h-5 w-5 text-dream-accent2 animate-pulse-glow" />
+                  Grab some PXB
+                </span>
+                
+                , connect your 
+                
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent1 via-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold px-1">
+                  Wallet
+                  <Zap className="h-5 w-5 text-dream-accent3 animate-bob" />
+                </span>
+                
+                , and Mint 
+                
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold px-1">
+                  PXBP Points
+                </span>
+                
+                . Bet on whether new tokens will 
+                
+                <span className="relative inline-flex items-center gap-1 text-green-400 font-bold animate-bob">
+                  <Rocket className="h-5 w-5 text-green-400 animate-float" />
+                  MOON
+                  <span className="absolute inset-0 bg-green-400/10 blur-sm animate-pulse-glow rounded-full"></span>
+                </span> 
+                
+                or turn to 
+                
+                <span className="relative inline-flex items-center gap-1 text-red-400 font-bold">
+                  DUST
+                  <span className="absolute inset-0 bg-red-400/10 blur-sm animate-pulse-glow rounded-full"></span>
+                </span> 
+                
+                in just 
+                
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold">
+                  60 minutes
+                </span>
+                
+                . It's that simple - 
+                
+                <span className="text-white animate-float-delayed">predict</span>
+                , 
+                <span className="text-white animate-float-delayed-2">place your bet</span>
+                , and 
+                <span className="text-white animate-float">build your reputation</span> 
+                
+                alongside future 
+                
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
+                  life-changing perks!
+                </span>
               </p>
             </div>
             
