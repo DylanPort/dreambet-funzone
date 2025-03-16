@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -9,28 +8,26 @@ import { fetchOpenBets } from "@/services/supabaseService";
 import { toast } from 'sonner';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
-
 const BetReel: React.FC = () => {
   const [activeBets, setActiveBets] = useState<Bet[]>([]);
   const [animateIndex, setAnimateIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const { bets: pxbBets } = usePXBPoints();
-  const { publicKey } = useWallet();
-
+  const {
+    bets: pxbBets
+  } = usePXBPoints();
+  const {
+    publicKey
+  } = useWallet();
   useEffect(() => {
     const fetchBets = async () => {
       try {
         setLoading(true);
         const bets = await fetchOpenBets();
-
         const active = bets.filter(bet => bet.status === 'open' || bet.status === 'matched' || bet.status === 'expired');
-        
         const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
         let fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
-        
         const now = Date.now();
         fallbackBets = fallbackBets.filter(bet => bet.expiresAt > now);
-        
         const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
           id: pb.id,
           tokenId: pb.tokenMint,
@@ -47,21 +44,17 @@ const BetReel: React.FC = () => {
           onChainBetId: '',
           transactionSignature: ''
         }));
-        
         const combinedBets = [...active];
-        
         fallbackBets.forEach(fallbackBet => {
           if (!combinedBets.some(bet => bet.id === fallbackBet.id)) {
             combinedBets.push(fallbackBet);
           }
         });
-        
         convertedPXBBets.forEach(pxbBet => {
           if (!combinedBets.some(bet => bet.id === pxbBet.id)) {
             combinedBets.push(pxbBet);
           }
         });
-        
         console.log('Active and expired bets for reel:', combinedBets);
         setActiveBets(combinedBets);
       } catch (error) {
@@ -71,9 +64,7 @@ const BetReel: React.FC = () => {
         setLoading(false);
       }
     };
-    
     fetchBets();
-    
     const channel = supabase.channel('public:bets').on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
@@ -142,11 +133,9 @@ const BetReel: React.FC = () => {
       table: 'bets'
     }, payload => {
       console.log('Bet updated in reel:', payload);
-
       if (payload.new.status !== payload.old.status) {
         if (payload.new.status === 'open' || payload.new.status === 'matched' || payload.new.status === 'expired') {
           fetchBets();
-
           if (payload.new.status === 'expired') {
             toast.info('A bet has expired', {
               description: 'Check the bet details for more information'
@@ -157,11 +146,11 @@ const BetReel: React.FC = () => {
         }
       }
     }).subscribe();
-    
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in BetReel:", event.detail);
-      const { bet } = event.detail;
-      
+      const {
+        bet
+      } = event.detail;
       if (bet) {
         setActiveBets(prev => {
           const exists = prev.some(existingBet => existingBet.id === bet.id);
@@ -177,19 +166,15 @@ const BetReel: React.FC = () => {
         });
       }
     };
-    
     window.addEventListener('newBetCreated', handleNewBet as EventListener);
-    
     if (pxbBets.length > 0) {
       fetchBets();
     }
-    
     return () => {
       supabase.removeChannel(channel);
       window.removeEventListener('newBetCreated', handleNewBet as EventListener);
     };
   }, [pxbBets, publicKey]);
-
   if (loading) {
     return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
         <div className="flex items-center">
@@ -224,10 +209,7 @@ const BetReel: React.FC = () => {
         </div>
         
         <div className="flex items-center ml-auto mr-4">
-          <div className="flex items-center gap-1 h-6 px-2 rounded-md bg-dream-background/40 text-xs text-dream-foreground/60">
-            <Zap className="w-3 h-3" />
-            <span>0.6</span>
-          </div>
+          
         </div>
         
         <div className="overflow-hidden mr-4 flex-1">
@@ -275,5 +257,4 @@ const BetReel: React.FC = () => {
       </div>
     </div>;
 };
-
 export default BetReel;
