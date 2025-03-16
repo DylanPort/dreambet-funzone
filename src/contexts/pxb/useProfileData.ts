@@ -15,6 +15,7 @@ export const useProfileData = () => {
     try {
       if (!connected || !publicKey) {
         setUserProfile(null);
+        setIsLoading(false);
         return;
       }
 
@@ -26,16 +27,11 @@ export const useProfileData = () => {
         .from('users')
         .select('*')
         .eq('wallet_address', walletAddress)
-        .single();
+        .maybeSingle();
       
-      if (error) {
-        if (error.code === 'PGRST116') {
-          console.log('User not found in database yet');
-          setUserProfile(null);
-        } else {
-          console.error('Error fetching user profile:', error);
-          toast.error('Failed to load user profile');
-        }
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user profile:', error);
+        toast.error('Failed to load user profile');
       } else if (userData) {
         const supabaseUser = userData as SupabaseUserProfile;
         console.log("User profile data from Supabase:", supabaseUser);
@@ -46,6 +42,9 @@ export const useProfileData = () => {
           pxbPoints: supabaseUser.points || 0,
           createdAt: supabaseUser.created_at
         });
+      } else {
+        console.log('User not found in database yet');
+        setUserProfile(null);
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);

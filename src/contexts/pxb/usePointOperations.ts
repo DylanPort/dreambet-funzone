@@ -25,14 +25,20 @@ export const usePointOperations = (
       const walletAddress = publicKey.toString();
       console.log("Minting points for wallet:", walletAddress);
       
-      // Check if user already exists
+      // Check if user already exists with more robust error handling
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('*')
         .eq('wallet_address', walletAddress)
-        .single();
+        .maybeSingle();
       
       console.log("Existing user check:", existingUser, checkError);
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking for existing user:', checkError);
+        toast.error('Failed to check user status');
+        return;
+      }
       
       if (existingUser) {
         // User exists, check if they already have points
@@ -68,7 +74,7 @@ export const usePointOperations = (
       
       if (updateError) {
         console.error('Error minting points:', updateError);
-        toast.error('Failed to mint PXB Points');
+        toast.error('Failed to mint PXB Points. Please try again.');
         return;
       }
       
