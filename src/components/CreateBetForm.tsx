@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { ArrowUp, ArrowDown, Clock, RefreshCw } from 'lucide-react';
-import { createBet } from '@/api/mockData';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { BetPrediction } from '@/types/bet';
 import { Slider } from '@/components/ui/slider';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 
 interface CreateBetFormProps {
   tokenId: string;
@@ -26,7 +26,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   onSuccess,
   onCancel
 }) => {
-  const [amount, setAmount] = useState<string>('0.1');
+  const [amount, setAmount] = useState<string>('10');
   const [prediction, setPrediction] = useState<BetPrediction | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duration, setDuration] = useState<number>(30); // Default to 30 minutes
@@ -42,7 +42,10 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
-  const { toast } = useToast();
+  const { userProfile, placeBet } = usePXBPoints();
+
+  // Get max PXB points available for betting
+  const maxPointsAvailable = userProfile?.pxbPoints || 0;
 
   useEffect(() => {
     if (token) {
@@ -159,8 +162,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   }, [connected, publicKey, isWalletReady, verifyWalletConnection]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9.]/g, '');
-    setAmount(value);
+    const value = e.target.value.replace(/[^0-9]/g, ''); // Only allow numbers for PXB points
+    
+    // Ensure amount doesn't exceed user's available points
+    const numValue = parseInt(value || '0', 10);
+    if (numValue > maxPointsAvailable) {
+      setAmount(maxPointsAvailable.toString());
+    } else {
+      setAmount(value);
+    }
   };
 
   const handleDurationChange = (value: number[]) => {
@@ -206,85 +216,64 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   };
 
   const handleCreateBet = async () => {
+    if (!userProfile) {
+      toast.error('Please connect your wallet and mint PXB Points first');
+      return;
+    }
+
     const isWalletVerified = await verifyWalletConnection();
     
     if (!isWalletVerified) {
-      toast({
-        title: "Wallet not connected properly",
-        description: lastError || "Please ensure your wallet is fully connected and try again",
-        variant: "destructive",
-      });
+      toast.error(lastError || "Please ensure your wallet is fully connected and try again");
       return;
     }
 
     if (!prediction) {
-      toast({
-        title: "Select a prediction",
-        description: "Please choose whether the token will migrate or die",
-        variant: "destructive",
-      });
+      toast.error("Please choose whether the token will migrate or die");
       return;
     }
 
-    const amountValue = parseFloat(amount);
+    const amountValue = parseInt(amount, 10);
     if (isNaN(amountValue) || amountValue <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid bet amount",
-        variant: "destructive",
-      });
+      toast.error("Please enter a valid bet amount");
+      return;
+    }
+
+    if (amountValue > maxPointsAvailable) {
+      toast.error(`You only have ${maxPointsAvailable} PXB Points available to bet`);
       return;
     }
 
     try {
       setIsSubmitting(true);
-      setTransactionStatus('Preparing transaction...');
+      setTransactionStatus('Preparing bet...');
       
       console.log(`Creating bet with: 
         token: ${tokenId} (${tokenData.name})
         wallet: ${publicKey?.toString()}
-        wallet connected: ${connected}
-        wallet adapter ready: ${wallet?.adapter?.publicKey ? 'Yes' : 'No'}
-        wallet adapter connected: ${wallet?.adapter?.connected ? 'Yes' : 'No'}
-        wallet verified: ${isWalletReady ? 'Yes' : 'No'}
-        amount: ${parseFloat(amount)} SOL
+        amount: ${amountValue} PXB Points
         prediction: ${prediction}
         duration: ${duration} minutes
       `);
       
-      setTransactionStatus('Sending transaction to Solana Devnet...');
+      setTransactionStatus('Processing your bet...');
       
-      if (!wallet) {
-        throw new Error("Wallet instance is not available");
-      }
-      
-      const effectivePublicKey = publicKey?.toString() || wallet.adapter?.publicKey?.toString();
-      
-      if (!effectivePublicKey) {
-        throw new Error("Cannot determine wallet public key. Please reconnect your wallet.");
-      }
-      
-      await createBet(
+      await placeBet(
         tokenId,
         tokenData.name,
         tokenData.symbol,
-        effectivePublicKey,
-        parseFloat(amount),
-        prediction!,
-        wallet,
+        amountValue,
+        prediction === 'migrate' ? 'up' : 'down',
         duration
       );
       
-      setTransactionStatus('Transaction confirmed!');
-      setSuccessMessage(`Your ${parseFloat(amount)} SOL bet that ${tokenData.symbol} will ${prediction} is now live!`);
+      setTransactionStatus('Bet placed successfully!');
+      setSuccessMessage(`Your ${amountValue} PXB Points bet that ${tokenData.symbol} will ${prediction} is now live!`);
       
-      toast({
-        title: "Bet created successfully! 🎯",
-        description: `Your ${parseFloat(amount)} SOL bet that ${tokenData.symbol} will ${prediction} is now live on-chain`,
-      });
+      toast.success(`Bet created successfully! ${amountValue} PXB Points that ${tokenData.symbol} will ${prediction}`);
       
       setTimeout(() => {
-        setAmount('0.1');
+        setAmount('10');
         setPrediction(null);
         setDuration(30);
         setTransactionStatus('');
@@ -302,18 +291,14 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       setTransactionStatus('');
       setSuccessMessage(null);
       
-      let errorMessage = "Something went wrong with the blockchain transaction.";
+      let errorMessage = "Something went wrong with placing your bet.";
       if (error.message) {
         errorMessage = error.message;
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
       
-      toast({
-        title: "Failed to create bet",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(`Failed to create bet: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -380,7 +365,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             }`}
           >
             <ArrowUp size={18} />
-            <span>MIGRATE 🚀</span>
+            <span>MOON 🚀</span>
           </button>
           
           <button
@@ -400,24 +385,21 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       <div>
         <label className="block text-sm text-dream-foreground/70 mb-1">
-          Bet Amount (SOL)
+          Bet Amount (PXB Points)
         </label>
         <div className="relative">
           <input
             type="text"
             value={amount}
-            onChange={(e) => {
-              const value = e.target.value.replace(/[^0-9.]/g, '');
-              setAmount(value);
-            }}
+            onChange={handleAmountChange}
             className="w-full p-3 bg-dream-surface border border-dream-foreground/20 rounded-md focus:outline-none focus:border-dream-accent2"
           />
           <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dream-foreground/50">
-            SOL
+            PXB
           </span>
         </div>
         <p className="text-xs text-dream-foreground/50 mt-1">
-          Min: 0.01 SOL | Max: 10 SOL
+          Min: 1 PXB | Max: {maxPointsAvailable} PXB Available
         </p>
       </div>
       
@@ -453,18 +435,18 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       <div className="flex gap-3">
         <Button
           onClick={handleCreateBet}
-          disabled={!isWalletReady || isSubmitting || !prediction || !amount || walletCheckingInProgress || !!successMessage}
+          disabled={!isWalletReady || isSubmitting || !prediction || !amount || walletCheckingInProgress || !!successMessage || !userProfile}
           className="flex-1 bg-gradient-to-r from-dream-accent1 to-dream-accent3"
         >
           {isSubmitting ? (
             <span className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-dream-foreground border-t-transparent rounded-full animate-spin"></div>
-              Creating Bet...
+              Placing Bet...
             </span>
           ) : successMessage ? (
-            "Bet Created!"
+            "Bet Placed!"
           ) : (
-            "Create Bet"
+            "Place Bet"
           )}
         </Button>
         
@@ -480,7 +462,11 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         )}
       </div>
       
-      {!isWalletReady && (
+      {!userProfile ? (
+        <div className="flex flex-col items-center text-sm p-3 bg-dream-surface/30 rounded-md">
+          <p className="text-dream-foreground/70">Connect your wallet and mint PXB Points to place bets</p>
+        </div>
+      ) : !isWalletReady && (
         <div className="flex flex-col items-center text-sm p-3 bg-dream-surface/30 rounded-md">
           {connecting ? (
             <p className="text-yellow-400 flex items-center">
