@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import { fetchTokenById } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
 import { Bet, BetStatus } from '@/types/bet';
-import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, ArrowUpRight, ArrowDownRight, Rocket, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CreateBetForm from '@/components/CreateBetForm';
 import BetCard from '@/components/BetCard';
@@ -91,14 +91,12 @@ const TokenChart = ({
       <div className="mt-8 grid grid-cols-2 gap-4">
         <button 
           onClick={() => refreshData('up')} 
-          className="p-0 w-full h-20 flex justify-center items-center transition-transform hover:scale-105 active:scale-95 rounded-lg overflow-hidden"
+          className="p-0 w-full h-20 flex justify-center items-center transition-transform hover:scale-105 active:scale-95 rounded-lg overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500"
           aria-label="MOON"
         >
-          <img 
-            src="/lovable-uploads/48531fef-2dd2-49d7-92d4-eb1df39d9f1c.png" 
-            alt="Rocket to the Moon" 
-            className="h-16 object-contain" 
-          />
+          <Rocket className="w-6 h-6 text-white mr-2" />
+          <span className="font-bold text-white text-xl">MOON</span>
+          <Sparkles className="w-5 h-5 text-yellow-300 ml-2" />
         </button>
         
         <Button variant="destructive" onClick={() => refreshData('down')}>
@@ -776,3 +774,4 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
+
