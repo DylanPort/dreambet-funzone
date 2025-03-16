@@ -6,13 +6,16 @@ import WalletConnectButton from './WalletConnectButton';
 import ProfileButton from './ProfileButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const { balance } = useSolanaBalance();
-  const { userProfile } = usePXBPoints();
+  const { userProfile, fetchUserProfile } = usePXBPoints();
+  const [pxbPoints, setPxbPoints] = useState<number | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +32,37 @@ const Navbar = () => {
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
+  // Update PXB points from user profile when it changes
+  useEffect(() => {
+    if (userProfile) {
+      setPxbPoints(userProfile.pxbPoints);
+    }
+  }, [userProfile]);
+
+  // Set up real-time listener for points updates
+  useEffect(() => {
+    if (!userProfile) return;
+
+    // Subscribe to realtime changes on the users table
+    const channel = supabase
+      .channel('public:users')
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userProfile.id}` },
+        (payload) => {
+          console.log('User data updated:', payload);
+          if (payload.new && 'points' in payload.new) {
+            setPxbPoints(payload.new.points as number);
+            fetchUserProfile(); // Also refresh the context
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile, fetchUserProfile]);
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
@@ -60,13 +94,20 @@ const Navbar = () => {
             
             <ProfileButton />
             
-            {userProfile && (
-              <div className="glass-panel relative overflow-hidden py-1 px-3 flex items-center gap-1.5 text-yellow-400 group">
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-amber-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {(pxbPoints !== null && pxbPoints > 0) ? (
+              <div className="glass-panel relative overflow-hidden py-1 px-3 flex items-center gap-1.5 text-yellow-400 group animate-pulse-subtle">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-amber-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="w-4 h-4 flex items-center justify-center">
                   <Coins className="w-4 h-4" />
                 </div>
-                <span className="relative z-10">{userProfile.pxbPoints.toLocaleString()} PXB</span>
+                <span className="relative z-10">{pxbPoints.toLocaleString()} PXB</span>
+              </div>
+            ) : userProfile && (
+              <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-yellow-400/70">
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <Coins className="w-4 h-4" />
+                </div>
+                <span>0 PXB</span>
               </div>
             )}
             
@@ -117,12 +158,19 @@ const Navbar = () => {
               <span>Profile</span>
             </Link>
             
-            {userProfile && (
-              <div className="py-2 flex items-center gap-2 text-yellow-400">
+            {(pxbPoints !== null && pxbPoints > 0) ? (
+              <div className="py-2 flex items-center gap-2 text-yellow-400 animate-pulse-subtle">
                 <div className="w-5 h-5 flex items-center justify-center">
                   <Coins className="w-5 h-5" />
                 </div>
-                <span>{userProfile.pxbPoints.toLocaleString()} PXB</span>
+                <span>{pxbPoints.toLocaleString()} PXB</span>
+              </div>
+            ) : userProfile && (
+              <div className="py-2 flex items-center gap-2 text-yellow-400/70">
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <Coins className="w-5 h-5" />
+                </div>
+                <span>0 PXB</span>
               </div>
             )}
             
