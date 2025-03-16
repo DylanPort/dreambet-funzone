@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
 import { fetchTokenById } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
-import { Bet } from '@/types/bet';
+import { Bet, BetStatus } from '@/types/bet';
 import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CreateBetForm from '@/components/CreateBetForm';
@@ -18,9 +18,36 @@ import TokenVolume from '@/components/TokenVolume';
 import TokenComments from '@/components/TokenComments';
 import { supabase } from '@/integrations/supabase/client';
 import BetsListView from '@/components/BetsListView';
+import PriceChart from '@/components/PriceChart';
 
 const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate }) => {
-  // ... keep existing code for TokenChart component
+  const [period, setPeriod] = useState('1h');
+  
+  return (
+    <div className="glass-panel p-6 mb-8">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-display font-bold">{tokenName} Price</h2>
+        <div className="flex items-center">
+          <button 
+            onClick={() => refreshData()}
+            className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
+            title="Refresh Data"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+      
+      <PriceChart 
+        isLoading={loading}
+        onPriceUpdate={onPriceUpdate}
+      />
+      
+      <div className="text-xs text-dream-foreground/50 mt-2 text-center">
+        Live price updates from DEX trades
+      </div>
+    </div>
+  );
 };
 
 const TokenDetail = () => {
@@ -124,21 +151,29 @@ const TokenDetail = () => {
       }
       
       if (data && data.length > 0) {
-        const formattedBets: Bet[] = data.map(bet => ({
-          id: bet.bet_id,
-          tokenId: bet.token_mint,
-          tokenName: bet.token_name || token?.name || 'Unknown Token',
-          tokenSymbol: bet.token_symbol || token?.symbol || 'UNKNOWN',
-          initiator: publicKey.toString(),
-          amount: Number(bet.sol_amount),
-          prediction: bet.prediction_bettor1 === 'up' ? 'migrate' : 'die',
-          timestamp: new Date(bet.created_at).getTime(),
-          expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-          status: bet.status === 'pending' ? 'open' : bet.status,
-          duration: Math.floor(bet.duration / 60),
-          onChainBetId: bet.on_chain_id || '',
-          transactionSignature: bet.transaction_signature || ''
-        }));
+        const formattedBets: Bet[] = data.map(bet => {
+          let betStatus: BetStatus = 'open';
+          if (bet.status === 'matched') betStatus = 'matched';
+          else if (bet.status === 'completed') betStatus = 'completed';
+          else if (bet.status === 'expired') betStatus = 'expired';
+          else if (bet.status === 'closed') betStatus = 'closed';
+          
+          return {
+            id: bet.bet_id,
+            tokenId: bet.token_mint,
+            tokenName: bet.token_name || token?.name || 'Unknown Token',
+            tokenSymbol: bet.token_symbol || token?.symbol || 'UNKNOWN',
+            initiator: publicKey.toString(),
+            amount: Number(bet.sol_amount),
+            prediction: bet.prediction_bettor1 === 'up' ? 'migrate' : 'die',
+            timestamp: new Date(bet.created_at).getTime(),
+            expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
+            status: betStatus,
+            duration: Math.floor(bet.duration / 60),
+            onChainBetId: bet.on_chain_id || '',
+            transactionSignature: bet.transaction_signature || ''
+          };
+        });
         
         setMyActiveBets(formattedBets);
       } else {
@@ -793,3 +828,4 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
+
