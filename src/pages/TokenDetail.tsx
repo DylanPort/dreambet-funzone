@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -6,12 +5,12 @@ import Navbar from '@/components/Navbar';
 import { fetchTokenById } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
 import { Bet, BetStatus } from '@/types/bet';
-import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign } from 'lucide-react';
+import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CreateBetForm from '@/components/CreateBetForm';
 import BetCard from '@/components/BetCard';
 import { useToast } from '@/hooks/use-toast';
-import { usePumpPortalWebSocket, getLatestPriceFromTrades } from '@/services/pumpPortalWebSocketService';
+import { usePumpPortalWebSocket, getLatestPriceFromTrades, formatRawTrade, RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
 import TokenMarketCap from '@/components/TokenMarketCap';
@@ -19,6 +18,7 @@ import TokenVolume from '@/components/TokenVolume';
 import TokenComments from '@/components/TokenComments';
 import PriceChart from '@/components/PriceChart';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import { usePumpPortal } from '@/hooks/usePumpPortal';
 
 const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate }) => {
   const [timeInterval, setTimeInterval] = useState('15');
@@ -638,10 +638,8 @@ const TokenDetail = () => {
   const { userProfile, bets: userPXBBets, fetchUserBets, isLoading } = usePXBPoints();
   const [lastCreatedBet, setLastCreatedBet] = useState(null);
   
-  // Effect to find the last created bet by the user for this token
   useEffect(() => {
     if (userProfile && userPXBBets && userPXBBets.length > 0 && id) {
-      // Filter bets for the current token and sort by creation date (newest first)
       const tokenBets = userPXBBets
         .filter(bet => bet.tokenMint === id)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -661,7 +659,6 @@ const TokenDetail = () => {
       );
     }
 
-    // Convert PXBBet to Bet format for BetCard
     const betForCard: Bet = {
       id: lastCreatedBet.id,
       tokenId: lastCreatedBet.tokenMint,
@@ -673,7 +670,7 @@ const TokenDetail = () => {
       timestamp: new Date(lastCreatedBet.createdAt).getTime(),
       expiresAt: new Date(lastCreatedBet.expiresAt).getTime(),
       status: lastCreatedBet.status as BetStatus,
-      duration: 30, // Default value
+      duration: 30,
       onChainBetId: '',
       transactionSignature: ''
     };
@@ -691,6 +688,76 @@ const TokenDetail = () => {
     );
   };
   
+  const ActiveTokenTrades = ({ tokenId }: { tokenId: string }) => {
+    const { recentRawTrades } = usePumpPortal(tokenId);
+    
+    const tokenTrades = recentRawTrades.filter(trade => 
+      trade.mint === tokenId
+    ).slice(0, 10);
+    
+    if (!tokenTrades || tokenTrades.length === 0) {
+      return (
+        <div className="text-center py-8 text-dream-foreground/70">
+          No recent trades for this token. Trades will appear here when they happen.
+        </div>
+      );
+    }
+    
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-full">
+          <thead>
+            <tr className="border-b border-white/10">
+              <th className="text-left py-2 px-3 text-sm font-medium text-dream-foreground/70">Type</th>
+              <th className="text-right py-2 px-3 text-sm font-medium text-dream-foreground/70">Amount</th>
+              <th className="text-right py-2 px-3 text-sm font-medium text-dream-foreground/70">Price</th>
+              <th className="text-right py-2 px-3 text-sm font-medium text-dream-foreground/70">SOL</th>
+              <th className="text-left py-2 px-3 text-sm font-medium text-dream-foreground/70">Trader</th>
+              <th className="text-left py-2 px-3 text-sm font-medium text-dream-foreground/70">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tokenTrades.map((trade, index) => {
+              const formattedTrade = formatRawTrade(trade);
+              return (
+                <tr key={`${trade.signature}-${index}`} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td className="py-2 px-3">
+                    <div className="flex items-center">
+                      {trade.txType === 'buy' ? (
+                        <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
+                      ) : (
+                        <ArrowDownRight className="w-4 h-4 text-red-500 mr-1" />
+                      )}
+                      <span className={trade.txType === 'buy' ? 'text-green-500' : 'text-red-500'}>
+                        {trade.txType.toUpperCase()}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 text-right font-mono text-sm">{formattedTrade.amount}</td>
+                  <td className="py-2 px-3 text-right font-mono text-sm">{formattedTrade.price}</td>
+                  <td className="py-2 px-3 text-right font-mono text-sm">{formattedTrade.solAmount}</td>
+                  <td className="py-2 px-3 text-sm">
+                    <a 
+                      href={`https://solscan.io/account/${trade.traderPublicKey}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-dream-accent2 transition-colors"
+                    >
+                      {formattedTrade.trader}
+                    </a>
+                  </td>
+                  <td className="py-2 px-3 text-sm text-dream-foreground/70">
+                    {trade.timestamp ? new Date(trade.timestamp).toLocaleTimeString() : 'Just now'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <>
       <OrbitingParticles />
@@ -790,7 +857,6 @@ const TokenDetail = () => {
                 onPriceUpdate={handleChartPriceUpdate}
               />
               
-              {/* Your last bet section */}
               <div className="glass-panel p-6 mb-8">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-display font-bold">Your Latest Bet on {token.symbol}</h2>
@@ -857,6 +923,24 @@ const TokenDetail = () => {
                     ))}
                   </div>
                 )}
+              </div>
+              
+              <div className="glass-panel p-6 mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-display font-bold">Active Trades</h2>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => refreshData()}
+                    className="text-sm"
+                    disabled={loading}
+                  >
+                    <RefreshCw className={`w-3 h-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+                
+                <ActiveTokenTrades tokenId={token.id} />
               </div>
             </>
           )}
