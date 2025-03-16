@@ -269,6 +269,11 @@ const Profile = () => {
       return;
     }
 
+    if (userProfile?.pxbPoints > 0 || localPxbPoints > 0) {
+      toast.error("You've already claimed your PXB Points!");
+      return;
+    }
+
     setIsMintingPoints(true);
     try {
       const username = userProfile?.username || user?.username || publicKey.toString().substring(0, 8);
@@ -364,15 +369,15 @@ const Profile = () => {
                 <p className="text-2xl font-display font-bold text-gradient">
                   {pxbLoading ? (
                     <span className="text-sm text-dream-foreground/40">Loading...</span>
-                  ) : localPxbPoints !== null ? (
+                  ) : localPxbPoints !== null && localPxbPoints > 0 ? (
                     `${localPxbPoints.toLocaleString()} PXB`
-                  ) : userProfile !== null ? (
+                  ) : userProfile !== null && userProfile.pxbPoints > 0 ? (
                     `${userProfile.pxbPoints.toLocaleString()} PXB`
                   ) : (
                     <span className="text-sm text-dream-foreground/40">0 PXB</span>
                   )}
                 </p>
-                {(userProfile === null || (userProfile?.pxbPoints === 0 && localPxbPoints === 0)) ? (
+                {(!userProfile?.pxbPoints && !localPxbPoints) ? (
                   <Button 
                     onClick={handleMintPXBPoints}
                     disabled={isMintingPoints}

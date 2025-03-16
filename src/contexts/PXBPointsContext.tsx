@@ -109,7 +109,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (existingUser) {
         // User exists, check if they already have points
-        if (existingUser.points >= 500) {
+        if (existingUser.points > 0) {
           toast.error('You have already claimed your PXB Points');
           setUserProfile({
             id: existingUser.id,
