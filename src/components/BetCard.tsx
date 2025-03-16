@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { ArrowUp, Clock, AlertTriangle, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
@@ -57,16 +58,24 @@ const BetCard: React.FC<BetCardProps> = ({
   
   let statusIcon;
   let statusClass;
+  let borderClass;
+  let bgClass;
   
   if (bet.status === 'open') {
     statusIcon = <HelpCircle className="h-4 w-4 text-yellow-400" />;
     statusClass = 'text-yellow-400';
+    borderClass = 'border-yellow-400/30';
+    bgClass = 'animate-pulse-slow';
   } else if (bet.status === 'completed' && bet.winner === publicKeyString) {
     statusIcon = <CheckCircle className="h-4 w-4 text-green-400" />;
     statusClass = 'text-green-400';
+    borderClass = 'border-green-400/30';
+    bgClass = '';
   } else {
     statusIcon = <XCircle className="h-4 w-4 text-red-400" />;
     statusClass = 'text-red-400';
+    borderClass = 'border-red-400/30';
+    bgClass = '';
   }
   
   const formatLargeNumber = (num) => {
@@ -95,118 +104,142 @@ const BetCard: React.FC<BetCardProps> = ({
   
   return (
     <div 
-      className={`glass-panel p-4 border transition-all ${
-        isActive 
-          ? 'border-yellow-400/30 animate-pulse-slow' 
-          : bet.status === 'completed' && bet.winner === publicKeyString
-            ? 'border-green-400/30' 
-            : 'border-red-400/30'
-      }`}
+      className={`relative overflow-hidden backdrop-blur-lg bg-black/20 border ${borderClass} rounded-xl shadow-xl transition-all ${bgClass} group`}
     >
-      <div className="flex justify-between items-center mb-2">
-        <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2">
-            {bet.prediction === 'migrate' 
-              ? <img src="/lovable-uploads/8b54a80c-266a-4fcc-8f22-788cab6ce1b4.png" alt="Rocket" className="h-4 w-4" />
-              : <img src="/lovable-uploads/d4517df7-78f7-4229-a4d5-0e4cba7bdbf1.png" alt="Skull" className="h-4 w-4" />
-            }
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
+      
+      {/* Top border glow effect */}
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2/40 to-transparent"></div>
+      
+      {/* Bottom border glow effect */}
+      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1/40 to-transparent"></div>
+      
+      <div className="relative z-10 p-4">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center mr-2 border border-white/10">
+              {bet.prediction === 'migrate' 
+                ? <img src="/lovable-uploads/8b54a80c-266a-4fcc-8f22-788cab6ce1b4.png" alt="Rocket" className="h-5 w-5" />
+                : <img src="/lovable-uploads/d4517df7-78f7-4229-a4d5-0e4cba7bdbf1.png" alt="Skull" className="h-5 w-5" />
+              }
+            </div>
+            <div>
+              <p className="font-display font-semibold text-base">{bet.tokenSymbol}</p>
+              <p className="text-xs text-dream-foreground/60">{bet.tokenName}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold">{bet.tokenSymbol}</p>
-            <p className="text-xs text-dream-foreground/60">{bet.tokenName}</p>
+          
+          <div className="text-right">
+            <div className="bg-dream-accent2/10 px-3 py-1 rounded-lg flex items-center">
+              <Wallet className="h-3.5 w-3.5 mr-1.5 text-dream-accent2" />
+              <p className="font-semibold">{bet.amount} SOL</p>
+            </div>
+            <p className="text-xs text-dream-foreground/60 mt-1 flex items-center justify-end">
+              {bet.prediction === 'migrate' 
+                ? <ArrowUp className="h-3 w-3 mr-1 text-green-400" /> 
+                : <ArrowDown className="h-3 w-3 mr-1 text-red-400" />
+              }
+              <span className={`${bet.prediction === 'migrate' ? 'text-green-400' : 'text-red-400'}`}>
+                {bet.prediction === 'migrate' ? 'MOON' : 'DIE'}
+              </span>
+            </p>
           </div>
         </div>
         
-        <div className="text-right">
-          <p className="font-semibold">{bet.amount} SOL</p>
-          <p className="text-xs text-dream-foreground/60">
-            Prediction: {bet.prediction === 'migrate' ? 'MOON' : 'DIE'}
-          </p>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-2 mb-3 mt-2 text-xs">
-        <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
-          <div className="text-dream-foreground/50 mb-1">Entry MCAP</div>
-          <div className="font-medium">
-            {formatLargeNumber(bet.initialMarketCap || 0)}
-          </div>
-        </div>
-        <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
-          <div className="text-dream-foreground/50 mb-1">Win MCAP</div>
-          <div className="font-medium">
-            {formatLargeNumber(winningMarketCap || 0)}
-          </div>
-        </div>
-      </div>
-      
-      {isActive && progress !== null && (
-        <div className="mb-3 mt-3">
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-dream-foreground/60">Progress towards target</span>
-            <span className={bet.prediction === 'migrate' ? 'text-green-400' : 'text-red-400'}>
-              {progress.toFixed(1)}%
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
-          {bet.currentMarketCap && bet.initialMarketCap && (
-            <div className="text-xs text-dream-foreground/60 mt-1">
-              Market cap change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
-              {bet.prediction === 'migrate'
-                ? ` / Target: +10%`
-                : ` / Target: -10%`
-              }
+        <div className="grid grid-cols-3 gap-2 mb-3 mt-3 text-xs">
+          <div className="bg-dream-foreground/10 px-2 py-2 rounded-lg">
+            <div className="text-dream-foreground/50 mb-1">Entry MCAP</div>
+            <div className="font-medium">
+              {formatLargeNumber(bet.initialMarketCap || 0)}
             </div>
-          )}
+          </div>
+          <div className="bg-dream-foreground/10 px-2 py-2 rounded-lg">
+            <div className="text-dream-foreground/50 mb-1">Current MCAP</div>
+            <div className="font-medium">
+              {formatLargeNumber(bet.currentMarketCap || 0)}
+            </div>
+          </div>
+          <div className="bg-dream-foreground/10 px-2 py-2 rounded-lg">
+            <div className="text-dream-foreground/50 mb-1">Win MCAP</div>
+            <div className="font-medium">
+              {formatLargeNumber(winningMarketCap || 0)}
+            </div>
+          </div>
         </div>
-      )}
-      
-      <div className="flex justify-between items-center text-xs">
-        {isActive ? (
-          <>
-            <div className="flex items-center">
-              {statusIcon}
-              <span className={`ml-1 ${statusClass}`}>Active</span>
-              <span className="ml-2 text-dream-foreground/60">
-                Ends {timeLeft}
+        
+        {isActive && progress !== null && (
+          <div className="mb-4 mt-4">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-dream-foreground/60">Progress towards target</span>
+              <span className={bet.prediction === 'migrate' ? 'text-green-400' : 'text-red-400'}>
+                {progress.toFixed(1)}%
               </span>
             </div>
-            <span className="text-dream-foreground/60">
-              Current: {formatLargeNumber(bet.currentMarketCap || 0)}
-            </span>
-          </>
-        ) : (
-          <div className="w-full flex justify-center items-center py-1">
-            {bet.status === 'completed' && bet.winner === publicKeyString ? (
-              <span className="text-green-400 font-semibold flex items-center">
-                <CheckCircle className="h-4 w-4 mr-2" /> WIN (+{bet.amount * 2} SOL)
-              </span>
-            ) : (
-              <span className="text-red-400 font-semibold flex items-center">
-                <XCircle className="h-4 w-4 mr-2" /> LOSS
-              </span>
+            <div className="relative h-2 w-full bg-dream-foreground/10 rounded-full overflow-hidden">
+              <Progress 
+                value={progress} 
+                className={`h-2 ${bet.prediction === 'migrate' ? 'bg-gradient-to-r from-green-500/40 to-green-400' : 'bg-gradient-to-r from-red-500/40 to-red-400'}`} 
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+            </div>
+            {bet.currentMarketCap && bet.initialMarketCap && (
+              <div className="text-xs text-dream-foreground/60 mt-1">
+                Market cap change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
+                {bet.prediction === 'migrate'
+                  ? ` / Target: +10%`
+                  : ` / Target: -10%`
+                }
+              </div>
             )}
           </div>
         )}
-      </div>
-      
-      {isActive && (
-        <>
-          <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
-            <p>Betting against the house: If you win, you'll earn {bet.amount} SOL from the house.</p>
-          </div>
-          
-          {publicKeyString !== bet.initiator && (
-            <Button 
-              onClick={handleAcceptBet}
-              className="w-full mt-3"
-              disabled={!connected}
-            >
-              Bet Against This
-            </Button>
+        
+        <div className="flex justify-between items-center text-xs">
+          {isActive ? (
+            <>
+              <div className="flex items-center">
+                {statusIcon}
+                <span className={`ml-1 ${statusClass}`}>Active</span>
+                <span className="ml-2 text-dream-foreground/60 flex items-center">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {timeLeft}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="w-full flex justify-center items-center py-1">
+              {bet.status === 'completed' && bet.winner === publicKeyString ? (
+                <span className="text-green-400 font-semibold flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2" /> WIN (+{bet.amount * 2} SOL)
+                </span>
+              ) : (
+                <span className="text-red-400 font-semibold flex items-center">
+                  <XCircle className="h-4 w-4 mr-2" /> LOSS
+                </span>
+              )}
+            </div>
           )}
-        </>
-      )}
+        </div>
+        
+        {isActive && (
+          <>
+            <div className="mt-3 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-3">
+              <p>Betting against the house: If you win, you'll earn {bet.amount} SOL from the house.</p>
+            </div>
+            
+            {publicKeyString !== bet.initiator && (
+              <Button 
+                onClick={handleAcceptBet}
+                className="w-full mt-3 bg-gradient-to-r from-dream-accent1/80 to-dream-accent2/80 hover:from-dream-accent1 hover:to-dream-accent2 transition-all duration-300 border border-white/10 shadow-lg"
+                disabled={!connected}
+              >
+                Bet Against This
+              </Button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

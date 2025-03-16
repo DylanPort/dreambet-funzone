@@ -59,6 +59,11 @@
     @apply relative z-10 overflow-hidden rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-dream-foreground transition-all duration-300;
   }
   
+  /* Futuristic glassmorphic card */
+  .futuristic-card {
+    @apply relative overflow-hidden backdrop-blur-lg bg-black/20 border rounded-xl shadow-xl transition-all;
+  }
+  
   /* Animation for the token card flipping */
   @keyframes flip {
     0% {
@@ -190,6 +195,22 @@
   
   .animate-pulse-subtle {
     animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* New pulse animation for active bets */
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+    }
+    50% {
+      opacity: 0.9;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    }
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
   }
   
   @keyframes text-shimmer {

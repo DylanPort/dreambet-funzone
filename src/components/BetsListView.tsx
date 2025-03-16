@@ -22,7 +22,7 @@ const BetsListView: React.FC<BetsListViewProps> = ({
   
   if (validBets.length === 0) {
     return (
-      <div className="glass-panel p-6 text-center">
+      <div className="backdrop-blur-lg bg-black/20 border border-white/10 rounded-xl p-6 text-center">
         <p className="text-dream-foreground/70">No bets available in this category.</p>
         <p className="text-sm mt-2">Check back soon or create your own bet on a Pump Fun token!</p>
       </div>
@@ -35,7 +35,7 @@ const BetsListView: React.FC<BetsListViewProps> = ({
   const topBets = validBets.slice(0, 10);
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <AnimatePresence>
         {topBets.map((bet, index) => {
           // Generate a unique key combining multiple identifiers
@@ -49,7 +49,11 @@ const BetsListView: React.FC<BetsListViewProps> = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              transition={{ 
+                duration: 0.4,
+                delay: index * 0.05,
+                ease: [0.25, 0.1, 0.25, 1.0]
+              }}
             >
               <BetCard
                 bet={bet}
