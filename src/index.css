@@ -214,11 +214,11 @@
   }
   
   .btn-moon {
-    @apply bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded transition-colors border border-green-500/30;
+    @apply bg-green-700 hover:bg-green-600 text-white rounded transition-colors;
   }
   
   .btn-die {
-    @apply bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors border border-red-500/30;
+    @apply bg-cyan-700 hover:bg-cyan-600 text-white rounded transition-colors;
   }
   
   .token-card {
