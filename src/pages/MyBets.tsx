@@ -12,6 +12,7 @@ import PXBPointsBalance from '@/components/PXBPointsBalance';
 import PXBBetsList from '@/components/PXBBetsList';
 import PXBSupplyProgress from '@/components/PXBSupplyProgress';
 import PXBUserStats from '@/components/PXBUserStats';
+import BetReel from '@/components/BetReel';
 
 const PXBSpace = () => {
   const { connected, publicKey } = useWallet();
@@ -39,9 +40,26 @@ const PXBSpace = () => {
             <PXBSupplyProgress />
           </div>
           
-          {/* New User Stats Component */}
+          {/* User Stats Component */}
           <div className="glass-panel p-6 mb-6 overflow-hidden relative">
             <PXBUserStats />
+          </div>
+          
+          {/* Active Bets Reel */}
+          <div className="glass-panel p-6 mb-6 overflow-hidden relative">
+            <h2 className="font-semibold text-lg mb-4 flex items-center">
+              <Activity className="mr-2 h-5 w-5 text-dream-accent1" />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2/90 via-dream-accent1/90 to-dream-accent3/90 font-bold">
+                Active Bets
+              </span>
+            </h2>
+            <div className="overflow-hidden relative">
+              <div className="w-full overflow-x-auto pb-4">
+                <div className="flex space-x-4 animate-scroll">
+                  <BetReel />
+                </div>
+              </div>
+            </div>
           </div>
           
           {!connected ? (
