@@ -28,21 +28,28 @@ export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData
   }
 
   try {
-    // Fetch data directly from GMGN chart data API
-    const response = await fetch(`https://www.gmgn.cc/api/token/sol/${tokenId}`);
+    // Try using cors proxy for the GMGN chart data API
+    const corsProxyUrl = 'https://corsproxy.io/?';
+    const apiUrl = `https://www.gmgn.cc/api/token/sol/${tokenId}`;
+    const encodedApiUrl = encodeURIComponent(apiUrl);
+    
+    console.log(`Attempting to fetch GMGN data via CORS proxy: ${corsProxyUrl}${encodedApiUrl}`);
+    
+    const response = await fetch(`${corsProxyUrl}${encodedApiUrl}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch token data: ${response.status}`);
     }
     
     const chartData = await response.json() as GMGNChartResponse;
+    console.log("Successfully fetched GMGN chart data:", chartData);
     
     // Extract relevant data
     const tokenData: GMGNTokenData = {
-      marketCap: chartData.data.market_cap,
-      volume24h: chartData.data.volume_24h,
-      price: chartData.data.price || chartData.data.last_price,
-      change24h: chartData.data.price_change_24h
+      marketCap: chartData.data?.market_cap,
+      volume24h: chartData.data?.volume_24h,
+      price: chartData.data?.price || chartData.data?.last_price,
+      change24h: chartData.data?.price_change_24h
     };
     
     // Cache the result
@@ -55,15 +62,22 @@ export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData
   } catch (error) {
     console.error('Error fetching GMGN chart data:', error);
     
-    // Try the original API as fallback
+    // Try the original API as fallback with CORS proxy
     try {
-      const fallbackResponse = await fetch(`https://api.gmgn.cc/v1/tokens/sol/${tokenId}`);
+      const corsProxyUrl = 'https://corsproxy.io/?';
+      const fallbackApiUrl = `https://api.gmgn.cc/v1/tokens/sol/${tokenId}`;
+      const encodedFallbackUrl = encodeURIComponent(fallbackApiUrl);
+      
+      console.log(`Attempting fallback GMGN API via CORS proxy: ${corsProxyUrl}${encodedFallbackUrl}`);
+      
+      const fallbackResponse = await fetch(`${corsProxyUrl}${encodedFallbackUrl}`);
       
       if (!fallbackResponse.ok) {
         throw new Error(`Failed to fetch fallback token data: ${fallbackResponse.status}`);
       }
       
       const data = await fallbackResponse.json();
+      console.log("Successfully fetched fallback GMGN data:", data);
       
       // Extract relevant data
       const tokenData: GMGNTokenData = {
@@ -82,6 +96,9 @@ export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData
       return tokenData;
     } catch (fallbackError) {
       console.error('Error fetching fallback GMGN token data:', fallbackError);
+      
+      // Last resort - check if we have data from DexScreener in TokenDetail
+      // This is a temporary fallback, the data will be available in the next refresh
       return {};
     }
   }

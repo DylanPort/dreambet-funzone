@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, ExternalLink } from 'lucide-react';
 import { subscribeToGMGNTokenData } from '@/services/gmgnService';
 import { subscribeToTokenMetric } from '@/services/tokenDataCache';
+import { useToast } from '@/hooks/use-toast';
 
 interface TokenVolumeProps {
   tokenId: string;
@@ -11,6 +12,7 @@ interface TokenVolumeProps {
 const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
   const [volume, setVolume] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!tokenId) return;
@@ -27,17 +29,29 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
     
     // Fallback to existing service if GMGN doesn't provide the data
     const cleanupFallback = subscribeToTokenMetric(tokenId, 'volume24h', (newVolume) => {
-      if (!volume) { // Only update if we don't have data from GMGN
+      if (volume === null) { // Only update if we don't have data from GMGN
         setVolume(newVolume);
         setLoading(false);
       }
     });
     
+    // If we still don't have data after 10 seconds, show a toast
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        toast({
+          title: "Data loading slowly",
+          description: "Volume data is taking longer than expected to load",
+          variant: "default",
+        });
+      }
+    }, 10000);
+    
     return () => {
       cleanupGMGN();
       cleanupFallback();
+      clearTimeout(timeoutId);
     };
-  }, [tokenId, volume]);
+  }, [tokenId, volume, loading, toast]);
 
   const formatLargeNumber = (num: number | null) => {
     if (num === null) return "Loading...";

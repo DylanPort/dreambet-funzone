@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, ExternalLink } from 'lucide-react';
 import { subscribeToGMGNTokenData } from '@/services/gmgnService';
 import { subscribeToTokenMetric } from '@/services/tokenDataCache';
+import { useToast } from '@/hooks/use-toast';
 
 interface TokenMarketCapProps {
   tokenId: string;
@@ -11,6 +12,7 @@ interface TokenMarketCapProps {
 const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   const [marketCap, setMarketCap] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!tokenId) return;
@@ -27,17 +29,29 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
     
     // Fallback to existing service if GMGN doesn't provide the data
     const cleanupFallback = subscribeToTokenMetric(tokenId, 'marketCap', (newMarketCap) => {
-      if (!marketCap) { // Only update if we don't have data from GMGN
+      if (marketCap === null) { // Only update if we don't have data from GMGN
         setMarketCap(newMarketCap);
         setLoading(false);
       }
     });
     
+    // If we still don't have data after 10 seconds, show a toast
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        toast({
+          title: "Data loading slowly",
+          description: "Market cap data is taking longer than expected to load",
+          variant: "default",
+        });
+      }
+    }, 10000);
+    
     return () => {
       cleanupGMGN();
       cleanupFallback();
+      clearTimeout(timeoutId);
     };
-  }, [tokenId, marketCap]);
+  }, [tokenId, marketCap, loading, toast]);
 
   const formatLargeNumber = (num: number | null) => {
     if (num === null) return "Loading...";
