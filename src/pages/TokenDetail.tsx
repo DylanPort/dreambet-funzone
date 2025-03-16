@@ -32,6 +32,7 @@ const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate })
         if (event.data && typeof event.data === 'string') {
           const data = JSON.parse(event.data);
           if (data.type === 'price_update' && data.price) {
+            console.log("Received price update from chart:", data);
             onPriceUpdate(data.price, data.change || 0);
           }
         }
@@ -444,7 +445,6 @@ const TokenDetail = () => {
           updateTokenMetrics({
             marketCap: data.marketCap,
             volume24h: data.volume24h,
-            liquidity: data.liquidity,
           });
         }
       }, 30000);
@@ -636,9 +636,10 @@ const TokenDetail = () => {
   useEffect(() => {
     if (!id) return;
     
-    // Import and use the GMGN service
     const cleanupSubscription = subscribeToGMGNTokenData(id, (data) => {
-      if (data.price) {
+      console.log("Received GMGN data update:", data);
+      
+      if (data.price !== undefined) {
         updateTokenPrice(data.price, data.change24h || 0);
       }
       

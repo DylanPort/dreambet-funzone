@@ -8,19 +8,33 @@ interface GMGNTokenData {
   change24h?: number;
 }
 
-interface GMGNChartResponse {
-  data: {
-    market_cap?: number;
-    volume_24h?: number;
-    price?: number;
-    price_change_24h?: number;
-    last_price?: number;
-  };
-}
-
-// Shorter cache expiry for more real-time data
+// For caching price data
 const CACHE_EXPIRY = 30 * 1000; // 30 seconds
 const tokenCache: Record<string, { data: GMGNTokenData; timestamp: number }> = {};
+
+// New function to directly set chart price data
+export const updateGMGNTokenPrice = (
+  tokenId: string,
+  price: number,
+  change24h: number = 0
+): GMGNTokenData => {
+  console.log(`Direct price update for token ${tokenId}: ${price}, change: ${change24h}%`);
+  
+  const currentData = tokenCache[tokenId]?.data || {};
+  const newData = {
+    ...currentData,
+    price,
+    change24h
+  };
+  
+  // Update cache
+  tokenCache[tokenId] = {
+    data: newData,
+    timestamp: Date.now()
+  };
+  
+  return newData;
+};
 
 export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData> => {
   // Check cache first
@@ -42,7 +56,7 @@ export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData
       throw new Error(`Failed to fetch token data: ${response.status}`);
     }
     
-    const chartData = await response.json() as GMGNChartResponse;
+    const chartData = await response.json();
     console.log("Successfully fetched GMGN chart data:", chartData);
     
     // Extract relevant data
@@ -98,8 +112,12 @@ export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData
     } catch (fallbackError) {
       console.error('Error fetching fallback GMGN token data:', fallbackError);
       
-      // Last resort - check if we have data from DexScreener in TokenDetail
-      // This is a temporary fallback, the data will be available in the next refresh
+      // Return last cached data if available
+      if (tokenCache[tokenId]) {
+        return tokenCache[tokenId].data;
+      }
+      
+      // Return empty object as last resort
       return {};
     }
   }
@@ -127,9 +145,30 @@ export const subscribeToGMGNTokenData = (
     
     if (isActive) {
       // More frequent polling for real-time updates
-      timeoutId = window.setTimeout(fetchData, 5000); // Poll every 5 seconds
+      timeoutId = window.setTimeout(fetchData, 15000); // Poll every 15 seconds
     }
   };
+  
+  // Setup event listener for price updates from chart iframe
+  const handleChartMessage = (event: MessageEvent) => {
+    try {
+      if (isActive && event.data && typeof event.data === 'string') {
+        const data = JSON.parse(event.data);
+        
+        // Check if this is a price update message
+        if (data.type === 'price_update' && data.price) {
+          console.log('Received price update from chart:', data);
+          const tokenData = updateGMGNTokenPrice(tokenId, data.price, data.change || 0);
+          callback(tokenData);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling chart message:', error);
+    }
+  };
+  
+  // Add event listener for messages from the chart iframe
+  window.addEventListener('message', handleChartMessage);
   
   // Start fetching immediately
   fetchData();
@@ -137,6 +176,7 @@ export const subscribeToGMGNTokenData = (
   // Return cleanup function
   return () => {
     isActive = false;
+    window.removeEventListener('message', handleChartMessage);
     if (timeoutId !== null) {
       clearTimeout(timeoutId);
     }
