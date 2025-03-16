@@ -1,7 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, ArrowUp, ArrowDown, Zap, RefreshCw } from 'lucide-react';
+import PriceChart from './PriceChart';
+import { subscribeToGMGNTokenData } from '@/services/gmgnService';
 
 interface FuturisticTokenCardProps {
   token: any;
@@ -14,6 +15,54 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
 }) => {
   const [isHovering, setIsHovering] = useState(false);
   const isPositive = token.change24h >= 0;
+  const [chartData, setChartData] = useState<{time: string, price: number}[]>([]);
+  const [isLoadingChart, setIsLoadingChart] = useState(true);
+  
+  useEffect(() => {
+    if (token.id) {
+      setIsLoadingChart(true);
+      
+      // Clean up previous subscription if any
+      let unsubscribe: (() => void) | null = null;
+      
+      // Generate initial sample data while we wait for real data
+      const initialData = [];
+      let basePrice = token.currentPrice || 1.0;
+      
+      for (let i = -10; i <= 0; i++) {
+        const date = new Date();
+        date.setMinutes(date.getMinutes() + i);
+        
+        initialData.push({
+          time: date.toISOString(),
+          price: basePrice * (1 + (Math.random() - 0.5) * 0.05)
+        });
+      }
+      
+      setChartData(initialData);
+      
+      // Subscribe to token updates using the GMGN service
+      unsubscribe = subscribeToGMGNTokenData(token.id, (data) => {
+        if (data.price) {
+          const newPoint = {
+            time: new Date().toISOString(),
+            price: data.price
+          };
+          
+          setChartData(prev => {
+            const newData = [...prev, newPoint].slice(-20); // Keep last 20 points
+            return newData;
+          });
+          
+          setIsLoadingChart(false);
+        }
+      });
+      
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }
+  }, [token.id, token.currentPrice]);
   
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
@@ -65,20 +114,23 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         </div>
       </div>
       
-      {/* Price Display */}
+      {/* Chart Display - Replacing Price Display */}
       <div className="relative h-[80px] mb-3 rounded-md overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" style={{
-        backgroundSize: '200% 100%',
-        animation: 'border-flow 15s linear infinite'
-      }}></div>
+          backgroundSize: '200% 100%',
+          animation: 'border-flow 15s linear infinite'
+        }}></div>
+        
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative">
-            <span className={`text-xl font-bold ${isPositive ? 'text-green-300' : 'text-red-300'}`}>
-              ${formatPrice(token.currentPrice)}
-            </span>
-            <div className="absolute -right-8 -top-4">
-              <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                {isPositive ? '+' : ''}{token.change24h.toFixed(2)}%
+          <div className="w-full h-full">
+            <PriceChart 
+              data={chartData}
+              isLoading={isLoadingChart}
+              color={isPositive ? "url(#positiveGradient)" : "url(#negativeGradient)"}
+            />
+            <div className="absolute top-1 right-2">
+              <span className={`text-xs ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                {isPositive ? '+' : ''}{token.change24h?.toFixed(2) || '0.00'}%
               </span>
             </div>
           </div>
@@ -86,10 +138,10 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         
         {/* Animated scan line */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent opacity-50" style={{
-        height: '10px',
-        width: '100%',
-        animation: 'scan-line 2s linear infinite'
-      }}></div>
+          height: '10px',
+          width: '100%',
+          animation: 'scan-line 2s linear infinite'
+        }}></div>
       </div>
       
       {/* Action Buttons - Rocket for MOON and Skull for DUST */}
@@ -124,9 +176,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
           <ExternalLink className="w-3 h-3 mr-1" /> Pump.fun
         </Link>
       </div>
-      
-      {/* Data Flow Visualization */}
-      
     </div>;
 };
 
@@ -166,8 +215,6 @@ const FuturisticTokenDisplay: React.FC<{
   return <div className="flex items-center justify-center">
       <div className="relative">
         <FuturisticTokenCard key={tokens[currentTokenIndex]?.id || `token-${currentTokenIndex}`} token={tokens[currentTokenIndex]} flipping={isFlipping} />
-        
-        
       </div>
     </div>;
 };
