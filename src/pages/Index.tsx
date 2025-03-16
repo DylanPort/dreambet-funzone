@@ -92,7 +92,7 @@ const Index = () => {
       
       <div className="h-20 py-0 my-0"></div>
       
-      <main className="min-h-screen overflow-hidden py-[7px] my-[2px]">
+      <main className="min-h-screen overflow-hidden">
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
           <FloatingImages />
           
@@ -269,7 +269,7 @@ const Index = () => {
                 <PXBSupplyProgress />
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 my-[-56px] py-[2px]">
                 <div className="glass-panel p-6">
                   <PXBUserStats />
                 </div>
