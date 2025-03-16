@@ -92,72 +92,10 @@ export const usePointOperations = (
     try {
       const walletAddress = publicKey.toString();
       
-      // First check if auth is disabled in Supabase
+      // Check if auth is disabled in Supabase - this just logs info, we proceed regardless
       const authDisabled = await isAuthDisabled();
-      let isAuthenticated = false;
-      
-      if (!authDisabled) {
-        // Get the current authenticated user's session
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        
-        // Check if we have a valid session
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          toast.error('Authentication error. Please try reconnecting your wallet.');
-          return;
-        }
-        
-        // If no session exists, try to create one using the wallet address
-        if (!sessionData.session) {
-          console.log('No session found, attempting to sign in with wallet', walletAddress);
-          
-          // Try to sign in with the wallet address
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: `${walletAddress}@solana.wallet`, // Use wallet address as email
-            password: walletAddress, // Use wallet address as password
-          });
-          
-          if (signInError) {
-            // If sign in fails due to auth being disabled, proceed without auth
-            if (signInError.message === 'Email logins are disabled') {
-              console.log('Sign in failed: Email authentication is disabled, proceeding without login');
-              // We can proceed without authentication since we have the wallet address
-            } else {
-              // Try to sign up the user
-              console.log('Sign in failed, attempting to create account', signInError);
-              
-              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                email: `${walletAddress}@solana.wallet`,
-                password: walletAddress,
-                options: {
-                  data: {
-                    wallet_address: walletAddress
-                  }
-                }
-              });
-              
-              if (signUpError) {
-                // If sign up fails due to signups being disabled, proceed without auth
-                if (signUpError.message === 'Signups not allowed for this instance') {
-                  console.log('Failed to create account: Signups are disabled, proceeding without authentication');
-                  // We can proceed without authentication since we have the wallet address
-                } else {
-                  console.error('Failed to authenticate with your wallet:', signUpError);
-                }
-              } else {
-                console.log('Successfully created account for wallet', walletAddress);
-                isAuthenticated = true;
-              }
-            }
-          } else {
-            console.log('Successfully signed in with wallet', walletAddress);
-            isAuthenticated = true;
-          }
-        } else {
-          isAuthenticated = true;
-        }
-      } else {
-        console.log('Authentication is disabled in Supabase, proceeding without auth');
+      if (authDisabled) {
+        console.log('Authentication is disabled in Supabase, proceeding with public access');
       }
       
       // Fetch token data from TokenDataCache to get the initial market cap
@@ -197,37 +135,53 @@ export const usePointOperations = (
         return;
       }
       
-      // Record the point deduction in the history
-      await supabase
-        .from('points_history')
-        .insert({
-          user_id: userProfile.id,
-          amount: -betAmount,
-          action: 'bet_placed',
-          reference_id: tokenId
-        });
+      // Record the point deduction in the history - with error handling for RLS issues
+      try {
+        const { error: historyError } = await supabase
+          .from('points_history')
+          .insert({
+            user_id: userProfile.id,
+            amount: -betAmount,
+            action: 'bet_placed',
+            reference_id: tokenId
+          });
+          
+        if (historyError) {
+          console.warn('Non-critical error recording points history:', historyError);
+          // We continue anyway as this is non-critical
+        }
+      } catch (historyError) {
+        console.warn('Failed to record points history, but continuing:', historyError);
+        // Continue with the bet placement even if history recording fails
+      }
       
-      // Create the bet in the database
-      // Make sure to use the user ID from userProfile for bettor1_id
-      const { data: betData, error: betError } = await supabase
-        .from('bets')
-        .insert({
-          bettor1_id: userProfile.id,
-          token_mint: tokenId,
-          token_name: tokenName,
-          token_symbol: tokenSymbol,
-          sol_amount: betAmount,
-          prediction_bettor1: betType,
-          percentage_change: percentageChange,
-          duration: durationSeconds,
-          status: 'pending',
-          creator: userProfile.id, // Use the user ID as creator, not wallet address
-          initial_market_cap: initialMarketCap
-        })
-        .select()
-        .single();
-      
-      if (betError) {
+      // Create the bet in the database with improved error handling
+      let betData;
+      try {
+        const { data, error: betError } = await supabase
+          .from('bets')
+          .insert({
+            bettor1_id: userProfile.id,
+            token_mint: tokenId,
+            token_name: tokenName,
+            token_symbol: tokenSymbol,
+            sol_amount: betAmount,
+            prediction_bettor1: betType,
+            percentage_change: percentageChange,
+            duration: durationSeconds,
+            status: 'pending',
+            creator: userProfile.id, // Use the user ID as creator, not wallet address
+            initial_market_cap: initialMarketCap
+          })
+          .select()
+          .single();
+        
+        if (betError) {
+          throw betError;
+        }
+        
+        betData = data;
+      } catch (betError: any) {
         // Attempt to revert the points if bet creation fails
         await supabase
           .from('users')
@@ -243,28 +197,33 @@ export const usePointOperations = (
         });
         
         console.error('Error creating bet:', betError);
-        toast.error('Failed to create bet. Your points have been returned.');
+        toast.error(`Failed to create bet: ${betError.message || 'Unknown error'}. Your points have been returned.`);
         return;
       }
       
-      // Record the bet creation in history
-      await supabase
-        .from('bet_history')
-        .insert({
-          bet_id: betData.bet_id,
-          user_id: userProfile.id,
-          action: 'bet_created',
-          details: {
-            token_mint: tokenId,
-            token_name: tokenName,
-            token_symbol: tokenSymbol,
-            amount: betAmount,
-            type: betType,
-            percentage_change: percentageChange,
-            duration_minutes: durationMinutes
-          },
-          market_cap_at_action: initialMarketCap
-        });
+      // Try to record the bet creation in history
+      try {
+        await supabase
+          .from('bet_history')
+          .insert({
+            bet_id: betData.bet_id,
+            user_id: userProfile.id,
+            action: 'bet_created',
+            details: {
+              token_mint: tokenId,
+              token_name: tokenName,
+              token_symbol: tokenSymbol,
+              amount: betAmount,
+              type: betType,
+              percentage_change: percentageChange,
+              duration_minutes: durationMinutes
+            },
+            market_cap_at_action: initialMarketCap
+          });
+      } catch (historyError) {
+        console.warn('Failed to record bet history, but continuing:', historyError);
+        // Continue even if history creation fails
+      }
       
       // Format the new bet to add to the local state
       const newBet: PXBBet = {
