@@ -219,7 +219,7 @@ const OpenBetsList = () => {
             </button>
             <button onClick={() => setFilter('die')} className={`px-3 py-1 text-sm rounded-full transition-colors ${filter === 'die' ? 'bg-red-500/20 text-red-400 border border-red-400/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
               <ArrowDown className="w-3 h-3 inline mr-1" />
-              Die
+              Dust
             </button>
           </div>
           
@@ -271,7 +271,7 @@ const OpenBetsList = () => {
                       <div className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm
                         ${bet.prediction === 'migrate' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                         {bet.prediction === 'migrate' ? <ArrowUp className="h-3.5 w-3.5 mr-1" /> : <ArrowDown className="h-3.5 w-3.5 mr-1" />}
-                        <span>{bet.prediction === 'migrate' ? 'Moon' : 'Die'}</span>
+                        <span>{bet.prediction === 'migrate' ? 'Moon' : 'Dust'}</span>
                       </div>
                       
                       <div className="flex items-center text-sm bg-dream-accent2/10 px-3 py-1 rounded-lg">
