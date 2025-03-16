@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Coins } from 'lucide-react';
@@ -8,15 +7,18 @@ import useSolanaBalance from '@/hooks/useSolanaBalance';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
-  const { balance } = useSolanaBalance();
-  const { userProfile, fetchUserProfile } = usePXBPoints();
+  const {
+    balance
+  } = useSolanaBalance();
+  const {
+    userProfile,
+    fetchUserProfile
+  } = usePXBPoints();
   const [pxbPoints, setPxbPoints] = useState<number | null>(null);
-
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -28,7 +30,6 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
@@ -45,27 +46,23 @@ const Navbar = () => {
     if (!userProfile) return;
 
     // Subscribe to realtime changes on the users table
-    const channel = supabase
-      .channel('public:users')
-      .on('postgres_changes', 
-        { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userProfile.id}` },
-        (payload) => {
-          console.log('User data updated:', payload);
-          if (payload.new && 'points' in payload.new) {
-            setPxbPoints(payload.new.points as number);
-            fetchUserProfile(); // Also refresh the context
-          }
-        }
-      )
-      .subscribe();
-
+    const channel = supabase.channel('public:users').on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'users',
+      filter: `id=eq.${userProfile.id}`
+    }, payload => {
+      console.log('User data updated:', payload);
+      if (payload.new && 'points' in payload.new) {
+        setPxbPoints(payload.new.points as number);
+        fetchUserProfile(); // Also refresh the context
+      }
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [userProfile, fetchUserProfile]);
-
-  return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
+  return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <Link to="/" className="text-xl font-display font-bold text-gradient mx-px px-[3px] my-[2px] py-[10px]">
@@ -94,31 +91,20 @@ const Navbar = () => {
             
             <ProfileButton />
             
-            {(pxbPoints !== null && pxbPoints > 0) ? (
-              <div className="glass-panel relative overflow-hidden py-1 px-3 flex items-center gap-1.5 text-yellow-400 group animate-pulse-subtle">
+            {pxbPoints !== null && pxbPoints > 0 ? <div className="glass-panel relative overflow-hidden py-1 px-3 flex items-center gap-1.5 text-yellow-400 group animate-pulse-subtle">
                 <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-amber-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="w-4 h-4 flex items-center justify-center">
                   <Coins className="w-4 h-4" />
                 </div>
                 <span className="relative z-10">{pxbPoints.toLocaleString()} PXB</span>
-              </div>
-            ) : userProfile && (
-              <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-yellow-400/70">
+              </div> : userProfile && <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-yellow-400/70">
                 <div className="w-4 h-4 flex items-center justify-center">
                   <Coins className="w-4 h-4" />
                 </div>
                 <span>0 PXB</span>
-              </div>
-            )}
+              </div>}
             
-            {balance !== null && (
-              <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-green-400">
-                <div className="w-4 h-4 flex items-center justify-center">
-                  <img src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" alt="Wallet" className="w-full h-full object-contain" />
-                </div>
-                <span>{balance.toFixed(2)} SOL</span>
-              </div>
-            )}
+            {balance !== null}
             
             <WalletConnectButton />
           </nav>
@@ -129,8 +115,7 @@ const Navbar = () => {
         </div>
       </div>
       
-      {isOpen && (
-        <div className="md:hidden glass-panel p-4">
+      {isOpen && <div className="md:hidden glass-panel p-4">
           <nav className="flex flex-col space-y-4">
             <Link to="/dashboard" className={`py-2 flex items-center gap-2 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
               <div className="w-10 h-10 flex items-center justify-center transition-transform hover:scale-105">
@@ -158,39 +143,30 @@ const Navbar = () => {
               <span>Profile</span>
             </Link>
             
-            {(pxbPoints !== null && pxbPoints > 0) ? (
-              <div className="py-2 flex items-center gap-2 text-yellow-400 animate-pulse-subtle">
+            {pxbPoints !== null && pxbPoints > 0 ? <div className="py-2 flex items-center gap-2 text-yellow-400 animate-pulse-subtle">
                 <div className="w-5 h-5 flex items-center justify-center">
                   <Coins className="w-5 h-5" />
                 </div>
                 <span>{pxbPoints.toLocaleString()} PXB</span>
-              </div>
-            ) : userProfile && (
-              <div className="py-2 flex items-center gap-2 text-yellow-400/70">
+              </div> : userProfile && <div className="py-2 flex items-center gap-2 text-yellow-400/70">
                 <div className="w-5 h-5 flex items-center justify-center">
                   <Coins className="w-5 h-5" />
                 </div>
                 <span>0 PXB</span>
-              </div>
-            )}
+              </div>}
             
-            {balance !== null && (
-              <div className="py-2 flex items-center gap-2 text-green-400">
+            {balance !== null && <div className="py-2 flex items-center gap-2 text-green-400">
                 <div className="w-5 h-5 flex items-center justify-center">
                   <img src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" alt="Wallet" className="w-full h-full object-contain" />
                 </div>
                 <span>{balance.toFixed(2)} SOL</span>
-              </div>
-            )}
+              </div>}
             
             <div className="py-2">
               <WalletConnectButton />
             </div>
           </nav>
-        </div>
-      )}
-    </header>
-  );
+        </div>}
+    </header>;
 };
-
 export default Navbar;
