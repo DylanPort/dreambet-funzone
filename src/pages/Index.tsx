@@ -215,45 +215,26 @@ const Index = () => {
           <div className="flex justify-center gap-4 mt-10 mb-16">
             <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
               <Link to="/betting">
-                <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
-                  rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
-                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
-                  hover:border-purple-400/50
-                  before:content-[''] before:absolute before:inset-0 
-                  before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
-                  before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
-                  after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
-                  after:shadow-[0_0_30px_rgba(139,92,246,0.5)] after:opacity-50 hover:after:opacity-100
-                  after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(139,92,246,0.8)]
-                  [&>span]:relative [&>span]:z-10">
-                  <span className="relative z-10 flex items-center font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent drop-shadow-[0_0_3px_rgba(255,255,255,0.8)]">
+                <div className="relative overflow-hidden group transition-all duration-500
+                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
+                  
+                  <img 
+                    src="/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png" 
+                    alt="Start Betting" 
+                    className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(139,92,246,0.7)]
+                    transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(139,92,246,0.9)]"
+                  />
+                  
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-blue-400/10 to-purple-500/10 
+                    opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                  
+                  <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
+                    text-xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent
+                    drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
                     Start Betting
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-                  </span>
-                  
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent3 via-dream-accent2 to-dream-accent1
-                      animate-gradient-move bg-[length:400%_100%] opacity-70 transform-gpu"></div>
-                    
-                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-xl">
-                      <div className="absolute -inset-[10px] bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.5),transparent_60%)]
-                        animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                      
-                      <div className="absolute -bottom-2 left-0 right-0 h-12 bg-gradient-to-t from-purple-400 via-dream-accent3 to-transparent
-                        filter blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500
-                        animate-bob [mask-image:linear-gradient(to_bottom,transparent,black)]"></div>
-                      
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-700">
-                        <div className="absolute top-[20%] left-[15%] w-4 h-4 rounded-full bg-green-300 filter blur-sm animate-float"></div>
-                        <div className="absolute top-[40%] left-[75%] w-3 h-3 rounded-full bg-yellow-300 filter blur-sm animate-float-delayed"></div>
-                        <div className="absolute top-[70%] left-[30%] w-2 h-2 rounded-full bg-purple-300 filter blur-sm animate-float-delayed-2"></div>
-                        <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Diamond" className="absolute top-[45%] left-[50%] w-12 h-12 transform -translate-x-1/2 -translate-y-1/2 animate-float filter drop-shadow-[0_0_10px_rgba(139,92,246,0.8)]" />
-                      </div>
-                      
-                      <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
-                      <div className="absolute inset-x-8 bottom-0 h-[30%] bg-gradient-to-t from-black/40 to-transparent rounded-b-xl opacity-10 group-hover:opacity-40 transition-opacity duration-500"></div>
-                    </div>
-                  
-                </Button>
+                  </div>
+                </div>
               </Link>
               
               <Dialog>
