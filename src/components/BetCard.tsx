@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -106,13 +105,10 @@ const BetCard: React.FC<BetCardProps> = ({
     <div 
       className={`relative overflow-hidden backdrop-blur-lg bg-black/20 border ${borderClass} rounded-xl shadow-xl transition-all ${bgClass} group`}
     >
-      {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
       
-      {/* Top border glow effect */}
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2/40 to-transparent"></div>
       
-      {/* Bottom border glow effect */}
       <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1/40 to-transparent"></div>
       
       <div className="relative z-10 p-4">
@@ -133,7 +129,7 @@ const BetCard: React.FC<BetCardProps> = ({
           <div className="text-right">
             <div className="bg-dream-accent2/10 px-3 py-1 rounded-lg flex items-center">
               <Wallet className="h-3.5 w-3.5 mr-1.5 text-dream-accent2" />
-              <p className="font-semibold">{bet.amount} SOL</p>
+              <p className="font-semibold">{bet.amount} PXB</p>
             </div>
             <p className="text-xs text-dream-foreground/60 mt-1 flex items-center justify-end">
               {bet.prediction === 'migrate' 
@@ -211,7 +207,7 @@ const BetCard: React.FC<BetCardProps> = ({
             <div className="w-full flex justify-center items-center py-1">
               {bet.status === 'completed' && bet.winner === publicKeyString ? (
                 <span className="text-green-400 font-semibold flex items-center">
-                  <CheckCircle className="h-4 w-4 mr-2" /> WIN (+{bet.amount * 2} SOL)
+                  <CheckCircle className="h-4 w-4 mr-2" /> WIN (+{bet.amount * 2} PXB)
                 </span>
               ) : (
                 <span className="text-red-400 font-semibold flex items-center">
@@ -225,7 +221,7 @@ const BetCard: React.FC<BetCardProps> = ({
         {isActive && (
           <>
             <div className="mt-3 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-3">
-              <p>Betting against the house: If you win, you'll earn {bet.amount} SOL from the house.</p>
+              <p>Betting against the house: If you win, you'll earn {bet.amount} PXB from the house.</p>
             </div>
             
             {publicKeyString !== bet.initiator && (
