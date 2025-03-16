@@ -169,7 +169,7 @@ const BettingDashboard = () => {
                     </div>
                   </div>
                   <p className="text-sm text-dream-foreground/80">Bet whether the token will rise or fall by at least 10% after migration.</p>
-                  {!readSteps.placeBet && readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent2 animate-pulse">Click to understand this step</div>}
+                  {!readSteps.placeBet && readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent2 animate-pulse">Click if understand this step</div>}
                 </motion.div>
                 
                 <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(123,97,255,0.3)] ${readSteps.collectRewards ? 'border-dream-accent3/50' : 'border-dream-accent3/20'}`} whileHover={{
