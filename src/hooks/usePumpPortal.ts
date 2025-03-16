@@ -10,6 +10,7 @@ export const usePumpPortal = (tokenId?: string) => {
   // Subscribe to specific token trades when needed
   useEffect(() => {
     if (pumpPortal.connected && tokenId && !isSubscribed) {
+      console.log(`Subscribing to PumpPortal trades for token: ${tokenId}`);
       pumpPortal.subscribeToToken(tokenId);
       setIsSubscribed(true);
     }
@@ -19,6 +20,7 @@ export const usePumpPortal = (tokenId?: string) => {
   useEffect(() => {
     // If no specific token is provided, make sure we're subscribed to new tokens
     if (pumpPortal.connected && !tokenId && !isSubscribed) {
+      console.log('Subscribing to PumpPortal new tokens feed');
       pumpPortal.subscribeToNewTokens();
       setIsSubscribed(true);
     }
@@ -63,6 +65,7 @@ export const usePumpPortal = (tokenId?: string) => {
     rawTokens: getRawTokensFromLogs(), 
     recentTrades: tokenId ? pumpPortal.recentTrades[tokenId] || [] : {},
     recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
+    tokenMetrics: tokenId ? pumpPortal.tokenMetrics[tokenId] : null,
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens
   };

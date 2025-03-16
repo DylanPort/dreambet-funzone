@@ -373,7 +373,10 @@ const TokenDetail = () => {
       const trades = pumpPortal.recentTrades[id];
       
       if (trades.length > 0) {
-        const latestPrice = getLatestPriceFromTrades(trades);
+        const latestTrade = trades[0];
+        console.log("Latest PumpPortal trade:", latestTrade);
+        
+        const latestPrice = latestTrade.price;
         
         const currentPrice = token?.currentPrice || 0;
         
@@ -382,6 +385,7 @@ const TokenDetail = () => {
             ? ((latestPrice - currentPrice) / currentPrice) * 100 
             : 0;
             
+          console.log(`Updating price from PumpPortal: ${latestPrice} (change: ${priceChange}%)`);
           updateTokenPrice(latestPrice, priceChange);
           
           setPriceData(current => {
@@ -392,6 +396,17 @@ const TokenDetail = () => {
             
             return [...current, newPoint].slice(-60);
           });
+          
+          try {
+            localStorage.setItem(`token_price_${id}`, JSON.stringify({
+              price: latestPrice,
+              change24h: priceChange,
+              timestamp: Date.now(),
+              source: 'pumpportal'
+            }));
+          } catch (error) {
+            console.error("Error caching price:", error);
+          }
         }
         
         if (Date.now() - lastMetricsUpdateRef.current > 5000) {
@@ -419,7 +434,7 @@ const TokenDetail = () => {
         }
       }
     }
-  }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
+  }, [id, pumpPortal.recentTrades, token, updateTokenPrice, priceData]);
   
   useEffect(() => {
     if (id && pumpPortal.tokenMetrics[id]) {
@@ -713,11 +728,20 @@ const TokenDetail = () => {
                 <div className="flex flex-col items-end">
                   <div className="text-3xl font-bold">
                     ${formatPrice(token.currentPrice)}
-                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">LIVE</span>
+                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">
+                      {isLive ? 'LIVE' : 'STATIC'}
+                    </span>
                   </div>
                   <div className={`flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
                     {Math.abs(token.change24h).toFixed(2)}%
+                  </div>
+                  <div className="text-xs text-dream-foreground/60 mt-1">
+                    {pumpPortal.recentTrades[id]?.length > 0 ? (
+                      <span>Last trade: {new Date(pumpPortal.recentTrades[id][0].timestamp).toLocaleTimeString()}</span>
+                    ) : (
+                      <span>No recent trades</span>
+                    )}
                   </div>
                 </div>
               </div>
