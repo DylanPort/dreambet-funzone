@@ -50,11 +50,11 @@ const BettingDashboard = () => {
                   <div className="flex justify-between mb-2">
                     <div className="flex items-center gap-1">
                       <ArrowUp className="w-4 h-4 text-green-400" />
-                      <span className="text-sm">MOON: Price up</span>
+                      <span className="text-sm">MOON</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <ArrowDown className="w-4 h-4 text-red-400" />
-                      <span className="text-sm">DIE: Price down</span>
+                      <span className="text-sm">DUST</span>
                     </div>
                   </div>
                   <p className="text-sm text-dream-foreground/70">Predict if the token will go up or down by at least 10% or more.</p>
