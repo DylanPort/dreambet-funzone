@@ -143,4 +143,4 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   );
 };
 
-export default React.memo(TokenVolume);
+export default React.memo(TokenMarketCap);
