@@ -92,6 +92,14 @@ export const usePointOperations = (
     try {
       const walletAddress = publicKey.toString();
       
+      // Get the current authenticated user's session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        toast.error('Authentication required. Please sign in.');
+        console.error('Session error:', sessionError);
+        return;
+      }
+      
       // Fetch token data from TokenDataCache to get the initial market cap
       const tokenData = await fetchTokenMetrics(tokenId);
       
@@ -140,6 +148,7 @@ export const usePointOperations = (
         });
       
       // Create the bet in the database
+      // Make sure to use the user ID from userProfile for bettor1_id
       const { data: betData, error: betError } = await supabase
         .from('bets')
         .insert({
@@ -152,7 +161,7 @@ export const usePointOperations = (
           percentage_change: percentageChange,
           duration: durationSeconds,
           status: 'pending',
-          creator: walletAddress,
+          creator: userProfile.id, // Use the user ID as creator, not wallet address
           initial_market_cap: initialMarketCap
         })
         .select()
