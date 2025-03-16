@@ -12,13 +12,16 @@ import PXBBetsList from '@/components/PXBBetsList';
 import PXBSupplyProgress from '@/components/PXBSupplyProgress';
 import PXBUserStats from '@/components/PXBUserStats';
 import BetReel from '@/components/BetReel';
-
 const PXBSpace = () => {
-  const { connected, publicKey } = useWallet();
-  const { userProfile, isLoading } = usePXBPoints();
-
-  return (
-    <>
+  const {
+    connected,
+    publicKey
+  } = useWallet();
+  const {
+    userProfile,
+    isLoading
+  } = usePXBPoints();
+  return <>
       <OrbitingParticles />
       <Navbar />
       
@@ -48,25 +51,12 @@ const PXBSpace = () => {
           <BetReel />
           
           {/* Active Bets Section (Placeholder) */}
-          <div className="glass-panel p-6 mb-6 overflow-hidden relative">
-            <h2 className="font-semibold text-lg mb-4 flex items-center">
-              <Activity className="mr-2 h-5 w-5 text-dream-accent1" />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2/90 via-dream-accent1/90 to-dream-accent3/90 font-bold">
-                Active Bets
-              </span>
-            </h2>
-            <div className="text-dream-foreground/70 text-sm">
-              Active bets are displayed in the reel at the top of the page. Check there for the latest betting activity.
-            </div>
-          </div>
           
-          {!connected ? (
-            <div className="glass-panel p-8 text-center">
+          
+          {!connected ? <div className="glass-panel p-8 text-center">
               <p className="text-xl text-dream-foreground/70 mb-4">Connect your wallet to access PXB Space</p>
               <p className="text-dream-foreground/50 mb-6">Mint PXB Points to start participating in the ecosystem</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            </div> : <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Left column - Stats & Balance */}
               <div className="md:col-span-4 space-y-6">
                 <PXBPointsBalance />
@@ -145,12 +135,9 @@ const PXBSpace = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
         </div>
       </main>
-    </>
-  );
+    </>;
 };
-
 export default PXBSpace;
