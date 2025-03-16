@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BarChart3, ExternalLink } from 'lucide-react';
+import { subscribeToGMGNTokenData } from '@/services/gmgnService';
 import { subscribeToTokenMetric } from '@/services/tokenDataCache';
 
 interface TokenMarketCapProps {
@@ -16,13 +17,27 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
     
     setLoading(true);
     
-    const cleanup = subscribeToTokenMetric(tokenId, 'marketCap', (newMarketCap) => {
-      setMarketCap(newMarketCap);
-      setLoading(false);
+    // First try to get data from GMGN API (faster)
+    const cleanupGMGN = subscribeToGMGNTokenData(tokenId, (data) => {
+      if (data.marketCap) {
+        setMarketCap(data.marketCap);
+        setLoading(false);
+      }
     });
     
-    return cleanup;
-  }, [tokenId]);
+    // Fallback to existing service if GMGN doesn't provide the data
+    const cleanupFallback = subscribeToTokenMetric(tokenId, 'marketCap', (newMarketCap) => {
+      if (!marketCap) { // Only update if we don't have data from GMGN
+        setMarketCap(newMarketCap);
+        setLoading(false);
+      }
+    });
+    
+    return () => {
+      cleanupGMGN();
+      cleanupFallback();
+    };
+  }, [tokenId, marketCap]);
 
   const formatLargeNumber = (num: number | null) => {
     if (num === null) return "Loading...";

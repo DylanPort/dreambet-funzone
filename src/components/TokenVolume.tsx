@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, ExternalLink } from 'lucide-react';
+import { subscribeToGMGNTokenData } from '@/services/gmgnService';
 import { subscribeToTokenMetric } from '@/services/tokenDataCache';
 
 interface TokenVolumeProps {
@@ -16,13 +17,27 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
     
     setLoading(true);
     
-    const cleanup = subscribeToTokenMetric(tokenId, 'volume24h', (newVolume) => {
-      setVolume(newVolume);
-      setLoading(false);
+    // First try to get data from GMGN API (faster)
+    const cleanupGMGN = subscribeToGMGNTokenData(tokenId, (data) => {
+      if (data.volume24h) {
+        setVolume(data.volume24h);
+        setLoading(false);
+      }
     });
     
-    return cleanup;
-  }, [tokenId]);
+    // Fallback to existing service if GMGN doesn't provide the data
+    const cleanupFallback = subscribeToTokenMetric(tokenId, 'volume24h', (newVolume) => {
+      if (!volume) { // Only update if we don't have data from GMGN
+        setVolume(newVolume);
+        setLoading(false);
+      }
+    });
+    
+    return () => {
+      cleanupGMGN();
+      cleanupFallback();
+    };
+  }, [tokenId, volume]);
 
   const formatLargeNumber = (num: number | null) => {
     if (num === null) return "Loading...";
