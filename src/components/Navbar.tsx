@@ -86,7 +86,7 @@ const Navbar = () => {
               <div className="w-10 h-10 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" />
               </div>
-              <span>My Bets</span>
+              <span>PXB Space</span>
             </Link>
             
             <ProfileButton />
