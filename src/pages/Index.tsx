@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap } from 'lucide-react';
@@ -14,18 +13,17 @@ import PXBOnboarding from '@/components/PXBOnboarding';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import RecentTokenTrades from '@/components/RecentTokenTrades';
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
-  const { userProfile } = usePXBPoints();
-  
+  const {
+    userProfile
+  } = usePXBPoints();
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-  
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -66,12 +64,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-  
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-  
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -82,7 +78,6 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-  
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -121,11 +116,7 @@ const Index = () => {
                 . Bet on whether new tokens will 
                 
                 <span className="relative inline-flex items-center gap-1 text-green-400 font-bold animate-bob">
-                  <img 
-                    src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" 
-                    alt="Rocket" 
-                    className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" 
-                  />
+                  <img src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" alt="Rocket" className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
                   MOON
                   <span className="absolute inset-0 bg-green-400/10 blur-sm animate-pulse-glow rounded-full"></span>
                 </span> 
@@ -139,23 +130,19 @@ const Index = () => {
                 
                 in just 
                 
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold">
-                  60 minutes
-                </span>
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold"> 60 minutes</span>
                 
                 . It's that simple - 
                 
-                <span className="text-white animate-float-delayed">predict</span>
+                <span className="text-white animate-float-delayed"> predict</span>
                 , 
-                <span className="text-white animate-float-delayed-2">place your bet</span>
+                <span className="text-white animate-float-delayed-2"> place your bet</span>
                 , and 
-                <span className="text-white animate-float">build your reputation</span> 
+                <span className="text-white animate-float"> build your reputation </span> 
                 
                 alongside future 
                 
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
-                  life-changing perks!
-                </span>
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold"> life-changing perks!</span>
               </p>
             </div>
             
@@ -325,5 +312,4 @@ const Index = () => {
       </footer>
     </>;
 };
-
 export default Index;
