@@ -92,7 +92,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       }}></div>
       </div>
       
-      {/* Action Buttons - Rocket for MOON and Flame for DUST */}
+      {/* Action Buttons - Rocket for MOON and Skull for DUST */}
       <div className="flex justify-around">
         <button className="relative group">
           <img 
@@ -106,12 +106,12 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         
         <button className="relative group">
           <img 
-            src="/lovable-uploads/2b1546ad-becf-4939-b314-fab90c243cfa.png" 
+            src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
             alt="DUST" 
-            className="w-14 h-14 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(155,135,245,0.7)] rotate-180"
+            className="w-14 h-14 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]"
           />
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500/0 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
-          <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-red-400 to-purple-400 bg-clip-text text-transparent">DUST</span>
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/0 via-cyan-400/20 to-magenta-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent">DUST</span>
         </button>
       </div>
       
