@@ -43,9 +43,7 @@ const PXBSpace = () => {
           </div>
           
           {/* User Stats Component */}
-          <div className="glass-panel p-6 mb-6 overflow-hidden relative">
-            <PXBUserStats />
-          </div>
+          
           
           {/* Notice: BetReel actually renders itself as a fixed position bar at the top of the page */}
           <BetReel />
