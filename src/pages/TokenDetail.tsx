@@ -16,7 +16,6 @@ import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScr
 import TokenMarketCap from '@/components/TokenMarketCap';
 import TokenVolume from '@/components/TokenVolume';
 import TokenComments from '@/components/TokenComments';
-import { subscribeToGMGNTokenData } from '@/services/gmgnService';
 
 const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate }) => {
   const [timeInterval, setTimeInterval] = useState('15');
@@ -32,7 +31,6 @@ const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate })
         if (event.data && typeof event.data === 'string') {
           const data = JSON.parse(event.data);
           if (data.type === 'price_update' && data.price) {
-            console.log("Received price update from chart:", data);
             onPriceUpdate(data.price, data.change || 0);
           }
         }
@@ -177,8 +175,7 @@ const TokenDetail = () => {
       localStorage.setItem(`token_price_${id}`, JSON.stringify({
         price,
         change24h,
-        timestamp: Date.now(),
-        source: 'pumpportal'
+        timestamp: Date.now()
       }));
     } catch (error) {
       console.error("Error caching price:", error);
@@ -374,10 +371,7 @@ const TokenDetail = () => {
       const trades = pumpPortal.recentTrades[id];
       
       if (trades.length > 0) {
-        const latestTrade = trades[0];
-        console.log("Latest PumpPortal trade:", latestTrade);
-        
-        const latestPrice = latestTrade.price;
+        const latestPrice = getLatestPriceFromTrades(trades);
         
         const currentPrice = token?.currentPrice || 0;
         
@@ -386,7 +380,6 @@ const TokenDetail = () => {
             ? ((latestPrice - currentPrice) / currentPrice) * 100 
             : 0;
             
-          console.log(`Updating price from PumpPortal: ${latestPrice} (change: ${priceChange}%)`);
           updateTokenPrice(latestPrice, priceChange);
           
           setPriceData(current => {
@@ -397,17 +390,6 @@ const TokenDetail = () => {
             
             return [...current, newPoint].slice(-60);
           });
-          
-          try {
-            localStorage.setItem(`token_price_${id}`, JSON.stringify({
-              price: latestPrice,
-              change24h: priceChange,
-              timestamp: Date.now(),
-              source: 'pumpportal'
-            }));
-          } catch (error) {
-            console.error("Error caching price:", error);
-          }
         }
         
         if (Date.now() - lastMetricsUpdateRef.current > 5000) {
@@ -435,7 +417,7 @@ const TokenDetail = () => {
         }
       }
     }
-  }, [id, pumpPortal.recentTrades, token, updateTokenPrice, priceData]);
+  }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
   
   useEffect(() => {
     if (id && pumpPortal.tokenMetrics[id]) {
@@ -461,6 +443,7 @@ const TokenDetail = () => {
           updateTokenMetrics({
             marketCap: data.marketCap,
             volume24h: data.volume24h,
+            liquidity: data.liquidity,
           });
         }
       }, 30000);
@@ -475,34 +458,6 @@ const TokenDetail = () => {
       };
     }
   }, [id, updateTokenPrice, updateTokenMetrics]);
-  
-  useEffect(() => {
-    if (id && pumpPortal.coingeckoPrice) {
-      const { price, change24h } = pumpPortal.coingeckoPrice;
-      console.log("Updating price from Coingecko:", price, change24h);
-      
-      setToken(current => {
-        if (!current) return null;
-        return {
-          ...current,
-          currentPrice: price,
-          change24h: change24h,
-          priceSource: 'coingecko'
-        };
-      });
-      
-      try {
-        localStorage.setItem(`token_price_${id}`, JSON.stringify({
-          price,
-          change24h,
-          timestamp: Date.now(),
-          source: 'coingecko'
-        }));
-      } catch (error) {
-        console.error("Error caching Coingecko price:", error);
-      }
-    }
-  }, [id, pumpPortal.coingeckoPrice]);
   
   useEffect(() => {
     if (bets.length > 0) {
@@ -587,7 +542,7 @@ const TokenDetail = () => {
       setLoading(false);
     }
   }, [id, pumpPortal, toast, updateTokenMetrics]);
-  
+
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
       toast({
@@ -649,8 +604,7 @@ const TokenDetail = () => {
     return `$${num.toFixed(2)}`;
   };
 
-  const isLive = pumpPortal.connected && id && (pumpPortal.recentTrades[id]?.length > 0 || pumpPortal.coingeckoPrice);
-  const priceSource = token?.priceSource || (pumpPortal.coingeckoPrice ? 'coingecko' : 'pumpportal');
+  const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
   
   const renderActiveBetBanner = () => {
     if (!newActiveBet) return null;
@@ -677,29 +631,6 @@ const TokenDetail = () => {
       </div>
     );
   };
-  
-  useEffect(() => {
-    if (!id) return;
-    
-    const cleanupSubscription = subscribeToGMGNTokenData(id, (data) => {
-      console.log("Received GMGN data update:", data);
-      
-      if (data.price !== undefined) {
-        updateTokenPrice(data.price, data.change24h || 0);
-      }
-      
-      if (data.marketCap || data.volume24h) {
-        updateTokenMetrics({
-          marketCap: data.marketCap,
-          volume24h: data.volume24h
-        });
-      }
-    });
-    
-    return () => {
-      cleanupSubscription();
-    };
-  }, [id, updateTokenPrice, updateTokenMetrics]);
   
   return (
     <>
@@ -758,27 +689,11 @@ const TokenDetail = () => {
                 <div className="flex flex-col items-end">
                   <div className="text-3xl font-bold">
                     ${formatPrice(token.currentPrice)}
-                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">
-                      {isLive ? 'LIVE' : 'STATIC'}
-                    </span>
+                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">LIVE</span>
                   </div>
                   <div className={`flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
                     {Math.abs(token.change24h).toFixed(2)}%
-                  </div>
-                  <div className="text-xs text-dream-foreground/60 mt-1 flex items-center">
-                    {priceSource === 'coingecko' ? (
-                      <span className="flex items-center">
-                        <img src="/lovable-uploads/coingecko-logo.webp" alt="CoinGecko" className="w-4 h-4 mr-1 rounded-full" />
-                        CoinGecko: {pumpPortal.coingeckoPrice 
-                          ? new Date(pumpPortal.coingeckoPrice.timestamp).toLocaleTimeString() 
-                          : 'Loading...'}
-                      </span>
-                    ) : pumpPortal.recentTrades[id]?.length > 0 ? (
-                      <span>PumpPortal: {new Date(pumpPortal.recentTrades[id][0].timestamp).toLocaleTimeString()}</span>
-                    ) : (
-                      <span>No price data</span>
-                    )}
                   </div>
                 </div>
               </div>
