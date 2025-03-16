@@ -62,7 +62,10 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
   };
 
   // Handle bet placement
-  const handlePlaceBet = async (betType: 'up' | 'down') => {
+  const handlePlaceBet = async (betType: 'up' | 'down', e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation when betting
+    e.stopPropagation(); // Stop event propagation
+    
     if (!userProfile) {
       toast.error('You must be logged in to place a bet');
       return;
@@ -86,8 +89,7 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
       // Add a default percentage change of 10% for quick betting
       await placeBet(id, name, symbol, 10, betType, 10, 30);
       
-      // Show success notification after bet is placed
-      // Note: No need to show success here as placeBet will handle it
+      // Success notification is handled by placeBet function
     } catch (error) {
       console.error('Error placing bet:', error);
       toast.error('Failed to place bet. Please try again.');
@@ -119,6 +121,7 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
                   href={pairAddress ? `https://dexscreener.com/solana/${pairAddress}` : `https://dexscreener.com/solana/${id}`} 
                   target="_blank" 
                   rel="noopener noreferrer" 
+                  onClick={(e) => e.stopPropagation()} // Prevent the Link click when clicking on the external link
                   className="text-dream-foreground/40"
                 >
                   <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
@@ -173,22 +176,14 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <button 
             className="btn-moon py-1.5 flex items-center justify-center gap-1"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handlePlaceBet('up');
-            }}
+            onClick={(e) => handlePlaceBet('up', e)}
           >
             <ArrowUp className="w-3.5 h-3.5" />
             <span>Moon (10 PXB)</span>
           </button>
           <button 
             className="btn-die py-1.5 flex items-center justify-center gap-1"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handlePlaceBet('down');
-            }}
+            onClick={(e) => handlePlaceBet('down', e)}
           >
             <ArrowDown className="w-3.5 h-3.5" />
             <span>Die (10 PXB)</span>

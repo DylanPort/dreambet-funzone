@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOpenBets } from '@/services/supabaseService';
@@ -298,10 +299,10 @@ const OpenBetsList = () => {
                 transition={{ duration: 0.3 }}
               >
                 <Link 
-                  to={`/betting/token/${bet.tokenId}`}
+                  to={`/token/${bet.tokenId}`}
                   className="block w-full"
                 >
-                  <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden">
+                  <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
                     <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
                     <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
