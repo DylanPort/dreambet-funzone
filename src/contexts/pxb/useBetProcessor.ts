@@ -70,14 +70,13 @@ export const useBetProcessor = (
           const pointsWon = betWon ? bet.betAmount * 2 : 0;
           
           // Update bet status in database
-          const newStatus = betWon ? 'won' : 'lost';
           const { error: betUpdateError } = await supabase
             .from('bets')
             .update({
-              status: newStatus,
+              status: betWon ? 'won' : 'lost',
               points_won: pointsWon,
-              // Using the database field name for market cap
-              current_market_cap: currentMarketCap
+              // Fix: Use the property that the TypeScript interface expects
+              currentMarketCap: currentMarketCap
             })
             .eq('bet_id', bet.id);
             
@@ -161,8 +160,8 @@ export const useBetProcessor = (
               await supabase
                 .from('bets')
                 .update({
-                  // Using the database field name for market cap
-                  current_market_cap: tokenData.marketCap 
+                  // Fix: Use the property that the TypeScript interface expects
+                  currentMarketCap: tokenData.marketCap 
                 })
                 .eq('bet_id', bet.id);
             }
