@@ -69,14 +69,16 @@ export const useBetProcessor = (
           // Calculate points won (double for winning)
           const pointsWon = betWon ? bet.betAmount * 2 : 0;
           
-          // Update bet status in database - using database column naming convention but with type assertion
+          // Update bet status in database - using database column naming convention with proper typing
+          const updateData: Partial<SupabaseBetsRow> = {
+            status: betWon ? 'won' : 'lost',
+            points_won: pointsWon,
+            current_market_cap: currentMarketCap
+          };
+          
           const { error: betUpdateError } = await supabase
             .from('bets')
-            .update({
-              status: betWon ? 'won' : 'lost',
-              points_won: pointsWon,
-              current_market_cap: currentMarketCap
-            } as Partial<SupabaseBetsRow>) // Use Partial with SupabaseBetsRow type
+            .update(updateData)
             .eq('bet_id', bet.id);
             
           if (betUpdateError) {
@@ -156,11 +158,13 @@ export const useBetProcessor = (
               ));
               
               // Update in database - using the database column name with proper typing
+              const updateData: Partial<SupabaseBetsRow> = {
+                current_market_cap: tokenData.marketCap
+              };
+              
               await supabase
                 .from('bets')
-                .update({
-                  current_market_cap: tokenData.marketCap
-                } as Partial<SupabaseBetsRow>) // Use Partial with SupabaseBetsRow type
+                .update(updateData)
                 .eq('bet_id', bet.id);
             }
           } catch (error) {

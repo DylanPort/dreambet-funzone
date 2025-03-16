@@ -75,9 +75,24 @@ const BetCard: React.FC<BetCardProps> = ({
     statusClass = 'text-red-400';
   }
   
+  // Format large numbers
+  const formatLargeNumber = (num) => {
+    if (num === null || num === undefined) return "N/A";
+    
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    } else if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    } else if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    } else {
+      return `$${num.toFixed(2)}`;
+    }
+  };
+  
   return (
     <div 
-      className={`glass-panel p-4 border transition-all ${
+      className={`bg-dream-foreground/5 rounded-md p-4 border transition-all ${
         isActive 
           ? 'border-yellow-400/30 animate-pulse-slow' 
           : bet.status === 'completed' && bet.winner === publicKeyString
@@ -106,6 +121,36 @@ const BetCard: React.FC<BetCardProps> = ({
           </p>
         </div>
       </div>
+      
+      {/* Market Cap Details */}
+      {(bet.initialMarketCap || bet.currentMarketCap) && (
+        <div className="grid grid-cols-3 gap-2 mb-3 mt-2 text-xs">
+          {bet.initialMarketCap && (
+            <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+              <div className="text-dream-foreground/50 mb-1">Start MCAP</div>
+              <div className="font-medium">
+                {formatLargeNumber(bet.initialMarketCap)}
+              </div>
+            </div>
+          )}
+          {bet.currentMarketCap && (
+            <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+              <div className="text-dream-foreground/50 mb-1">Current MCAP</div>
+              <div className="font-medium">
+                {formatLargeNumber(bet.currentMarketCap)}
+              </div>
+            </div>
+          )}
+          {bet.initialMarketCap && (
+            <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+              <div className="text-dream-foreground/50 mb-1">Target MCAP</div>
+              <div className="font-medium">
+                {formatLargeNumber(bet.initialMarketCap * (bet.prediction === 'migrate' ? 1.1 : 0.9))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       
       {/* Progress Indicator */}
       {progress !== null && (
