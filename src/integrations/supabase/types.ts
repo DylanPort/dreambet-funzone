@@ -65,6 +65,7 @@ export type Database = {
           end_time: string | null
           initial_market_cap: number | null
           on_chain_id: string | null
+          percentage_change: number | null
           points_won: number | null
           prediction_bettor1: string
           sol_amount: number
@@ -85,6 +86,7 @@ export type Database = {
           end_time?: string | null
           initial_market_cap?: number | null
           on_chain_id?: string | null
+          percentage_change?: number | null
           points_won?: number | null
           prediction_bettor1: string
           sol_amount: number
@@ -105,6 +107,7 @@ export type Database = {
           end_time?: string | null
           initial_market_cap?: number | null
           on_chain_id?: string | null
+          percentage_change?: number | null
           points_won?: number | null
           prediction_bettor1?: string
           sol_amount?: number
