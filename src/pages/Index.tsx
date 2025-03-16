@@ -251,7 +251,7 @@ const Index = () => {
               </span>
             </h2>
             
-            <div className="glass-panel p-6 rounded-lg mb-8">
+            <div className="glass-panel p-6 rounded-lg mb-8 py-[16px] my-[80px]">
               <PXBSupplyProgress />
             </div>
             
