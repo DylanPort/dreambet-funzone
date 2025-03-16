@@ -9,6 +9,7 @@ interface PriceChartProps {
   }[];
   color?: string;
   isLoading?: boolean;
+  onPriceUpdate?: (price: number, change24h: number) => void;
 }
 
 // Generate sample data if none is provided - memoized to prevent regeneration
@@ -64,7 +65,8 @@ MemoizedTooltip.displayName = 'MemoizedTooltip';
 const PriceChart: React.FC<PriceChartProps> = React.memo(({ 
   data: propData, 
   color = "url(#colorGradient)", 
-  isLoading = false 
+  isLoading = false,
+  onPriceUpdate
 }) => {
   const sampleData = useSampleData();
   const [data, setData] = useState(propData || sampleData);
@@ -74,6 +76,16 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
       setData(propData);
     }
   }, [propData]);
+  
+  useEffect(() => {
+    // Notify parent component about price updates when data changes
+    if (data.length > 0 && onPriceUpdate) {
+      const latestPrice = data[data.length - 1].price;
+      const firstPrice = data[0].price;
+      const change24h = firstPrice > 0 ? ((latestPrice - firstPrice) / firstPrice) * 100 : 0;
+      onPriceUpdate(latestPrice, change24h);
+    }
+  }, [data, onPriceUpdate]);
   
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr);

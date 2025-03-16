@@ -41,6 +41,7 @@ const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate })
       <PriceChart 
         isLoading={loading}
         onPriceUpdate={onPriceUpdate}
+        data={[]} // Pass empty array by default, the component will use sample data
       />
       
       <div className="text-xs text-dream-foreground/50 mt-2 text-center">
@@ -828,4 +829,3 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
-
