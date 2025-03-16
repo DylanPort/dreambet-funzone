@@ -204,6 +204,11 @@ const Index = () => {
                       <div className="absolute top-[20%] left-[15%] w-4 h-4 rounded-full bg-green-300 filter blur-sm animate-float"></div>
                       <div className="absolute top-[40%] left-[75%] w-3 h-3 rounded-full bg-yellow-300 filter blur-sm animate-float-delayed"></div>
                       <div className="absolute top-[70%] left-[30%] w-2 h-2 rounded-full bg-purple-300 filter blur-sm animate-float-delayed-2"></div>
+                      <img 
+                        src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" 
+                        alt="Diamond" 
+                        className="absolute top-[45%] left-[50%] w-12 h-12 transform -translate-x-1/2 -translate-y-1/2 animate-float filter drop-shadow-[0_0_10px_rgba(139,92,246,0.8)]" 
+                      />
                     </div>
                     
                     <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
@@ -253,6 +258,11 @@ const Index = () => {
                         <div className="absolute top-[20%] left-[15%] w-4 h-4 rounded-full bg-yellow-300 filter blur-sm animate-float"></div>
                         <div className="absolute top-[40%] left-[75%] w-3 h-3 rounded-full bg-orange-300 filter blur-sm animate-float-delayed"></div>
                         <div className="absolute top-[70%] left-[30%] w-2 h-2 rounded-full bg-yellow-300 filter blur-sm animate-float-delayed-2"></div>
+                        <img 
+                          src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" 
+                          alt="Diamond" 
+                          className="absolute top-[45%] left-[50%] w-12 h-12 transform -translate-x-1/2 -translate-y-1/2 animate-float filter drop-shadow-[0_0_10px_rgba(246,148,92,0.8)]" 
+                        />
                       </div>
                       
                       <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
