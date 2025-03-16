@@ -16,6 +16,7 @@ import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScr
 import TokenMarketCap from '@/components/TokenMarketCap';
 import TokenVolume from '@/components/TokenVolume';
 import TokenComments from '@/components/TokenComments';
+import { subscribeToGMGNTokenData } from '@/services/gmgnService';
 
 const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate }) => {
   const [timeInterval, setTimeInterval] = useState('15');
@@ -631,6 +632,28 @@ const TokenDetail = () => {
       </div>
     );
   };
+  
+  useEffect(() => {
+    if (!id) return;
+    
+    // Import and use the GMGN service
+    const cleanupSubscription = subscribeToGMGNTokenData(id, (data) => {
+      if (data.price) {
+        updateTokenPrice(data.price, data.change24h || 0);
+      }
+      
+      if (data.marketCap || data.volume24h) {
+        updateTokenMetrics({
+          marketCap: data.marketCap,
+          volume24h: data.volume24h
+        });
+      }
+    });
+    
+    return () => {
+      cleanupSubscription();
+    };
+  }, [id, updateTokenPrice, updateTokenMetrics]);
   
   return (
     <>
