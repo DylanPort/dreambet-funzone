@@ -12,7 +12,6 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import TokenDetail from "./pages/TokenDetail";
 import BettingDashboard from "./pages/BettingDashboard";
-import PointsBettingDashboard from "./pages/PointsBettingDashboard";
 import TokenBetting from "./pages/TokenBetting";
 import MyBets from "./pages/MyBets";
 
@@ -35,7 +34,6 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/token/:id" element={<TokenDetail />} />
                 <Route path="/betting" element={<BettingDashboard />} />
-                <Route path="/points-betting" element={<PointsBettingDashboard />} />
                 <Route path="/betting/token/:id" element={<TokenBetting />} />
                 <Route path="/betting/my-bets" element={<MyBets />} />
                 <Route path="*" element={<NotFound />} />
