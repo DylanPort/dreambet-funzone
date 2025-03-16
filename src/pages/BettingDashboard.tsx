@@ -216,7 +216,7 @@ const BettingDashboard = () => {
                   <p className="text-sm text-dream-foreground/80">
                     Correct predictions double your bet in PXB Points. Wrong predictions? Your points return to the house.
                   </p>
-                  {!readSteps.collectRewards && readSteps.placeBet && <div className="mt-3 text-xs text-dream-accent3 animate-pulse">Click to understand this step</div>}
+                  {!readSteps.collectRewards && readSteps.placeBet && <div className="mt-3 text-xs text-dream-accent3 animate-pulse">Click if understand this step</div>}
                 </motion.div>
               </div>
               
