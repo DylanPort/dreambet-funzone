@@ -9,6 +9,7 @@ import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import BetCard from './BetCard';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 
 const OpenBetsList = () => {
@@ -222,44 +223,49 @@ const OpenBetsList = () => {
     <div className="space-y-5">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
+          <img 
+            src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
+            alt="Crown" 
+            className="h-6 w-6"
+          />
           <span>ACTIVE BETS</span>
-          <span className="bg-cyan-500 rounded-full w-6 h-6 flex items-center justify-center text-xs">
+          <span className="text-sm bg-dream-accent2/20 px-2 py-0.5 rounded-full text-dream-accent2">
             {filteredBets.length}
           </span>
         </h2>
         
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 items-center bg-black/40 rounded-full overflow-hidden p-1">
+          <div className="flex gap-1 items-center">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-1 text-sm rounded-full transition-colors ${
+              className={`px-3 py-1 text-sm rounded-full transition-colors ${
                 filter === 'all' 
-                  ? 'bg-purple-600 text-white' 
-                  : 'text-dream-foreground/60'
+                  ? 'bg-dream-accent1/20 text-dream-accent1 border border-dream-accent1/30' 
+                  : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'
               }`}
             >
               All
             </button>
             <button
               onClick={() => setFilter('migrate')}
-              className={`flex items-center px-3 py-1 text-sm rounded-full transition-colors ${
+              className={`px-3 py-1 text-sm rounded-full transition-colors ${
                 filter === 'migrate' 
-                  ? 'bg-green-700 text-white' 
-                  : 'text-dream-foreground/60'
+                  ? 'bg-green-500/20 text-green-400 border border-green-400/30' 
+                  : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'
               }`}
             >
-              <ArrowUp className="w-3 h-3 mr-1" />
+              <ArrowUp className="w-3 h-3 inline mr-1" />
               Migrate
             </button>
             <button
               onClick={() => setFilter('die')}
-              className={`flex items-center px-3 py-1 text-sm rounded-full transition-colors ${
+              className={`px-3 py-1 text-sm rounded-full transition-colors ${
                 filter === 'die' 
-                  ? 'bg-cyan-700 text-white' 
-                  : 'text-dream-foreground/60'
+                  ? 'bg-red-500/20 text-red-400 border border-red-400/30' 
+                  : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'
               }`}
             >
-              <ArrowDown className="w-3 h-3 mr-1" />
+              <ArrowDown className="w-3 h-3 inline mr-1" />
               Die
             </button>
           </div>
@@ -282,44 +288,61 @@ const OpenBetsList = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-4">
           <AnimatePresence>
             {filteredBets.map((bet) => (
               <motion.div
                 key={bet.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
                 <Link 
                   to={`/token/${bet.tokenId}`}
                   className="block w-full"
                 >
-                  <div className="bg-black/40 rounded-md p-4 hover:bg-black/50 transition-colors group">
-                    <div className="flex items-center gap-4 justify-between">
+                  <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
+                    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
+                    
+                    <div className="flex items-center justify-between gap-4 relative z-10">
                       <div className="flex items-center gap-3">
-                        <div className="bg-purple-700 rounded-full w-12 h-12 flex items-center justify-center text-xl">
-                          {bet.tokenSymbol.charAt(0)}
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
+                          <span className="font-display font-bold text-lg">{bet.tokenSymbol.charAt(0)}</span>
                         </div>
                         <div>
                           <div className="flex items-center gap-1">
-                            <h3 className="font-medium text-white">{bet.tokenName} <ExternalLink className="w-3.5 h-3.5 inline text-gray-400" /></h3>
+                            <h3 className="font-display font-semibold text-lg">{bet.tokenName}</h3>
+                            <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
                           </div>
-                          <p className="text-gray-400">{bet.tokenSymbol}</p>
+                          <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-3">
-                        {bet.prediction === 'migrate' ? (
-                          <div className="bg-green-700 text-white rounded-md px-4 py-2">
-                            <ArrowUp className="w-4 h-4 inline mr-1" /> Moon
-                          </div>
-                        ) : (
-                          <div className="bg-cyan-700 text-white rounded-md px-4 py-2">
-                            <ArrowDown className="w-4 h-4 inline mr-1" /> Die
-                          </div>
-                        )}
+                      <div className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm
+                        ${bet.prediction === 'migrate' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {bet.prediction === 'migrate' 
+                          ? <ArrowUp className="h-3.5 w-3.5 mr-1" /> 
+                          : <ArrowDown className="h-3.5 w-3.5 mr-1" />}
+                        <span>{bet.prediction === 'migrate' ? 'Moon' : 'Die'}</span>
+                      </div>
+                      
+                      <div className="flex items-center text-sm bg-dream-accent2/10 px-3 py-1 rounded-lg">
+                        <Wallet className="h-3.5 w-3.5 mr-1.5 text-dream-accent2" />
+                        <span className="font-semibold">{bet.amount} SOL</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
+                        <Clock className="w-3 h-3 mr-1" />
+                        <span>{formatTimeRemaining(bet.expiresAt)}</span>
+                      </div>
+                      
+                      <div className="ml-auto">
+                        <button className="px-4 py-2 rounded-lg bg-dream-accent1/10 hover:bg-dream-accent1/20 text-dream-accent1 text-sm font-medium transition-colors">
+                          Accept Bet
+                        </button>
                       </div>
                     </div>
                   </div>
