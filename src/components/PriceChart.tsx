@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface PriceChartProps {
@@ -11,27 +11,29 @@ interface PriceChartProps {
   isLoading?: boolean;
 }
 
-// Generate sample data if none is provided
-const generateSampleData = () => {
-  const data = [];
-  let price = 1.0 + Math.random() * 0.5;
-  
-  for (let i = -60; i <= 0; i++) {
-    // Create some random movement
-    price = price + (Math.random() - 0.5) * 0.2;
-    // Make sure price doesn't go below 0.1
-    price = Math.max(0.1, price);
+// Generate sample data if none is provided - memoized to prevent regeneration
+const useSampleData = () => {
+  return useMemo(() => {
+    const data = [];
+    let price = 1.0 + Math.random() * 0.5;
     
-    const date = new Date();
-    date.setMinutes(date.getMinutes() + i);
+    for (let i = -60; i <= 0; i++) {
+      // Create some random movement
+      price = price + (Math.random() - 0.5) * 0.2;
+      // Make sure price doesn't go below 0.1
+      price = Math.max(0.1, price);
+      
+      const date = new Date();
+      date.setMinutes(date.getMinutes() + i);
+      
+      data.push({
+        time: date.toISOString(),
+        price,
+      });
+    }
     
-    data.push({
-      time: date.toISOString(),
-      price,
-    });
-  }
-  
-  return data;
+    return data;
+  }, []);
 };
 
 const PriceChart: React.FC<PriceChartProps> = ({ 
@@ -39,7 +41,8 @@ const PriceChart: React.FC<PriceChartProps> = ({
   color = "url(#colorGradient)", 
   isLoading = false 
 }) => {
-  const [data, setData] = useState(propData || generateSampleData());
+  const sampleData = useSampleData();
+  const [data, setData] = useState(propData || sampleData);
   
   useEffect(() => {
     if (propData) {
@@ -56,19 +59,23 @@ const PriceChart: React.FC<PriceChartProps> = ({
     return `$${price.toFixed(2)}`;
   };
   
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="glass-panel p-3">
-          <p className="font-medium text-sm">{formatTime(label)}</p>
-          <p className="text-dream-accent1 text-sm font-semibold">
-            {formatPrice(payload[0].value)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  // Memoize the tooltip to prevent re-renders
+  const MemoizedTooltip = useMemo(() => {
+    const CustomTooltip = ({ active, payload, label }: any) => {
+      if (active && payload && payload.length) {
+        return (
+          <div className="glass-panel p-3">
+            <p className="font-medium text-sm">{formatTime(label)}</p>
+            <p className="text-dream-accent1 text-sm font-semibold">
+              {formatPrice(payload[0].value)}
+            </p>
+          </div>
+        );
+      }
+      return null;
+    };
+    return CustomTooltip;
+  }, []);
   
   if (isLoading) {
     return (
@@ -102,14 +109,17 @@ const PriceChart: React.FC<PriceChartProps> = ({
             tickFormatter={formatTime} 
             stroke="rgba(255,255,255,0.5)"
             tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
+            interval="preserveStartEnd"
+            minTickGap={30}
           />
           <YAxis 
             tickFormatter={formatPrice} 
             stroke="rgba(255,255,255,0.5)"
             tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
             domain={['auto', 'auto']}
+            width={50}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<MemoizedTooltip />} />
           <Line
             type="monotone"
             dataKey="price"
@@ -117,6 +127,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 8, fill: "#FF3DFC", strokeWidth: 0 }}
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -124,4 +135,4 @@ const PriceChart: React.FC<PriceChartProps> = ({
   );
 };
 
-export default PriceChart;
+export default React.memo(PriceChart);

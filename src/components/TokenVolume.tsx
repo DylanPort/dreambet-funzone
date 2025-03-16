@@ -16,9 +16,30 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
     
     setLoading(true);
     
+    // Immediately check cache
+    const cachedData = localStorage.getItem(`volume_${tokenId}`);
+    if (cachedData) {
+      try {
+        const { value, timestamp } = JSON.parse(cachedData);
+        // Use cache if less than 2 minutes old
+        if (Date.now() - timestamp < 120000) {
+          setVolume(value);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error("Error parsing cached volume data:", e);
+      }
+    }
+    
     const cleanup = subscribeToVolume(tokenId, (newVolume) => {
       setVolume(newVolume);
       setLoading(false);
+      
+      // Cache the result
+      localStorage.setItem(`volume_${tokenId}`, JSON.stringify({
+        value: newVolume,
+        timestamp: Date.now()
+      }));
     });
     
     return () => {
