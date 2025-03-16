@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -406,11 +405,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
                 : 'border-dream-foreground/20 hover:bg-green-500/10'
             }`}
           >
-            <img 
-              src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" 
-              alt="Rocket" 
-              className="h-5 w-5 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" 
-            />
+            <ArrowUp size={18} />
             <span>MOON 🚀</span>
           </button>
           
@@ -493,17 +488,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         <div className="p-3 bg-dream-surface/30 rounded-md">
           <p className="text-sm text-dream-foreground/70">
             You're betting that the market cap of {tokenData.symbol} will 
-            <span className={prediction === 'moon' ? ' text-green-400 flex items-center gap-1 inline-flex' : ' text-red-400'}>
-              {prediction === 'moon' ? (
-                <>
-                  <span>increase</span>
-                  <img 
-                    src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" 
-                    alt="Rocket" 
-                    className="h-4 w-4 filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" 
-                  />
-                </>
-              ) : ' decrease'} by {percentageChange}%
+            <span className={prediction === 'moon' ? ' text-green-400' : ' text-red-400'}>
+              {prediction === 'moon' ? ' increase' : ' decrease'} by {percentageChange}%
             </span> within {duration} minutes.
           </p>
           {parseInt(amount, 10) > 0 && (
@@ -608,15 +594,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             <AlertDialogTitle className="text-dream-foreground">Confirm Your Bet</AlertDialogTitle>
             <AlertDialogDescription className="text-dream-foreground/70">
               {`You are about to place a bet of ${amount} PXB Points that ${tokenData.symbol} will ${prediction} by ${percentageChange}% within ${duration} minutes.`}
-              {prediction === 'moon' && (
-                <div className="flex justify-center my-2">
-                  <img 
-                    src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" 
-                    alt="Rocket" 
-                    className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" 
-                  />
-                </div>
-              )}
               <div className="mt-2 p-3 bg-dream-foreground/10 rounded-md">
                 <p className="text-dream-foreground/90 font-medium">
                   Current PXB Balance: {maxPointsAvailable} PXB

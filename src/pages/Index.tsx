@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap } from 'lucide-react';
@@ -179,11 +180,6 @@ const Index = () => {
                 group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
                 group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
                 <span className="relative z-10 flex items-center font-bold text-white bg-gradient-to-r from-green-400 to-green-300 bg-clip-text drop-shadow-[0_0_10px_rgba(22,163,74,0.8)]">
-                  <img 
-                    src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" 
-                    alt="Rocket" 
-                    className="h-5 w-5 mr-2 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" 
-                  />
                   Start Betting
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-400 filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
                 </span>
@@ -331,4 +327,3 @@ const Index = () => {
 };
 
 export default Index;
-

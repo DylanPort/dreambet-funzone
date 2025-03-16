@@ -201,11 +201,7 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
             className="btn-moon py-1.5 flex items-center justify-center gap-1"
             onClick={(e) => handlePlaceBet('up', e)}
           >
-            <img 
-              src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" 
-              alt="Rocket" 
-              className="h-4 w-4 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" 
-            />
+            <ArrowUp className="w-3.5 h-3.5" />
             <span>Moon (10 PXB)</span>
           </button>
           <button 
