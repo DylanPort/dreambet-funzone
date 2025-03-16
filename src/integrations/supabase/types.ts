@@ -9,6 +9,82 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bets: {
+        Row: {
+          bet_id: string
+          bettor1_id: string
+          bettor2_id: string | null
+          created_at: string | null
+          creator: string
+          duration: number
+          on_chain_id: string | null
+          points_won: number | null
+          prediction_bettor1: string
+          sol_amount: number
+          status: string | null
+          token_mint: string
+          token_name: string | null
+          token_symbol: string | null
+          transaction_signature: string | null
+        }
+        Insert: {
+          bet_id?: string
+          bettor1_id: string
+          bettor2_id?: string | null
+          created_at?: string | null
+          creator: string
+          duration?: number
+          on_chain_id?: string | null
+          points_won?: number | null
+          prediction_bettor1: string
+          sol_amount: number
+          status?: string | null
+          token_mint: string
+          token_name?: string | null
+          token_symbol?: string | null
+          transaction_signature?: string | null
+        }
+        Update: {
+          bet_id?: string
+          bettor1_id?: string
+          bettor2_id?: string | null
+          created_at?: string | null
+          creator?: string
+          duration?: number
+          on_chain_id?: string | null
+          points_won?: number | null
+          prediction_bettor1?: string
+          sol_amount?: number
+          status?: string | null
+          token_mint?: string
+          token_name?: string | null
+          token_symbol?: string | null
+          transaction_signature?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bets_bettor1_id_fkey"
+            columns: ["bettor1_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bets_bettor2_id_fkey"
+            columns: ["bettor2_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bets_token_mint_fkey"
+            columns: ["token_mint"]
+            isOneToOne: false
+            referencedRelation: "tokens"
+            referencedColumns: ["token_mint"]
+          },
+        ]
+      }
       bounties: {
         Row: {
           bounty_address: string | null
@@ -116,6 +192,41 @@ export type Database = {
           },
         ]
       }
+      points_history: {
+        Row: {
+          action: string
+          amount: number
+          created_at: string | null
+          id: string
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          amount: number
+          created_at?: string | null
+          id?: string
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          amount?: number
+          created_at?: string | null
+          id?: string
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -211,6 +322,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tokens: {
+        Row: {
+          last_trade_price: number | null
+          last_updated_time: string | null
+          token_mint: string
+          token_name: string
+          token_symbol: string
+          volume_24h: number | null
+        }
+        Insert: {
+          last_trade_price?: number | null
+          last_updated_time?: string | null
+          token_mint: string
+          token_name: string
+          token_symbol: string
+          volume_24h?: number | null
+        }
+        Update: {
+          last_trade_price?: number | null
+          last_updated_time?: string | null
+          token_mint?: string
+          token_name?: string
+          token_symbol?: string
+          volume_24h?: number | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          id: string
+          points: number | null
+          updated_at: string | null
+          username: string | null
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          points?: number | null
+          updated_at?: string | null
+          username?: string | null
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          points?: number | null
+          updated_at?: string | null
+          username?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
       }
     }
     Views: {

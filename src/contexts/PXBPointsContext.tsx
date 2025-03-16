@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { UserProfile, PXBBet, SupabaseUserProfile, SupabaseBetsRow } from '@/types/pxb';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +42,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [connected, publicKey]);
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     setIsLoading(true);
     try {
       if (!connected || !publicKey) {
@@ -85,7 +85,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [connected, publicKey]);
 
   const mintPoints = async (username: string) => {
     setIsLoading(true);
@@ -98,20 +98,22 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const walletAddress = publicKey.toString();
       console.log("Minting points for wallet:", walletAddress);
       
-      const { data: existingUser } = await supabase
+      // Check if user already exists
+      const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('*')
         .eq('wallet_address', walletAddress)
         .single();
       
+      console.log("Existing user check:", existingUser, checkError);
+      
       if (existingUser) {
-        const existingUsername = existingUser.username || username;
-        
+        // User exists, check if they already have points
         if (existingUser.points >= 500) {
           toast.error('You have already claimed your PXB Points');
           setUserProfile({
             id: existingUser.id,
-            username: existingUsername,
+            username: existingUser.username || username,
             pxbPoints: existingUser.points,
             createdAt: existingUser.created_at
           });
@@ -119,10 +121,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       }
       
+      // Prepare user data
       let userId = existingUser?.id || crypto.randomUUID();
-      const finalUsername = existingUser?.username || username || publicKey.toString().substring(0, 8);
+      const finalUsername = username || existingUser?.username || publicKey.toString().substring(0, 8);
       
-      const { data: updatedUser, error } = await supabase
+      console.log("Creating/updating user with ID:", userId);
+      
+      // Insert or update user with points
+      const { data: updatedUser, error: updateError } = await supabase
         .from('users')
         .upsert({
           id: userId,
@@ -133,14 +139,15 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .select()
         .single();
       
-      if (error) {
-        console.error('Error minting points:', error);
+      if (updateError) {
+        console.error('Error minting points:', updateError);
         toast.error('Failed to mint PXB Points');
         return;
       }
       
       console.log("User after minting points:", updatedUser);
       
+      // Record the points transaction
       await supabase
         .from('points_history')
         .insert({
@@ -150,6 +157,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           reference_id: crypto.randomUUID()
         });
       
+      // Update local state
       const newProfile: UserProfile = {
         id: updatedUser.id,
         username: updatedUser.username || finalUsername,
@@ -160,6 +168,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setUserProfile(newProfile);
       toast.success(`Successfully minted 500 PXB Points!`);
       
+      // Fetch fresh data
       await fetchUserProfile();
     } catch (error) {
       console.error('Error minting points:', error);

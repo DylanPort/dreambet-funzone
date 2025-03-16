@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Coins, PartyPopper, AlertCircle, CheckCircle, UserCheck } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -9,6 +10,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import WalletConnectButton from './WalletConnectButton';
 import { toast } from 'sonner';
 import { updateUsername } from '@/services/userService';
+import { supabase } from '@/integrations/supabase/client';
 
 const PXBOnboarding: React.FC = () => {
   const { mintPoints, isLoading, userProfile, fetchUserProfile } = usePXBPoints();
@@ -44,18 +46,23 @@ const PXBOnboarding: React.FC = () => {
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!connected || !publicKey) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    
     // Use wallet address as default username if none provided
-    const walletAddress = publicKey ? publicKey.toString() : '';
-    const defaultUsername = walletAddress.substring(0, 8);
+    const finalUsername = username.trim() || publicKey.toString().substring(0, 8);
     
     setHasClaimedPoints(true);
     
     try {
-      await mintPoints(defaultUsername);
+      await mintPoints(finalUsername);
       setShowSuccess(true);
     } catch (error) {
       console.error('Error minting points:', error);
       setHasClaimedPoints(false);
+      toast.error('Failed to mint PXB Points');
     }
   };
 
@@ -86,6 +93,32 @@ const PXBOnboarding: React.FC = () => {
       setIsUpdatingUsername(false);
     }
   };
+
+  // Check if user exists in database but not loaded in context
+  useEffect(() => {
+    const checkUserExists = async () => {
+      if (connected && publicKey && !userProfile && !isLoading) {
+        try {
+          const walletAddress = publicKey.toString();
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('points')
+            .eq('wallet_address', walletAddress)
+            .single();
+            
+          if (existingUser && existingUser.points >= 500) {
+            setAlreadyClaimed(true);
+            fetchUserProfile();
+          }
+        } catch (error) {
+          // User likely doesn't exist yet
+          console.log("User check error (likely doesn't exist yet):", error);
+        }
+      }
+    };
+    
+    checkUserExists();
+  }, [connected, publicKey, userProfile, isLoading, fetchUserProfile]);
 
   return (
     <>
@@ -166,6 +199,18 @@ const PXBOnboarding: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={handleMint} className="space-y-4">
+            <div>
+              <label htmlFor="username" className="block text-sm text-dream-foreground/70 mb-1 text-left">
+                Your Username (optional)
+              </label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter a username or use wallet address"
+                className="w-full bg-dream-foreground/5"
+              />
+            </div>
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
@@ -226,7 +271,7 @@ const PXBOnboarding: React.FC = () => {
                 <span className="text-3xl font-black text-white">500 PXB Points!</span>
               </div>
               <p className="text-white/80">Your points are now stored securely and ready to use!</p>
-              <p className="text-white/80 mt-2">Username: <span className="font-bold">{userProfile?.username || 'User'}</span></p>
+              <p className="text-white/80 mt-2">Username: <span className="font-bold">{userProfile?.username || username || 'User'}</span></p>
             </motion.div>
             
             <motion.div
@@ -263,7 +308,7 @@ const PXBOnboarding: React.FC = () => {
               onClick={() => {
                 setShowSuccess(false);
                 setHasClaimedPoints(false);
-                window.location.reload(); // Reload the page to refresh the UI state
+                fetchUserProfile(); // Fetch user profile instead of reloading page
               }}
               className="mt-6 bg-white text-purple-600 hover:bg-white/90 hover:text-purple-700 transition-all"
             >
