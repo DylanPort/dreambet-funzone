@@ -19,6 +19,7 @@ import { PXBPointsProvider } from '@/contexts/pxb/PXBPointsContext';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -26,11 +27,13 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -71,10 +74,12 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -85,6 +90,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -258,12 +264,6 @@ const Index = () => {
           </div>
           
           <div className="max-w-7xl mx-auto px-4 py-10">
-            <h2 className="text-2xl font-bold text-center mb-8 text-dream-foreground">
-              <span className="bg-gradient-to-r from-dream-accent1 to-dream-accent2 text-transparent bg-clip-text">
-                Real-Time Market Data
-              </span>
-            </h2>
-            
             <PXBPointsProvider>
               <div className="glass-panel p-6 rounded-lg mb-8">
                 <PXBSupplyProgress />
@@ -301,4 +301,6 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
+
