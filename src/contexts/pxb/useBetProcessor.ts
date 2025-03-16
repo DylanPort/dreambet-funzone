@@ -146,6 +146,7 @@ export const useBetProcessor = (
         }
       } catch (error) {
         console.error(`Error processing bet ${bet.id}:`, error);
+        toast.error(`Error processing bet: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   }, [bets, userProfile, setUserProfile, setBets]);

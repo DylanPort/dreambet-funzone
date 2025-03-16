@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +25,6 @@ export const usePointOperations = (
       const walletAddress = publicKey.toString();
       console.log("Minting points for wallet:", walletAddress);
       
-      // Check if user already exists with more robust error handling
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('*')
@@ -42,7 +40,6 @@ export const usePointOperations = (
       }
       
       if (existingUser) {
-        // User exists, check if they already have points
         if (existingUser.points > 0) {
           toast.error('You have already minted your PXB Points');
           setUserProfile({
@@ -55,13 +52,11 @@ export const usePointOperations = (
         }
       }
       
-      // Prepare user data
       let userId = existingUser?.id || crypto.randomUUID();
       const finalUsername = username || existingUser?.username || publicKey.toString().substring(0, 8);
       
       console.log("Creating/updating user with ID:", userId);
       
-      // Insert or update user with points
       const { data: updatedUser, error: updateError } = await supabase
         .from('users')
         .upsert({
@@ -81,7 +76,6 @@ export const usePointOperations = (
       
       console.log("User after minting points:", updatedUser);
       
-      // Record the points transaction
       await supabase
         .from('points_history')
         .insert({
@@ -91,7 +85,6 @@ export const usePointOperations = (
           reference_id: crypto.randomUUID()
         });
       
-      // Update local state
       const newProfile: UserProfile = {
         id: updatedUser.id,
         username: updatedUser.username || finalUsername,
@@ -102,7 +95,6 @@ export const usePointOperations = (
       setUserProfile(newProfile);
       toast.success(`Successfully minted 500 PXB Points!`);
       
-      // Fetch fresh data
       await fetchUserProfile();
     } catch (error) {
       console.error('Error minting points:', error);
@@ -129,16 +121,13 @@ export const usePointOperations = (
       }
       
       if (betAmount > userProfile.pxbPoints) {
-        toast.error('Insufficient PXB Points balance');
+        toast.error(`Insufficient PXB Points balance. You have ${userProfile.pxbPoints} PXB Points available.`);
         return;
       }
       
-      // Show a loading toast while processing the bet
       const toastId = `bet-${tokenSymbol}-${Date.now()}`;
       toast.loading(`Processing your bet on ${tokenSymbol}...`, { id: toastId });
       
-      // Get current market cap from DexScreener to track the starting point
-      console.log(`Fetching market cap data for token: ${tokenMint}`);
       const tokenData = await fetchDexScreenerData(tokenMint);
       
       if (!tokenData || !tokenData.marketCap) {
@@ -156,7 +145,6 @@ export const usePointOperations = (
       
       const betId = crypto.randomUUID();
       
-      // Create a new PXB bet object for immediate UI update
       const newBet: PXBBet = {
         id: betId,
         userId: userProfile.id,
@@ -174,20 +162,14 @@ export const usePointOperations = (
         currentMarketCap: initialMarketCap
       };
       
-      // First deduct points from user balance - IMPORTANT: do this BEFORE adding the bet to ensure proper validation
       console.log(`Deducting ${betAmount} points from user ${userProfile.id}, current balance: ${userProfile.pxbPoints}`);
       
-      // Update user profile in state IMMEDIATELY to prevent double betting
       const updatedPoints = userProfile.pxbPoints - betAmount;
       setUserProfile({
         ...userProfile,
         pxbPoints: updatedPoints
       });
       
-      // IMMEDIATELY add new bet to state for responsive UI
-      setBets(prevBets => [newBet, ...prevBets]);
-      
-      // Now update points in the database
       const { error: updateError } = await supabase
         .from('users')
         .update({ points: updatedPoints })
@@ -197,18 +179,16 @@ export const usePointOperations = (
         console.error('Error updating points:', updateError);
         toast.error('Failed to deduct PXB Points for bet', { id: toastId });
         
-        // Revert UI changes since database update failed
         setUserProfile({
           ...userProfile,
           pxbPoints: userProfile.pxbPoints
         });
         
-        setBets(prevBets => prevBets.filter(b => b.id !== betId));
         return;
       }
       
-      // Then create the bet record in the database
-      console.log(`Creating bet record: ${betId}`);
+      setBets(prevBets => [newBet, ...prevBets]);
+      
       const { error: betError } = await supabase
         .from('bets')
         .insert({
@@ -229,28 +209,23 @@ export const usePointOperations = (
       if (betError) {
         console.error('Error creating bet:', betError);
         
-        // If bet creation fails, refund the points
         console.log(`Refunding ${betAmount} points to user ${userProfile.id}`);
         await supabase
           .from('users')
           .update({ points: userProfile.pxbPoints })
           .eq('id', userProfile.id);
           
-        // Also update UI to reflect refund
         setUserProfile({
           ...userProfile,
           pxbPoints: userProfile.pxbPoints
         });
         
-        // Remove the bet from state
         setBets(prevBets => prevBets.filter(b => b.id !== betId));
         
         toast.error('Failed to place bet, points refunded', { id: toastId });
         return;
       }
       
-      // Create a record in bet_history
-      console.log(`Creating bet history record for bet ${betId}`);
       await supabase
         .from('bet_history')
         .insert({
@@ -272,13 +247,13 @@ export const usePointOperations = (
       const predictionText = betType === 'up' ? `MOON by ${percentageChange}%` : `DIE by ${percentageChange}%`;
       toast.success(`Bet placed successfully! ${betAmount} PXB Points on ${tokenSymbol} to ${predictionText}`, { id: toastId });
       
-      // Fetch user profile to ensure points are updated
-      fetchUserProfile();
+      console.log(`Successfully placed bet: ${betId}, deducted ${betAmount} points, new balance: ${updatedPoints}`);
+      
+      await fetchUserProfile();
     } catch (error) {
       console.error('Error placing bet:', error);
       toast.error('Failed to place bet: ' + (error instanceof Error ? error.message : 'Unknown error'));
       
-      // In case of unexpected error, refresh user profile to get the correct points
       fetchUserProfile();
     } finally {
       setIsLoading(false);

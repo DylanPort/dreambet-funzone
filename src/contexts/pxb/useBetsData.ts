@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { PXBBet } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { toast } from 'sonner';
 
 export const useBetsData = (userProfile: any) => {
   const [bets, setBets] = useState<PXBBet[]>([]);
@@ -25,6 +26,7 @@ export const useBetsData = (userProfile: any) => {
       
       if (error) {
         console.error('Error fetching user bets:', error);
+        toast.error('Failed to load your bets. Please try again.');
         return;
       }
       
@@ -62,6 +64,7 @@ export const useBetsData = (userProfile: any) => {
       setBets(formattedBets);
     } catch (error) {
       console.error('Error in fetchUserBets:', error);
+      toast.error('Failed to load your bets. Please try again.');
     } finally {
       setIsLoading(false);
     }
