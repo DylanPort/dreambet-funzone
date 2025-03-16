@@ -331,7 +331,7 @@ const OpenBetsList = () => {
                       
                       <div className="flex items-center text-sm bg-dream-accent2/10 px-3 py-1 rounded-lg">
                         <Wallet className="h-3.5 w-3.5 mr-1.5 text-dream-accent2" />
-                        <span className="font-semibold">{bet.amount} SOL</span>
+                        <span className="font-semibold">{bet.amount} PXB</span>
                       </div>
                       
                       <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
