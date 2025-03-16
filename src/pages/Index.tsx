@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -25,11 +26,13 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -70,10 +73,12 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -84,6 +89,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -110,17 +116,17 @@ const Index = () => {
                 <div className="p-4 border-b border-white/10">
                   <div className="flex flex-col space-y-3">
                     <div className="flex items-center justify-center gap-2 text-white/90 hover:text-white/100 transition-colors group">
-                      <Wallet className="h-5 w-5 text-dream-accent1 group-hover:text-dream-accent1/90 animate-pulse-subtle" />
+                      <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="h-5 w-5 text-dream-accent1" />
                       <span className="bg-gradient-to-r from-dream-accent1/90 to-dream-accent3/90 bg-clip-text text-transparent font-medium">Buy some PXB tokens</span>
                     </div>
                     
                     <div className="flex items-center justify-center gap-2 text-white/90 hover:text-white/100 transition-colors group">
-                      <ShieldCheck className="h-5 w-5 text-dream-accent2 group-hover:text-dream-accent2/90 animate-pulse-subtle" />
+                      <img src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" alt="Lightning" className="h-5 w-5 text-dream-accent2" />
                       <span className="bg-gradient-to-r from-dream-accent2/90 to-dream-accent1/90 bg-clip-text text-transparent font-medium">Connect your wallet securely</span>
                     </div>
                     
                     <div className="flex items-center justify-center gap-2 text-white/90 hover:text-white/100 transition-colors group">
-                      <Sparkles className="h-5 w-5 text-dream-accent3 group-hover:text-dream-accent3/90 animate-pulse-subtle" />
+                      <img src="/lovable-uploads/4cf5638c-4544-455d-baf2-37470b161dbd.png" alt="Diamond" className="h-5 w-5 text-dream-accent3" />
                       <span className="bg-gradient-to-r from-dream-accent3/90 to-dream-accent2/90 bg-clip-text text-transparent font-medium">Mint PXB points & start betting</span>
                     </div>
                   </div>
@@ -286,4 +292,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
