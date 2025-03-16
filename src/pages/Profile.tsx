@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
-import { Clock, TrendingUp, TrendingDown, Settings, History, Coins, Activity, Filter, RefreshCw, User } from 'lucide-react';
+import { Clock, TrendingUp, TrendingDown, Settings, History, Coins, Activity, Filter, RefreshCw, User, Plus } from 'lucide-react';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
 import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile, UserBet, UserStats } from '@/services/userService';
@@ -28,8 +27,9 @@ const Profile = () => {
   const [isActiveBetsLoading, setIsActiveBetsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'history' | 'settings'>('history');
   const [usernameInput, setUsernameInput] = useState('');
-  const { userProfile, isLoading: pxbLoading } = usePXBPoints();
+  const { userProfile, isLoading: pxbLoading, mintPoints, fetchUserProfile: fetchPXBUserProfile } = usePXBPoints();
   const [betsFilter, setBetsFilter] = useState<'all' | 'active' | 'completed'>('all');
+  const [isMintingPoints, setIsMintingPoints] = useState(false);
   
   useEffect(() => {
     const loadUserData = async () => {
@@ -227,6 +227,26 @@ const Profile = () => {
     });
   };
   
+  const handleMintPXBPoints = async () => {
+    if (!connected || !publicKey) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    setIsMintingPoints(true);
+    try {
+      const username = userProfile?.username || user?.username || publicKey.toString().substring(0, 8);
+      await mintPoints(username);
+      toast.success("Successfully minted 500 PXB Points!");
+      await fetchPXBUserProfile();
+    } catch (error) {
+      console.error("Error minting PXB points:", error);
+      toast.error("Failed to mint PXB Points");
+    } finally {
+      setIsMintingPoints(false);
+    }
+  };
+  
   const filteredBets = betsFilter === 'all' 
     ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id))]
     : betsFilter === 'active'
@@ -299,6 +319,26 @@ const Profile = () => {
                     <span className="text-sm text-dream-foreground/40">0 PXB</span>
                   )}
                 </p>
+                {userProfile === null || userProfile?.pxbPoints === 0 ? (
+                  <Button 
+                    onClick={handleMintPXBPoints}
+                    disabled={isMintingPoints}
+                    className="mt-2 text-xs h-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                    size="sm"
+                  >
+                    {isMintingPoints ? (
+                      <div className="flex items-center">
+                        <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
+                        <span>Minting...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Plus className="w-3 h-3 mr-1" />
+                        Claim 500 Points
+                      </>
+                    )}
+                  </Button>
+                ) : null}
               </div>
             </div>
           </div>

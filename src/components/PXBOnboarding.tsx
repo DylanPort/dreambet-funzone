@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Coins, PartyPopper, AlertCircle, CheckCircle, Save, UserCheck } from 'lucide-react';
+import { Coins, PartyPopper, AlertCircle, CheckCircle, UserCheck } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,15 +44,14 @@ const PXBOnboarding: React.FC = () => {
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const finalUsername = username.trim() || 
-                         (publicKey ? publicKey.toString().substring(0, 8) : '');
-    
-    if (!finalUsername) return;
+    // Use wallet address as default username if none provided
+    const walletAddress = publicKey ? publicKey.toString() : '';
+    const defaultUsername = walletAddress.substring(0, 8);
     
     setHasClaimedPoints(true);
     
     try {
-      await mintPoints(finalUsername);
+      await mintPoints(defaultUsername);
       setShowSuccess(true);
     } catch (error) {
       console.error('Error minting points:', error);
@@ -168,25 +166,6 @@ const PXBOnboarding: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={handleMint} className="space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm text-dream-foreground/70 mb-1">
-                Choose a username
-              </label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
-                className="w-full bg-dream-foreground/5"
-                required
-              />
-              {username && username === publicKey?.toString().substring(0, 8) && (
-                <p className="text-xs text-dream-foreground/50 mt-1">
-                  Using default username from your wallet address. Feel free to change it.
-                </p>
-              )}
-            </div>
-            
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
@@ -247,7 +226,7 @@ const PXBOnboarding: React.FC = () => {
                 <span className="text-3xl font-black text-white">500 PXB Points!</span>
               </div>
               <p className="text-white/80">Your points are now stored securely and ready to use!</p>
-              <p className="text-white/80 mt-2">Username: <span className="font-bold">{username}</span></p>
+              <p className="text-white/80 mt-2">Username: <span className="font-bold">{userProfile?.username || 'User'}</span></p>
             </motion.div>
             
             <motion.div
