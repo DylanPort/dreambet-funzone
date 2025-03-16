@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -101,10 +102,17 @@ const TokenChart = ({
           />
         </button>
         
-        <Button variant="destructive" onClick={() => refreshData('down')}>
-          <ArrowDown className="w-4 h-4 mr-2" />
-          Dust
-        </Button>
+        <button 
+          onClick={() => refreshData('down')} 
+          className="p-0 w-full h-20 flex justify-center items-center transition-transform hover:scale-105 active:scale-95 rounded-lg overflow-hidden bg-gradient-to-r from-[#8B5CF6]/20 to-[#D946EF]/20 border border-[#D946EF]/30"
+          aria-label="Dust"
+        >
+          <img 
+            src="/lovable-uploads/175e9558-ddfe-4265-bee0-912eb02e6fb3.png" 
+            alt="Dust Skull" 
+            className="h-16 object-contain" 
+          />
+        </button>
       </div>
     </div>;
 };
