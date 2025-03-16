@@ -58,6 +58,34 @@ const PXBBetsList = () => {
     return 0;
   };
 
+  // Calculate the target market cap for a bet
+  const calculateTargetMarketCap = (bet) => {
+    if (!bet.initialMarketCap) return null;
+    
+    if (bet.betType === 'up') {
+      // For UP bets, target is initial + percentage increase
+      return bet.initialMarketCap * (1 + bet.percentageChange / 100);
+    } else {
+      // For DOWN bets, target is initial - percentage decrease
+      return bet.initialMarketCap * (1 - bet.percentageChange / 100);
+    }
+  };
+
+  // Format large numbers with appropriate units (K, M, B)
+  const formatLargeNumber = (num) => {
+    if (num === null || num === undefined) return "N/A";
+    
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    } else if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    } else if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    } else {
+      return `$${num.toFixed(2)}`;
+    }
+  };
+
   return (
     <div className="glass-panel p-6">
       <h2 className="font-semibold text-lg mb-4 flex items-center">
@@ -93,8 +121,8 @@ const PXBBetsList = () => {
             ? ((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100
             : null;
           
-          // Determine progress bar color based on bet type
-          const progressColor = bet.betType === 'up' ? 'bg-green-500' : 'bg-red-500';
+          // Calculate target market cap
+          const targetMarketCap = calculateTargetMarketCap(bet);
           
           return (
             <div 
@@ -129,6 +157,22 @@ const PXBBetsList = () => {
                 </div>
               </div>
               
+              {/* Market Cap Details */}
+              <div className="grid grid-cols-3 gap-2 mb-3 mt-2 text-xs">
+                <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                  <div className="text-dream-foreground/50 mb-1">Start MCAP</div>
+                  <div className="font-medium">{formatLargeNumber(bet.initialMarketCap)}</div>
+                </div>
+                <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                  <div className="text-dream-foreground/50 mb-1">Current MCAP</div>
+                  <div className="font-medium">{formatLargeNumber(bet.currentMarketCap)}</div>
+                </div>
+                <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                  <div className="text-dream-foreground/50 mb-1">Target MCAP</div>
+                  <div className="font-medium">{formatLargeNumber(targetMarketCap)}</div>
+                </div>
+              </div>
+              
               {/* Progress Indicator */}
               {isActive && (
                 <div className="mb-3 mt-3">
@@ -141,7 +185,7 @@ const PXBBetsList = () => {
                   <Progress value={progressPercentage} className="h-2" />
                   {marketCapChangePercentage !== null && (
                     <div className="text-xs text-dream-foreground/60 mt-1">
-                      Market cap change: {marketCapChangePercentage.toFixed(2)}%
+                      Current change: {marketCapChangePercentage.toFixed(2)}%
                       {bet.betType === 'up'
                         ? ` / Target: +${bet.percentageChange}%`
                         : ` / Target: -${bet.percentageChange}%`

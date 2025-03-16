@@ -76,6 +76,11 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
       return;
     }
     
+    if (!marketCap) {
+      toast.error('Market cap data is not available for this token');
+      return;
+    }
+    
     try {
       // Clear notification of previous bets
       toast.dismiss();
@@ -85,6 +90,24 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
       toast.loading(`Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${symbol}...`, {
         id: toastId
       });
+      
+      // Show the current market cap in the toast
+      const currentMcap = formatLargeNumber(marketCap);
+      const percentChange = 10; // Default 10% change
+      
+      // Calculate the target market cap based on bet type
+      let targetMcap;
+      if (betType === 'up') {
+        targetMcap = formatLargeNumber(marketCap * 1.1); // 10% increase
+      } else {
+        targetMcap = formatLargeNumber(marketCap * 0.9); // 10% decrease
+      }
+      
+      toast.loading(`Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${symbol}...
+        Starting MCAP: ${currentMcap}
+        Target MCAP: ${targetMcap}`, 
+        { id: toastId }
+      );
       
       // Add a default percentage change of 10% for quick betting
       await placeBet(id, name, symbol, 10, betType, 10, 30);
