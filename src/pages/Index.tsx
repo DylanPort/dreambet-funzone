@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap } from 'lucide-react';
+import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
@@ -14,6 +15,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import RecentTokenTrades from '@/components/RecentTokenTrades';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
@@ -275,36 +277,86 @@ const Index = () => {
             <RecentTokenTrades />
           </div>
           
+          {/* Replacing this section with features from PXB Space */}
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
-            <div className="glass-panel p-6 text-center">
-              <div className="bg-dream-accent1/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <img src="/lovable-uploads/c40baa88-ed47-4c9b-bbd9-d248df1c7863.png" alt="P2P Betting Icon" className="h-20 w-20 filter drop-shadow-[0_0_8px_rgba(255,61,252,0.8)] transition-transform hover:scale-110 duration-300" />
-              </div>
-              <h3 className="text-xl font-display font-semibold mb-3">P2P Betting</h3>
-              <p className="text-white/90">
-                Bet directly against other users with a simple up or down position on migrating tokens.
-              </p>
-            </div>
+            <Card className="glass-panel overflow-hidden border-white/10 bg-black/20 backdrop-blur-sm hover:bg-black/30 transition-all duration-300 group">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-xl font-display">
+                  <Activity className="h-5 w-5 text-dream-accent2 group-hover:text-dream-accent1 transition-colors duration-300" />
+                  <span className="bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent">PXB Stats</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-dream-foreground/5 rounded-md p-3 text-center transform hover:scale-105 transition-all">
+                    <p className="text-sm text-dream-foreground/60 mb-1">Total Bets</p>
+                    <p className="text-2xl font-display font-bold text-gradient animate-pulse">427</p>
+                  </div>
+                  <div className="bg-dream-foreground/5 rounded-md p-3 text-center transform hover:scale-105 transition-all">
+                    <p className="text-sm text-dream-foreground/60 mb-1">Win Rate</p>
+                    <p className="text-2xl font-display font-bold text-gradient animate-pulse">68%</p>
+                  </div>
+                </div>
+                <div className="mt-4 text-sm text-center text-dream-foreground/70">
+                  Track your betting performance and improve your strategy
+                </div>
+              </CardContent>
+            </Card>
             
-            <div className="glass-panel p-6 text-center">
-              <div className="bg-dream-accent2/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <img src="/lovable-uploads/996f7a3a-2e7a-4c12-bcd7-8af762f1087a.png" alt="One-Hour Window Icon" className="h-16 w-16 filter drop-shadow-[0_0_8px_rgba(0,255,240,0.8)] transition-transform hover:scale-110 duration-300" />
-              </div>
-              <h3 className="text-xl font-display font-semibold mb-3">One-Hour Window</h3>
-              <p className="text-white/90">
-                Quick one-hour betting windows for fast-paced and exciting predictions on token migrations.
-              </p>
-            </div>
+            <Card className="glass-panel overflow-hidden border-white/10 bg-black/20 backdrop-blur-sm hover:bg-black/30 transition-all duration-300 group">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-xl font-display">
+                  <Trophy className="h-5 w-5 text-yellow-400 group-hover:text-yellow-300 transition-colors duration-300" />
+                  <span className="bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent">Leaderboard</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="bg-dream-foreground/5 rounded-md p-2.5 flex items-center justify-between transform hover:translate-x-1 transition-all">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-dream-accent1/30 flex items-center justify-center text-sm font-bold">1</div>
+                      <span className="text-white/90">CryptoWhale</span>
+                    </div>
+                    <span className="text-dream-accent1 font-bold">9,243 PXB</span>
+                  </div>
+                  
+                  <div className="bg-dream-foreground/5 rounded-md p-2.5 flex items-center justify-between transform hover:translate-x-1 transition-all">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-dream-accent2/30 flex items-center justify-center text-sm font-bold">2</div>
+                      <span className="text-white/90">TokenHunter</span>
+                    </div>
+                    <span className="text-dream-accent2 font-bold">7,185 PXB</span>
+                  </div>
+                </div>
+                <div className="mt-4 text-sm text-center text-dream-foreground/70">
+                  Compete with others and climb to the top of the rankings
+                </div>
+              </CardContent>
+            </Card>
             
-            <div className="glass-panel p-6 text-center">
-              <div className="bg-dream-accent3/20 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <img src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" alt="Solana Logo" className="h-24 w-24 filter drop-shadow-[0_0_8px_rgba(64,224,208,0.8)] transition-transform hover:scale-110 duration-300" />
-              </div>
-              <h3 className="text-xl font-display font-semibold mb-3">Solana Powered</h3>
-              <p className="text-white/90">
-                Fast, secure betting with low fees powered by Solana smart contracts and blockchain technology.
-              </p>
-            </div>
+            <Card className="glass-panel overflow-hidden border-white/10 bg-black/20 backdrop-blur-sm hover:bg-black/30 transition-all duration-300 group">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-xl font-display">
+                  <Users className="h-5 w-5 text-dream-accent3 group-hover:text-dream-accent2 transition-colors duration-300" />
+                  <span className="bg-gradient-to-r from-dream-accent3 to-dream-accent2 bg-clip-text text-transparent">Community</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Button variant="outline" className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 transition-all group-hover:border-dream-accent3/50">
+                    <img src="/lovable-uploads/996f7a3a-2e7a-4c12-bcd7-8af762f1087a.png" className="w-4 h-4 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" alt="Discord" />
+                    Join Discord
+                  </Button>
+                  <Button variant="outline" className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 transition-all group-hover:border-dream-accent2/50">
+                    <img src="/lovable-uploads/cacd6344-a731-4fcf-8ae1-de6fc1aee605.png" className="w-4 h-4 filter drop-shadow-[0_0_8px_rgba(29,161,242,0.8)]" alt="Twitter" />
+                    Follow on Twitter
+                  </Button>
+                </div>
+                <div className="mt-4 text-sm text-center text-dream-foreground/70">
+                  Connect with other traders and share strategies
+                </div>
+              </CardContent>
+            </Card>
           </div>
         
         </section>
