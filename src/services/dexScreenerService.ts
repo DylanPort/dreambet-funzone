@@ -1,3 +1,4 @@
+
 interface DexScreenerPair {
   liquidity: number;
   volume: {
@@ -53,6 +54,9 @@ interface TrendingToken {
   url: string;
   imageUrl?: string;
 }
+
+// Define callback types for the subscription functions
+type PriceCallback = (price: number) => void;
 
 const CACHE_EXPIRY_TIME = 30000; // 30 seconds
 const TRENDING_CACHE_EXPIRY = 10000; // 10 seconds
