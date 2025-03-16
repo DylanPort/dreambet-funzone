@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase, isAuthRateLimited, checkSupabaseTables, isAuthDisabled } from '@/integrations/supabase/client';
@@ -68,6 +67,61 @@ export const usePointOperations = (
     }
   }, [userProfile, publicKey, setUserProfile]);
 
+  // Helper function to check if token exists and create it if needed
+  const ensureTokenExists = async (
+    tokenId: string,
+    tokenName: string,
+    tokenSymbol: string,
+    initialMarketCap: number
+  ) => {
+    try {
+      // Check if token exists in database
+      const { data: existingToken, error: checkError } = await supabase
+        .from('tokens')
+        .select('token_mint')
+        .eq('token_mint', tokenId)
+        .single();
+      
+      if (checkError) {
+        if (checkError.code === 'PGRST116') {
+          // Token doesn't exist, create it
+          console.log(`Token ${tokenId} (${tokenName}) doesn't exist, creating it now`);
+          
+          const { data: newToken, error: insertError } = await supabase
+            .from('tokens')
+            .insert({
+              token_mint: tokenId,
+              token_name: tokenName,
+              token_symbol: tokenSymbol,
+              initial_market_cap: initialMarketCap,
+              current_market_cap: initialMarketCap,
+              last_trade_price: 0
+            })
+            .select()
+            .single();
+          
+          if (insertError) {
+            console.error('Failed to create token:', insertError);
+            throw new Error(`Failed to create token: ${insertError.message}`);
+          }
+          
+          console.log('Token created successfully:', newToken);
+          return true;
+        } else {
+          // Other error occurred when checking if token exists
+          console.error('Error checking if token exists:', checkError);
+          throw new Error(`Error checking token: ${checkError.message}`);
+        }
+      }
+      
+      console.log(`Token ${tokenId} already exists in database`);
+      return true;
+    } catch (error) {
+      console.error('Unexpected error in ensureTokenExists:', error);
+      throw error;
+    }
+  };
+
   // Place a bet
   const placeBet = useCallback(async (
     tokenId: string,
@@ -105,6 +159,9 @@ export const usePointOperations = (
       const initialMarketCap = tokenData?.marketCap || 1000; // Default to 1000 if still null
       
       console.log(`Initial market cap for ${tokenSymbol}: $${initialMarketCap}`);
+      
+      // Ensure the token exists in the database before creating a bet
+      await ensureTokenExists(tokenId, tokenName, tokenSymbol, initialMarketCap);
       
       // Calculate duration in seconds
       const durationSeconds = durationMinutes * 60;
