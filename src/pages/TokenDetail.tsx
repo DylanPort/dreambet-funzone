@@ -104,7 +104,7 @@ const TokenChart = ({
         
         <button 
           onClick={() => refreshData('down')} 
-          className="p-0 w-full h-20 flex justify-center items-center transition-transform hover:scale-105 active:scale-95 rounded-lg overflow-hidden bg-gradient-to-r from-[#8B5CF6]/20 to-[#D946EF]/20 border border-[#D946EF]/30"
+          className="p-0 w-full h-20 flex justify-center items-center transition-transform hover:scale-105 active:scale-95 rounded-lg overflow-hidden bg-transparent"
           aria-label="Dust"
         >
           <img 
