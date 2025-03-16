@@ -61,6 +61,7 @@ export const useBetsData = (userProfile: any) => {
   return {
     bets,
     setBets,
-    fetchUserBets
+    fetchUserBets,
+    isLoading
   };
 };

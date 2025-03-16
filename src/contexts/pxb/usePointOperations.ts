@@ -150,6 +150,19 @@ export const usePointOperations = (
       
       const betId = crypto.randomUUID();
       
+      // First deduct points from user balance
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ points: userProfile.pxbPoints - betAmount })
+        .eq('id', userProfile.id);
+      
+      if (updateError) {
+        console.error('Error updating points:', updateError);
+        toast.error('Failed to deduct PXB Points for bet');
+        return;
+      }
+      
+      // Then create the bet record
       const { error: betError } = await supabase
         .from('bets')
         .insert({
@@ -169,18 +182,14 @@ export const usePointOperations = (
       
       if (betError) {
         console.error('Error creating bet:', betError);
-        toast.error('Failed to place bet');
-        return;
-      }
-      
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ points: userProfile.pxbPoints - betAmount })
-        .eq('id', userProfile.id);
-      
-      if (updateError) {
-        console.error('Error updating points:', updateError);
-        toast.error('Failed to update points');
+        
+        // If bet creation fails, refund the points
+        await supabase
+          .from('users')
+          .update({ points: userProfile.pxbPoints })
+          .eq('id', userProfile.id);
+          
+        toast.error('Failed to place bet, points refunded');
         return;
       }
       
@@ -203,6 +212,7 @@ export const usePointOperations = (
           market_cap_at_action: initialMarketCap
         });
       
+      // Update local user profile state with reduced points
       const updatedProfile = {
         ...userProfile,
         pxbPoints: userProfile.pxbPoints - betAmount
@@ -210,6 +220,7 @@ export const usePointOperations = (
       
       setUserProfile(updatedProfile);
       
+      // Create new bet object for immediate display
       const newBet: PXBBet = {
         id: betId,
         userId: userProfile.id,
@@ -226,7 +237,8 @@ export const usePointOperations = (
         initialMarketCap
       };
       
-      setBets(prevBets => [...prevBets, newBet]);
+      // Add new bet to state
+      setBets(prevBets => [newBet, ...prevBets]);
       
       const predictionText = betType === 'up' ? `MOON by ${percentageChange}%` : `DIE by ${percentageChange}%`;
       toast.success(`Bet placed successfully! ${betAmount} PXB Points on ${tokenSymbol} to ${predictionText}`);
