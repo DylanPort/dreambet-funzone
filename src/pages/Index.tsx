@@ -270,21 +270,19 @@ const Index = () => {
               </span>
             </h2>
             
-            <PXBPointsProvider>
-              <div className="glass-panel p-6 rounded-lg mb-8">
-                <PXBSupplyProgress />
+            <div className="glass-panel p-6 rounded-lg mb-8">
+              <PXBSupplyProgress />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 my-[-56px] py-[2px]">
+              <div className="glass-panel p-6">
+                <PXBUserStats />
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 my-[-56px] py-[2px]">
-                <div className="glass-panel p-6">
-                  <PXBUserStats />
-                </div>
-                
-                <div className="glass-panel p-6">
-                  <PXBLeaderboard />
-                </div>
+              <div className="glass-panel p-6">
+                <PXBLeaderboard />
               </div>
-            </PXBPointsProvider>
+            </div>
           </div>
         
         </section>
