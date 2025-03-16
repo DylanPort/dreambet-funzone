@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins } from 'lucide-react';
@@ -98,7 +97,7 @@ const Index = () => {
             <div className="text-center md:text-left md:flex-1">
               <AnimatedLogo />
               <p className="text-lg md:text-xl text-white max-w-3xl mx-auto md:mx-0 mb-8 font-semibold">
-                Welcome to the future of token prediction! 🚀 Connect your wallet, grab some PXB Points, and bet on whether new tokens will <span className="text-green-400">MOON</span> or turn to <span className="text-red-400">DUST</span> in just 60 minutes. It's that simple - predict, place your bet, and win double your points!
+                Grab some PXB, connect your Wallet, and PXBP Points, and bet on whether new tokens will <span className="text-green-400">MOON</span> or turn to <span className="text-red-400">DUST</span> in just 60 minutes. It's that simple - predict, place your bet, and build your reputation and future life changing perks!
               </p>
             </div>
             
