@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Coins } from 'lucide-react';
 
 const PXBSupplyProgress = () => {
   const [totalMinted, setTotalMinted] = useState<number>(0);
