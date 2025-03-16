@@ -9,269 +9,217 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      bet_history: {
+      bounties: {
         Row: {
-          action: string
-          bet_id: string
-          details: Json | null
-          id: string
-          market_cap_at_action: number | null
-          timestamp: string
-          user_id: string | null
-        }
-        Insert: {
-          action: string
-          bet_id: string
-          details?: Json | null
-          id?: string
-          market_cap_at_action?: number | null
-          timestamp?: string
-          user_id?: string | null
-        }
-        Update: {
-          action?: string
-          bet_id?: string
-          details?: Json | null
-          id?: string
-          market_cap_at_action?: number | null
-          timestamp?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bet_history_bet_id_fkey"
-            columns: ["bet_id"]
-            isOneToOne: false
-            referencedRelation: "bets"
-            referencedColumns: ["bet_id"]
-          },
-          {
-            foreignKeyName: "bet_history_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      bets: {
-        Row: {
-          bet_id: string
-          bettor1_id: string
-          bettor2_id: string | null
+          bounty_address: string | null
+          budget: number
+          cancel_transaction: string | null
           created_at: string
-          creator: string
-          duration: number
-          end_time: string | null
-          initial_market_cap: number | null
-          on_chain_id: string | null
-          prediction_bettor1: string
-          sol_amount: number
-          start_time: string | null
+          creator_id: string
+          description: string
+          description_cid: string | null
+          end_date: string
+          id: string
+          required_proof: string
+          start_date: string
           status: string
-          token_mint: string
+          tags: string[] | null
+          title: string
           transaction_signature: string | null
+          updated_at: string
+          views: number | null
         }
         Insert: {
-          bet_id?: string
-          bettor1_id: string
-          bettor2_id?: string | null
+          bounty_address?: string | null
+          budget: number
+          cancel_transaction?: string | null
           created_at?: string
-          creator: string
-          duration: number
-          end_time?: string | null
-          initial_market_cap?: number | null
-          on_chain_id?: string | null
-          prediction_bettor1: string
-          sol_amount: number
-          start_time?: string | null
+          creator_id: string
+          description: string
+          description_cid?: string | null
+          end_date: string
+          id?: string
+          required_proof: string
+          start_date?: string
           status?: string
-          token_mint: string
+          tags?: string[] | null
+          title: string
           transaction_signature?: string | null
+          updated_at?: string
+          views?: number | null
         }
         Update: {
-          bet_id?: string
-          bettor1_id?: string
-          bettor2_id?: string | null
+          bounty_address?: string | null
+          budget?: number
+          cancel_transaction?: string | null
           created_at?: string
-          creator?: string
-          duration?: number
-          end_time?: string | null
-          initial_market_cap?: number | null
-          on_chain_id?: string | null
-          prediction_bettor1?: string
-          sol_amount?: number
-          start_time?: string | null
+          creator_id?: string
+          description?: string
+          description_cid?: string | null
+          end_date?: string
+          id?: string
+          required_proof?: string
+          start_date?: string
           status?: string
-          token_mint?: string
+          tags?: string[] | null
+          title?: string
           transaction_signature?: string | null
+          updated_at?: string
+          views?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "bets_bettor1_id_fkey"
-            columns: ["bettor1_id"]
+            foreignKeyName: "bounties_creator_id_fkey"
+            columns: ["creator_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bets_bettor2_id_fkey"
-            columns: ["bettor2_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bets_token_mint_fkey"
-            columns: ["token_mint"]
-            isOneToOne: false
-            referencedRelation: "tokens"
-            referencedColumns: ["token_mint"]
           },
         ]
       }
-      points_history: {
+      comments: {
         Row: {
-          action: string
-          amount: number
+          author_id: string
+          bounty_id: string
+          content: string
           created_at: string
           id: string
-          reference_id: string | null
-          user_id: string
         }
         Insert: {
-          action: string
-          amount: number
+          author_id: string
+          bounty_id: string
+          content: string
           created_at?: string
           id?: string
-          reference_id?: string | null
-          user_id: string
         }
         Update: {
-          action?: string
-          amount?: number
+          author_id?: string
+          bounty_id?: string
+          content?: string
           created_at?: string
           id?: string
-          reference_id?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      token_volume_history: {
-        Row: {
-          id: string
-          timestamp: string
-          token_mint: string
-          volume_24h: number
-        }
-        Insert: {
-          id?: string
-          timestamp?: string
-          token_mint: string
-          volume_24h: number
-        }
-        Update: {
-          id?: string
-          timestamp?: string
-          token_mint?: string
-          volume_24h?: number
         }
         Relationships: [
           {
-            foreignKeyName: "token_volume_history_token_mint_fkey"
-            columns: ["token_mint"]
+            foreignKeyName: "comments_author_id_fkey"
+            columns: ["author_id"]
             isOneToOne: false
-            referencedRelation: "tokens"
-            referencedColumns: ["token_mint"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_bounty_id_fkey"
+            columns: ["bounty_id"]
+            isOneToOne: false
+            referencedRelation: "bounties"
+            referencedColumns: ["id"]
           },
         ]
       }
-      tokens: {
+      profiles: {
         Row: {
-          created_on: string | null
-          current_market_cap: number
-          initial_market_cap: number | null
-          last_trade_price: number
-          last_updated_time: string
-          token_mint: string
-          token_name: string
-          token_symbol: string | null
-          total_supply: number
-          volume_24h: number | null
-        }
-        Insert: {
-          created_on?: string | null
-          current_market_cap: number
-          initial_market_cap?: number | null
-          last_trade_price: number
-          last_updated_time?: string
-          token_mint: string
-          token_name: string
-          token_symbol?: string | null
-          total_supply: number
-          volume_24h?: number | null
-        }
-        Update: {
-          created_on?: string | null
-          current_market_cap?: number
-          initial_market_cap?: number | null
-          last_trade_price?: number
-          last_updated_time?: string
-          token_mint?: string
-          token_name?: string
-          token_symbol?: string | null
-          total_supply?: number
-          volume_24h?: number | null
-        }
-        Relationships: []
-      }
-      users: {
-        Row: {
+          avatar_url: string | null
+          bio: string | null
           created_at: string
+          first_sign_in: boolean | null
           id: string
-          points: number
+          public_key: string | null
+          updated_at: string
           username: string | null
-          wallet_address: string
+          wallet_address: string | null
         }
         Insert: {
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          first_sign_in?: boolean | null
           id: string
-          points?: number
+          public_key?: string | null
+          updated_at?: string
           username?: string | null
-          wallet_address: string
+          wallet_address?: string | null
         }
         Update: {
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          first_sign_in?: boolean | null
           id?: string
-          points?: number
+          public_key?: string | null
+          updated_at?: string
           username?: string | null
-          wallet_address?: string
+          wallet_address?: string | null
         }
         Relationships: []
+      }
+      submissions: {
+        Row: {
+          accept_transaction: string | null
+          bounty_id: string
+          created_at: string
+          description: string
+          id: string
+          proof_cid: string | null
+          proof_link: string
+          status: string
+          submitter_id: string
+          transaction_signature: string | null
+          updated_at: string
+          verify_transaction: string | null
+        }
+        Insert: {
+          accept_transaction?: string | null
+          bounty_id: string
+          created_at?: string
+          description: string
+          id?: string
+          proof_cid?: string | null
+          proof_link: string
+          status?: string
+          submitter_id: string
+          transaction_signature?: string | null
+          updated_at?: string
+          verify_transaction?: string | null
+        }
+        Update: {
+          accept_transaction?: string | null
+          bounty_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          proof_cid?: string | null
+          proof_link?: string
+          status?: string
+          submitter_id?: string
+          transaction_signature?: string | null
+          updated_at?: string
+          verify_transaction?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_bounty_id_fkey"
+            columns: ["bounty_id"]
+            isOneToOne: false
+            referencedRelation: "bounties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_submitter_id_fkey"
+            columns: ["submitter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      update_bet_status: {
+      increment_bounty_views: {
         Args: {
-          p_bet_id: string
-          p_status: string
-          p_user_id: string
-          p_action: string
-          p_details?: Json
-          p_market_cap?: number
-        }
-        Returns: undefined
-      }
-      update_user_points_transaction: {
-        Args: {
-          user_id_param: string
-          points_param: number
-          amount_param: number
-          action_param: string
-          reference_id_param: string
+          bounty_id: string
         }
         Returns: undefined
       }
