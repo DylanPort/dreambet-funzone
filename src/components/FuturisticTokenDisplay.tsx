@@ -1,20 +1,25 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, ArrowUp, ArrowDown, Zap, RefreshCw } from 'lucide-react';
+
 interface FuturisticTokenCardProps {
   token: any;
   flipping: boolean;
 }
+
 const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
   token,
   flipping
 }) => {
   const [isHovering, setIsHovering] = useState(false);
   const isPositive = token.change24h >= 0;
+  
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+  
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -25,6 +30,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       maximumFractionDigits: 2
     });
   };
+  
   return <div className={`glass-panel transform transition-all duration-500 w-[280px] p-5 ${flipping ? 'animate-flip' : ''} ${isHovering ? 'scale-105 z-50' : 'z-10'}`} style={{
     transform: `perspective(1000px) rotateY(${isHovering ? '0' : '-15'}deg) rotateX(${isHovering ? '0' : '5'}deg)`,
     transformStyle: 'preserve-3d',
@@ -86,19 +92,26 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       }}></div>
       </div>
       
-      {/* Action Buttons */}
+      {/* Action Buttons - Replaced with Flame Images */}
       <div className="flex justify-around">
-        <button className="btn-moon py-1 px-3 text-sm relative overflow-hidden group">
-          <span className="relative z-10 flex items-center">
-            Moon <ArrowUp className="w-3 h-3 ml-1" />
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-green-300/30 group-hover:from-green-500/50 group-hover:to-green-300/50 transition-all duration-300"></div>
+        <button className="relative group">
+          <img 
+            src="/lovable-uploads/2b1546ad-becf-4939-b314-fab90c243cfa.png" 
+            alt="MOON" 
+            className="w-14 h-14 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(155,135,245,0.7)]"
+          />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/0 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">MOON</span>
         </button>
-        <button className="btn-die py-1 px-3 text-sm relative overflow-hidden group">
-          <span className="relative z-10 flex items-center">
-            Dust <ArrowDown className="w-3 h-3 ml-1" />
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-red-500/30 to-red-300/30 group-hover:from-red-500/50 group-hover:to-red-300/50 transition-all duration-300"></div>
+        
+        <button className="relative group">
+          <img 
+            src="/lovable-uploads/2b1546ad-becf-4939-b314-fab90c243cfa.png" 
+            alt="DUST" 
+            className="w-14 h-14 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(155,135,245,0.7)] rotate-180"
+          />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500/0 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-red-400 to-purple-400 bg-clip-text text-transparent">DUST</span>
         </button>
       </div>
       
@@ -116,6 +129,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       
     </div>;
 };
+
 const FuturisticTokenDisplay: React.FC<{
   tokens: any[];
 }> = ({
@@ -157,4 +171,5 @@ const FuturisticTokenDisplay: React.FC<{
       </div>
     </div>;
 };
+
 export default FuturisticTokenDisplay;
