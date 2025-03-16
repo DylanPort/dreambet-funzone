@@ -4,6 +4,7 @@ import { RefreshCw, ExternalLink } from 'lucide-react';
 import { subscribeToGMGNTokenData } from '@/services/gmgnService';
 import { subscribeToTokenMetric } from '@/services/tokenDataCache';
 import { useToast } from '@/hooks/use-toast';
+import { subscribeToVolume } from '@/services/dexScreenerService';
 
 interface TokenVolumeProps {
   tokenId: string;
@@ -20,18 +21,25 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
     
     setLoading(true);
     
-    // First try to get data from GMGN API (faster)
+    // Try to get data from DexScreener (primary source)
+    const cleanupDexScreener = subscribeToVolume(tokenId, (newVolume) => {
+      setVolume(newVolume);
+      setLastUpdated(new Date());
+      setLoading(false);
+    });
+    
+    // Fallback to GMGN API if DexScreener doesn't provide data
     const cleanupGMGN = subscribeToGMGNTokenData(tokenId, (data) => {
-      if (data.volume24h) {
+      if (volume === null && data.volume24h) {
         setVolume(data.volume24h);
         setLastUpdated(new Date());
         setLoading(false);
       }
     });
     
-    // Fallback to existing service if GMGN doesn't provide the data
-    const cleanupFallback = subscribeToTokenMetric(tokenId, 'volume24h', (newVolume) => {
-      if (volume === null) { // Only update if we don't have data from GMGN
+    // Final fallback to existing service
+    const cleanupTokenCache = subscribeToTokenMetric(tokenId, 'volume24h', (newVolume) => {
+      if (volume === null) { // Only update if we don't have data from primary sources
         setVolume(newVolume);
         setLastUpdated(new Date());
         setLoading(false);
@@ -50,8 +58,9 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
     }, 10000);
     
     return () => {
+      cleanupDexScreener();
       cleanupGMGN();
-      cleanupFallback();
+      cleanupTokenCache();
       clearTimeout(timeoutId);
     };
   }, [tokenId, volume, loading, toast]);

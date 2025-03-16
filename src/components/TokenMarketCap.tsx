@@ -4,6 +4,7 @@ import { BarChart3, ExternalLink } from 'lucide-react';
 import { subscribeToGMGNTokenData } from '@/services/gmgnService';
 import { subscribeToTokenMetric } from '@/services/tokenDataCache';
 import { useToast } from '@/hooks/use-toast';
+import { subscribeToMarketCap } from '@/services/dexScreenerService';
 
 interface TokenMarketCapProps {
   tokenId: string;
@@ -20,18 +21,25 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
     
     setLoading(true);
     
-    // First try to get data from GMGN API (faster)
+    // Try to get data from DexScreener (primary source)
+    const cleanupDexScreener = subscribeToMarketCap(tokenId, (newMarketCap) => {
+      setMarketCap(newMarketCap);
+      setLastUpdated(new Date());
+      setLoading(false);
+    });
+    
+    // Fallback to GMGN API if DexScreener doesn't provide data
     const cleanupGMGN = subscribeToGMGNTokenData(tokenId, (data) => {
-      if (data.marketCap) {
+      if (marketCap === null && data.marketCap) {
         setMarketCap(data.marketCap);
         setLastUpdated(new Date());
         setLoading(false);
       }
     });
     
-    // Fallback to existing service if GMGN doesn't provide the data
-    const cleanupFallback = subscribeToTokenMetric(tokenId, 'marketCap', (newMarketCap) => {
-      if (marketCap === null) { // Only update if we don't have data from GMGN
+    // Final fallback to existing service
+    const cleanupTokenCache = subscribeToTokenMetric(tokenId, 'marketCap', (newMarketCap) => {
+      if (marketCap === null) { // Only update if we don't have data from primary sources
         setMarketCap(newMarketCap);
         setLastUpdated(new Date());
         setLoading(false);
@@ -50,8 +58,9 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
     }, 10000);
     
     return () => {
+      cleanupDexScreener();
       cleanupGMGN();
-      cleanupFallback();
+      cleanupTokenCache();
       clearTimeout(timeoutId);
     };
   }, [tokenId, marketCap, loading, toast]);
