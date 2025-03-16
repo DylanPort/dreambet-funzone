@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users } from 'lucide-react';
@@ -15,7 +16,6 @@ import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import RecentTokenTrades from '@/components/RecentTokenTrades';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PXBPointsProvider } from '@/contexts/pxb/PXBPointsContext';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
@@ -114,27 +114,11 @@ const Index = () => {
                 before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
                 before:animate-pulse-glow">
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-4 border-b border-white/10">
-                  <Link to="/dashboard" className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
-                    <img src="/lovable-uploads/8334bc57-6487-4a01-b85d-684370bfe2f8.png" alt="Lightning" className="h-6 w-6 animate-float filter drop-shadow-[0_0_8px_rgba(0,238,255,0.8)]" />
-                    <span className="bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
-                      Grab some PXB
-                    </span>
-                  </Link>
-                  
-                  <Link to="/profile" className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
-                    <span className="bg-gradient-to-r from-dream-accent1 via-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold">
-                      Connect your Wallet
-                    </span>
-                    <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="h-6 w-6 animate-bob filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
-                  </Link>
-                  
-                  <Link to="/betting" className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
-                    <img src="/lovable-uploads/7f8a29b9-8cfb-42ce-ab80-9c9a0f5e42a4.png" alt="Holographic Diamond" className="h-6 w-6 animate-pulse filter drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]" />
-                    <span className="bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
-                      Mint PXB Points
-                    </span>
-                  </Link>
+                <div className="p-4 border-b border-white/10">
+                  <p className="text-center text-white/80">
+                    PumpXBounty is your platform for predicting 
+                    the future of crypto tokens with zero risk.
+                  </p>
                 </div>
                 
                 <div className="p-4 bg-black/20">
