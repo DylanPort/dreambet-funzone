@@ -115,7 +115,7 @@ const BettingDashboard = () => {
                         <Check className="h-5 w-5 text-green-400" />
                       </motion.div>}
                   </div>
-                  <p className="text-sm text-dream-foreground/80">Analyze market data and choose any migrating token you want to bet on.</p>
+                  <p className="text-sm text-dream-foreground/80">Analyze market data and token you want to bet on.</p>
                   {!readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent1 animate-pulse">Click if understand this step</div>}
                 </motion.div>
                 
