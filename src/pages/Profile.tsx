@@ -33,7 +33,6 @@ const Profile = () => {
   const [isMintingPoints, setIsMintingPoints] = useState(false);
   const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
 
-  
   useEffect(() => {
     const loadUserData = async () => {
       setIsLoading(true);
@@ -232,11 +231,8 @@ const Profile = () => {
   
   useEffect(() => {
     if (connected && publicKey) {
-      fetchUserProfile();
-    } else {
-      setUserProfile(null);
+      fetchPXBUserProfile();
     }
-    
     
     if (connected && publicKey) {
       const walletAddress = publicKey.toString();
@@ -260,7 +256,6 @@ const Profile = () => {
       };
     }
   }, [connected, publicKey]);
-  
   
   useEffect(() => {
     if (userProfile && userProfile.pxbPoints !== undefined) {
@@ -287,7 +282,6 @@ const Profile = () => {
       setIsMintingPoints(false);
     }
   };
-  
   
   const filteredBets = betsFilter === 'all' 
     ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id))]
