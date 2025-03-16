@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 
 const Profile = () => {
+  
   const { connected, publicKey } = useWallet();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [bets, setBets] = useState<UserBet[]>([]);
@@ -30,6 +31,8 @@ const Profile = () => {
   const { userProfile, isLoading: pxbLoading, mintPoints, fetchUserProfile: fetchPXBUserProfile } = usePXBPoints();
   const [betsFilter, setBetsFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [isMintingPoints, setIsMintingPoints] = useState(false);
+  const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
+
   
   useEffect(() => {
     const loadUserData = async () => {
@@ -227,6 +230,44 @@ const Profile = () => {
     });
   };
   
+  useEffect(() => {
+    if (connected && publicKey) {
+      fetchUserProfile();
+    } else {
+      setUserProfile(null);
+    }
+    
+    
+    if (connected && publicKey) {
+      const walletAddress = publicKey.toString();
+      
+      const usersSubscription = supabase
+        .channel('users-points-changes')
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'users',
+          filter: `wallet_address=eq.${walletAddress}`,
+        }, (payload) => {
+          if (payload.new && typeof payload.new.points === 'number') {
+            setLocalPxbPoints(payload.new.points);
+          }
+        })
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(usersSubscription);
+      };
+    }
+  }, [connected, publicKey]);
+  
+  
+  useEffect(() => {
+    if (userProfile && userProfile.pxbPoints !== undefined) {
+      setLocalPxbPoints(userProfile.pxbPoints);
+    }
+  }, [userProfile]);
+  
   const handleMintPXBPoints = async () => {
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
@@ -237,8 +278,8 @@ const Profile = () => {
     try {
       const username = userProfile?.username || user?.username || publicKey.toString().substring(0, 8);
       await mintPoints(username);
-      toast.success("Successfully minted 500 PXB Points!");
       await fetchPXBUserProfile();
+      toast.success("Successfully minted 500 PXB Points!");
     } catch (error) {
       console.error("Error minting PXB points:", error);
       toast.error("Failed to mint PXB Points");
@@ -246,6 +287,7 @@ const Profile = () => {
       setIsMintingPoints(false);
     }
   };
+  
   
   const filteredBets = betsFilter === 'all' 
     ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id))]
@@ -289,7 +331,22 @@ const Profile = () => {
       <OrbitingParticles />
       <Navbar />
       <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto">
+        
+        
         <div className="glass-panel p-6 mb-6">
+          
+          
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          
+          
+        </div>
+        
+        <div className="glass-panel p-6">
+          
+          
+          
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
               <img src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" alt="Profile" className="w-16 h-16" />
@@ -313,13 +370,15 @@ const Profile = () => {
                 <p className="text-2xl font-display font-bold text-gradient">
                   {pxbLoading ? (
                     <span className="text-sm text-dream-foreground/40">Loading...</span>
+                  ) : localPxbPoints !== null ? (
+                    `${localPxbPoints.toLocaleString()} PXB`
                   ) : userProfile !== null ? (
                     `${userProfile.pxbPoints.toLocaleString()} PXB`
                   ) : (
                     <span className="text-sm text-dream-foreground/40">0 PXB</span>
                   )}
                 </p>
-                {userProfile === null || userProfile?.pxbPoints === 0 ? (
+                {(userProfile === null || (userProfile?.pxbPoints === 0 && localPxbPoints === 0)) ? (
                   <Button 
                     onClick={handleMintPXBPoints}
                     disabled={isMintingPoints}
@@ -342,38 +401,7 @@ const Profile = () => {
               </div>
             </div>
           </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <div className="glass-panel p-6 text-center relative overflow-hidden">
-            <div className="absolute -right-16 -top-16 w-32 h-32 rounded-full blur-3xl bg-dream-accent2/10 opacity-70"></div>
-            <p className="text-dream-foreground/60 mb-2">Total Bets</p>
-            <p className="text-3xl font-display font-bold">{stats.totalBets}</p>
-          </div>
           
-          <div className="glass-panel p-6 text-center relative overflow-hidden">
-            <div className="absolute -left-16 -bottom-16 w-32 h-32 rounded-full blur-3xl bg-dream-accent1/10 opacity-70"></div>
-            <p className="text-dream-foreground/60 mb-2">Win Rate</p>
-            <p className="text-3xl font-display font-bold">{stats.winRate}%</p>
-          </div>
-
-          <div className="glass-panel p-6 text-center relative overflow-hidden">
-            <div className="absolute -right-16 -bottom-16 w-32 h-32 rounded-full blur-3xl bg-dream-accent3/10 opacity-70"></div>
-            <p className="text-dream-foreground/60 mb-2">Active Bets</p>
-            <p className="text-3xl font-display font-bold flex items-center justify-center">
-              {isActiveBetsLoading ? (
-                <span className="text-sm text-dream-foreground/40">Loading...</span>
-              ) : (
-                <span className="flex items-center">
-                  {activeBets.length}
-                  {activeBets.length > 0 && <Activity className="w-5 h-5 ml-2 text-dream-accent2 animate-pulse" />}
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-        
-        <div className="glass-panel p-6">
           <div className="flex border-b border-white/10">
             <button
               className={`py-3 px-6 font-medium flex items-center ${
