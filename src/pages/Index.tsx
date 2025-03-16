@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Rocket, Zap } from 'lucide-react';
+import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
@@ -120,7 +121,11 @@ const Index = () => {
                 . Bet on whether new tokens will 
                 
                 <span className="relative inline-flex items-center gap-1 text-green-400 font-bold animate-bob">
-                  <Rocket className="h-5 w-5 text-green-400 animate-float" />
+                  <img 
+                    src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" 
+                    alt="Rocket" 
+                    className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" 
+                  />
                   MOON
                   <span className="absolute inset-0 bg-green-400/10 blur-sm animate-pulse-glow rounded-full"></span>
                 </span> 
