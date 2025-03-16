@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import { fetchTokenById } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
 import { Bet } from '@/types/bet';
-import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign } from 'lucide-react';
+import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CreateBetForm from '@/components/CreateBetForm';
 import BetCard from '@/components/BetCard';
@@ -744,4 +744,52 @@ const TokenDetail = () => {
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-display font-bold">My Active Bets on This Token</h2>
                   <Button
+                    variant="outline"
+                    onClick={() => refreshData()}
+                    className="gap-2"
+                    disabled={loadingMyBets}
+                  >
+                    <RefreshCw className={`w-4 h-4 ${loadingMyBets ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+                
+                {!connected ? (
+                  <div className="text-center py-8 text-dream-foreground/70">
+                    Connect your wallet to see your active bets
+                  </div>
+                ) : loadingMyBets ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : myActiveBets.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-dream-foreground/70 mb-4">
+                      You don't have any active bets on this token
+                    </p>
+                    <Button 
+                      onClick={() => setShowCreateBet(true)}
+                      className="gap-2"
+                    >
+                      <Plus size={16} />
+                      Create a Bet
+                    </Button>
+                  </div>
+                ) : (
+                  <BetsListView 
+                    bets={myActiveBets}
+                    connected={connected}
+                    publicKeyString={publicKey ? publicKey.toString() : null}
+                    onAcceptBet={handleAcceptBet}
+                  />
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </>
+  );
+};
 
+export default TokenDetail;
