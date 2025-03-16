@@ -155,7 +155,7 @@ export const useBetProcessor = (
                   : b
               ));
               
-              // Update in database
+              // Update in database - using the database column name
               await supabase
                 .from('bets')
                 .update({
