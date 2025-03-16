@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, HelpCircle, ArrowUp, ArrowDown } from 'lucide-react';
@@ -7,13 +6,12 @@ import WalletConnectButton from '@/components/WalletConnectButton';
 import MigratingTokenList from '@/components/MigratingTokenList';
 import OpenBetsList from '@/components/OpenBetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
-
 const BettingDashboard = () => {
-  const { connected } = useWallet();
+  const {
+    connected
+  } = useWallet();
   console.log("BettingDashboard rendering, wallet connected:", connected);
-  
-  return (
-    <>
+  return <>
       <OrbitingParticles />
       <Navbar />
 
@@ -43,9 +41,7 @@ const BettingDashboard = () => {
                     </div>
                     <h3 className="font-medium">Pick a Token</h3>
                   </div>
-                  <p className="text-sm text-dream-foreground/70">
-                    Choose any token that's migrating from PumpFun to Raydium that you want to bet on.
-                  </p>
+                  <p className="text-sm text-dream-foreground/70">Choose any token that you want to bet on.</p>
                 </div>
                 
                 <div className="bg-dream-foreground/5 p-4 rounded-lg">
@@ -65,9 +61,7 @@ const BettingDashboard = () => {
                       <span className="text-sm">DIE: Price down</span>
                     </div>
                   </div>
-                  <p className="text-sm text-dream-foreground/70">
-                    Predict if the token will go up or down by at least 10% after migrating.
-                  </p>
+                  <p className="text-sm text-dream-foreground/70">Predict if the token will go up or down by at least 10% or more.</p>
                 </div>
                 
                 <div className="bg-dream-foreground/5 p-4 rounded-lg">
@@ -83,18 +77,14 @@ const BettingDashboard = () => {
                 </div>
               </div>
               
-              <div className="mt-4 text-sm text-dream-foreground/60 border-t border-dream-foreground/10 pt-4">
-                Bets are tracked automatically and settled when the time expires. You're betting against the house, not other players.
-              </div>
+              <div className="mt-4 text-sm text-dream-foreground/60 border-t border-dream-foreground/10 pt-4">Bets are tracked automatically and settled when the time expires.</div>
             </div>
             
-            {!connected && (
-              <div className="mt-8 glass-panel inline-flex items-center gap-3 p-4">
+            {!connected && <div className="mt-8 glass-panel inline-flex items-center gap-3 p-4">
                 <Wallet className="text-dream-accent2" />
                 <span>Connect your Solana wallet to start betting</span>
                 <WalletConnectButton />
-              </div>
-            )}
+              </div>}
           </section>
           
           {/* Dashboard Sections */}
@@ -118,8 +108,6 @@ const BettingDashboard = () => {
           </div>
         </div>
       </footer>
-    </>
-  );
+    </>;
 };
-
 export default BettingDashboard;
