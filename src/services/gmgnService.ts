@@ -8,6 +8,16 @@ interface GMGNTokenData {
   change24h?: number;
 }
 
+interface GMGNChartResponse {
+  data: {
+    market_cap?: number;
+    volume_24h?: number;
+    price?: number;
+    price_change_24h?: number;
+    last_price?: number;
+  };
+}
+
 const CACHE_EXPIRY = 60 * 1000; // 1 minute
 const tokenCache: Record<string, { data: GMGNTokenData; timestamp: number }> = {};
 
@@ -18,21 +28,21 @@ export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData
   }
 
   try {
-    // Fetch data from GMGN API
-    const response = await fetch(`https://api.gmgn.cc/v1/tokens/sol/${tokenId}`);
+    // Fetch data directly from GMGN chart data API
+    const response = await fetch(`https://www.gmgn.cc/api/token/sol/${tokenId}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch token data: ${response.status}`);
     }
     
-    const data = await response.json();
+    const chartData = await response.json() as GMGNChartResponse;
     
     // Extract relevant data
     const tokenData: GMGNTokenData = {
-      marketCap: data.marketCap || data.market_cap,
-      volume24h: data.volume24h || data.volume || data.volume_24h,
-      price: data.price || data.lastPrice || data.last_price,
-      change24h: data.priceChange24h || data.price_change_24h
+      marketCap: chartData.data.market_cap,
+      volume24h: chartData.data.volume_24h,
+      price: chartData.data.price || chartData.data.last_price,
+      change24h: chartData.data.price_change_24h
     };
     
     // Cache the result
@@ -43,8 +53,37 @@ export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData
     
     return tokenData;
   } catch (error) {
-    console.error('Error fetching GMGN token data:', error);
-    return {};
+    console.error('Error fetching GMGN chart data:', error);
+    
+    // Try the original API as fallback
+    try {
+      const fallbackResponse = await fetch(`https://api.gmgn.cc/v1/tokens/sol/${tokenId}`);
+      
+      if (!fallbackResponse.ok) {
+        throw new Error(`Failed to fetch fallback token data: ${fallbackResponse.status}`);
+      }
+      
+      const data = await fallbackResponse.json();
+      
+      // Extract relevant data
+      const tokenData: GMGNTokenData = {
+        marketCap: data.marketCap || data.market_cap,
+        volume24h: data.volume24h || data.volume || data.volume_24h,
+        price: data.price || data.lastPrice || data.last_price,
+        change24h: data.priceChange24h || data.price_change_24h
+      };
+      
+      // Cache the result
+      tokenCache[tokenId] = {
+        data: tokenData,
+        timestamp: Date.now()
+      };
+      
+      return tokenData;
+    } catch (fallbackError) {
+      console.error('Error fetching fallback GMGN token data:', fallbackError);
+      return {};
+    }
   }
 };
 
