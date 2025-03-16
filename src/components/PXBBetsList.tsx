@@ -1,65 +1,25 @@
 
 import React, { useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle, RefreshCw } from 'lucide-react';
+import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { toast } from 'sonner';
 
 const PXBBetsList = () => {
-  const { bets, fetchUserBets, isLoading } = usePXBPoints();
+  const { bets, fetchUserBets } = usePXBPoints();
 
   useEffect(() => {
-    console.log('PXBBetsList - Fetching user bets on mount');
     fetchUserBets();
   }, [fetchUserBets]);
 
-  const handleRefresh = () => {
-    console.log('PXBBetsList - Manual refresh triggered');
-    toast.loading("Refreshing your bets...");
-    fetchUserBets().then(() => {
-      toast.success("Bets refreshed successfully");
-    }).catch((error) => {
-      console.error('Error refreshing bets:', error);
-      toast.error("Failed to refresh bets");
-    });
-  };
-
-  console.log('PXBBetsList - Current bets:', bets);
-
-  if (isLoading) {
+  if (!bets || bets.length === 0) {
     return (
       <div className="glass-panel p-6">
         <h2 className="font-semibold text-lg mb-4 flex items-center">
           <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
           Your PXB Bets
         </h2>
-        <div className="flex items-center justify-center py-10">
-          <div className="animate-spin h-8 w-8 border-4 border-dream-accent1 rounded-full border-t-transparent"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!bets || bets.length === 0) {
-    return (
-      <div className="glass-panel p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-lg flex items-center">
-            <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
-            Your PXB Bets
-          </h2>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleRefresh}
-            className="flex items-center gap-1"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            <span>Refresh</span>
-          </Button>
-        </div>
         <div className="text-center py-6">
           <p className="text-dream-foreground/70 mb-4">You haven't placed any PXB bets yet</p>
           <Button asChild>
@@ -72,21 +32,10 @@ const PXBBetsList = () => {
 
   return (
     <div className="glass-panel p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-lg flex items-center">
-          <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
-          Your PXB Bets ({bets.length})
-        </h2>
-        <Button 
-          size="sm" 
-          variant="outline" 
-          onClick={handleRefresh}
-          className="flex items-center gap-1"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          <span>Refresh</span>
-        </Button>
-      </div>
+      <h2 className="font-semibold text-lg mb-4 flex items-center">
+        <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
+        Your PXB Bets
+      </h2>
       
       <div className="space-y-3">
         {bets.map((bet) => {
@@ -128,8 +77,8 @@ const PXBBetsList = () => {
                     }
                   </div>
                   <div>
-                    <p className="font-semibold">{bet.tokenSymbol || 'Token'}</p>
-                    <p className="text-xs text-dream-foreground/60">{bet.tokenName || 'Unknown Token'}</p>
+                    <p className="font-semibold">{bet.tokenSymbol}</p>
+                    <p className="text-xs text-dream-foreground/60">{bet.tokenName}</p>
                   </div>
                 </div>
                 

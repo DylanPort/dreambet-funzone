@@ -54,8 +54,6 @@ interface TrendingToken {
   imageUrl?: string;
 }
 
-type PriceCallback = (price: number) => void;
-
 const CACHE_EXPIRY_TIME = 30000; // 30 seconds
 const TRENDING_CACHE_EXPIRY = 10000; // 10 seconds
 const tokenDataCache = new Map<string, {
@@ -212,8 +210,6 @@ const tokenCallbacks = new Map<string, Function>();
 const marketCapCallbacks = new Map<string, Function>();
 const volumeCallbacks = new Map<string, Function>();
 
-const priceCallbacks = new Map<string, PriceCallback>();
-
 const pollAllActiveTokens = async () => {
   const tokens = Array.from(activePollingTokens);
   for (const token of tokens) {
@@ -235,11 +231,6 @@ const pollAllActiveTokens = async () => {
       const volumeFn = volumeCallbacks.get(token);
       if (volumeFn) {
         volumeFn(data.volume24h);
-      }
-      
-      const priceFn = priceCallbacks.get(token);
-      if (priceFn) {
-        priceFn(data.priceUsd);
       }
     }
   }
@@ -272,7 +263,6 @@ export const startDexScreenerPolling = (
     tokenCallbacks.delete(tokenAddress);
     marketCapCallbacks.delete(tokenAddress);
     volumeCallbacks.delete(tokenAddress);
-    priceCallbacks.delete(tokenAddress);
     
     // If no more tokens, clear the interval
     if (activePollingTokens.size === 0 && pollingIntervalId) {
@@ -335,33 +325,5 @@ export const subscribeToVolume = (
   // Return cleanup function
   return () => {
     volumeCallbacks.delete(tokenAddress);
-  };
-};
-
-export const subscribeToPrice = (
-  tokenAddress: string,
-  onPriceUpdate: (price: number) => void
-) => {
-  priceCallbacks.set(tokenAddress, onPriceUpdate);
-  
-  // If we already have cached data, use it immediately
-  const cachedData = tokenDataCache.get(tokenAddress);
-  if (cachedData && cachedData.data && cachedData.data.priceUsd !== undefined) {
-    onPriceUpdate(cachedData.data.priceUsd);
-  }
-  
-  // Make sure the token is being polled
-  if (!activePollingTokens.has(tokenAddress)) {
-    activePollingTokens.add(tokenAddress);
-    
-    // Start polling if not already running
-    if (!pollingIntervalId) {
-      pollingIntervalId = window.setInterval(pollAllActiveTokens, 30000);
-    }
-  }
-  
-  // Return cleanup function
-  return () => {
-    priceCallbacks.delete(tokenAddress);
   };
 };

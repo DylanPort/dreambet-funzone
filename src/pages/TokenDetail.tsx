@@ -1,347 +1,868 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { ArrowLeft, ExternalLink, RefreshCw, Clock, Flame } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
+import Navbar from '@/components/Navbar';
 import { fetchTokenById } from '@/services/supabaseService';
-import { fetchDexScreenerData } from '@/services/dexScreenerService';
-import { fetchBetsByToken } from '@/api/mockData';
-import TokenPriceChart from '@/components/TokenPriceChart';
-import TokenMarketCap from '@/components/TokenMarketCap';
+import { fetchBetsByToken, acceptBet } from '@/api/mockData';
+import { Bet, BetStatus } from '@/types/bet';
+import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import CreateBetForm from '@/components/CreateBetForm';
-import BetsList from '@/components/BetsList';
-import TokenTrades from '@/components/TokenTrades';
-import TokenHolders from '@/components/TokenHolders';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatDistanceToNow } from 'date-fns';
-import YourLatestBet from '@/components/YourLatestBet';
+import BetCard from '@/components/BetCard';
+import { useToast } from '@/hooks/use-toast';
+import { usePumpPortalWebSocket, getLatestPriceFromTrades } from '@/services/pumpPortalWebSocketService';
+import OrbitingParticles from '@/components/OrbitingParticles';
+import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
+import TokenMarketCap from '@/components/TokenMarketCap';
+import TokenVolume from '@/components/TokenVolume';
+import TokenComments from '@/components/TokenComments';
+import PriceChart from '@/components/PriceChart';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+
+const TokenChart = ({ tokenId, tokenName, refreshData, loading, onPriceUpdate }) => {
+  const [timeInterval, setTimeInterval] = useState('15');
+  const [chartTheme, setChartTheme] = useState('dark');
+  
+  const handleRefreshChart = () => {
+    refreshData();
+  };
+
+  useEffect(() => {
+    const handleMessage = (event) => {
+      try {
+        if (event.data && typeof event.data === 'string') {
+          const data = JSON.parse(event.data);
+          if (data.type === 'price_update' && data.price) {
+            onPriceUpdate(data.price, data.change || 0);
+          }
+        }
+      } catch (error) {
+        console.error("Error handling chart message:", error);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onPriceUpdate]);
+  
+  const chartUrl = `https://www.gmgn.cc/kline/sol/${tokenId}?theme=${chartTheme}&interval=${timeInterval}&send_price=true`;
+  
+  return (
+    <div className="glass-panel p-6 mb-8">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-display font-bold">Price Chart</h2>
+        <div className="flex gap-4">
+          <div className="flex items-center gap-2">
+            <label htmlFor="interval" className="text-sm text-dream-foreground/70">Interval:</label>
+            <select 
+              id="interval"
+              value={timeInterval} 
+              onChange={(e) => setTimeInterval(e.target.value)}
+              className="bg-black/20 border border-dream-accent2/20 rounded px-2 py-1 text-sm"
+            >
+              <option value="1S">1 Second</option>
+              <option value="1">1 Minute</option>
+              <option value="5">5 Minutes</option>
+              <option value="15">15 Minutes</option>
+              <option value="60">1 Hour</option>
+              <option value="240">4 Hours</option>
+              <option value="720">12 Hours</option>
+              <option value="1D">1 Day</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <a 
+              href={`https://dexscreener.com/solana/${tokenId}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-dream-accent2 hover:underline flex items-center text-sm"
+            >
+              <ExternalLink className="w-3 h-3 mr-1" />
+              DexScreener
+            </a>
+            <button 
+              onClick={handleRefreshChart}
+              className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm"
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="w-full h-[400px] bg-black/10 rounded-lg overflow-hidden relative">
+        <iframe 
+          src={chartUrl}
+          className="w-full h-full border-0"
+          title="GMGN Price Chart"
+          loading="lazy"
+        ></iframe>
+      </div>
+      
+      <div className="mt-8 grid grid-cols-2 gap-4">
+        <Button
+          onClick={() => refreshData('up')}
+          className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800"
+        >
+          <ArrowUp className="w-4 h-4 mr-2" />
+          Bet to Migrate
+        </Button>
+        
+        <Button
+          variant="destructive"
+          onClick={() => refreshData('down')}
+        >
+          <ArrowDown className="w-4 h-4 mr-2" />
+          Bet to Die
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const TokenDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [tokenData, setTokenData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [bets, setBets] = useState<any[]>([]);
-  const [isLoadingBets, setIsLoadingBets] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const { connected } = useWallet();
-
-  const fetchTokenData = useCallback(async () => {
-    if (!id) return;
+  const [token, setToken] = useState<any>(null);
+  const [bets, setBets] = useState<Bet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [priceData, setPriceData] = useState<{ time: string; price: number }[]>([]);
+  const [showCreateBet, setShowCreateBet] = useState(false);
+  const [newActiveBet, setNewActiveBet] = useState<Bet | null>(null);
+  const [activeBetsCount, setActiveBetsCount] = useState(0);
+  const { toast } = useToast();
+  const pumpPortal = usePumpPortalWebSocket();
+  const { connected, publicKey, wallet } = useWallet();
+  const [tokenMetrics, setTokenMetrics] = useState({
+    marketCap: null,
+    volume24h: null,
+    liquidity: null,
+    holders: 0
+  });
+  
+  const lastPriceUpdateRef = useRef<number>(0);
+  const lastMetricsUpdateRef = useRef<number>(0);
+  const dexScreenerCleanupRef = useRef<Function | null>(null);
+  
+  const updateTokenPrice = useCallback((price: number, change24h: number) => {
+    const now = Date.now();
+    if (now - lastPriceUpdateRef.current > 2000) {
+      lastPriceUpdateRef.current = now;
+      setToken(current => {
+        if (!current) return null;
+        return {
+          ...current,
+          currentPrice: price,
+          change24h: change24h
+        };
+      });
+      
+      setPriceData(current => {
+        const newPoint = {
+          time: new Date().toISOString(),
+          price: price
+        };
+        
+        return [...current, newPoint].slice(-60);
+      });
+    }
+  }, []);
+  
+  const handleChartPriceUpdate = useCallback((price: number, change24h: number = 0) => {
+    console.log("Received price update from chart:", price, change24h);
+    updateTokenPrice(price, change24h);
     
-    setIsLoading(true);
     try {
-      // Try to get token from Supabase first
-      const supabaseToken = await fetchTokenById(id);
+      localStorage.setItem(`token_price_${id}`, JSON.stringify({
+        price,
+        change24h,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.error("Error caching price:", error);
+    }
+  }, [id, updateTokenPrice]);
+  
+  const updateTokenMetrics = useCallback((newMetrics: any) => {
+    const now = Date.now();
+    if (now - lastMetricsUpdateRef.current > 2000) {
+      lastMetricsUpdateRef.current = now;
+      setTokenMetrics(current => ({
+        ...current,
+        ...newMetrics
+      }));
+    }
+  }, []);
+  
+  useEffect(() => {
+    const loadToken = async () => {
+      if (!id) return;
       
-      // Then get real-time data from DexScreener
-      const dexScreenerData = await fetchDexScreenerData(id);
+      try {
+        setLoading(true);
+        console.log("Loading token with ID:", id);
+        
+        try {
+          const cachedPrice = localStorage.getItem(`token_price_${id}`);
+          if (cachedPrice) {
+            const { price, change24h, timestamp } = JSON.parse(cachedPrice);
+            if (Date.now() - timestamp < 5 * 60 * 1000) {
+              setToken(current => {
+                if (!current) return null;
+                return {
+                  ...current,
+                  currentPrice: price,
+                  change24h: change24h
+                };
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Error loading cached price:", e);
+        }
+        
+        let tokenData = null;
+        let isWebSocketToken = false;
+        
+        const recentTokens = pumpPortal.recentTokens || [];
+        const webSocketToken = recentTokens.find(t => t.token_mint === id);
+        
+        if (webSocketToken) {
+          console.log("Found token in WebSocket data:", webSocketToken);
+          isWebSocketToken = true;
+          tokenData = {
+            token_mint: webSocketToken.token_mint,
+            token_name: webSocketToken.token_name,
+            token_symbol: webSocketToken.token_symbol || '',
+            last_trade_price: 0,
+            last_updated_time: webSocketToken.created_time,
+          };
+        }
+        
+        if (!tokenData) {
+          console.log("Checking Supabase for token");
+          const supabaseTokenData = await fetchTokenById(id);
+          if (supabaseTokenData) {
+            console.log("Found token in Supabase:", supabaseTokenData);
+            tokenData = supabaseTokenData;
+          }
+        }
+        
+        if (tokenData) {
+          console.log("Setting token data:", tokenData);
+          setToken({
+            id: tokenData.token_mint,
+            name: tokenData.token_name,
+            symbol: tokenData.token_symbol || '',
+            logo: '🪙',
+            currentPrice: tokenData.last_trade_price || 0,
+            change24h: 0,
+            migrationTime: new Date(tokenData.last_updated_time).getTime(),
+          });
+          
+          setTokenMetrics({
+            marketCap: null,
+            volume24h: null,
+            liquidity: null,
+            holders: 0
+          });
+          
+          const dexScreenerData = await fetchDexScreenerData(tokenData.token_mint);
+          if (dexScreenerData) {
+            console.log("Got DexScreener data:", dexScreenerData);
+            setTokenMetrics({
+              marketCap: dexScreenerData.marketCap,
+              volume24h: dexScreenerData.volume24h,
+              liquidity: dexScreenerData.liquidity,
+              holders: tokenMetrics.holders
+            });
+          }
+          
+          if (pumpPortal.connected) {
+            pumpPortal.subscribeToToken(id);
+          }
+          
+          const now = new Date();
+          const initialData = [];
+          
+          for (let i = -30; i <= 0; i++) {
+            const time = new Date(now);
+            time.setMinutes(time.getMinutes() + i);
+            
+            initialData.push({
+              time: time.toISOString(),
+              price: tokenData.last_trade_price || 0,
+            });
+          }
+          
+          setPriceData(initialData);
+          
+          const tokenBets = await fetchBetsByToken(id);
+          setBets(tokenBets);
+        } else if (id) {
+          console.log("Creating placeholder for new token with ID:", id);
+          setToken({
+            id: id,
+            name: "New Token",
+            symbol: "",
+            logo: '🪙',
+            currentPrice: 0,
+            change24h: 0,
+            migrationTime: new Date().getTime(),
+          });
+          
+          setTokenMetrics({
+            marketCap: null,
+            volume24h: null,
+            liquidity: null,
+            holders: 0
+          });
+          
+          if (pumpPortal.connected) {
+            pumpPortal.subscribeToToken(id);
+          }
+          
+          const now = new Date();
+          const initialData = [];
+          
+          for (let i = -30; i <= 0; i++) {
+            const time = new Date(now);
+            time.setMinutes(time.getMinutes() + i);
+            
+            initialData.push({
+              time: time.toISOString(),
+              price: 0,
+            });
+          }
+          
+          setPriceData(initialData);
+          
+          const tokenBets = await fetchBetsByToken(id);
+          setBets(tokenBets);
+          
+          toast({
+            title: "New token detected",
+            description: "This appears to be a very new token. Limited information is available.",
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Token not found",
+            description: "We couldn't find details for this token.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error loading token:", error);
+        toast({
+          title: "Failed to load token",
+          description: "There was an error loading the token details.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadToken();
+  }, [id, toast, pumpPortal.connected, pumpPortal.recentTokens]);
+  
+  useEffect(() => {
+    if (id && pumpPortal.recentTrades[id]) {
+      const trades = pumpPortal.recentTrades[id];
       
-      if (!dexScreenerData && !supabaseToken) {
-        toast.error('Token data not found');
-        setIsLoading(false);
-        return;
+      if (trades.length > 0) {
+        const latestPrice = getLatestPriceFromTrades(trades);
+        
+        const currentPrice = token?.currentPrice || 0;
+        
+        if (Math.abs(latestPrice - currentPrice) / (currentPrice || 1) > 0.001) {
+          const priceChange = currentPrice > 0 
+            ? ((latestPrice - currentPrice) / currentPrice) * 100 
+            : 0;
+            
+          updateTokenPrice(latestPrice, priceChange);
+          
+          setPriceData(current => {
+            const newPoint = {
+              time: new Date().toISOString(),
+              price: latestPrice
+            };
+            
+            return [...current, newPoint].slice(-60);
+          });
+        }
+        
+        if (Date.now() - lastMetricsUpdateRef.current > 5000) {
+          if (pumpPortal.tokenMetrics[id]) {
+            const metrics = pumpPortal.tokenMetrics[id];
+            updateTokenMetrics({
+              marketCap: metrics.market_cap,
+              volume24h: metrics.volume_24h,
+              liquidity: metrics.liquidity,
+              holders: metrics.holders
+            });
+          }
+        }
+        
+        const lastPrice = priceData[priceData.length - 1]?.price || 0;
+        if (lastPrice > 0) {
+          const percentChange = ((latestPrice - lastPrice) / lastPrice) * 100;
+          if (Math.abs(percentChange) > 5) {
+            toast({
+              title: `Price ${percentChange > 0 ? 'up' : 'down'} ${Math.abs(percentChange).toFixed(1)}%`,
+              description: `${token?.symbol || 'Token'} is now $${formatPrice(latestPrice)}`,
+              variant: percentChange > 0 ? "default" : "destructive",
+            });
+          }
+        }
+      }
+    }
+  }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
+  
+  useEffect(() => {
+    if (id && pumpPortal.tokenMetrics[id]) {
+      const metrics = pumpPortal.tokenMetrics[id];
+      
+      updateTokenMetrics({
+        marketCap: metrics.market_cap,
+        volume24h: metrics.volume_24h,
+        liquidity: metrics.liquidity,
+        holders: metrics.holders
+      });
+      
+      console.log("Updated token metrics from WebSocket:", metrics);
+    }
+  }, [id, pumpPortal.tokenMetrics, updateTokenMetrics]);
+  
+  useEffect(() => {
+    if (id) {
+      const stopPolling = startDexScreenerPolling(id, (data) => {
+        if (data) {
+          updateTokenPrice(data.priceUsd, data.priceChange24h);
+          
+          updateTokenMetrics({
+            marketCap: data.marketCap,
+            volume24h: data.volume24h,
+            liquidity: data.liquidity,
+          });
+        }
+      }, 30000);
+      
+      dexScreenerCleanupRef.current = stopPolling;
+      
+      return () => {
+        if (dexScreenerCleanupRef.current) {
+          dexScreenerCleanupRef.current();
+          dexScreenerCleanupRef.current = null;
+        }
+      };
+    }
+  }, [id, updateTokenPrice, updateTokenMetrics]);
+  
+  useEffect(() => {
+    if (bets.length > 0) {
+      const activeBets = bets.filter(bet => 
+        bet.status === 'open' || bet.status === 'matched'
+      );
+      
+      if (activeBets.length > activeBetsCount) {
+        const latestBet = [...activeBets].sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )[0];
+        
+        setNewActiveBet(latestBet);
+        
+        toast({
+          title: "New Active Bet!",
+          description: `A ${latestBet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`,
+          variant: "default",
+        });
       }
       
-      // Combine data, preferring DexScreener for real-time metrics
-      const combinedData = {
-        id: id,
-        name: supabaseToken?.token_name || 'Unknown Token',
-        symbol: supabaseToken?.token_symbol || 'UNKNOWN',
-        price: dexScreenerData?.priceUsd || 0,
-        priceChange: dexScreenerData?.priceChange24h || 0,
-        volume24h: dexScreenerData?.volume24h || 0,
-        liquidity: dexScreenerData?.liquidity || 0,
-        marketCap: dexScreenerData?.marketCap || supabaseToken?.current_market_cap || 0,
-        pairAddress: id, // Default to token id if no pair address
-        lastUpdated: supabaseToken?.last_updated_time || new Date().toISOString(),
-        fdv: dexScreenerData?.marketCap || 0, // Use marketCap as FDV if not available
-        createdAt: supabaseToken?.created_on || null,
-      };
-      
-      setTokenData(combinedData);
-    } catch (error) {
-      console.error('Error fetching token data:', error);
-      toast.error('Failed to load token data');
-    } finally {
-      setIsLoading(false);
+      setActiveBetsCount(activeBets.length);
     }
-  }, [id]);
-
-  const fetchBets = useCallback(async () => {
+  }, [bets, activeBetsCount, toast, token]);
+  
+  const refreshData = useCallback(async (betType = null) => {
     if (!id) return;
     
-    setIsLoadingBets(true);
     try {
+      setLoading(true);
+      
+      const recentTokens = pumpPortal.recentTokens || [];
+      const webSocketToken = recentTokens.find(t => t.token_mint === id);
+      
+      if (webSocketToken) {
+        setToken(current => ({
+          ...current,
+          name: webSocketToken.token_name || current?.name || "New Token",
+          symbol: webSocketToken.token_symbol || current?.symbol || "",
+        }));
+      } else {
+        const tokenData = await fetchTokenById(id);
+        if (tokenData) {
+          setToken({
+            id: tokenData.token_mint,
+            name: tokenData.token_name,
+            symbol: tokenData.token_symbol || '',
+            logo: '🪙',
+            currentPrice: tokenData.last_trade_price || 0,
+            change24h: 0,
+            migrationTime: new Date(tokenData.last_updated_time).getTime(),
+          });
+        }
+      }
+      
+      const dexScreenerData = await fetchDexScreenerData(id);
+      if (dexScreenerData) {
+        console.log("Refreshed DexScreener data:", dexScreenerData);
+        updateTokenMetrics({
+          marketCap: dexScreenerData.marketCap,
+          volume24h: dexScreenerData.volume24h,
+          liquidity: dexScreenerData.liquidity
+        });
+      } else if (pumpPortal.connected) {
+        pumpPortal.fetchTokenMetrics(id);
+      }
+      
       const tokenBets = await fetchBetsByToken(id);
       setBets(tokenBets);
+      
+      if (betType) {
+        setShowCreateBet(true);
+      }
     } catch (error) {
-      console.error('Error fetching bets:', error);
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh failed",
+        description: "Could not refresh token data",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoadingBets(false);
+      setLoading(false);
     }
-  }, [id]);
+  }, [id, pumpPortal, toast, updateTokenMetrics]);
 
-  useEffect(() => {
-    fetchTokenData();
-    fetchBets();
-  }, [fetchTokenData, fetchBets]);
-
-  const refreshData = () => {
-    toast.loading('Refreshing token data...');
-    Promise.all([fetchTokenData(), fetchBets()])
-      .then(() => toast.success('Data refreshed successfully'))
-      .catch(() => toast.error('Failed to refresh data'));
+  const handleAcceptBet = async (bet: Bet) => {
+    if (!connected || !publicKey) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to accept a bet",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      await acceptBet(bet, publicKey.toString(), wallet);
+      toast({
+        title: "Bet accepted!",
+        description: `You've successfully accepted the bet on ${bet.tokenSymbol}`,
+      });
+      
+      setNewActiveBet(bet);
+      
+      toast({
+        title: "New Active Bet!",
+        description: `A ${bet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`,
+      });
+      
+      await refreshData();
+    } catch (error) {
+      console.error("Error accepting bet:", error);
+      toast({
+        title: "Failed to accept bet",
+        description: "There was an error processing the blockchain transaction",
+        variant: "destructive",
+      });
+    }
   };
 
-  const refreshBets = () => {
-    fetchBets();
+  const formatPrice = (price: number | string) => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    
+    if (isNaN(numPrice)) return "0.000000";
+    
+    if (numPrice < 0.01) return numPrice.toFixed(6);
+    if (numPrice < 1) return numPrice.toFixed(4);
+    if (numPrice < 1000) return numPrice.toFixed(2);
+    return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
 
-  if (isLoading) {
-    return (
-      <div className="container max-w-6xl py-8">
-        <div className="mb-6">
-          <Link to="/betting" className="flex items-center text-dream-foreground/60 hover:text-dream-foreground transition-colors">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Tokens
-          </Link>
-        </div>
-        
-        <div className="mb-6">
-          <Skeleton className="h-10 w-1/3" />
-          <Skeleton className="h-6 w-1/4 mt-2" />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <Skeleton className="h-[300px] w-full rounded-md" />
-          </div>
-          <div className="space-y-6">
-            <Skeleton className="h-[150px] w-full rounded-md" />
-            <Skeleton className="h-[300px] w-full rounded-md" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const formatLargeNumber = (num: number | null) => {
+    if (num === null) return "Loading...";
+    
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    }
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    }
+    if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    }
+    return `$${num.toFixed(2)}`;
+  };
 
-  if (!tokenData) {
+  const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
+  
+  const renderActiveBetBanner = () => {
+    if (!newActiveBet) return null;
+    
     return (
-      <div className="container max-w-6xl py-8">
-        <div className="mb-6">
-          <Link to="/betting" className="flex items-center text-dream-foreground/60 hover:text-dream-foreground transition-colors">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Tokens
-          </Link>
-        </div>
-        
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold mb-4">Token Not Found</h1>
-          <p className="text-dream-foreground/60 mb-6">The token you're looking for doesn't exist or couldn't be loaded.</p>
-          <Button asChild>
-            <Link to="/betting">Browse Available Tokens</Link>
+      <div className="bg-gradient-to-r from-dream-accent1/20 to-dream-accent3/20 border border-dream-accent2/30 rounded-md p-3 mb-4 animate-pulse-slow">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="w-2 h-2 bg-dream-accent2 rounded-full mr-2 animate-pulse"></div>
+            <span className="text-dream-accent2 font-semibold">New Active Bet!</span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setNewActiveBet(null)}
+            className="h-6 w-6 p-0"
+          >
+            ×
           </Button>
         </div>
+        <p className="text-sm mt-1">
+          A {newActiveBet.amount} SOL bet that this token will {newActiveBet.prediction} is now active!
+        </p>
       </div>
     );
-  }
+  };
+  
+  const { userProfile, bets: userPXBBets, fetchUserBets, isLoading } = usePXBPoints();
+  const [lastCreatedBet, setLastCreatedBet] = useState(null);
+  
+  // Effect to find the last created bet by the user for this token
+  useEffect(() => {
+    if (userProfile && userPXBBets && userPXBBets.length > 0 && id) {
+      // Filter bets for the current token and sort by creation date (newest first)
+      const tokenBets = userPXBBets
+        .filter(bet => bet.tokenMint === id)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      if (tokenBets.length > 0) {
+        setLastCreatedBet(tokenBets[0]);
+      }
+    }
+  }, [userProfile, userPXBBets, id]);
+  
+  const renderYourLastBet = () => {
+    if (!lastCreatedBet) {
+      return (
+        <div className="text-center py-8 text-dream-foreground/70">
+          You haven't placed any bets on this token yet.
+        </div>
+      );
+    }
 
+    // Convert PXBBet to Bet format for BetCard
+    const betForCard: Bet = {
+      id: lastCreatedBet.id,
+      tokenId: lastCreatedBet.tokenMint,
+      tokenName: lastCreatedBet.tokenName,
+      tokenSymbol: lastCreatedBet.tokenSymbol,
+      initiator: userProfile?.id || '',
+      amount: lastCreatedBet.betAmount,
+      prediction: lastCreatedBet.betType === 'up' ? 'migrate' : 'die',
+      timestamp: new Date(lastCreatedBet.createdAt).getTime(),
+      expiresAt: new Date(lastCreatedBet.expiresAt).getTime(),
+      status: lastCreatedBet.status as BetStatus,
+      duration: 30, // Default value
+      onChainBetId: '',
+      transactionSignature: ''
+    };
+
+    return (
+      <div className="mb-4">
+        <BetCard 
+          key={betForCard.id}
+          bet={betForCard}
+          connected={connected}
+          publicKeyString={publicKey ? publicKey.toString() : null}
+          onAcceptBet={() => {}}
+        />
+      </div>
+    );
+  };
+  
   return (
-    <div className="container max-w-6xl py-8">
-      <div className="mb-6">
-        <Link to="/betting" className="flex items-center text-dream-foreground/60 hover:text-dream-foreground transition-colors">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Tokens
-        </Link>
-      </div>
+    <>
+      <OrbitingParticles />
+      <Navbar />
       
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 flex items-center justify-center">
-              <img 
-                src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
-                alt={tokenData.name} 
-                className="w-full h-full object-contain"
-              />
+      <main className="pt-24 min-h-screen px-4 pb-16">
+        <div className="max-w-7xl mx-auto">
+          {loading && !token ? (
+            <div className="flex justify-center py-16">
+              <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <h1 className="text-3xl font-display font-bold">{tokenData.name}</h1>
-            <div className="flex items-center gap-1 h-6 px-2 rounded-md bg-dream-background/40 text-xs text-dream-foreground/60">
-              <Flame className="w-3 h-3" />
-              <span>{tokenData.symbol}</span>
+          ) : !token ? (
+            <div className="glass-panel p-8 text-center">
+              <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
+              <p className="text-dream-foreground/70 mb-4">
+                The token you're looking for could not be found or has been removed.
+              </p>
+              <Button onClick={() => window.history.back()}>Go Back</Button>
             </div>
-            <a 
-              href={`https://dexscreener.com/solana/${tokenData.pairAddress || id}`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-dream-foreground/40 hover:text-dream-foreground/60 transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center">
-              <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${tokenData.priceChange >= 0 ? 'bg-green-500' : 'bg-red-500'}`}></span>
-              <span className={`${tokenData.priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {tokenData.priceChange >= 0 ? '+' : ''}{tokenData.priceChange?.toFixed(2)}%
-              </span>
-            </div>
-            <div className="text-dream-foreground/60 text-sm flex items-center">
-              <Clock className="w-3.5 h-3.5 mr-1" />
-              Updated {formatDistanceToNow(new Date(tokenData.lastUpdated), { addSuffix: true })}
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={refreshData}
-              className="flex items-center gap-1 text-xs"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Refresh
-            </Button>
-          </div>
-        </div>
-        
-        <div className="text-right">
-          <div className="text-2xl font-bold">${tokenData.price?.toFixed(6)}</div>
-          <div className="text-dream-foreground/60 text-sm">Current Price</div>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <Tabs defaultValue="price" className="glass-panel">
-            <TabsList className="p-1 mb-4">
-              <TabsTrigger value="price">Price Chart</TabsTrigger>
-              <TabsTrigger value="trades">Recent Trades</TabsTrigger>
-              <TabsTrigger value="holders">Top Holders</TabsTrigger>
-            </TabsList>
-            <TabsContent value="price" className="p-4">
-              <TokenPriceChart tokenId={id || ''} />
-            </TabsContent>
-            <TabsContent value="trades" className="p-4">
-              <TokenTrades tokenId={id || ''} />
-            </TabsContent>
-            <TabsContent value="holders" className="p-4">
-              <TokenHolders tokenId={id || ''} />
-            </TabsContent>
-          </Tabs>
-          
-          <div className="mt-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="bets">Open Bets</TabsTrigger>
-              </TabsList>
+          ) : (
+            <>
+              <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
+                <ChevronLeft size={20} />
+                <span>Back to Tokens</span>
+              </Link>
               
-              <TabsContent value="overview" className="space-y-4">
-                <div className="glass-panel p-6">
-                  <h2 className="text-xl font-display font-semibold mb-4">Token Overview</h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-dream-foreground/60 mb-1">Market Cap</div>
-                      <div className="text-lg font-medium">${tokenData.marketCap?.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="text-dream-foreground/60 mb-1">Fully Diluted Valuation</div>
-                      <div className="text-lg font-medium">${tokenData.fdv?.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="text-dream-foreground/60 mb-1">24h Volume</div>
-                      <div className="text-lg font-medium">${tokenData.volume24h?.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="text-dream-foreground/60 mb-1">Liquidity</div>
-                      <div className="text-lg font-medium">${tokenData.liquidity?.toLocaleString()}</div>
+              {renderActiveBetBanner()}
+              
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div className="flex items-center">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-3xl border border-white/10 mr-4">
+                    {token.symbol ? token.symbol.charAt(0) : '🪙'}
+                  </div>
+                  
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-display font-bold">{token.name}</h1>
+                    <div className="flex items-center gap-3">
+                      <span className="text-dream-foreground/70">{token.symbol}</span>
+                      <a 
+                        href={`https://solscan.io/token/${token.id}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-dream-accent2 hover:underline inline-flex items-center text-sm"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        View on SolScan
+                      </a>
+                      <span className={`flex items-center gap-1 text-sm ${isLive ? 'text-green-400' : 'text-yellow-400'}`}>
+                        {isLive ? 'Live' : 'Static'}
+                      </span>
                     </div>
                   </div>
                 </div>
                 
-                <div className="glass-panel p-6">
-                  <h2 className="text-xl font-display font-semibold mb-4">About {tokenData.name}</h2>
-                  <p className="text-dream-foreground/80">
-                    {tokenData.name} ({tokenData.symbol}) is a token on the Solana blockchain.
-                    {tokenData.createdAt && (
-                      <span> It was created {formatDistanceToNow(new Date(tokenData.createdAt), { addSuffix: true })}.</span>
-                    )}
-                  </p>
+                <div className="flex flex-col items-end">
+                  <div className="text-3xl font-bold">
+                    ${formatPrice(token.currentPrice)}
+                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">LIVE</span>
+                  </div>
+                  <div className={`flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
+                    {Math.abs(token.change24h).toFixed(2)}%
+                  </div>
                 </div>
-              </TabsContent>
+              </div>
               
-              <TabsContent value="bets">
-                <div className="glass-panel p-6">
-                  <h2 className="text-xl font-display font-semibold mb-4">Open Bets for {tokenData.symbol}</h2>
-                  <BetsList bets={bets} isLoadingBets={isLoadingBets} refreshBets={refreshBets} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <TokenMarketCap tokenId={token.id} />
+                
+                <TokenVolume tokenId={token.id} />
+                
+                <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-dream-accent3/10 to-dream-accent1/10 animate-gradient-move"></div>
+                  <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
+                    <Users size={20} className="mr-3 text-dream-accent3" />
+                    <span className="text-lg font-semibold">Active Bets</span>
+                  </div>
+                  <div className="text-3xl font-bold relative z-10">{bets.length}</div>
+                  <div className="absolute top-2 right-2 flex items-center">
+                    <button 
+                      onClick={() => refreshData()}
+                      className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
+                      title="Refresh Data"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent3 to-dream-accent1 animate-pulse-glow" style={{ width: `${Math.min(100, (bets.length / 10) * 100)}%` }}></div>
                 </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
-        
-        <div className="flex-1 space-y-6">
-          <TokenMarketCap tokenId={tokenData.id} />
-          
-          {/* Add the YourLatestBet component if user is connected */}
-          {connected && (
-            <YourLatestBet tokenId={tokenData.id} tokenSymbol={tokenData.symbol} />
+              </div>
+              
+              <TokenChart 
+                tokenId={token.id}
+                tokenName={token.name}
+                refreshData={refreshData}
+                loading={loading}
+                onPriceUpdate={handleChartPriceUpdate}
+              />
+              
+              {/* Your last bet section */}
+              <div className="glass-panel p-6 mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-display font-bold">Your Latest Bet on {token.symbol}</h2>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => fetchUserBets()}
+                    className="text-sm"
+                  >
+                    <RefreshCw className={`w-3 h-3 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+                
+                {renderYourLastBet()}
+                
+                {!lastCreatedBet && (
+                  <div className="text-center">
+                    <Button 
+                      onClick={() => setShowCreateBet(true)}
+                      className="bg-gradient-to-r from-dream-accent1 to-dream-accent3"
+                    >
+                      Place Your First Bet
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              {showCreateBet && (
+                <div className="glass-panel p-6 mb-8">
+                  <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
+                  <CreateBetForm 
+                    tokenId={token.id}
+                    tokenName={token.name}
+                    tokenSymbol={token.symbol || ''}
+                    onBetCreated={async () => {
+                      setShowCreateBet(false);
+                      await refreshData();
+                    }}
+                  />
+                </div>
+              )}
+              
+              <div className="glass-panel p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-display font-bold">Active Bets</h2>
+                  <div className="text-sm text-dream-foreground/70">{bets.length} bets</div>
+                </div>
+                
+                {bets.length === 0 ? (
+                  <div className="text-center py-8 text-dream-foreground/70">
+                    No active bets for this token yet. Be the first to place a bet!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bets.map(bet => (
+                      <BetCard 
+                        key={bet.id}
+                        bet={bet}
+                        connected={connected}
+                        publicKeyString={publicKey ? publicKey.toString() : null}
+                        onAcceptBet={handleAcceptBet}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
-          
-          {/* Continue with the rest of the components */}
-          <CreateBetForm
-            tokenId={tokenData.id}
-            tokenName={tokenData.name}
-            tokenSymbol={tokenData.symbol}
-            onBetCreated={refreshBets}
-            token={tokenData}
-          />
-          
-          <div className="glass-panel p-6">
-            <h2 className="text-xl font-display font-semibold mb-4">Token Details</h2>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-dream-foreground/60">Token Address</span>
-                <a 
-                  href={`https://solscan.io/token/${id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center hover:text-dream-accent2 transition-colors"
-                >
-                  <span className="truncate max-w-[150px]">{id?.substring(0, 8)}...{id?.substring(id.length - 8)}</span>
-                  <ExternalLink className="ml-1 h-3 w-3" />
-                </a>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dream-foreground/60">Pair Address</span>
-                <a 
-                  href={`https://solscan.io/account/${tokenData.pairAddress}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center hover:text-dream-accent2 transition-colors"
-                >
-                  <span className="truncate max-w-[150px]">{tokenData.pairAddress?.substring(0, 8)}...{tokenData.pairAddress?.substring(tokenData.pairAddress.length - 8)}</span>
-                  <ExternalLink className="ml-1 h-3 w-3" />
-                </a>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dream-foreground/60">DexScreener</span>
-                <a 
-                  href={`https://dexscreener.com/solana/${tokenData.pairAddress || id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center hover:text-dream-accent2 transition-colors"
-                >
-                  <span>View</span>
-                  <ExternalLink className="ml-1 h-3 w-3" />
-                </a>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 };
 
