@@ -246,9 +246,7 @@ const Index = () => {
           
           <div className="max-w-7xl mx-auto px-4 py-10">
             <h2 className="text-2xl font-bold text-center mb-8 text-dream-foreground">
-              <span className="bg-gradient-to-r from-dream-accent1 to-dream-accent2 text-transparent bg-clip-text">
-                Real-Time Market Data
-              </span>
+              
             </h2>
             
             <div className="glass-panel p-6 rounded-lg mb-8 py-[16px] my-[80px]">
