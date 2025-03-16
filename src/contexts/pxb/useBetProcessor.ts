@@ -76,7 +76,8 @@ export const useBetProcessor = (
             .update({
               status: newStatus,
               points_won: pointsWon,
-              current_market_cap: currentMarketCap // This is causing the error
+              // Update to use the correct property name from the database schema
+              currentMarketCap: currentMarketCap
             })
             .eq('bet_id', bet.id);
             
@@ -160,8 +161,8 @@ export const useBetProcessor = (
               await supabase
                 .from('bets')
                 .update({
-                  // Fix: Use the correct column name in the database
-                  current_market_cap: tokenData.marketCap 
+                  // Fix: Use the field name that matches the database schema
+                  currentMarketCap: tokenData.marketCap 
                 })
                 .eq('bet_id', bet.id);
             }
