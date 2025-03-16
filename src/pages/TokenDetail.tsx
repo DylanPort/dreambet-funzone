@@ -19,6 +19,7 @@ import TokenComments from '@/components/TokenComments';
 import PriceChart from '@/components/PriceChart';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
+
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -28,9 +29,11 @@ const TokenChart = ({
 }) => {
   const [timeInterval, setTimeInterval] = useState('15');
   const [chartTheme, setChartTheme] = useState('dark');
+  
   const handleRefreshChart = () => {
     refreshData();
   };
+  
   useEffect(() => {
     const handleMessage = event => {
       try {
@@ -44,10 +47,13 @@ const TokenChart = ({
         console.error("Error handling chart message:", error);
       }
     };
+    
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [onPriceUpdate]);
+  
   const chartUrl = `https://www.gmgn.cc/kline/sol/${tokenId}?theme=${chartTheme}&interval=${timeInterval}&send_price=true`;
+  
   return <div className="glass-panel p-6 mb-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-display font-bold">Price Chart</h2>
@@ -83,18 +89,19 @@ const TokenChart = ({
       </div>
       
       <div className="mt-8 grid grid-cols-2 gap-4">
-        <Button onClick={() => refreshData('up')} className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800">
-          <ArrowUp className="w-4 h-4 mr-2" />
-          Bet to Migrate
+        <Button onClick={() => refreshData('up')} className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 flex items-center justify-center">
+          <img src="/lovable-uploads/48531fef-2dd2-49d7-92d4-eb1df39d9f1c.png" alt="Rocket" className="h-8 mr-2" />
+          <span className="font-bold">MOON</span>
         </Button>
         
         <Button variant="destructive" onClick={() => refreshData('down')}>
           <ArrowDown className="w-4 h-4 mr-2" />
-          Bet to Die
+          Dust
         </Button>
       </div>
     </div>;
 };
+
 const TokenDetail = () => {
   const {
     id
@@ -745,9 +752,10 @@ const TokenDetail = () => {
               </div>
               
               
-            </>}
+            </>
         </div>
       </main>
     </>;
 };
+
 export default TokenDetail;
