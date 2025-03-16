@@ -12,10 +12,11 @@ import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-
 const Profile = () => {
-  
-  const { connected, publicKey } = useWallet();
+  const {
+    connected,
+    publicKey
+  } = useWallet();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [bets, setBets] = useState<UserBet[]>([]);
   const [activeBets, setActiveBets] = useState<UserBet[]>([]);
@@ -29,35 +30,33 @@ const Profile = () => {
   const [isActiveBetsLoading, setIsActiveBetsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'history' | 'settings'>('history');
   const [usernameInput, setUsernameInput] = useState('');
-  const { userProfile, isLoading: pxbLoading, mintPoints, fetchUserProfile: fetchPXBUserProfile } = usePXBPoints();
+  const {
+    userProfile,
+    isLoading: pxbLoading,
+    mintPoints,
+    fetchUserProfile: fetchPXBUserProfile
+  } = usePXBPoints();
   const [betsFilter, setBetsFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [isMintingPoints, setIsMintingPoints] = useState(false);
   const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [isSavingUsername, setIsSavingUsername] = useState(false);
-
   useEffect(() => {
     const loadUserData = async () => {
       setIsLoading(true);
-      
       if (!connected || !publicKey) {
         setIsLoading(false);
         return;
       }
-      
       try {
         const walletAddress = publicKey.toString();
-        
         const profileData = await fetchUserProfile(walletAddress);
         setUser(profileData);
-        
         if (profileData) {
           setUsernameInput(profileData.username || '');
         }
-        
         const bettingHistory = await fetchUserBettingHistory(walletAddress);
         setBets(bettingHistory);
-        
         const userStats = calculateUserStats(bettingHistory);
         setStats(userStats);
       } catch (error) {
@@ -67,25 +66,21 @@ const Profile = () => {
         setIsLoading(false);
       }
     };
-    
     loadUserData();
   }, [connected, publicKey]);
-
   useEffect(() => {
     const loadActiveBets = async () => {
       setIsActiveBetsLoading(true);
-      
       if (!connected || !publicKey) {
         setIsActiveBetsLoading(false);
         return;
       }
-      
       try {
         const walletAddress = publicKey.toString();
-        
-        const { data: supabaseBets, error } = await supabase
-          .from('bets')
-          .select(`
+        const {
+          data: supabaseBets,
+          error
+        } = await supabase.from('bets').select(`
             bet_id,
             token_mint,
             tokens (token_name, token_symbol),
@@ -95,38 +90,27 @@ const Profile = () => {
             created_at,
             duration,
             creator
-          `)
-          .eq('creator', walletAddress)
-          .in('status', ['open', 'matched'])
-          .order('created_at', { ascending: false });
-        
+          `).eq('creator', walletAddress).in('status', ['open', 'matched']).order('created_at', {
+          ascending: false
+        });
         if (error) {
           console.error("Error fetching active bets:", error);
           toast.error("Failed to load active bets");
           return;
         }
-        
         const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
         let localBets: any[] = storedBets ? JSON.parse(storedBets) : [];
-        
         const now = Date.now();
-        localBets = localBets.filter((bet: any) => 
-          bet.expiresAt > now && 
-          bet.status === 'open' && 
-          bet.initiator === walletAddress
-        );
-        
+        localBets = localBets.filter((bet: any) => bet.expiresAt > now && bet.status === 'open' && bet.initiator === walletAddress);
         const mappedSupabaseBets = supabaseBets.map(bet => {
           const createdDate = new Date(bet.created_at);
-          const expiryTime = new Date(createdDate.getTime() + (bet.duration * 60 * 60 * 1000));
-          
+          const expiryTime = new Date(createdDate.getTime() + bet.duration * 60 * 60 * 1000);
           let prediction: 'moon' | 'die';
           if (bet.prediction_bettor1 === 'up' || bet.prediction_bettor1 === 'migrate') {
             prediction = 'moon';
           } else {
             prediction = 'die';
           }
-          
           return {
             id: bet.bet_id,
             tokenName: bet.tokens?.token_name || 'Unknown Token',
@@ -140,7 +124,6 @@ const Profile = () => {
             expiresAt: expiryTime.getTime()
           } as UserBet;
         });
-        
         const mappedLocalBets = localBets.map((bet: any) => {
           return {
             id: bet.id,
@@ -155,7 +138,6 @@ const Profile = () => {
             expiresAt: bet.expiresAt
           } as UserBet;
         });
-        
         const allActiveBets: UserBet[] = [...mappedSupabaseBets];
         for (const localBet of mappedLocalBets) {
           const exists = allActiveBets.some(existingBet => existingBet.id === localBet.id);
@@ -163,7 +145,6 @@ const Profile = () => {
             allActiveBets.push(localBet);
           }
         }
-        
         setActiveBets(allActiveBets);
       } catch (error) {
         console.error("Error loading active bets:", error);
@@ -172,32 +153,30 @@ const Profile = () => {
         setIsActiveBetsLoading(false);
       }
     };
-    
     loadActiveBets();
     const interval = setInterval(loadActiveBets, 30000);
     return () => clearInterval(interval);
   }, [connected, publicKey]);
-  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
-  
   const handleUpdateProfile = async () => {
     if (!usernameInput.trim()) {
       toast.error("Username cannot be empty");
       return;
     }
-    
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet to update your profile");
       return;
     }
-    
     setIsSavingUsername(true);
     const walletAddress = publicKey.toString();
     const success = await updateUsername(walletAddress, usernameInput);
-    
     if (success && user) {
       setUser({
         ...user,
@@ -209,36 +188,25 @@ const Profile = () => {
     }
     setIsSavingUsername(false);
   };
-
   const startEditingUsername = () => {
     setUsernameInput(user?.username || userProfile?.username || '');
     setIsEditingUsername(true);
   };
-
   const cancelEditingUsername = () => {
     setIsEditingUsername(false);
     setUsernameInput(user?.username || userProfile?.username || '');
   };
-
   const handleRefresh = () => {
     if (!connected || !publicKey) return;
-    
     toast.info("Refreshing bets data...");
     const walletAddress = publicKey.toString();
-    
     setIsLoading(true);
     setIsActiveBetsLoading(true);
-    
-    Promise.all([
-      fetchUserBettingHistory(walletAddress),
-      fetchUserProfile(walletAddress)
-    ]).then(([bettingHistory, profileData]) => {
+    Promise.all([fetchUserBettingHistory(walletAddress), fetchUserProfile(walletAddress)]).then(([bettingHistory, profileData]) => {
       setBets(bettingHistory);
       setUser(profileData);
-      
       const userStats = calculateUserStats(bettingHistory);
       setStats(userStats);
-      
     }).catch(error => {
       console.error("Error refreshing data:", error);
       toast.error("Failed to refresh data");
@@ -246,52 +214,41 @@ const Profile = () => {
       setIsLoading(false);
     });
   };
-  
   useEffect(() => {
     if (connected && publicKey) {
       fetchPXBUserProfile();
     }
-    
     if (connected && publicKey) {
       const walletAddress = publicKey.toString();
-      
-      const usersSubscription = supabase
-        .channel('users-points-changes')
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'users',
-          filter: `wallet_address=eq.${walletAddress}`,
-        }, (payload) => {
-          if (payload.new && typeof payload.new.points === 'number') {
-            setLocalPxbPoints(payload.new.points);
-          }
-        })
-        .subscribe();
-        
+      const usersSubscription = supabase.channel('users-points-changes').on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: `wallet_address=eq.${walletAddress}`
+      }, payload => {
+        if (payload.new && typeof payload.new.points === 'number') {
+          setLocalPxbPoints(payload.new.points);
+        }
+      }).subscribe();
       return () => {
         supabase.removeChannel(usersSubscription);
       };
     }
   }, [connected, publicKey]);
-  
   useEffect(() => {
     if (userProfile && userProfile.pxbPoints !== undefined) {
       setLocalPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
-  
   const handleMintPXBPoints = async () => {
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
       return;
     }
-
     if (userProfile?.pxbPoints > 0 || localPxbPoints > 0) {
       toast.error("You've already claimed your PXB Points!");
       return;
     }
-
     setIsMintingPoints(true);
     try {
       const username = userProfile?.username || user?.username || publicKey.toString().substring(0, 8);
@@ -305,16 +262,9 @@ const Profile = () => {
       setIsMintingPoints(false);
     }
   };
-  
-  const filteredBets = betsFilter === 'all' 
-    ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id))]
-    : betsFilter === 'active'
-      ? activeBets
-      : bets.filter(bet => bet.result !== 'pending');
-  
+  const filteredBets = betsFilter === 'all' ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id))] : betsFilter === 'active' ? activeBets : bets.filter(bet => bet.result !== 'pending');
   if (!connected || !publicKey) {
-    return (
-      <>
+    return <>
         <Navbar />
         <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center">
           <div className="glass-panel p-10 flex flex-col items-center">
@@ -325,13 +275,10 @@ const Profile = () => {
             <p className="text-dream-foreground/70 text-center mb-6">You need to connect your wallet to access your profile.</p>
           </div>
         </main>
-      </>
-    );
+      </>;
   }
-  
   if (isLoading) {
-    return (
-      <>
+    return <>
         <Navbar />
         <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center">
           <div className="glass-panel p-10 flex flex-col items-center">
@@ -339,12 +286,9 @@ const Profile = () => {
             <p className="text-dream-foreground/70">Loading profile...</p>
           </div>
         </main>
-      </>
-    );
+      </>;
   }
-  
-  return (
-    <>
+  return <>
       <OrbitingParticles />
       <Navbar />
       <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto">
@@ -370,62 +314,32 @@ const Profile = () => {
             </div>
             
             <div className="text-center md:text-left">
-              {isEditingUsername ? (
-                <div className="flex flex-col md:flex-row gap-2 items-center">
-                  <Input
-                    type="text"
-                    value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value)}
-                    placeholder="Enter new username"
-                    className="px-3 py-2 w-full md:w-auto"
-                    autoFocus
-                  />
+              {isEditingUsername ? <div className="flex flex-col md:flex-row gap-2 items-center">
+                  <Input type="text" value={usernameInput} onChange={e => setUsernameInput(e.target.value)} placeholder="Enter new username" className="px-3 py-2 w-full md:w-auto" autoFocus />
                   <div className="flex gap-2 mt-2 md:mt-0">
-                    <Button 
-                      onClick={handleUpdateProfile} 
-                      disabled={isSavingUsername}
-                      size="sm" 
-                      className="bg-dream-accent1 hover:bg-dream-accent1/80"
-                    >
-                      {isSavingUsername ? (
-                        <>
+                    <Button onClick={handleUpdateProfile} disabled={isSavingUsername} size="sm" className="bg-dream-accent1 hover:bg-dream-accent1/80">
+                      {isSavingUsername ? <>
                           <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
                           Saving
-                        </>
-                      ) : (
-                        <>
+                        </> : <>
                           <Save className="w-4 h-4 mr-1" />
                           Save
-                        </>
-                      )}
+                        </>}
                     </Button>
-                    <Button 
-                      onClick={cancelEditingUsername} 
-                      variant="outline" 
-                      size="sm"
-                      className="border-dream-foreground/20 hover:bg-dream-foreground/5"
-                    >
+                    <Button onClick={cancelEditingUsername} variant="outline" size="sm" className="border-dream-foreground/20 hover:bg-dream-foreground/5">
                       <X className="w-4 h-4 mr-1" />
                       Cancel
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
+                </div> : <div className="flex items-center gap-2">
                   <h1 className="text-2xl md:text-3xl font-display font-bold">
                     {user?.username || publicKey.toString().substring(0, 8) || 'DreamPredictor'}
                   </h1>
-                  <Button 
-                    onClick={startEditingUsername} 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-foreground/10"
-                  >
+                  <Button onClick={startEditingUsername} variant="ghost" size="sm" className="text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-foreground/10">
                     <Edit2 className="w-3.5 h-3.5" />
                     <span className="sr-only">Edit username</span>
                   </Button>
-                </div>
-              )}
+                </div>}
               <p className="text-dream-foreground/60">{publicKey.toString()}</p>
               <p className="text-dream-foreground/60 text-sm mt-1">
                 <Clock className="inline w-3 h-3 mr-1" />
@@ -440,139 +354,70 @@ const Profile = () => {
                   PXB Points
                 </p>
                 <p className="text-2xl font-display font-bold text-gradient">
-                  {pxbLoading ? (
-                    <span className="text-sm text-dream-foreground/40">Loading...</span>
-                  ) : localPxbPoints !== null && localPxbPoints > 0 ? (
-                    `${localPxbPoints.toLocaleString()} PXB`
-                  ) : userProfile !== null && userProfile.pxbPoints > 0 ? (
-                    `${userProfile.pxbPoints.toLocaleString()} PXB`
-                  ) : (
-                    <span className="text-sm text-dream-foreground/40">0 PXB</span>
-                  )}
+                  {pxbLoading ? <span className="text-sm text-dream-foreground/40">Loading...</span> : localPxbPoints !== null && localPxbPoints > 0 ? `${localPxbPoints.toLocaleString()} PXB` : userProfile !== null && userProfile.pxbPoints > 0 ? `${userProfile.pxbPoints.toLocaleString()} PXB` : <span className="text-sm text-dream-foreground/40">0 PXB</span>}
                 </p>
-                {(!userProfile?.pxbPoints && !localPxbPoints) ? (
-                  <Button 
-                    onClick={handleMintPXBPoints}
-                    disabled={isMintingPoints}
-                    className="mt-2 text-xs h-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                    size="sm"
-                  >
-                    {isMintingPoints ? (
-                      <div className="flex items-center">
+                {!userProfile?.pxbPoints && !localPxbPoints ? <Button onClick={handleMintPXBPoints} disabled={isMintingPoints} className="mt-2 text-xs h-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" size="sm">
+                    {isMintingPoints ? <div className="flex items-center">
                         <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
                         <span>Minting...</span>
-                      </div>
-                    ) : (
-                      <>
+                      </div> : <>
                         <Plus className="w-3 h-3 mr-1" />
                         Claim 500 Points
-                      </>
-                    )}
-                  </Button>
-                ) : null}
+                      </>}
+                  </Button> : null}
               </div>
             </div>
           </div>
           
           <div className="flex border-b border-white/10">
-            <button
-              className={`py-3 px-6 font-medium flex items-center ${
-                activeTab === 'history'
-                  ? 'border-b-2 border-dream-accent1 text-dream-accent1'
-                  : 'text-dream-foreground/60 hover:text-dream-foreground'
-              }`}
-              onClick={() => setActiveTab('history')}
-            >
+            <button className={`py-3 px-6 font-medium flex items-center ${activeTab === 'history' ? 'border-b-2 border-dream-accent1 text-dream-accent1' : 'text-dream-foreground/60 hover:text-dream-foreground'}`} onClick={() => setActiveTab('history')}>
               <History className="w-4 h-4 mr-2" />
               Betting History
             </button>
             
-            <button
-              className={`py-3 px-6 font-medium flex items-center ${
-                activeTab === 'settings'
-                  ? 'border-b-2 border-dream-accent1 text-dream-accent1'
-                  : 'text-dream-foreground/60 hover:text-dream-foreground'
-              }`}
-              onClick={() => setActiveTab('settings')}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Account Settings
-            </button>
+            
           </div>
           
-          {activeTab === 'history' && (
-            <div className="mt-6">
+          {activeTab === 'history' && <div className="mt-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-display font-semibold">Betting History</h2>
                 
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setBetsFilter('all')}
-                      className={`px-2.5 py-1 text-sm rounded-full transition-colors ${
-                        betsFilter === 'all' 
-                          ? 'bg-dream-accent1/20 text-dream-accent1 border border-dream-accent1/30' 
-                          : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'
-                      }`}
-                    >
+                    <button onClick={() => setBetsFilter('all')} className={`px-2.5 py-1 text-sm rounded-full transition-colors ${betsFilter === 'all' ? 'bg-dream-accent1/20 text-dream-accent1 border border-dream-accent1/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
                       All
                     </button>
-                    <button
-                      onClick={() => setBetsFilter('active')}
-                      className={`px-2.5 py-1 text-sm rounded-full transition-colors flex items-center ${
-                        betsFilter === 'active' 
-                          ? 'bg-dream-accent2/20 text-dream-accent2 border border-dream-accent2/30' 
-                          : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'
-                      }`}
-                    >
+                    <button onClick={() => setBetsFilter('active')} className={`px-2.5 py-1 text-sm rounded-full transition-colors flex items-center ${betsFilter === 'active' ? 'bg-dream-accent2/20 text-dream-accent2 border border-dream-accent2/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
                       <Activity className="w-3 h-3 mr-1" />
                       Active
-                      {activeBets.length > 0 && (
-                        <span className="ml-1 bg-dream-accent2/30 text-dream-accent2 text-xs px-1.5 rounded-full">
+                      {activeBets.length > 0 && <span className="ml-1 bg-dream-accent2/30 text-dream-accent2 text-xs px-1.5 rounded-full">
                           {activeBets.length}
-                        </span>
-                      )}
+                        </span>}
                     </button>
-                    <button
-                      onClick={() => setBetsFilter('completed')}
-                      className={`px-2.5 py-1 text-sm rounded-full transition-colors ${
-                        betsFilter === 'completed' 
-                          ? 'bg-green-500/20 text-green-400 border border-green-400/30' 
-                          : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'
-                      }`}
-                    >
+                    <button onClick={() => setBetsFilter('completed')} className={`px-2.5 py-1 text-sm rounded-full transition-colors ${betsFilter === 'completed' ? 'bg-green-500/20 text-green-400 border border-green-400/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
                       Completed
                     </button>
                   </div>
                   
-                  <button
-                    onClick={handleRefresh}
-                    className="p-1.5 rounded-full bg-dream-background/30 text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-background/50 transition-colors"
-                    title="Refresh bets"
-                  >
+                  <button onClick={handleRefresh} className="p-1.5 rounded-full bg-dream-background/30 text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-background/50 transition-colors" title="Refresh bets">
                     <RefreshCw className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               
-              {(betsFilter === 'active' && isActiveBetsLoading) || (betsFilter !== 'active' && isLoading) ? (
-                <div className="flex justify-center py-6">
+              {betsFilter === 'active' && isActiveBetsLoading || betsFilter !== 'active' && isLoading ? <div className="flex justify-center py-6">
                   <div className="flex flex-col items-center">
                     <div className="w-6 h-6 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin mb-3"></div>
                     <p className="text-dream-foreground/70 text-sm">Loading bets...</p>
                   </div>
-                </div>
-              ) : filteredBets.length === 0 ? (
-                <div className="text-center py-10 text-dream-foreground/60">
+                </div> : filteredBets.length === 0 ? <div className="text-center py-10 text-dream-foreground/60">
                   <p>No {betsFilter === 'all' ? '' : betsFilter} bets found.</p>
                   <Link to="/betting" className="mt-4 inline-block">
                     <Button className="bg-dream-accent1 hover:bg-dream-accent1/80">
                       Place Your First Bet
                     </Button>
                   </Link>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
+                </div> : <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-white/10">
@@ -586,17 +431,16 @@ const Profile = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredBets.map((bet) => (
-                        <motion.tr 
-                          key={bet.id} 
-                          className={`border-b border-white/5 hover:bg-white/5 ${bet.isActive ? 'relative' : ''}`}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          {bet.isActive && (
-                            <div className="absolute left-0 top-0 h-full w-1 bg-dream-accent2/50"></div>
-                          )}
+                      {filteredBets.map(bet => <motion.tr key={bet.id} className={`border-b border-white/5 hover:bg-white/5 ${bet.isActive ? 'relative' : ''}`} initial={{
+                  opacity: 0,
+                  y: 20
+                }} animate={{
+                  opacity: 1,
+                  y: 0
+                }} transition={{
+                  duration: 0.3
+                }}>
+                          {bet.isActive && <div className="absolute left-0 top-0 h-full w-1 bg-dream-accent2/50"></div>}
                           <td className="px-4 py-4">
                             <div className="flex items-center">
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
@@ -610,73 +454,37 @@ const Profile = () => {
                           </td>
                           <td className="px-4 py-4 text-dream-foreground/80">{formatDate(bet.date)}</td>
                           <td className="px-4 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              bet.prediction === 'moon'
-                                ? 'bg-dream-accent1/20 text-dream-accent1'
-                                : 'bg-dream-accent2/20 text-dream-accent2'
-                            }`}>
-                              {bet.prediction === 'moon' ? (
-                                <>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.prediction === 'moon' ? 'bg-dream-accent1/20 text-dream-accent1' : 'bg-dream-accent2/20 text-dream-accent2'}`}>
+                              {bet.prediction === 'moon' ? <>
                                   <TrendingUp className="w-3 h-3 mr-1" />
                                   Moon
-                                </>
-                              ) : (
-                                <>
+                                </> : <>
                                   <TrendingDown className="w-3 h-3 mr-1" />
                                   Die
-                                </>
-                              )}
+                                </>}
                             </span>
                           </td>
                           <td className="px-4 py-4 text-dream-foreground/80">{bet.amount} SOL</td>
                           <td className="px-4 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              bet.isActive
-                                ? 'bg-dream-accent2/20 text-dream-accent2'
-                                : bet.result === 'win'
-                                ? 'bg-green-500/20 text-green-500'
-                                : bet.result === 'loss'
-                                ? 'bg-red-500/20 text-red-500'
-                                : 'bg-yellow-500/20 text-yellow-500'
-                            }`}>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.isActive ? 'bg-dream-accent2/20 text-dream-accent2' : bet.result === 'win' ? 'bg-green-500/20 text-green-500' : bet.result === 'loss' ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500'}`}>
                               {bet.isActive ? 'Active' : bet.result === 'win' ? 'Win' : bet.result === 'loss' ? 'Loss' : 'Pending'}
                             </span>
                           </td>
                           <td className="px-4 py-4 text-dream-foreground/80">
-                            {bet.isActive && bet.expiresAt ? (
-                              <span className="text-sm text-dream-accent2/80">
+                            {bet.isActive && bet.expiresAt ? <span className="text-sm text-dream-accent2/80">
                                 {formatTimeRemaining(bet.expiresAt)}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-dream-foreground/40">—</span>
-                            )}
+                              </span> : <span className="text-sm text-dream-foreground/40">—</span>}
                           </td>
-                          <td className={`px-4 py-4 font-medium ${
-                            bet.profit > 0 
-                              ? 'text-green-400' 
-                              : bet.profit < 0 
-                              ? 'text-red-400' 
-                              : 'text-dream-foreground/40'
-                          }`}>
-                            {bet.profit > 0 ? (
-                              `+${bet.profit.toFixed(2)} SOL`
-                            ) : bet.profit < 0 ? (
-                              `${bet.profit.toFixed(2)} SOL`
-                            ) : (
-                              '—'
-                            )}
+                          <td className={`px-4 py-4 font-medium ${bet.profit > 0 ? 'text-green-400' : bet.profit < 0 ? 'text-red-400' : 'text-dream-foreground/40'}`}>
+                            {bet.profit > 0 ? `+${bet.profit.toFixed(2)} SOL` : bet.profit < 0 ? `${bet.profit.toFixed(2)} SOL` : '—'}
                           </td>
-                        </motion.tr>
-                      ))}
+                        </motion.tr>)}
                     </tbody>
                   </table>
-                </div>
-              )}
-            </div>
-          )}
+                </div>}
+            </div>}
           
-          {activeTab === 'settings' && (
-            <div className="mt-6">
+          {activeTab === 'settings' && <div className="mt-6">
               <h2 className="text-xl font-display font-semibold mb-4">Account Settings</h2>
               
               <div className="glass-panel p-6">
@@ -688,37 +496,21 @@ const Profile = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-dream-foreground/60 mb-2">Wallet Address</label>
-                    <input
-                      type="text"
-                      className="input-dream w-full bg-gray-900/50"
-                      value={publicKey.toString()}
-                      disabled
-                      readOnly
-                    />
+                    <input type="text" className="input-dream w-full bg-gray-900/50" value={publicKey.toString()} disabled readOnly />
                     <p className="text-xs text-dream-foreground/40 mt-1">Your wallet address cannot be changed</p>
                   </div>
                   
                   <div>
                     <label className="block text-dream-foreground/60 mb-2">Username</label>
-                    <input
-                      type="text"
-                      className="input-dream w-full"
-                      value={usernameInput}
-                      onChange={(e) => setUsernameInput(e.target.value)}
-                      placeholder="Enter a display name"
-                    />
+                    <input type="text" className="input-dream w-full" value={usernameInput} onChange={e => setUsernameInput(e.target.value)} placeholder="Enter a display name" />
                   </div>
                   
-                  <Button 
-                    className="mt-4 bg-dream-accent1 hover:bg-dream-accent1/80 text-white"
-                    onClick={handleUpdateProfile}
-                  >
+                  <Button className="mt-4 bg-dream-accent1 hover:bg-dream-accent1/80 text-white" onClick={handleUpdateProfile}>
                     Update Profile
                   </Button>
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
         </div>
       </main>
       
@@ -729,8 +521,6 @@ const Profile = () => {
           </p>
         </div>
       </footer>
-    </>
-  );
+    </>;
 };
-
 export default Profile;
