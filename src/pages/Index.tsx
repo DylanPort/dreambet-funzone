@@ -18,7 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -26,13 +25,11 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -73,12 +70,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -89,7 +84,6 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -166,7 +160,7 @@ const Index = () => {
                   
                   <h3 className="text-center relative z-10">
                     <span className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-200 via-pink-300 to-yellow-200 bg-clip-text text-transparent font-bold text-2xl pb-2">
-                      <Cake className="h-6 w-6 text-pink-300" />
+                      
                       It's that simple
                       <PartyPopper className="h-6 w-6 text-yellow-300" />
                     </span>
@@ -303,5 +297,4 @@ const Index = () => {
       </footer>
     </>;
 };
-
 export default Index;
