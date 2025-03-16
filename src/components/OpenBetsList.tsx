@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOpenBets } from '@/services/supabaseService';
@@ -19,12 +18,35 @@ const OpenBetsList = () => {
   const [localBets, setLocalBets] = useState<Bet[]>([]);
   const { bets: pxbBets } = usePXBPoints(); // Get PXB bets from context
   
-  // Fetch open bets from Supabase
+  // Fetch open bets from Supabase with debug info
   const { data: supabaseBets = [], isLoading, error, refetch } = useQuery({
     queryKey: ['openBets'],
-    queryFn: fetchOpenBets,
+    queryFn: async () => {
+      console.log('Fetching open bets from Supabase...');
+      try {
+        const bets = await fetchOpenBets();
+        console.log('OpenBetsList - Fetched bets:', bets);
+        return bets;
+      } catch (err) {
+        console.error('Error fetching open bets:', err);
+        throw err;
+      }
+    },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+  
+  // Add debug console logs
+  useEffect(() => {
+    console.log('OpenBetsList - Component state:', {
+      connected,
+      publicKeyExists: !!publicKey,
+      publicKeyValue: publicKey?.toString(),
+      supabaseBetsCount: supabaseBets?.length || 0,
+      pxbBetsCount: pxbBets?.length || 0,
+      localBetsCount: localBets?.length || 0,
+      filterValue: filter
+    });
+  }, [connected, publicKey, supabaseBets, pxbBets, localBets, filter]);
   
   // Combine Supabase bets with local fallback bets
   useEffect(() => {
@@ -178,6 +200,7 @@ const OpenBetsList = () => {
   }
 
   if (error) {
+    console.error('Error in OpenBetsList:', error);
     return (
       <div className="glass-panel p-6 text-center">
         <p className="text-red-400 mb-2">Failed to load open bets</p>

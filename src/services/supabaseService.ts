@@ -52,7 +52,7 @@ export const fetchOpenBets = async () => {
         on_chain_id,
         transaction_signature
       `)
-      .or('status.eq.open,status.eq.matched,status.eq.expired')
+      .or('status.eq.open,status.eq.matched,status.eq.expired,status.eq.pending')
       .order('created_at', { ascending: false });
     
     if (error) {

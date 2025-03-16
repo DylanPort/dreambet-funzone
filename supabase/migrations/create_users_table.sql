@@ -23,6 +23,12 @@ ON public.users
 FOR UPDATE 
 USING (auth.uid() = id);
 
+-- Create policy to let anyone read bets data
+CREATE POLICY IF NOT EXISTS "Anyone can read bets data" 
+ON public.bets 
+FOR SELECT 
+USING (true);
+
 -- Create function to handle new user registrations
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$

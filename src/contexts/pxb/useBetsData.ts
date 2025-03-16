@@ -14,10 +14,14 @@ export const useBetsData = (userProfile: any) => {
     setIsLoading(true);
     try {
       if (!connected || !publicKey || !userProfile) {
+        console.log('Skipping fetch: Not connected or no user profile');
         setBets([]);
         return;
       }
       
+      console.log('Fetching bets for user:', userProfile.id, 'wallet:', publicKey.toString());
+      
+      // First try to get bets where user is the creator
       const { data, error } = await supabase
         .from('bets')
         .select('*, tokens:token_mint(token_name, token_symbol)')
@@ -33,7 +37,7 @@ export const useBetsData = (userProfile: any) => {
       console.log('Raw bets data from Supabase:', data);
       
       if (!data || data.length === 0) {
-        console.log('No bets found in database');
+        console.log('No bets found for user in database');
         setBets([]);
         return;
       }
