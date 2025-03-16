@@ -19,6 +19,7 @@ import TokenComments from '@/components/TokenComments';
 import PriceChart from '@/components/PriceChart';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
+
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -83,18 +84,53 @@ const TokenChart = ({
       </div>
       
       <div className="mt-8 grid grid-cols-2 gap-4">
-        <Button onClick={() => refreshData('up')} className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800">
-          <ArrowUp className="w-4 h-4 mr-2" />
-          Bet to Migrate
-        </Button>
+        <div className="relative overflow-hidden group transition-all duration-500
+          transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer"
+          onClick={() => refreshData('up')}>
+          
+          <img 
+            src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" 
+            alt="Bet to Moon" 
+            className="w-full h-auto filter drop-shadow-[0_0_30px_rgba(22,163,74,0.7)]
+            transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(22,163,74,0.9)]"
+          />
+          
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/0 via-green-400/10 to-green-500/10 
+            opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
+            text-xl font-bold bg-gradient-to-r from-white to-green-200 bg-clip-text text-transparent
+            drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
+            Bet to Moon
+            <ArrowUp className="ml-2 h-5 w-5 group-hover:translate-y-[-2px] transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+          </div>
+        </div>
         
-        <Button variant="destructive" onClick={() => refreshData('down')}>
-          <ArrowDown className="w-4 h-4 mr-2" />
-          Bet to Die
-        </Button>
+        <div className="relative overflow-hidden group transition-all duration-500
+          transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer"
+          onClick={() => refreshData('down')}>
+          
+          <img 
+            src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" 
+            alt="Bet to Die" 
+            className="w-full h-auto filter drop-shadow-[0_0_30px_rgba(239,68,68,0.7)]
+            transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(239,68,68,0.9)]"
+          />
+          
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-500/0 via-red-400/10 to-red-500/10 
+            opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
+            text-xl font-bold bg-gradient-to-r from-white to-red-200 bg-clip-text text-transparent
+            drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
+            Bet to Die
+            <ArrowDown className="ml-2 h-5 w-5 group-hover:translate-y-[2px] transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+          </div>
+        </div>
       </div>
     </div>;
 };
+
 const TokenDetail = () => {
   const {
     id
@@ -745,9 +781,10 @@ const TokenDetail = () => {
               </div>
               
               
-            </>}
+            </>
         </div>
       </main>
     </>;
 };
+
 export default TokenDetail;
