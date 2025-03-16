@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -47,17 +48,17 @@ const TokenDetail = () => {
       // Combine data, preferring DexScreener for real-time metrics
       const combinedData = {
         id: id,
-        name: dexScreenerData?.name || supabaseToken?.token_name || 'Unknown Token',
-        symbol: dexScreenerData?.symbol || supabaseToken?.token_symbol || 'UNKNOWN',
-        price: dexScreenerData?.price || 0,
-        priceChange: dexScreenerData?.priceChange || 0,
-        volume24h: dexScreenerData?.volume || 0,
+        name: supabaseToken?.token_name || 'Unknown Token',
+        symbol: supabaseToken?.token_symbol || 'UNKNOWN',
+        price: dexScreenerData?.priceUsd || 0,
+        priceChange: dexScreenerData?.priceChange24h || 0,
+        volume24h: dexScreenerData?.volume24h || 0,
         liquidity: dexScreenerData?.liquidity || 0,
         marketCap: dexScreenerData?.marketCap || supabaseToken?.current_market_cap || 0,
-        pairAddress: dexScreenerData?.pairAddress || id,
-        lastUpdated: dexScreenerData?.lastUpdated || supabaseToken?.last_updated_time || new Date().toISOString(),
-        fdv: dexScreenerData?.fdv || 0,
-        createdAt: supabaseToken?.created_at || null,
+        pairAddress: id, // Default to token id if no pair address
+        lastUpdated: supabaseToken?.last_updated_time || new Date().toISOString(),
+        fdv: dexScreenerData?.marketCap || 0, // Use marketCap as FDV if not available
+        createdAt: supabaseToken?.created_on || null,
       };
       
       setTokenData(combinedData);
@@ -273,11 +274,7 @@ const TokenDetail = () => {
               <TabsContent value="bets">
                 <div className="glass-panel p-6">
                   <h2 className="text-xl font-display font-semibold mb-4">Open Bets for {tokenData.symbol}</h2>
-                  <BetsList 
-                    bets={bets} 
-                    isLoading={isLoadingBets} 
-                    onRefresh={refreshBets} 
-                  />
+                  <BetsList bets={bets} isLoadingBets={isLoadingBets} refreshBets={refreshBets} />
                 </div>
               </TabsContent>
             </Tabs>
@@ -285,7 +282,7 @@ const TokenDetail = () => {
         </div>
         
         <div className="flex-1 space-y-6">
-          <TokenMarketCap tokenData={tokenData} />
+          <TokenMarketCap tokenId={tokenData.id} />
           
           {/* Add the YourLatestBet component if user is connected */}
           {connected && (

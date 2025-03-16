@@ -16,6 +16,7 @@ export const useBetsData = (userProfile: any) => {
       if (!connected || !publicKey || !userProfile) {
         console.log('Skipping fetch: Not connected or no user profile');
         setBets([]);
+        setIsLoading(false);
         return;
       }
       
@@ -31,6 +32,7 @@ export const useBetsData = (userProfile: any) => {
       if (error) {
         console.error('Error fetching user bets:', error);
         toast.error('Failed to load your bets. Please try again.');
+        setIsLoading(false);
         return;
       }
       
@@ -39,6 +41,7 @@ export const useBetsData = (userProfile: any) => {
       if (!data || data.length === 0) {
         console.log('No bets found for user in database');
         setBets([]);
+        setIsLoading(false);
         return;
       }
       
