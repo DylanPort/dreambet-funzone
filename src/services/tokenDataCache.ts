@@ -74,7 +74,23 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
     
     if (!data.pairs || data.pairs.length === 0) {
       console.log("No pairs found for token:", tokenId);
-      return null;
+      
+      // Create a fallback metrics object with estimated values
+      // This allows bets to still be placed even when DexScreener data isn't available
+      const fallbackMetrics: TokenMetrics = {
+        marketCap: 1000, // Default to a small market cap value
+        volume24h: 0,
+        priceUsd: 0.000001, // Default to a small price
+        priceChange24h: 0,
+        liquidity: 0,
+        timestamp: Date.now()
+      };
+      
+      // Save fallback data to cache
+      setCachedTokenMetrics(tokenId, fallbackMetrics);
+      
+      console.log(`Using fallback data for token ${tokenId}:`, fallbackMetrics);
+      return fallbackMetrics;
     }
     
     // Sort pairs by liquidity to get the most liquid one
@@ -96,8 +112,24 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
     return metrics;
   } catch (error) {
     console.error("Error fetching token metrics:", error);
-    toast.error("Failed to fetch token data");
-    return null;
+    
+    // Instead of showing an error toast and returning null, create fallback metrics
+    const fallbackMetrics: TokenMetrics = {
+      marketCap: 1000, // Default to a small market cap value
+      volume24h: 0,
+      priceUsd: 0.000001, // Default to a small price
+      priceChange24h: 0,
+      liquidity: 0,
+      timestamp: Date.now()
+    };
+    
+    // Save fallback data to cache
+    setCachedTokenMetrics(tokenId, fallbackMetrics);
+    
+    console.log(`Using fallback data after error for token ${tokenId}:`, fallbackMetrics);
+    toast.info("Using estimated token data for bet placement");
+    
+    return fallbackMetrics;
   }
 };
 

@@ -4,7 +4,7 @@ import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
-import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { fetchTokenMetrics } from '@/services/tokenDataCache';
 
 export const usePointOperations = (
   userProfile: UserProfile | null,
@@ -91,15 +91,11 @@ export const usePointOperations = (
     try {
       const walletAddress = publicKey.toString();
       
-      // Fetch token data from DexScreener to get the initial market cap
-      const tokenData = await fetchDexScreenerData(tokenId);
+      // Fetch token data from TokenDataCache to get the initial market cap
+      const tokenData = await fetchTokenMetrics(tokenId);
       
-      if (!tokenData || !tokenData.marketCap) {
-        toast.error(`Could not fetch market cap data for ${tokenSymbol}`);
-        return;
-      }
-      
-      const initialMarketCap = tokenData.marketCap;
+      // We now always have token data due to fallback values in fetchTokenMetrics
+      const initialMarketCap = tokenData?.marketCap || 1000; // Default to 1000 if still null
       
       console.log(`Initial market cap for ${tokenSymbol}: $${initialMarketCap}`);
       
@@ -220,6 +216,8 @@ export const usePointOperations = (
       
       // Add the new bet to the local state
       setBets(prevBets => [newBet, ...prevBets]);
+      
+      toast.success(`${betType === 'up' ? 'MOON' : 'DIE'} bet placed on ${tokenSymbol}!`);
       
       return newBet;
     } catch (error) {
