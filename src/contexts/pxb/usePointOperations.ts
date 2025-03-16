@@ -94,9 +94,57 @@ export const usePointOperations = (
       
       // Get the current authenticated user's session
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
-        toast.error('Authentication required. Please sign in.');
+      
+      // Check if we have a valid session
+      if (sessionError) {
         console.error('Session error:', sessionError);
+        toast.error('Authentication error. Please try reconnecting your wallet.');
+        return;
+      }
+      
+      // If no session exists, try to create one using the wallet address
+      if (!sessionData.session) {
+        console.log('No session found, attempting to sign in with wallet', walletAddress);
+        
+        // Try to sign in with the wallet address
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: `${walletAddress}@solana.wallet`, // Use wallet address as email
+          password: walletAddress, // Use wallet address as password
+        });
+        
+        if (signInError) {
+          // If sign in fails, try to sign up the user
+          console.log('Sign in failed, attempting to create account', signInError);
+          
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: `${walletAddress}@solana.wallet`,
+            password: walletAddress,
+            options: {
+              data: {
+                wallet_address: walletAddress
+              }
+            }
+          });
+          
+          if (signUpError) {
+            console.error('Failed to create account:', signUpError);
+            toast.error('Failed to authenticate with your wallet. Please try again.');
+            return;
+          }
+          
+          // Check if we now have a session after signup
+          const { data: newSessionData } = await supabase.auth.getSession();
+          if (!newSessionData.session) {
+            toast.error('Authentication required. Please try reconnecting your wallet.');
+            return;
+          }
+        }
+      }
+      
+      // Re-check the session to ensure we're authenticated
+      const { data: verifySessionData } = await supabase.auth.getSession();
+      if (!verifySessionData.session) {
+        toast.error('Authentication failed. Please try reconnecting your wallet.');
         return;
       }
       

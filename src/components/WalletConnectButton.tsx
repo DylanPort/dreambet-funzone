@@ -5,12 +5,70 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const WalletConnectButton = () => {
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const [isFullyConnected, setIsFullyConnected] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const { toast } = useToast();
+  
+  // Authenticate with Supabase when wallet is connected
+  useEffect(() => {
+    const syncWalletWithAuth = async () => {
+      if (connected && publicKey && !isAuthenticating) {
+        try {
+          setIsAuthenticating(true);
+          const walletAddress = publicKey.toString();
+          
+          // Check if we already have a session
+          const { data: sessionData } = await supabase.auth.getSession();
+          
+          if (!sessionData.session) {
+            console.log('No Supabase session, attempting to sign in with wallet', walletAddress);
+            
+            // Try to sign in with the wallet address
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email: `${walletAddress}@solana.wallet`, // Use wallet address as email
+              password: walletAddress, // Use wallet address as password
+            });
+            
+            if (signInError) {
+              console.log('Sign in failed, attempting to create account', signInError);
+              
+              // If sign in fails, try to sign up the user
+              const { error: signUpError } = await supabase.auth.signUp({
+                email: `${walletAddress}@solana.wallet`,
+                password: walletAddress,
+                options: {
+                  data: {
+                    wallet_address: walletAddress
+                  }
+                }
+              });
+              
+              if (signUpError) {
+                console.error('Failed to authenticate with wallet:', signUpError);
+              } else {
+                console.log('Successfully created account for wallet', walletAddress);
+              }
+            } else {
+              console.log('Successfully signed in with wallet', walletAddress);
+            }
+          } else {
+            console.log('Already authenticated with Supabase');
+          }
+        } catch (error) {
+          console.error('Error syncing wallet with auth:', error);
+        } finally {
+          setIsAuthenticating(false);
+        }
+      }
+    };
+    
+    syncWalletWithAuth();
+  }, [connected, publicKey, isAuthenticating]);
   
   useEffect(() => {
     // Check if wallet is actually ready for transactions
@@ -138,9 +196,14 @@ const WalletConnectButton = () => {
     };
   }, [connected, isFullyConnected, publicKey, wallet, verifying]);
 
+  // Handle disconnect from wallet and also sign out from Supabase
   const handleForceReconnect = async () => {
     try {
       console.log("Force reconnecting wallet...");
+      
+      // Sign out from Supabase when disconnecting wallet
+      await supabase.auth.signOut();
+      
       if (disconnect) {
         await disconnect();
         toast({
