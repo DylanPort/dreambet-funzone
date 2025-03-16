@@ -10,7 +10,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
-import Login from "./pages/Login";
 import Register from "./pages/Register";
 import TokenDetail from "./pages/TokenDetail";
 import BettingDashboard from "./pages/BettingDashboard";
@@ -35,7 +34,6 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/token/:id" element={<TokenDetail />} />
                 <Route path="/betting" element={<BettingDashboard />} />
