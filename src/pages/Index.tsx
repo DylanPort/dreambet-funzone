@@ -184,18 +184,7 @@ const Index = () => {
                   </div>
                 </div>
                 
-                <div className="p-4 bg-gradient-to-t from-white/5 to-transparent">
-                  <div className="text-center">
-                    <div className="relative inline-flex items-center justify-center gap-1 px-6 py-2 rounded-full
-                      bg-gradient-to-r from-dream-accent2/20 via-yellow-400/20 to-dream-accent1/20 group">
-                      <span className="bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold text-lg">
-                        Unlock life-changing perks!
-                      </span>
-                      <span className="ml-1 animate-pulse">✨</span>
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-dream-accent2/0 via-dream-accent3/10 to-dream-accent1/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    </div>
-                  </div>
-                </div>
+                
               </div>
             </div>
             
