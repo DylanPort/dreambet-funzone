@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,16 @@ import { BetPrediction } from '@/types/bet';
 import { Slider } from '@/components/ui/slider';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Input } from '@/components/ui/input';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 
 interface CreateBetFormProps {
   tokenId: string;
@@ -43,6 +52,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   });
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [percentageChange, setPercentageChange] = useState<string>('10');
+  const [isConfirmOpen, setIsConfirmOpen] = useState<boolean>(false);
 
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { userProfile, placeBet } = usePXBPoints();
@@ -228,7 +238,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }, 300);
   };
 
-  const handleCreateBet = async () => {
+  const handleOpenConfirmation = async () => {
     if (!userProfile) {
       toast.error('Please connect your wallet and mint PXB Points first');
       return;
@@ -262,9 +272,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       return;
     }
 
+    setIsConfirmOpen(true);
+  };
+
+  const handleCreateBet = async () => {
     try {
       setIsSubmitting(true);
       setTransactionStatus('Preparing bet...');
+      
+      const amountValue = parseInt(amount, 10);
       
       console.log(`Creating bet with: 
         token: ${tokenId} (${tokenData.name})
@@ -325,6 +341,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       toast.error(`Failed to create bet: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
+      setIsConfirmOpen(false);
     }
   };
 
@@ -494,7 +511,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       <div className="flex gap-3">
         <Button
-          onClick={handleCreateBet}
+          onClick={handleOpenConfirmation}
           disabled={!isWalletReady || isSubmitting || !prediction || !amount || !percentageChange || walletCheckingInProgress || !!successMessage || !userProfile}
           className="flex-1 bg-gradient-to-r from-dream-accent1 to-dream-accent3"
         >
@@ -570,6 +587,36 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           )}
         </div>
       )}
+      
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent className="bg-dream-background border border-dream-foreground/20">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-dream-foreground">Confirm Your Bet</AlertDialogTitle>
+            <AlertDialogDescription className="text-dream-foreground/70">
+              {`You are about to place a bet of ${amount} PXB Points that ${tokenData.symbol} will ${prediction} by ${percentageChange}% within ${duration} minutes.`}
+              <div className="mt-2 p-3 bg-dream-foreground/10 rounded-md">
+                <p className="text-dream-foreground/90 font-medium">
+                  Current PXB Balance: {maxPointsAvailable} PXB
+                </p>
+                <p className="text-dream-foreground/90 mt-1">
+                  After bet: {maxPointsAvailable - parseInt(amount, 10)} PXB
+                </p>
+              </div>
+              <p className="mt-4 text-dream-foreground/70">
+                These points will be deducted from your profile if you confirm.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex space-x-2">
+            <AlertDialogCancel className="bg-dream-surface text-dream-foreground border-dream-foreground/20 hover:bg-dream-surface/80">
+              Decline
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleCreateBet} className="bg-gradient-to-r from-dream-accent1 to-dream-accent3 text-white">
+              Accept & Place Bet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
