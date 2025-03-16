@@ -177,7 +177,8 @@ const TokenDetail = () => {
       localStorage.setItem(`token_price_${id}`, JSON.stringify({
         price,
         change24h,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        source: 'pumpportal'
       }));
     } catch (error) {
       console.error("Error caching price:", error);
@@ -476,6 +477,34 @@ const TokenDetail = () => {
   }, [id, updateTokenPrice, updateTokenMetrics]);
   
   useEffect(() => {
+    if (id && pumpPortal.coingeckoPrice) {
+      const { price, change24h } = pumpPortal.coingeckoPrice;
+      console.log("Updating price from Coingecko:", price, change24h);
+      
+      setToken(current => {
+        if (!current) return null;
+        return {
+          ...current,
+          currentPrice: price,
+          change24h: change24h,
+          priceSource: 'coingecko'
+        };
+      });
+      
+      try {
+        localStorage.setItem(`token_price_${id}`, JSON.stringify({
+          price,
+          change24h,
+          timestamp: Date.now(),
+          source: 'coingecko'
+        }));
+      } catch (error) {
+        console.error("Error caching Coingecko price:", error);
+      }
+    }
+  }, [id, pumpPortal.coingeckoPrice]);
+  
+  useEffect(() => {
     if (bets.length > 0) {
       const activeBets = bets.filter(bet => 
         bet.status === 'open' || bet.status === 'matched'
@@ -558,7 +587,7 @@ const TokenDetail = () => {
       setLoading(false);
     }
   }, [id, pumpPortal, toast, updateTokenMetrics]);
-
+  
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
       toast({
@@ -620,7 +649,8 @@ const TokenDetail = () => {
     return `$${num.toFixed(2)}`;
   };
 
-  const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
+  const isLive = pumpPortal.connected && id && (pumpPortal.recentTrades[id]?.length > 0 || pumpPortal.coingeckoPrice);
+  const priceSource = token?.priceSource || (pumpPortal.coingeckoPrice ? 'coingecko' : 'pumpportal');
   
   const renderActiveBetBanner = () => {
     if (!newActiveBet) return null;
@@ -736,11 +766,18 @@ const TokenDetail = () => {
                     {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
                     {Math.abs(token.change24h).toFixed(2)}%
                   </div>
-                  <div className="text-xs text-dream-foreground/60 mt-1">
-                    {pumpPortal.recentTrades[id]?.length > 0 ? (
-                      <span>Last trade: {new Date(pumpPortal.recentTrades[id][0].timestamp).toLocaleTimeString()}</span>
+                  <div className="text-xs text-dream-foreground/60 mt-1 flex items-center">
+                    {priceSource === 'coingecko' ? (
+                      <span className="flex items-center">
+                        <img src="/lovable-uploads/coingecko-logo.webp" alt="CoinGecko" className="w-4 h-4 mr-1 rounded-full" />
+                        CoinGecko: {pumpPortal.coingeckoPrice 
+                          ? new Date(pumpPortal.coingeckoPrice.timestamp).toLocaleTimeString() 
+                          : 'Loading...'}
+                      </span>
+                    ) : pumpPortal.recentTrades[id]?.length > 0 ? (
+                      <span>PumpPortal: {new Date(pumpPortal.recentTrades[id][0].timestamp).toLocaleTimeString()}</span>
                     ) : (
-                      <span>No recent trades</span>
+                      <span>No price data</span>
                     )}
                   </div>
                 </div>

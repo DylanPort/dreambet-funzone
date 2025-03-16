@@ -1,11 +1,17 @@
 
 import { useEffect, useState } from 'react';
 import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
+import { subscribeToCoingeckoPrice } from '@/services/coingeckoService';
 
 // Hook for component to use PumpPortal data
 export const usePumpPortal = (tokenId?: string) => {
   const pumpPortal = usePumpPortalWebSocket();
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [coingeckoPrice, setCoingeckoPrice] = useState<{
+    price: number;
+    change24h: number;
+    timestamp: number;
+  } | null>(null);
   
   // Subscribe to specific token trades when needed
   useEffect(() => {
@@ -25,6 +31,20 @@ export const usePumpPortal = (tokenId?: string) => {
       setIsSubscribed(true);
     }
   }, [pumpPortal.connected, tokenId, isSubscribed]);
+  
+  // Subscribe to Coingecko price updates for the specific token
+  useEffect(() => {
+    if (!tokenId) return;
+    
+    const cleanup = subscribeToCoingeckoPrice(tokenId, (data) => {
+      if (data) {
+        console.log('Received Coingecko price update:', data);
+        setCoingeckoPrice(data);
+      }
+    });
+    
+    return cleanup;
+  }, [tokenId]);
   
   // Get token creation events from console logs
   const getRawTokensFromLogs = () => {
@@ -66,6 +86,7 @@ export const usePumpPortal = (tokenId?: string) => {
     recentTrades: tokenId ? pumpPortal.recentTrades[tokenId] || [] : {},
     recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
     tokenMetrics: tokenId ? pumpPortal.tokenMetrics[tokenId] : null,
+    coingeckoPrice,
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens
   };
