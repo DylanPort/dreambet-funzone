@@ -254,7 +254,7 @@ const Index = () => {
           </div>
           
           <div className="max-w-5xl mx-auto mb-16">
-            <RecentTokenTrades />
+            <RecentTokenTrades className="py-[50px]" />
           </div>
           
           <div className="max-w-7xl mx-auto px-4 py-10">
