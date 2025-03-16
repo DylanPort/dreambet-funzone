@@ -46,7 +46,6 @@ const Profile = () => {
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [isSavingUsername, setIsSavingUsername] = useState(false);
   
-  // New state for MyBets integration
   const [myBetsView, setMyBetsView] = useState<'standard' | 'detailed'>('standard');
   const [activeDetailFilter, setActiveDetailFilter] = useState<string>('all');
   
@@ -78,24 +77,19 @@ const Profile = () => {
     loadUserData();
   }, [connected, publicKey]);
   
-  // MyBets function to load bets - used for the detailed view
   const loadDetailedBets = async () => {
     try {
       setIsActiveBetsLoading(true);
       if (connected && publicKey) {
         console.log('Fetching bets for user:', publicKey.toString());
         
-        // Get bets from the API
         const userBets = await fetchUserBets(publicKey.toString());
         
-        // Get locally stored bets (fallback)
         const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
         let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
         
-        // Filter local bets to only include those created by the current user
         localBets = localBets.filter(bet => bet.initiator === publicKey.toString());
         
-        // Combine bets, avoiding duplicates
         const allBets = [...userBets];
         for (const localBet of localBets) {
           const exists = allBets.some(
@@ -110,7 +104,6 @@ const Profile = () => {
         
         setApiActiveBets(allBets);
         
-        // Count active bets (open or matched)
         const activeCount = allBets.filter(bet => 
           bet.status === 'open' || bet.status === 'matched'
         ).length;
@@ -221,30 +214,33 @@ const Profile = () => {
     return () => clearInterval(interval);
   }, [connected, publicKey]);
   
-  // Force refresh when component is visible
   useEffect(() => {
-    // Set up a visibility change listener
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('Tab became visible, refreshing my bets data');
-        loadDetailedBets();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+    if (connected && publicKey) {
+      fetchPXBUserProfile();
+    }
+    if (connected && publicKey) {
+      const walletAddress = publicKey.toString();
+      const usersSubscription = supabase.channel('users-points-changes').on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: `wallet_address=eq.${walletAddress}`
+      }, payload => {
+        if (payload.new && typeof payload.new.points === 'number') {
+          setLocalPxbPoints(payload.new.points);
+        }
+      }).subscribe();
+      return () => {
+        supabase.removeChannel(usersSubscription);
+      };
+    }
+  }, [connected, publicKey]);
+  
+  useEffect(() => {
+    if (userProfile && userProfile.pxbPoints !== undefined) {
+      setLocalPxbPoints(userProfile.pxbPoints);
+    }
+  }, [userProfile]);
   
   const handleUpdateProfile = async () => {
     if (!usernameInput.trim()) {
@@ -306,34 +302,6 @@ const Profile = () => {
     });
   };
   
-  useEffect(() => {
-    if (connected && publicKey) {
-      fetchPXBUserProfile();
-    }
-    if (connected && publicKey) {
-      const walletAddress = publicKey.toString();
-      const usersSubscription = supabase.channel('users-points-changes').on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'users',
-        filter: `wallet_address=eq.${walletAddress}`
-      }, payload => {
-        if (payload.new && typeof payload.new.points === 'number') {
-          setLocalPxbPoints(payload.new.points);
-        }
-      }).subscribe();
-      return () => {
-        supabase.removeChannel(usersSubscription);
-      };
-    }
-  }, [connected, publicKey]);
-  
-  useEffect(() => {
-    if (userProfile && userProfile.pxbPoints !== undefined) {
-      setLocalPxbPoints(userProfile.pxbPoints);
-    }
-  }, [userProfile]);
-  
   const handleMintPXBPoints = async () => {
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
@@ -356,10 +324,17 @@ const Profile = () => {
     }
   };
   
-  // Filter bets for the standard view
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+  
   const filteredBets = betsFilter === 'all' ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id))] : betsFilter === 'active' ? activeBets : bets.filter(bet => bet.result !== 'pending');
   
-  // Filter bets for the detailed view
   const filteredDetailedBets = apiActiveBets.filter(bet => {
     if (activeDetailFilter === 'all') return true;
     if (activeDetailFilter === 'active') return bet.status === 'open' || bet.status === 'matched';
@@ -570,7 +545,6 @@ const Profile = () => {
             </div>
             
             {myBetsView === 'standard' ? (
-              // Standard view
               <>
                 {betsFilter === 'active' && isActiveBetsLoading || betsFilter !== 'active' && isLoading ? (
                   <div className="flex justify-center py-6">
@@ -665,7 +639,6 @@ const Profile = () => {
                 )}
               </>
             ) : (
-              // Detailed view from MyBets
               <AnimatePresence mode="wait">
                 {filteredDetailedBets.length === 0 ? (
                   <motion.div
@@ -674,3 +647,60 @@ const Profile = () => {
                     exit={{ opacity: 0 }}
                     className="text-center py-10 text-dream-foreground/60"
                   >
+                    <p>No {activeDetailFilter === 'all' ? '' : activeDetailFilter} bets found.</p>
+                    <Link to="/betting" className="mt-4 inline-block">
+                      <Button className="bg-dream-accent1 hover:bg-dream-accent1/80">
+                        Place Your First Bet
+                      </Button>
+                    </Link>
+                  </motion.div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredDetailedBets.map((bet) => (
+                      <motion.div 
+                        key={bet.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`p-4 rounded-lg bg-gradient-to-r ${getBetStatusColor(bet.status)} border`}
+                      >
+                        <div className="flex justify-between mb-2">
+                          <span className="font-medium">{bet.tokenName || 'Unknown Token'}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-black/20">
+                            {bet.status}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm">Amount: {bet.amount || 0} SOL</span>
+                          <span className="text-sm">
+                            {bet.prediction === 'up' ? (
+                              <span className="flex items-center text-green-400"><ArrowUp className="w-3 h-3 mr-1" /> Up</span>
+                            ) : (
+                              <span className="flex items-center text-red-400"><ArrowDown className="w-3 h-3 mr-1" /> Down</span>
+                            )}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </AnimatePresence>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'settings' && (
+          <div className="glass-panel p-6">
+            <h2 className="text-xl font-display font-semibold mb-4">Profile Settings</h2>
+            <p className="text-dream-foreground/60">Profile settings coming soon...</p>
+          </div>
+        )}
+      </main>
+    </>
+  );
+};
+
+export default Profile;
+
+
+
+
