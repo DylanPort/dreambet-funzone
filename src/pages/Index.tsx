@@ -102,7 +102,11 @@ const Index = () => {
                 before:content-[''] before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] before:animate-pulse-glow">
                 
                 <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
-                  <Sparkles className="h-5 w-5 text-dream-accent2 animate-pulse-glow" />
+                  <img 
+                    src="/lovable-uploads/8334bc57-6487-4a01-b85d-684370bfe2f8.png" 
+                    alt="Lightning" 
+                    className="h-6 w-6 animate-float filter drop-shadow-[0_0_8px_rgba(0,238,255,0.8)]" 
+                  />
                   Grab some PXB
                 </span>
                 
