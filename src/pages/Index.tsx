@@ -176,27 +176,20 @@ const Index = () => {
                 after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
                 after:shadow-[0_0_30px_rgba(139,92,246,0.5)] after:opacity-50 hover:after:opacity-100
                 after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(139,92,246,0.8)]
-                [&>span]:relative [&>span]:z-10
-                group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
-                group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
-                <span className="relative z-10 flex items-center font-bold text-white bg-gradient-to-r from-green-400 to-green-300 bg-clip-text drop-shadow-[0_0_10px_rgba(22,163,74,0.8)]">
+                [&>span]:relative [&>span]:z-10">
+                <span className="relative z-10 flex items-center font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent drop-shadow-[0_0_3px_rgba(255,255,255,0.8)]">
                   Start Betting
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-green-400 filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                 </span>
                 
-                
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400 via-yellow-300 to-purple-600
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent3 via-dream-accent2 to-dream-accent1
                     animate-gradient-move bg-[length:400%_100%] opacity-70 transform-gpu"></div>
-                  
-                  <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-green-500 via-yellow-400 via-orange-500 to-purple-600
-                    opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500
-                    group-hover:blur-2xl animate-pulse-glow"></div>
                   
                   <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-xl">
                     <div className="absolute -inset-[10px] bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.5),transparent_60%)]
                       animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                     
-                    <div className="absolute -bottom-2 left-0 right-0 h-12 bg-gradient-to-t from-green-400 via-yellow-300 to-transparent
+                    <div className="absolute -bottom-2 left-0 right-0 h-12 bg-gradient-to-t from-purple-400 via-dream-accent3 to-transparent
                       filter blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500
                       animate-bob [mask-image:linear-gradient(to_bottom,transparent,black)]"></div>
                     
@@ -227,7 +220,7 @@ const Index = () => {
                     className="w-16 h-16 md:w-20 md:h-20 animate-float filter drop-shadow-[0_0_15px_rgba(246,148,92,0.8)]" 
                   />
                   <div className="absolute inset-0 bg-yellow-500/30 rounded-full blur-xl animate-pulse-glow opacity-60"></div>
-                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full blur-md opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-dream-accent1 to-dream-accent2 rounded-full blur-md opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
                   <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 whitespace-nowrap text-sm bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent font-bold">
                     {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
                   </span>
