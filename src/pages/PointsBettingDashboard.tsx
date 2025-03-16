@@ -3,7 +3,6 @@ import React from 'react';
 import { Coins, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import OrbitingParticles from '@/components/OrbitingParticles';
-import TrendingTokens from '@/components/TrendingTokens';
 import PumpFunTokens from '@/components/PumpFunTokens';
 import VolumeFilteredTokens from '@/components/VolumeFilteredTokens';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
@@ -53,11 +52,6 @@ const PointsBettingDashboard: React.FC = () => {
           {/* PumpFun Tokens Section */}
           <section className="mb-10">
             <PumpFunTokens />
-          </section>
-          
-          {/* Trending Tokens Section */}
-          <section className="mb-10">
-            <TrendingTokens />
           </section>
           
           {/* How it Works Section */}
