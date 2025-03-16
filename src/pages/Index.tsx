@@ -20,6 +20,8 @@ import PXBLeaderboard from "@/components/PXBLeaderboard";
 import VolumeFilteredTokens from "@/components/VolumeFilteredTokens";
 import TopPumpFunTokensByVolume from "@/components/TopPumpFunTokensByVolume";
 import PXBUserStats from "@/components/PXBUserStats";
+import PXBSupplyProgress from "@/components/PXBSupplyProgress";
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -27,11 +29,13 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -72,10 +76,12 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -86,6 +92,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -283,8 +290,11 @@ const Index = () => {
             </h2>
             
             <PXBPointsProvider>
+              <div className="glass-panel p-6 rounded-lg mb-8">
+                <PXBSupplyProgress />
+              </div>
+              
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
                 <div className="glass-panel p-6">
                   <PXBLeaderboard />
                 </div>
