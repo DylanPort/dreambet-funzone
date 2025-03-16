@@ -11,6 +11,7 @@ import PXBLeaderboard from '@/components/PXBLeaderboard';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
 import PXBBetsList from '@/components/PXBBetsList';
 import PXBSupplyProgress from '@/components/PXBSupplyProgress';
+import PXBUserStats from '@/components/PXBUserStats';
 
 const PXBSpace = () => {
   const { connected, publicKey } = useWallet();
@@ -36,6 +37,11 @@ const PXBSpace = () => {
           {/* Total Supply Progress Bar - Visible whether connected or not */}
           <div className="glass-panel p-6 mb-6 overflow-hidden relative">
             <PXBSupplyProgress />
+          </div>
+          
+          {/* New User Stats Component */}
+          <div className="glass-panel p-6 mb-6 overflow-hidden relative">
+            <PXBUserStats />
           </div>
           
           {!connected ? (
