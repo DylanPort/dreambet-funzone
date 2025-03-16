@@ -87,13 +87,13 @@ const WalletConnectionMonitor = ({ children }: { children: React.ReactNode }) =>
 };
 
 const SolanaWalletProvider = ({ children }: { children: React.ReactNode }) => {
-  // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
-  const network = WalletAdapterNetwork.Devnet;
+  // Set the network to mainnet-beta instead of devnet
+  const network = WalletAdapterNetwork.Mainnet;
 
   // Set custom RPC endpoint with configurable commitment level
   const endpoint = useMemo(() => {
-    // Always use Devnet for testing
-    return "https://api.devnet.solana.com";
+    // Use Mainnet for production
+    return "https://api.mainnet-beta.solana.com";
   }, []);
 
   console.log("Using Solana RPC endpoint:", endpoint);

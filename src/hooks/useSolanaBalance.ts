@@ -20,8 +20,8 @@ export const useSolanaBalance = () => {
         setIsLoading(true);
         setError(null);
         
-        // Use Solana devnet for testing
-        const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+        // Use Solana mainnet for production
+        const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
         const lamports = await connection.getBalance(publicKey);
         const solBalance = lamports / LAMPORTS_PER_SOL;
         
