@@ -6,20 +6,60 @@ import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOpenBets } from "@/services/supabaseService";
 import { toast } from 'sonner';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { useWallet } from '@solana/wallet-adapter-react';
+
 const BetReel: React.FC = () => {
   const [activeBets, setActiveBets] = useState<Bet[]>([]);
   const [animateIndex, setAnimateIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const { bets: pxbBets } = usePXBPoints();
+  const { publicKey } = useWallet();
+
   useEffect(() => {
     const fetchBets = async () => {
       try {
         setLoading(true);
         const bets = await fetchOpenBets();
 
-        // Include open, matched, and expired bets in the reel
         const active = bets.filter(bet => bet.status === 'open' || bet.status === 'matched' || bet.status === 'expired');
-        console.log('Active and expired bets for reel:', active);
-        setActiveBets(active);
+        
+        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
+        let fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+        
+        const now = Date.now();
+        fallbackBets = fallbackBets.filter(bet => bet.expiresAt > now);
+        
+        const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
+          id: pb.id,
+          tokenId: pb.tokenMint,
+          tokenName: pb.tokenName,
+          tokenSymbol: pb.tokenSymbol,
+          initiator: publicKey?.toString() || '',
+          amount: pb.betAmount,
+          prediction: pb.betType === 'up' ? 'migrate' : 'die',
+          timestamp: new Date(pb.createdAt).getTime(),
+          expiresAt: new Date(pb.expiresAt).getTime(),
+          status: 'open',
+          duration: 30
+        }));
+        
+        const combinedBets = [...active];
+        
+        fallbackBets.forEach(fallbackBet => {
+          if (!combinedBets.some(bet => bet.id === fallbackBet.id)) {
+            combinedBets.push(fallbackBet);
+          }
+        });
+        
+        convertedPXBBets.forEach(pxbBet => {
+          if (!combinedBets.some(bet => bet.id === pxbBet.id)) {
+            combinedBets.push(pxbBet);
+          }
+        });
+        
+        console.log('Active and expired bets for reel:', combinedBets);
+        setActiveBets(combinedBets);
       } catch (error) {
         console.error('Error fetching bets for reel:', error);
         toast.error('Error loading bets');
@@ -27,7 +67,9 @@ const BetReel: React.FC = () => {
         setLoading(false);
       }
     };
+    
     fetchBets();
+    
     const channel = supabase.channel('public:bets').on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
@@ -97,30 +139,26 @@ const BetReel: React.FC = () => {
     }, payload => {
       console.log('Bet updated in reel:', payload);
 
-      // If status changed to expired, keep showing it
       if (payload.new.status !== payload.old.status) {
         if (payload.new.status === 'open' || payload.new.status === 'matched' || payload.new.status === 'expired') {
-          // Refresh the bets list to include this updated bet
           fetchBets();
 
-          // Show toast for expired bets
           if (payload.new.status === 'expired') {
             toast.info('A bet has expired', {
               description: 'Check the bet details for more information'
             });
           }
         } else {
-          // Remove the bet from our list if it's no longer active or expired
           setActiveBets(prev => prev.filter(bet => bet.id !== payload.new.bet_id));
         }
       }
     }).subscribe();
+    
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in BetReel:", event.detail);
-      const {
-        bet
-      } = event.detail;
-      if (bet && (bet.status === 'open' || bet.status === 'matched')) {
+      const { bet } = event.detail;
+      
+      if (bet) {
         setActiveBets(prev => {
           const exists = prev.some(existingBet => existingBet.id === bet.id);
           if (!exists) {
@@ -135,14 +173,19 @@ const BetReel: React.FC = () => {
         });
       }
     };
+    
     window.addEventListener('newBetCreated', handleNewBet as EventListener);
+    
+    if (pxbBets.length > 0) {
+      fetchBets();
+    }
+    
     return () => {
       supabase.removeChannel(channel);
       window.removeEventListener('newBetCreated', handleNewBet as EventListener);
     };
-  }, []);
+  }, [pxbBets, publicKey]);
 
-  // Show loading state while fetching bets
   if (loading) {
     return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
         <div className="flex items-center">
@@ -228,4 +271,5 @@ const BetReel: React.FC = () => {
       </div>
     </div>;
 };
+
 export default BetReel;

@@ -1,10 +1,10 @@
-
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
+import { Bet, BetPrediction } from '@/types/bet';
 
 export const usePointOperations = (
   userProfile: UserProfile | null,
@@ -216,6 +216,27 @@ export const usePointOperations = (
       
       // Add the new bet to the local state
       setBets(prevBets => [newBet, ...prevBets]);
+      
+      // Dispatch a custom event to notify other components about the new bet
+      // Use same event name and format as in supabaseService.ts
+      const newBetForEvent: Bet = {
+        id: betData.bet_id,
+        tokenId: tokenId,
+        tokenName: tokenName,
+        tokenSymbol: tokenSymbol,
+        initiator: walletAddress,
+        amount: betAmount,
+        prediction: betType === 'up' ? 'migrate' : 'die',
+        timestamp: new Date().getTime(),
+        expiresAt: new Date(new Date().getTime() + (durationSeconds * 1000)).getTime(),
+        status: 'open',
+        duration: durationMinutes
+      };
+      
+      const newBetCreatedEvent = new CustomEvent('newBetCreated', {
+        detail: { bet: newBetForEvent }
+      });
+      window.dispatchEvent(newBetCreatedEvent);
       
       toast.success(`${betType === 'up' ? 'MOON' : 'DIE'} bet placed on ${tokenSymbol}!`);
       

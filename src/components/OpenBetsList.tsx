@@ -10,12 +10,14 @@ import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BetCard from './BetCard';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 
 const OpenBetsList = () => {
   const { toast } = useToast();
   const { connected, publicKey } = useWallet();
   const [filter, setFilter] = useState('all');
   const [localBets, setLocalBets] = useState<Bet[]>([]);
+  const { bets: pxbBets } = usePXBPoints(); // Get PXB bets from context
   
   // Fetch open bets from Supabase
   const { data: supabaseBets = [], isLoading, error, refetch } = useQuery({
@@ -34,11 +36,26 @@ const OpenBetsList = () => {
       const now = Date.now();
       fallbackBets = fallbackBets.filter(bet => bet.expiresAt > now && bet.status === 'open');
       
-      // Only add fallback bets that don't exist in supabaseBets
-      const combinedBets = [...fallbackBets].filter(fallbackBet => {
+      // Convert PXB bets to regular Bet format if they exist
+      const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
+        id: pb.id,
+        tokenId: pb.tokenMint,
+        tokenName: pb.tokenName,
+        tokenSymbol: pb.tokenSymbol,
+        initiator: publicKey?.toString() || '',
+        amount: pb.betAmount,
+        prediction: pb.betType === 'up' ? 'migrate' : 'die',
+        timestamp: new Date(pb.createdAt).getTime(),
+        expiresAt: new Date(pb.expiresAt).getTime(),
+        status: 'open',
+        duration: 30 // Default duration in minutes
+      }));
+      
+      // Only add fallback bets and PXB bets that don't exist in supabaseBets
+      const combinedBets = [...fallbackBets, ...convertedPXBBets].filter(localBet => {
         return !supabaseBets.some(
-          bet => bet.id === fallbackBet.id || 
-          (bet.onChainBetId && fallbackBet.onChainBetId && bet.onChainBetId === fallbackBet.onChainBetId)
+          bet => bet.id === localBet.id || 
+          (bet.onChainBetId && localBet.onChainBetId && bet.onChainBetId === localBet.onChainBetId)
         );
       });
       
@@ -46,13 +63,60 @@ const OpenBetsList = () => {
       console.log('Combined local bets with Supabase bets:', {
         supabaseBets,
         fallbackBets,
+        pxbBets,
+        convertedPXBBets,
         combinedLocalBets: combinedBets
       });
     } catch (error) {
       console.error('Error loading local bets:', error);
       setLocalBets([]);
     }
-  }, [supabaseBets]);
+  }, [supabaseBets, pxbBets, publicKey]);
+  
+  // Listen for new bet events
+  useEffect(() => {
+    const handleNewBet = (event: CustomEvent) => {
+      console.log("New bet created event received in OpenBetsList:", event.detail);
+      const { bet } = event.detail;
+      
+      // Add the new bet to local storage to ensure persistence
+      try {
+        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
+        const fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+        
+        // Check if this bet already exists
+        const exists = fallbackBets.some(existingBet => existingBet.id === bet.id);
+        
+        if (!exists) {
+          fallbackBets.push(bet);
+          localStorage.setItem('pumpxbounty_fallback_bets', JSON.stringify(fallbackBets));
+          
+          // Update the local state
+          setLocalBets(prev => {
+            const exists = prev.some(existingBet => existingBet.id === bet.id);
+            if (!exists) {
+              return [bet, ...prev];
+            }
+            return prev;
+          });
+          
+          console.log('Added new bet to local storage:', bet);
+          toast({
+            title: "New bet created",
+            description: `Your ${bet.prediction} bet for ${bet.amount} SOL on ${bet.tokenSymbol} has been stored locally`
+          });
+        }
+      } catch (error) {
+        console.error('Error storing new bet in local storage:', error);
+      }
+    };
+    
+    window.addEventListener('newBetCreated', handleNewBet as EventListener);
+    
+    return () => {
+      window.removeEventListener('newBetCreated', handleNewBet as EventListener);
+    };
+  }, [toast]);
   
   // All bets to display (Supabase + local)
   const allBets = [...supabaseBets, ...localBets];
