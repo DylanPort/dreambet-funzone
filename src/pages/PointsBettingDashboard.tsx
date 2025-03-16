@@ -25,7 +25,7 @@ const PointsBettingDashboard: React.FC = () => {
           {/* Hero Section */}
           <section className="mb-12 text-center">
             <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 text-gradient">
-              Token Migration Points Betting
+              PXB Points Betting
             </h1>
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto">
               Bet with PXB Points against the house on whether tokens will go up or down after migrating from PumpFun to Raydium
