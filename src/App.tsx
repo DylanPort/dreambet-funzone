@@ -13,7 +13,7 @@ import Profile from "./pages/Profile";
 import TokenDetail from "./pages/TokenDetail";
 import BettingDashboard from "./pages/BettingDashboard";
 import TokenBetting from "./pages/TokenBetting";
-import MyBets from "./pages/MyBets";
+import PXBSpace from "./pages/MyBets";
 
 const queryClient = new QueryClient();
 
@@ -35,7 +35,7 @@ function App() {
                 <Route path="/token/:id" element={<TokenDetail />} />
                 <Route path="/betting" element={<BettingDashboard />} />
                 <Route path="/betting/token/:id" element={<TokenBetting />} />
-                <Route path="/betting/my-bets" element={<MyBets />} />
+                <Route path="/betting/my-bets" element={<PXBSpace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
