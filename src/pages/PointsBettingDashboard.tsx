@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Coins, ArrowUp, ArrowDown, Trophy, Wallet } from 'lucide-react';
+import { Coins, ArrowDown, Trophy, Wallet } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import PumpFunTokens from '@/components/PumpFunTokens';
@@ -100,7 +100,11 @@ const PointsBettingDashboard: React.FC = () => {
               
               <div className="glass-panel p-6 text-center">
                 <div className="w-12 h-12 rounded-full bg-dream-accent2/20 flex items-center justify-center mx-auto mb-4">
-                  <ArrowUp className="text-dream-accent2" />
+                  <img 
+                    src="/lovable-uploads/8b54a80c-266a-4fcc-8f22-788cab6ce1b4.png" 
+                    alt="Rocket" 
+                    className="h-6 w-6" 
+                  />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Predict Token Movement</h3>
                 <p className="text-dream-foreground/70">

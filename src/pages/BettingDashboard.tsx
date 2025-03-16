@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Wallet, HelpCircle, ArrowUp, ArrowDown } from 'lucide-react';
+import { Wallet, HelpCircle, ArrowDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import MigratingTokenList from '@/components/MigratingTokenList';
@@ -49,7 +50,11 @@ const BettingDashboard = () => {
                   </div>
                   <div className="flex justify-between mb-2">
                     <div className="flex items-center gap-1">
-                      <ArrowUp className="w-4 h-4 text-green-400" />
+                      <img 
+                        src="/lovable-uploads/8b54a80c-266a-4fcc-8f22-788cab6ce1b4.png" 
+                        alt="Rocket" 
+                        className="w-4 h-4" 
+                      />
                       <span className="text-sm">MOON</span>
                     </div>
                     <div className="flex items-center gap-1">

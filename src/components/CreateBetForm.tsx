@@ -405,7 +405,11 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
                 : 'border-dream-foreground/20 hover:bg-green-500/10'
             }`}
           >
-            <ArrowUp size={18} />
+            <img 
+              src="/lovable-uploads/8b54a80c-266a-4fcc-8f22-788cab6ce1b4.png" 
+              alt="Rocket" 
+              className="w-5 h-5" 
+            />
             <span>MOON 🚀</span>
           </button>
           
