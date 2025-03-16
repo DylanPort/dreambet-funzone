@@ -4,7 +4,7 @@ import { usePumpPortalWebSocket, RawTokenTradeEvent } from '@/services/pumpPorta
 
 // Hook for component to use PumpPortal data
 export const usePumpPortal = (tokenId?: string) => {
-  const pumpPortal = usePumpPortalWebSocketService();
+  const pumpPortal = usePumpPortalWebSocket();
   const [isSubscribed, setIsSubscribed] = useState(false);
   
   // Subscribe to specific token trades when needed
