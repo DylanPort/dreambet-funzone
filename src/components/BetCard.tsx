@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer } from '
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
+import { Progress } from '@/components/ui/progress';
 
 interface BetCardProps {
   bet: Bet;
@@ -33,6 +34,24 @@ const BetCard: React.FC<BetCardProps> = ({
       console.error("Error accepting bet:", error);
     }
   };
+  
+  // Calculate bet progress if available
+  const calculateProgress = () => {
+    if (!bet.initialMarketCap || !bet.currentMarketCap) return null;
+    
+    const actualChange = ((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
+    const targetChange = 10; // Default target change percentage
+    
+    if (bet.prediction === 'migrate') {
+      if (actualChange < 0) return 0;
+      return Math.min(100, (actualChange / targetChange) * 100);
+    } else {
+      if (actualChange > 0) return 0;
+      return Math.min(100, (Math.abs(actualChange) / targetChange) * 100);
+    }
+  };
+  
+  const progress = calculateProgress();
   
   // Ensure we're not using bet.id directly as a key in parent components
   return (
@@ -65,6 +84,25 @@ const BetCard: React.FC<BetCardProps> = ({
           </div>
         </div>
       </div>
+      
+      {progress !== null && (
+        <div className="mb-3">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-dream-foreground/60">Progress towards target</span>
+            <span className={bet.prediction === 'migrate' ? 'text-green-400' : 'text-red-400'}>
+              {progress.toFixed(1)}%
+            </span>
+          </div>
+          <Progress value={progress} className="h-2" />
+          <div className="text-xs text-dream-foreground/60 mt-1">
+            {bet.currentMarketCap && bet.initialMarketCap && (
+              <span>
+                Current change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
+              </span>
+            )}
+          </div>
+        </div>
+      )}
       
       <div className="flex items-center mt-3 justify-between">
         <div className="flex items-center">
@@ -100,8 +138,12 @@ const BetCard: React.FC<BetCardProps> = ({
           }`}
           disabled={!connected || bet.initiator === publicKeyString}
         >
-          Take {bet.prediction === 'migrate' ? 'DIE 💀' : 'MIGRATE 🚀'} Position
+          Bet Against This
         </Button>
+      </div>
+      
+      <div className="mt-3 p-2 bg-dream-foreground/5 rounded text-xs text-dream-foreground/70">
+        <p>All bets are against the house. If you win, points are awarded from the PXB supply. If you lose, your points return to the PXB supply.</p>
       </div>
     </div>
   );

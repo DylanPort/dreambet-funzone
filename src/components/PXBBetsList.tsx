@@ -5,6 +5,7 @@ import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle } from 'luc
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { Progress } from '@/components/ui/progress';
 
 const PXBBetsList = () => {
   const { bets, fetchUserBets } = usePXBPoints();
@@ -29,6 +30,33 @@ const PXBBetsList = () => {
       </div>
     );
   }
+
+  // Calculate progress percentage for active bets
+  const calculateProgress = (bet) => {
+    if (bet.status !== 'pending') {
+      return bet.status === 'won' ? 100 : 0;
+    }
+    
+    // Get current market cap change percentage if available
+    if (bet.currentMarketCap && bet.initialMarketCap) {
+      const actualChange = ((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
+      const targetChange = bet.percentageChange;
+      
+      // For "up" bets, progress is the percentage of target achieved
+      if (bet.betType === 'up') {
+        if (actualChange < 0) return 0; // If price is going down, progress is 0
+        return Math.min(100, (actualChange / targetChange) * 100);
+      } 
+      // For "down" bets, progress is the percentage of target achieved (negative change)
+      else {
+        if (actualChange > 0) return 0; // If price is going up, progress is 0
+        return Math.min(100, (Math.abs(actualChange) / targetChange) * 100);
+      }
+    }
+    
+    // Default to 0 if we don't have the data
+    return 0;
+  };
 
   return (
     <div className="glass-panel p-6">
@@ -56,6 +84,12 @@ const PXBBetsList = () => {
             statusIcon = <XCircle className="h-4 w-4 text-red-400" />;
             statusClass = 'text-red-400';
           }
+          
+          // Calculate progress percentage
+          const progressPercentage = calculateProgress(bet);
+          
+          // Determine progress bar color based on bet type
+          const progressColor = bet.betType === 'up' ? 'bg-green-500' : 'bg-red-500';
           
           return (
             <div 
@@ -90,6 +124,28 @@ const PXBBetsList = () => {
                 </div>
               </div>
               
+              {/* Progress Indicator */}
+              {isActive && (
+                <div className="mb-3 mt-3">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-dream-foreground/60">Progress towards target</span>
+                    <span className={bet.betType === 'up' ? 'text-green-400' : 'text-red-400'}>
+                      {progressPercentage.toFixed(1)}%
+                    </span>
+                  </div>
+                  <Progress value={progressPercentage} className="h-2" />
+                  {bet.currentMarketCap && bet.initialMarketCap && (
+                    <div className="text-xs text-dream-foreground/60 mt-1">
+                      Market cap change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
+                      {bet.betType === 'up'
+                        ? ` / Target: +${bet.percentageChange}%`
+                        : ` / Target: -${bet.percentageChange}%`
+                      }
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div className="flex justify-between items-center text-xs">
                 <div className="flex items-center">
                   {statusIcon}
@@ -111,8 +167,19 @@ const PXBBetsList = () => {
                 
                 {!isActive && bet.currentMarketCap && bet.initialMarketCap && (
                   <span className="text-dream-foreground/60">
-                    Market cap change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
+                    Final market cap change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
                   </span>
+                )}
+              </div>
+              
+              {/* House betting explanation */}
+              <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
+                {bet.status === 'pending' ? (
+                  <p>Betting against the house: If you win, you'll earn {bet.betAmount} PXB from the supply.</p>
+                ) : bet.status === 'won' ? (
+                  <p>You won {bet.pointsWon} PXB from the house supply!</p>
+                ) : (
+                  <p>Your {bet.betAmount} PXB has returned to the house supply.</p>
                 )}
               </div>
             </div>

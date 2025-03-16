@@ -189,6 +189,10 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
             <span>Die (10 PXB)</span>
           </button>
         </div>
+        
+        <div className="mt-3 p-2 bg-dream-foreground/5 rounded text-xs text-dream-foreground/70">
+          <p>Bet against the house: Win up to 2x your bet. If you win, points are awarded from the PXB supply. If you lose, your points return to the PXB supply.</p>
+        </div>
       </Link>
     </div>
   );

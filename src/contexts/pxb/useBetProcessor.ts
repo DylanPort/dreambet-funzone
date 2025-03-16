@@ -86,7 +86,7 @@ export const useBetProcessor = (
             continue;
           }
           
-          // Record the bet result in history
+          // Record the bet result in history and update PXB supply stats
           await supabase
             .from('bet_history')
             .insert({
@@ -99,7 +99,8 @@ export const useBetProcessor = (
                 percentage_change_actual: actualChange,
                 percentage_change_predicted: bet.percentageChange,
                 prediction: bet.betType,
-                points_won: pointsWon
+                points_won: pointsWon,
+                supply_impact: betWon ? -pointsWon : bet.betAmount // Track impact on total supply
               },
               market_cap_at_action: currentMarketCap
             });
@@ -128,12 +129,12 @@ export const useBetProcessor = (
             });
             
             // Show win notification
-            toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points.`, { id: toastId });
+            toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points from the house.`, { id: toastId });
           } else {
             // Show loss notification with a less alarming tone
             toast(`Your bet on ${bet.tokenSymbol} didn't win this time.`, {
               id: toastId,
-              description: `Market cap changed by ${actualChange.toFixed(2)}%, which didn't meet your ${bet.percentageChange}% prediction.`
+              description: `Your ${bet.betAmount} PXB Points have returned to the house supply. Market cap changed by ${actualChange.toFixed(2)}%, which didn't meet your ${bet.percentageChange}% prediction.`
             });
           }
           
@@ -143,6 +144,30 @@ export const useBetProcessor = (
               ? { ...b, status: newStatus, pointsWon, currentMarketCap } 
               : b
           ));
+        } else {
+          // For active bets, update the current market cap for progress tracking
+          try {
+            const tokenData = await fetchDexScreenerData(bet.tokenMint);
+            if (tokenData && tokenData.marketCap && bet.initialMarketCap) {
+              // Update the current market cap in state for progress tracking
+              setBets(prevBets => prevBets.map(b => 
+                b.id === bet.id 
+                  ? { ...b, currentMarketCap: tokenData.marketCap } 
+                  : b
+              ));
+              
+              // Optionally update in database if needed
+              await supabase
+                .from('bets')
+                .update({
+                  current_market_cap: tokenData.marketCap
+                })
+                .eq('bet_id', bet.id);
+            }
+          } catch (error) {
+            console.error(`Error updating current market cap for bet ${bet.id}:`, error);
+            // Non-critical error, continue processing
+          }
         }
       } catch (error) {
         console.error(`Error processing bet ${bet.id}:`, error);
@@ -161,3 +186,5 @@ export const useBetProcessor = (
     return () => clearInterval(interval);
   }, [processBets]);
 };
+
+export default useBetProcessor;
