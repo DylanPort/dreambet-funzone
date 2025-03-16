@@ -75,8 +75,8 @@ export const useBetProcessor = (
             .update({
               status: betWon ? 'won' : 'lost',
               points_won: pointsWon,
-              // Fix: Use the property that the TypeScript interface expects
-              currentMarketCap: currentMarketCap
+              // Use the column name that matches the database schema
+              current_market_cap: currentMarketCap
             })
             .eq('bet_id', bet.id);
             
@@ -138,10 +138,10 @@ export const useBetProcessor = (
             });
           }
           
-          // Update bet in state
+          // Update bet in state - Fix: using directly betWon ? 'won' : 'lost' instead of newStatus which doesn't exist
           setBets(prevBets => prevBets.map(b => 
             b.id === bet.id 
-              ? { ...b, status: newStatus, pointsWon, currentMarketCap } 
+              ? { ...b, status: betWon ? 'won' : 'lost', pointsWon, currentMarketCap } 
               : b
           ));
         } else {
@@ -156,12 +156,11 @@ export const useBetProcessor = (
                   : b
               ));
               
-              // Update in database
+              // Update in database - use the column name that matches the database schema
               await supabase
                 .from('bets')
                 .update({
-                  // Fix: Use the property that the TypeScript interface expects
-                  currentMarketCap: tokenData.marketCap 
+                  current_market_cap: tokenData.marketCap
                 })
                 .eq('bet_id', bet.id);
             }
