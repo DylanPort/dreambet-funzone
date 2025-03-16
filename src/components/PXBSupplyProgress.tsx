@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Coins, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 
 const PXBSupplyProgress = () => {
   const [totalMinted, setTotalMinted] = useState<number>(0);
@@ -87,7 +87,12 @@ const PXBSupplyProgress = () => {
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-lg font-semibold flex items-center">
             <span className="relative">
-              <Coins className="mr-2 h-5 w-5 text-dream-accent1" />
+              <img 
+                src="/lovable-uploads/05f6e261-54bf-4bf4-ba9d-52794f1b3b3c.png" 
+                alt="Diamond" 
+                className="mr-2 h-5 w-5 object-contain animate-pulse-subtle"
+                style={{ filter: 'drop-shadow(0 0 4px rgba(219, 39, 119, 0.5))' }}
+              />
               <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-yellow-300 animate-pulse" />
             </span>
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3 font-bold">
