@@ -646,21 +646,27 @@ const TokenDetail = () => {
         </table>
       </div>;
   };
-  return <>
+  return (
+    <>
       <OrbitingParticles />
       <Navbar />
       
       <main className="pt-24 min-h-screen px-4 pb-16">
         <div className="max-w-7xl mx-auto">
-          {loading && !token ? <div className="flex justify-center py-16">
+          {loading && !token ? (
+            <div className="flex justify-center py-16">
               <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
-            </div> : !token ? <div className="glass-panel p-8 text-center">
+            </div>
+          ) : !token ? (
+            <div className="glass-panel p-8 text-center">
               <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
               <p className="text-dream-foreground/70 mb-4">
                 The token you're looking for could not be found or has been removed.
               </p>
               <Button onClick={() => window.history.back()}>Go Back</Button>
-            </div> : <>
+            </div>
+          ) : (
+            <>
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
                 <span>Back to Tokens</span>
@@ -728,15 +734,15 @@ const TokenDetail = () => {
               
               <TokenChart tokenId={token.id} tokenName={token.name} refreshData={refreshData} loading={loading} onPriceUpdate={handleChartPriceUpdate} />
               
-              
-              
-              {showCreateBet && <div className="glass-panel p-6 mb-8">
+              {showCreateBet && (
+                <div className="glass-panel p-6 mb-8">
                   <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
                   <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol || ''} onBetCreated={async () => {
-              setShowCreateBet(false);
-              await refreshData();
-            }} />
-                </div>}
+                    setShowCreateBet(false);
+                    await refreshData();
+                  }} />
+                </div>
+              )}
               
               <div className="glass-panel p-6">
                 <div className="flex justify-between items-center mb-4">
@@ -744,18 +750,22 @@ const TokenDetail = () => {
                   <div className="text-sm text-dream-foreground/70">{bets.length} bets</div>
                 </div>
                 
-                {bets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                {bets.length === 0 ? (
+                  <div className="text-center py-8 text-dream-foreground/70">
                     No active bets for this token yet. Be the first to place a bet!
-                  </div> : <div className="space-y-4">
+                  </div>
+                ) : (
+                  <div className="space-y-4">
                     {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey ? publicKey.toString() : null} onAcceptBet={handleAcceptBet} />)}
-                  </div>}
+                  </div>
+                )}
               </div>
-              
-              
             </>
+          )}
         </div>
       </main>
-    </>;
+    </>
+  );
 };
 
 export default TokenDetail;
