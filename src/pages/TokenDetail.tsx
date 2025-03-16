@@ -19,7 +19,6 @@ import TokenComments from '@/components/TokenComments';
 import PriceChart from '@/components/PriceChart';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
-
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -84,53 +83,18 @@ const TokenChart = ({
       </div>
       
       <div className="mt-8 grid grid-cols-2 gap-4">
-        <div className="relative overflow-hidden group transition-all duration-500
-          transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer"
-          onClick={() => refreshData('up')}>
-          
-          <img 
-            src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" 
-            alt="Bet to Moon" 
-            className="w-full h-auto filter drop-shadow-[0_0_30px_rgba(22,163,74,0.7)]
-            transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(22,163,74,0.9)]"
-          />
-          
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/0 via-green-400/10 to-green-500/10 
-            opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-          
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
-            text-xl font-bold bg-gradient-to-r from-white to-green-200 bg-clip-text text-transparent
-            drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
-            Bet to Moon
-            <ArrowUp className="ml-2 h-5 w-5 group-hover:translate-y-[-2px] transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-          </div>
-        </div>
+        <Button onClick={() => refreshData('up')} className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800">
+          <ArrowUp className="w-4 h-4 mr-2" />
+          Bet to Migrate
+        </Button>
         
-        <div className="relative overflow-hidden group transition-all duration-500
-          transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer"
-          onClick={() => refreshData('down')}>
-          
-          <img 
-            src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" 
-            alt="Bet to Die" 
-            className="w-full h-auto filter drop-shadow-[0_0_30px_rgba(239,68,68,0.7)]
-            transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(239,68,68,0.9)]"
-          />
-          
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-500/0 via-red-400/10 to-red-500/10 
-            opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-          
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
-            text-xl font-bold bg-gradient-to-r from-white to-red-200 bg-clip-text text-transparent
-            drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
-            Bet to Die
-            <ArrowDown className="ml-2 h-5 w-5 group-hover:translate-y-[2px] transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-          </div>
-        </div>
+        <Button variant="destructive" onClick={() => refreshData('down')}>
+          <ArrowDown className="w-4 h-4 mr-2" />
+          Bet to Die
+        </Button>
       </div>
     </div>;
 };
-
 const TokenDetail = () => {
   const {
     id
@@ -675,28 +639,21 @@ const TokenDetail = () => {
         </table>
       </div>;
   };
-  
-  return (
-    <>
+  return <>
       <OrbitingParticles />
       <Navbar />
       
       <main className="pt-24 min-h-screen px-4 pb-16">
         <div className="max-w-7xl mx-auto">
-          {(loading && !token) ? (
-            <div className="flex justify-center py-16">
+          {loading && !token ? <div className="flex justify-center py-16">
               <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : !token ? (
-            <div className="glass-panel p-8 text-center">
+            </div> : !token ? <div className="glass-panel p-8 text-center">
               <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
               <p className="text-dream-foreground/70 mb-4">
                 The token you're looking for could not be found or has been removed.
               </p>
               <Button onClick={() => window.history.back()}>Go Back</Button>
-            </div>
-          ) : (
-            <>
+            </div> : <>
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
                 <span>Back to Tokens</span>
@@ -706,4 +663,91 @@ const TokenDetail = () => {
               
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div className="flex items-center">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-3xl border border-white/1
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-3xl border border-white/10 mr-4">
+                    {token.symbol ? token.symbol.charAt(0) : '🪙'}
+                  </div>
+                  
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-display font-bold">{token.name}</h1>
+                    <div className="flex items-center gap-3">
+                      <span className="text-dream-foreground/70">{token.symbol}</span>
+                      <a href={`https://solscan.io/token/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline inline-flex items-center text-sm">
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        View on SolScan
+                      </a>
+                      <span className={`flex items-center gap-1 text-sm ${isLive ? 'text-green-400' : 'text-yellow-400'}`}>
+                        {isLive ? 'Live' : 'Static'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-end">
+                  <div className="text-3xl font-bold">
+                    ${formatPrice(token.currentPrice)}
+                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">LIVE</span>
+                  </div>
+                  <div className={`flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
+                    {Math.abs(token.change24h).toFixed(2)}%
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <TokenMarketCap tokenId={token.id} />
+                
+                <TokenVolume tokenId={token.id} />
+                
+                <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{
+              animationDelay: '0.2s'
+            }}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-dream-accent3/10 to-dream-accent1/10 animate-gradient-move"></div>
+                  <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
+                    <Users size={20} className="mr-3 text-dream-accent3" />
+                    <span className="text-lg font-semibold">Active Bets</span>
+                  </div>
+                  <div className="text-3xl font-bold relative z-10">{bets.length}</div>
+                  <div className="absolute top-2 right-2 flex items-center">
+                    <button onClick={() => refreshData()} className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors" title="Refresh Data">
+                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent3 to-dream-accent1 animate-pulse-glow" style={{
+                width: `${Math.min(100, bets.length / 10 * 100)}%`
+              }}></div>
+                </div>
+              </div>
+              
+              <TokenChart tokenId={token.id} tokenName={token.name} refreshData={refreshData} loading={loading} onPriceUpdate={handleChartPriceUpdate} />
+              
+              
+              
+              {showCreateBet && <div className="glass-panel p-6 mb-8">
+                  <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
+                  <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol || ''} onBetCreated={async () => {
+              setShowCreateBet(false);
+              await refreshData();
+            }} />
+                </div>}
+              
+              <div className="glass-panel p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-display font-bold">Active Bets</h2>
+                  <div className="text-sm text-dream-foreground/70">{bets.length} bets</div>
+                </div>
+                
+                {bets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                    No active bets for this token yet. Be the first to place a bet!
+                  </div> : <div className="space-y-4">
+                    {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey ? publicKey.toString() : null} onAcceptBet={handleAcceptBet} />)}
+                  </div>}
+              </div>
+              
+              
+            </>}
+        </div>
+      </main>
+    </>;
+};
+export default TokenDetail;
