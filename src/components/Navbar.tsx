@@ -66,7 +66,7 @@ const Navbar = () => {
           <nav className="hidden md:flex space-x-8 items-center">
             <Link to="/dashboard" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-10 h-10 flex items-center justify-center transition-transform hover:scale-105">
-                <img src="/lovable-uploads/716d1861-1000-4986-ba2f-15693a5816af.png" alt="Bet-Scope" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(0,238,255,0.5)]" />
+                <img alt="Bet-Scope" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(0,238,255,0.5)]" src="/lovable-uploads/96ff57ae-37d6-4216-9d6f-a6227e40f0dd.png" />
               </div>
               <span>Bet-Scope</span>
             </Link>
