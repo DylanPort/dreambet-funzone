@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -89,10 +90,17 @@ const TokenChart = ({
       </div>
       
       <div className="mt-8 grid grid-cols-2 gap-4">
-        <Button onClick={() => refreshData('up')} className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 flex items-center justify-center">
-          <img src="/lovable-uploads/48531fef-2dd2-49d7-92d4-eb1df39d9f1c.png" alt="Rocket" className="h-8 mr-2" />
-          <span className="font-bold">MOON</span>
-        </Button>
+        <button 
+          onClick={() => refreshData('up')} 
+          className="p-0 w-full h-28 flex justify-center items-center transition-transform hover:scale-105 active:scale-95 rounded-lg overflow-hidden"
+          aria-label="MOON"
+        >
+          <img 
+            src="/lovable-uploads/48531fef-2dd2-49d7-92d4-eb1df39d9f1c.png" 
+            alt="Rocket to the Moon" 
+            className="w-full h-full object-cover" 
+          />
+        </button>
         
         <Button variant="destructive" onClick={() => refreshData('down')}>
           <ArrowDown className="w-4 h-4 mr-2" />
