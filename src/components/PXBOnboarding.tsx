@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Coins, PartyPopper, AlertCircle, CheckCircle, Save } from 'lucide-react';
+import { Coins, PartyPopper, AlertCircle, CheckCircle, Save, UserCheck } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,14 +17,15 @@ const PXBOnboarding: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+  const [hasClaimedPoints, setHasClaimedPoints] = useState(false);
   const { connected, publicKey } = useWallet();
 
   useEffect(() => {
     if (connected && publicKey) {
-      if (!username && !userProfile?.username) {
-        setUsername(publicKey.toString().substring(0, 8));
-      } else if (userProfile?.username) {
+      if (!username && userProfile?.username) {
         setUsername(userProfile.username);
+      } else if (!username) {
+        setUsername(publicKey.toString().substring(0, 8));
       }
       
       if (userProfile?.pxbPoints >= 500) {
@@ -48,11 +50,14 @@ const PXBOnboarding: React.FC = () => {
     
     if (!finalUsername) return;
     
+    setHasClaimedPoints(true);
+    
     try {
       await mintPoints(finalUsername);
       setShowSuccess(true);
     } catch (error) {
       console.error('Error minting points:', error);
+      setHasClaimedPoints(false);
     }
   };
 
@@ -133,12 +138,24 @@ const PXBOnboarding: React.FC = () => {
                   />
                   <Button 
                     onClick={handleSaveUsername}
-                    disabled={isUpdatingUsername || username === userProfile?.username}
+                    disabled={isUpdatingUsername || username === userProfile?.username || !username.trim()}
                     className="bg-green-500/80 hover:bg-green-500 text-white"
+                    title="Save username"
                   >
-                    {isUpdatingUsername ? "Saving..." : <Save className="w-4 h-4" />}
+                    {isUpdatingUsername ? 
+                      <div className="flex items-center">
+                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
+                        <span>Saving</span>
+                      </div> : 
+                      <UserCheck className="w-4 h-4" />
+                    }
                   </Button>
                 </div>
+                {userProfile?.username !== username && username.trim() && (
+                  <p className="text-xs text-dream-accent2 mt-1 text-left">
+                    Click save to update your username
+                  </p>
+                )}
               </div>
               
               <Button 
@@ -173,9 +190,16 @@ const PXBOnboarding: React.FC = () => {
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
-              disabled={isLoading}
+              disabled={isLoading || hasClaimedPoints}
             >
-              {isLoading ? 'Claiming...' : 'Claim 500 PXB Points'}
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  <span>Claiming...</span>
+                </div>
+              ) : hasClaimedPoints ? 
+                "Points Claimed!" : 
+                'Claim 500 PXB Points'}
             </Button>
           </form>
         )}
@@ -257,7 +281,11 @@ const PXBOnboarding: React.FC = () => {
             </motion.div>
             
             <Button
-              onClick={() => setShowSuccess(false)}
+              onClick={() => {
+                setShowSuccess(false);
+                setHasClaimedPoints(false);
+                window.location.reload(); // Reload the page to refresh the UI state
+              }}
               className="mt-6 bg-white text-purple-600 hover:bg-white/90 hover:text-purple-700 transition-all"
             >
               Start Betting Now!
