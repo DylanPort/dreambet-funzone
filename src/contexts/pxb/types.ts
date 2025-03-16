@@ -6,7 +6,7 @@ export interface PXBPointsContextType {
   isLoading: boolean;
   bets: PXBBet[];
   leaderboard: UserProfile[];
-  mintPoints: (username: string) => Promise<void>;
+  mintPoints: (amount?: number) => Promise<void>;
   placeBet: (
     tokenMint: string, 
     tokenName: string, 
@@ -15,7 +15,7 @@ export interface PXBPointsContextType {
     betType: 'up' | 'down', 
     percentageChange: number,
     duration: number
-  ) => Promise<void>;
+  ) => Promise<PXBBet | void>;
   fetchUserProfile: () => Promise<void>;
   fetchUserBets: () => Promise<void>;
   fetchLeaderboard: () => Promise<void>;
