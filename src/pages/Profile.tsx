@@ -377,7 +377,8 @@ const Profile = () => {
   };
 
   if (!connected || !publicKey) {
-    return <>
+    return (
+      <>
         <Navbar />
         <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center">
           <div className="glass-panel p-10 flex flex-col items-center">
@@ -388,11 +389,13 @@ const Profile = () => {
             <p className="text-dream-foreground/70 text-center mb-6">You need to connect your wallet to access your profile.</p>
           </div>
         </main>
-      </>;
+      </>
+    );
   }
   
   if (isLoading) {
-    return <>
+    return (
+      <>
         <Navbar />
         <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center">
           <div className="glass-panel p-10 flex flex-col items-center">
@@ -400,10 +403,12 @@ const Profile = () => {
             <p className="text-dream-foreground/70">Loading profile...</p>
           </div>
         </main>
-      </>;
+      </>
+    );
   }
   
-  return <>
+  return (
+    <>
       <OrbitingParticles />
       <Navbar />
       <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto">
@@ -415,24 +420,31 @@ const Profile = () => {
             </div>
             
             <div className="text-center md:text-left">
-              {isEditingUsername ? <div className="flex flex-col md:flex-row gap-2 items-center">
+              {isEditingUsername ? (
+                <div className="flex flex-col md:flex-row gap-2 items-center">
                   <Input type="text" value={usernameInput} onChange={e => setUsernameInput(e.target.value)} placeholder="Enter new username" className="px-3 py-2 w-full md:w-auto" autoFocus />
                   <div className="flex gap-2 mt-2 md:mt-0">
                     <Button onClick={handleUpdateProfile} disabled={isSavingUsername} size="sm" className="bg-dream-accent1 hover:bg-dream-accent1/80">
-                      {isSavingUsername ? <>
+                      {isSavingUsername ? (
+                        <>
                           <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
                           Saving
-                        </> : <>
+                        </>
+                      ) : (
+                        <>
                           <Save className="w-4 h-4 mr-1" />
                           Save
-                        </>}
+                        </>
+                      )}
                     </Button>
                     <Button onClick={cancelEditingUsername} variant="outline" size="sm" className="border-dream-foreground/20 hover:bg-dream-foreground/5">
                       <X className="w-4 h-4 mr-1" />
                       Cancel
                     </Button>
                   </div>
-                </div> : <div className="flex items-center gap-2">
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
                   <h1 className="text-2xl md:text-3xl font-display font-bold">
                     {user?.username || publicKey.toString().substring(0, 8) || 'DreamPredictor'}
                   </h1>
@@ -440,7 +452,8 @@ const Profile = () => {
                     <Edit2 className="w-3.5 h-3.5" />
                     <span className="sr-only">Edit username</span>
                   </Button>
-                </div>}
+                </div>
+              )}
               <p className="text-dream-foreground/60">{publicKey.toString()}</p>
               <p className="text-dream-foreground/60 text-sm mt-1">
                 <Clock className="inline w-3 h-3 mr-1" />
@@ -457,15 +470,21 @@ const Profile = () => {
                 <p className="text-2xl font-display font-bold text-gradient">
                   {pxbLoading ? <span className="text-sm text-dream-foreground/40">Loading...</span> : localPxbPoints !== null && localPxbPoints > 0 ? `${localPxbPoints.toLocaleString()} PXB` : userProfile !== null && userProfile.pxbPoints > 0 ? `${userProfile.pxbPoints.toLocaleString()} PXB` : <span className="text-sm text-dream-foreground/40">0 PXB</span>}
                 </p>
-                {!userProfile?.pxbPoints && !localPxbPoints ? <Button onClick={handleMintPXBPoints} disabled={isMintingPoints} className="mt-2 text-xs h-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" size="sm">
-                    {isMintingPoints ? <div className="flex items-center">
+                {!userProfile?.pxbPoints && !localPxbPoints ? (
+                  <Button onClick={handleMintPXBPoints} disabled={isMintingPoints} className="mt-2 text-xs h-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" size="sm">
+                    {isMintingPoints ? (
+                      <div className="flex items-center">
                         <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
                         <span>Minting...</span>
-                      </div> : <>
+                      </div>
+                    ) : (
+                      <>
                         <Plus className="w-3 h-3 mr-1" />
                         Mint 500 Points
-                      </>}
-                  </Button> : null}
+                      </>
+                    )}
+                  </Button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -513,9 +532,11 @@ const Profile = () => {
                     <button onClick={() => setBetsFilter('active')} className={`px-2.5 py-1 text-sm rounded-full transition-colors flex items-center ${betsFilter === 'active' ? 'bg-dream-accent2/20 text-dream-accent2 border border-dream-accent2/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
                       <Activity className="w-3 h-3 mr-1" />
                       Active
-                      {activeBets.length > 0 && <span className="ml-1 bg-dream-accent2/30 text-dream-accent2 text-xs px-1.5 rounded-full">
+                      {activeBets.length > 0 && (
+                        <span className="ml-1 bg-dream-accent2/30 text-dream-accent2 text-xs px-1.5 rounded-full">
                           {activeBets.length}
-                        </span>}
+                        </span>
+                      )}
                     </button>
                     <button onClick={() => setBetsFilter('completed')} className={`px-2.5 py-1 text-sm rounded-full transition-colors ${betsFilter === 'completed' ? 'bg-green-500/20 text-green-400 border border-green-400/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
                       Completed
@@ -645,15 +666,11 @@ const Profile = () => {
               </>
             ) : (
               // Detailed view from MyBets
-              <>
-                {isActiveBetsLoading ? (
-                  <div className="flex justify-center py-12">
-                    <div className="flex flex-col items-center">
-                      <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin mb-4"></div>
-                      <p className="text-dream-foreground/70">Loading your bets...</p>
-                    </div>
-                  </div>
-                ) : (
-                  <AnimatePresence mode="wait">
-                    {filteredDetailedBets.length === 0 ? (
-                      <motion.div
+              <AnimatePresence mode="wait">
+                {filteredDetailedBets.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center py-10 text-dream-foreground/60"
+                  >
