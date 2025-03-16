@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap } from 'lucide-react';
@@ -100,22 +101,37 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
             <div className="text-center md:text-left md:flex-1">
               <AnimatedLogo />
-              <p className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 font-semibold animate-entrance overflow-hidden
-                before:content-[''] before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] before:animate-pulse-glow">
+              
+              {/* Updated paragraph with more dynamic, futuristic styling */}
+              <p className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 font-semibold 
+                bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
+                backdrop-blur-[1px] p-4 rounded-xl border border-white/5
+                animate-entrance overflow-hidden
+                before:content-[''] before:absolute before:inset-0 
+                before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
+                before:animate-pulse-glow">
                 
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
+                <span className="inline-flex items-center gap-1 
+                  relative px-1.5 py-1 rounded-md 
+                  before:absolute before:inset-0 before:bg-dream-accent2/10 before:rounded-md before:animate-pulse-glow">
                   <img 
                     src="/lovable-uploads/8334bc57-6487-4a01-b85d-684370bfe2f8.png" 
                     alt="Lightning" 
                     className="h-6 w-6 animate-float filter drop-shadow-[0_0_8px_rgba(0,238,255,0.8)]" 
                   />
-                  Grab some PXB
+                  <span className="bg-gradient-to-r from-dream-accent2 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
+                    Grab some PXB
+                  </span>
                 </span>
                 
-                , connect your 
+                <span className="mx-2 text-white/80 tracking-wider">•</span>
                 
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent1 via-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold px-1">
-                  Wallet
+                <span className="inline-flex items-center gap-1 
+                  relative px-1.5 py-1 rounded-md
+                  before:absolute before:inset-0 before:bg-dream-accent3/10 before:rounded-md before:animate-pulse-glow">
+                  <span className="bg-gradient-to-r from-dream-accent1 via-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold">
+                    Connect your Wallet
+                  </span>
                   <img 
                     src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" 
                     alt="Wallet" 
@@ -123,41 +139,69 @@ const Index = () => {
                   />
                 </span>
                 
-                , and Mint 
+                <span className="mx-2 text-white/80 tracking-wider">•</span>
                 
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold px-1">PXB Points</span>
+                <span className="inline-flex items-center gap-1 
+                  relative px-1.5 py-1 rounded-md
+                  before:absolute before:inset-0 before:bg-yellow-400/10 before:rounded-md before:animate-pulse-glow">
+                  <span className="bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
+                    Mint PXB Points
+                  </span>
+                </span>
                 
-                . Bet on whether new tokens will 
+                <div className="my-2 bg-white/5 h-[1px] w-full rounded-full"></div>
                 
-                <span className="relative inline-flex items-center gap-1 text-green-400 font-bold animate-bob">
-                  <img src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" alt="Rocket" className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
-                  MOON
-                  <span className="absolute inset-0 bg-green-400/10 blur-sm animate-pulse-glow rounded-full"></span>
-                </span> 
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="glass-panel p-3 backdrop-blur-sm">
+                    <div className="text-center font-bold mb-1 text-white/90">Bet on tokens:</div>
+                    <div className="flex justify-center gap-4">
+                      <span className="relative inline-flex items-center gap-1 text-green-400 font-bold animate-bob">
+                        <img src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" alt="Rocket" className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
+                        <span className="bg-green-500/80 px-2 py-0.5 rounded-lg text-white">MOON</span>
+                        <span className="absolute inset-0 bg-green-400/10 blur-sm animate-pulse-glow rounded-full"></span>
+                      </span>
+                      
+                      <span className="text-white/80">or</span>
+                      
+                      <span className="relative inline-flex items-center gap-1 text-red-400 font-bold">
+                        <img src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" alt="Skull" className="h-8 w-8 animate-pulse filter drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                        <span className="bg-red-500/80 px-2 py-0.5 rounded-lg text-white">DUST</span>
+                        <span className="absolute inset-0 bg-red-400/10 blur-sm animate-pulse-glow rounded-full"></span>
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="glass-panel p-3 backdrop-blur-sm flex items-center justify-center">
+                    <span className="inline-flex items-center gap-2 before:content-['⏱️'] before:animate-spin-slow before:inline-block">
+                      <span className="bg-gradient-to-r from-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold text-lg"> 60 minutes</span>
+                    </span>
+                  </div>
+                </div>
                 
-                or turn to 
+                <div className="mt-4 text-center bg-white/5 backdrop-blur-sm py-2 px-4 rounded-xl border border-white/10 shadow-inner">
+                  <div className="text-white/90 font-medium">It's that simple:</div>
+                  <div className="flex flex-wrap justify-center gap-x-4 mt-1">
+                    <span className="text-white animate-float-delayed relative px-2 inline-block">
+                      <span className="absolute -top-1 -left-1 text-xs bg-dream-accent1/20 w-5 h-5 rounded-full flex items-center justify-center">1</span>
+                      predict
+                    </span>
+                    <span className="text-white animate-float-delayed-2 relative px-2 inline-block">
+                      <span className="absolute -top-1 -left-1 text-xs bg-dream-accent2/20 w-5 h-5 rounded-full flex items-center justify-center">2</span>
+                      place your bet
+                    </span>
+                    <span className="text-white animate-float relative px-2 inline-block">
+                      <span className="absolute -top-1 -left-1 text-xs bg-dream-accent3/20 w-5 h-5 rounded-full flex items-center justify-center">3</span>
+                      build your reputation
+                    </span>
+                  </div>
+                </div>
                 
-                <span className="relative inline-flex items-center gap-1 text-red-400 font-bold">
-                  <img src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" alt="Skull" className="h-8 w-8 animate-pulse filter drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                  DUST
-                  <span className="absolute inset-0 bg-red-400/10 blur-sm animate-pulse-glow rounded-full"></span>
-                </span> 
-                
-                in just 
-                
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent3 to-dream-accent2 bg-clip-text text-transparent animate-gradient-move font-bold"> 60 minutes</span>
-                
-                . It's that simple - 
-                
-                <span className="text-white animate-float-delayed"> predict</span>
-                , 
-                <span className="text-white animate-float-delayed-2"> place your bet</span>
-                , and 
-                <span className="text-white animate-float"> build your reputation </span> 
-                
-                alongside future 
-                
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold"> life-changing perks!</span>
+                <div className="mt-3 text-center">
+                  <span className="inline-flex items-center justify-center w-full gap-1 bg-gradient-to-r from-dream-accent2 via-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold text-lg">
+                    Unlock life-changing perks!
+                    <span className="ml-1 animate-pulse">✨</span>
+                  </span>
+                </div>
               </p>
             </div>
             
