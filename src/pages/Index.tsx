@@ -125,6 +125,7 @@ const Index = () => {
                   </div>
                   
                   <div className="glass-panel flex items-center justify-center gap-2 p-3 transform hover:scale-105 transition-transform">
+                    <img src="/lovable-uploads/7f8a29b9-8cfb-42ce-ab80-9c9a0f5e42a4.png" alt="Holographic Diamond" className="h-6 w-6 animate-pulse filter drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]" />
                     <span className="bg-gradient-to-r from-yellow-400 to-dream-accent1 bg-clip-text text-transparent animate-gradient-move font-bold">
                       Mint PXB Points
                     </span>
