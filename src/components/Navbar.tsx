@@ -7,6 +7,7 @@ import useSolanaBalance from '@/hooks/useSolanaBalance';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -19,6 +20,7 @@ const Navbar = () => {
     fetchUserProfile
   } = usePXBPoints();
   const [pxbPoints, setPxbPoints] = useState<number | null>(null);
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -30,22 +32,20 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
 
-  // Update PXB points from user profile when it changes
   useEffect(() => {
     if (userProfile) {
       setPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
 
-  // Set up real-time listener for points updates
   useEffect(() => {
     if (!userProfile) return;
 
-    // Subscribe to realtime changes on the users table
     const channel = supabase.channel('public:users').on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
@@ -55,13 +55,14 @@ const Navbar = () => {
       console.log('User data updated:', payload);
       if (payload.new && 'points' in payload.new) {
         setPxbPoints(payload.new.points as number);
-        fetchUserProfile(); // Also refresh the context
+        fetchUserProfile();
       }
     }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [userProfile, fetchUserProfile]);
+
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
@@ -157,7 +158,7 @@ const Navbar = () => {
             
             {balance !== null && <div className="py-2 flex items-center gap-2 text-green-400">
                 <div className="w-5 h-5 flex items-center justify-center">
-                  <img src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" alt="Wallet" className="w-full h-full object-contain" />
+                  <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
                 <span>{balance.toFixed(2)} SOL</span>
               </div>}
@@ -169,4 +170,5 @@ const Navbar = () => {
         </div>}
     </header>;
 };
+
 export default Navbar;
