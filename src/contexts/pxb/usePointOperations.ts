@@ -4,6 +4,7 @@ import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { fetchDexScreenerData } from '@/services/dexScreenerService';
 
 export const usePointOperations = (
   userProfile: UserProfile | null,
@@ -117,6 +118,7 @@ export const usePointOperations = (
     tokenSymbol: string,
     betAmount: number,
     betType: 'up' | 'down',
+    percentageChange: number = 10,
     duration: number = 60
   ) => {
     setIsLoading(true);
@@ -130,6 +132,16 @@ export const usePointOperations = (
         toast.error('Insufficient PXB Points balance');
         return;
       }
+      
+      // Get current market cap from DexScreener to track the starting point
+      const tokenData = await fetchDexScreenerData(tokenMint);
+      if (!tokenData || !tokenData.marketCap) {
+        toast.error('Unable to fetch current market cap for this token');
+        return;
+      }
+      
+      const initialMarketCap = tokenData.marketCap;
+      console.log(`Initial market cap: $${initialMarketCap}`);
       
       const walletAddress = publicKey.toString();
       
@@ -149,6 +161,8 @@ export const usePointOperations = (
           token_symbol: tokenSymbol,
           sol_amount: betAmount,
           prediction_bettor1: betType,
+          percentage_change: percentageChange,
+          initial_market_cap: initialMarketCap,
           status: 'pending',
           duration: duration * 60
         });
@@ -170,6 +184,25 @@ export const usePointOperations = (
         return;
       }
       
+      // Create a record in bet_history
+      await supabase
+        .from('bet_history')
+        .insert({
+          bet_id: betId,
+          user_id: userProfile.id,
+          action: 'place_bet',
+          details: {
+            token_mint: tokenMint,
+            token_name: tokenName,
+            token_symbol: tokenSymbol,
+            bet_amount: betAmount,
+            prediction: betType,
+            percentage_change: percentageChange,
+            duration: duration
+          },
+          market_cap_at_action: initialMarketCap
+        });
+      
       const updatedProfile = {
         ...userProfile,
         pxbPoints: userProfile.pxbPoints - betAmount
@@ -185,15 +218,18 @@ export const usePointOperations = (
         tokenSymbol,
         betAmount,
         betType,
+        percentageChange,
         status: 'pending',
         pointsWon: 0,
         createdAt: new Date().toISOString(),
-        expiresAt: expiresAt.toISOString()
+        expiresAt: expiresAt.toISOString(),
+        initialMarketCap
       };
       
       setBets(prevBets => [...prevBets, newBet]);
       
-      toast.success(`Bet placed successfully! ${betAmount} PXB Points on ${tokenSymbol} to ${betType === 'up' ? 'MOON' : 'DIE'}`);
+      const predictionText = betType === 'up' ? `MOON by ${percentageChange}%` : `DIE by ${percentageChange}%`;
+      toast.success(`Bet placed successfully! ${betAmount} PXB Points on ${tokenSymbol} to ${predictionText}`);
     } catch (error) {
       console.error('Error placing bet:', error);
       toast.error('Failed to place bet');

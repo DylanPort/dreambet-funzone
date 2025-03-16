@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { toast } from 'sonner';
 import { BetPrediction } from '@/types/bet';
 import { Slider } from '@/components/ui/slider';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { Input } from '@/components/ui/input';
 
 interface CreateBetFormProps {
   tokenId: string;
@@ -40,6 +42,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     symbol: tokenSymbol || "UNKNOWN"
   });
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [percentageChange, setPercentageChange] = useState<string>('10');
 
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { userProfile, placeBet } = usePXBPoints();
@@ -173,6 +176,18 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }
   };
 
+  const handlePercentageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, ''); // Only allow numbers
+    
+    // Limit to reasonable percentage values (e.g., max 1000%)
+    const numValue = parseInt(value || '0', 10);
+    if (numValue > 1000) {
+      setPercentageChange('1000');
+    } else {
+      setPercentageChange(value);
+    }
+  };
+
   const handleDurationChange = (value: number[]) => {
     setDuration(value[0]);
   };
@@ -227,7 +242,12 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }
 
     if (!prediction) {
-      toast.error("Please choose whether the token will migrate or die");
+      toast.error("Please choose whether the token will MOON or DIE");
+      return;
+    }
+
+    if (!percentageChange || parseInt(percentageChange, 10) <= 0) {
+      toast.error("Please enter a valid percentage change prediction");
       return;
     }
 
@@ -251,6 +271,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         wallet: ${publicKey?.toString()}
         amount: ${amountValue} PXB Points
         prediction: ${prediction}
+        percentage: ${percentageChange}%
         duration: ${duration} minutes
       `);
       
@@ -261,18 +282,20 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         tokenData.name,
         tokenData.symbol,
         amountValue,
-        prediction === 'migrate' ? 'up' : 'down',
+        prediction === 'moon' ? 'up' : 'down',
+        parseInt(percentageChange, 10),
         duration
       );
       
       setTransactionStatus('Bet placed successfully!');
-      setSuccessMessage(`Your ${amountValue} PXB Points bet that ${tokenData.symbol} will ${prediction} is now live!`);
+      setSuccessMessage(`Your ${amountValue} PXB Points bet that ${tokenData.symbol} will ${prediction} by ${percentageChange}% is now live!`);
       
-      toast.success(`Bet created successfully! ${amountValue} PXB Points that ${tokenData.symbol} will ${prediction}`);
+      toast.success(`Bet created successfully! ${amountValue} PXB Points that ${tokenData.symbol} will ${prediction} by ${percentageChange}%`);
       
       setTimeout(() => {
         setAmount('10');
         setPrediction(null);
+        setPercentageChange('10');
         setDuration(30);
         setTransactionStatus('');
         setSuccessMessage(null);
@@ -355,9 +378,9 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setPrediction('migrate')}
+            onClick={() => setPrediction('moon')}
             className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
-              prediction === 'migrate'
+              prediction === 'moon'
                 ? 'bg-green-500/20 border-green-500 text-green-400'
                 : 'border-dream-foreground/20 hover:bg-green-500/10'
             }`}
@@ -379,6 +402,26 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             <span>DIE 💀</span>
           </button>
         </div>
+      </div>
+      
+      <div>
+        <label className="block text-sm text-dream-foreground/70 mb-1">
+          Percentage Change Prediction
+        </label>
+        <div className="relative">
+          <Input
+            type="text"
+            value={percentageChange}
+            onChange={handlePercentageChange}
+            className="w-full p-3 bg-dream-surface border border-dream-foreground/20 rounded-md focus:outline-none focus:border-dream-accent2"
+          />
+          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dream-foreground/50">
+            %
+          </span>
+        </div>
+        <p className="text-xs text-dream-foreground/50 mt-1">
+          Predict how much the market cap will {prediction === 'moon' ? 'increase' : prediction === 'die' ? 'decrease' : 'change'} by
+        </p>
       </div>
       
       <div>
@@ -421,6 +464,22 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         </div>
       </div>
       
+      {prediction && (
+        <div className="p-3 bg-dream-surface/30 rounded-md">
+          <p className="text-sm text-dream-foreground/70">
+            You're betting that the market cap of {tokenData.symbol} will 
+            <span className={prediction === 'moon' ? ' text-green-400' : ' text-red-400'}>
+              {prediction === 'moon' ? ' increase' : ' decrease'} by {percentageChange}%
+            </span> within {duration} minutes.
+          </p>
+          {parseInt(amount, 10) > 0 && (
+            <p className="text-sm text-dream-foreground/70 mt-1">
+              If your prediction is correct, you'll win <span className="text-green-400">{parseInt(amount, 10) * 2} PXB Points</span>.
+            </p>
+          )}
+        </div>
+      )}
+      
       {transactionStatus && (
         <div className="bg-dream-accent2/10 p-3 rounded-md">
           <p className="flex items-center text-sm text-dream-accent2">
@@ -433,7 +492,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       <div className="flex gap-3">
         <Button
           onClick={handleCreateBet}
-          disabled={!isWalletReady || isSubmitting || !prediction || !amount || walletCheckingInProgress || !!successMessage || !userProfile}
+          disabled={!isWalletReady || isSubmitting || !prediction || !amount || !percentageChange || walletCheckingInProgress || !!successMessage || !userProfile}
           className="flex-1 bg-gradient-to-r from-dream-accent1 to-dream-accent3"
         >
           {isSubmitting ? (

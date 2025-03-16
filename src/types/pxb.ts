@@ -6,7 +6,7 @@ export interface UserProfile {
   createdAt: string;
 }
 
-// Updated to match Supabase schema names
+// Updated to match Supabase schema names and include percentage prediction
 export interface PXBBet {
   id: string;
   userId: string;
@@ -15,10 +15,13 @@ export interface PXBBet {
   tokenSymbol: string;
   betAmount: number;
   betType: 'up' | 'down';
+  percentageChange: number;
   status: 'pending' | 'won' | 'lost';
   pointsWon: number;
   createdAt: string;
   expiresAt: string;
+  initialMarketCap?: number;
+  currentMarketCap?: number;
 }
 
 // Database schema interfaces for type safety with Supabase
@@ -41,10 +44,13 @@ export interface SupabaseBetsRow {
   token_symbol?: string;
   sol_amount: number;
   prediction_bettor1: 'up' | 'down';
+  percentage_change: number;
   status: string;
   points_won?: number;
   created_at: string;
   duration: number;
+  initial_market_cap?: number;
+  current_market_cap?: number;
   tokens?: {
     token_name: string;
     token_symbol: string;

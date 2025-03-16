@@ -1,114 +1,123 @@
 
 import React, { useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Check, X, Clock, ArrowUp, ArrowDown } from 'lucide-react';
+import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
-const PXBBetsList: React.FC = () => {
-  const { bets, fetchUserBets, isLoading } = usePXBPoints();
+const PXBBetsList = () => {
+  const { bets, fetchUserBets } = usePXBPoints();
 
   useEffect(() => {
     fetchUserBets();
   }, [fetchUserBets]);
 
-  if (isLoading) {
+  if (!bets || bets.length === 0) {
     return (
-      <div className="glass-panel p-4 space-y-4">
-        <div className="h-6 bg-dream-foreground/10 rounded w-1/4 mb-2"></div>
-        {[1, 2, 3].map(i => (
-          <div key={i} className="animate-pulse bg-dream-foreground/5 p-3 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <div className="h-4 bg-dream-foreground/10 rounded w-1/3"></div>
-              <div className="h-4 bg-dream-foreground/10 rounded w-1/5"></div>
-            </div>
-            <div className="h-3 bg-dream-foreground/10 rounded w-2/3"></div>
-          </div>
-        ))}
+      <div className="glass-panel p-6">
+        <h2 className="font-semibold text-lg mb-4 flex items-center">
+          <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
+          Your PXB Bets
+        </h2>
+        <div className="text-center py-6">
+          <p className="text-dream-foreground/70 mb-4">You haven't placed any PXB bets yet</p>
+          <Button asChild>
+            <Link to="/betting">Place Your First Bet</Link>
+          </Button>
+        </div>
       </div>
     );
   }
-
-  if (bets.length === 0) {
-    return (
-      <div className="glass-panel p-6 text-center">
-        <p className="text-dream-foreground/70 mb-2">No bets placed yet</p>
-        <p className="text-sm text-dream-foreground/50">Place your first bet on a token to see it here</p>
-      </div>
-    );
-  }
-
-  // Calculate time remaining
-  const getTimeRemaining = (expiresAt: string) => {
-    const now = new Date();
-    const expires = new Date(expiresAt);
-    const diff = expires.getTime() - now.getTime();
-    
-    if (diff <= 0) return "Expired";
-    
-    const minutes = Math.floor(diff / 1000 / 60);
-    const seconds = Math.floor((diff / 1000) % 60);
-    
-    return `${minutes}m ${seconds}s`;
-  };
-
-  const getBetStatusIcon = (status: string) => {
-    switch(status) {
-      case 'won':
-        return <Check className="w-4 h-4 text-green-400" />;
-      case 'lost':
-        return <X className="w-4 h-4 text-red-400" />;
-      default:
-        return <Clock className="w-4 h-4 text-dream-accent2" />;
-    }
-  };
 
   return (
-    <div className="glass-panel p-4">
-      <h3 className="font-semibold text-lg mb-4">Your Bets</h3>
+    <div className="glass-panel p-6">
+      <h2 className="font-semibold text-lg mb-4 flex items-center">
+        <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
+        Your PXB Bets
+      </h2>
       
       <div className="space-y-3">
-        {bets.map(bet => (
-          <div key={bet.id} className={`p-3 rounded-lg ${
-            bet.status === 'pending' ? 'bg-dream-foreground/5' : 
-            bet.status === 'won' ? 'bg-green-500/10' : 'bg-red-500/10'
-          }`}>
-            <div className="flex justify-between">
-              <div className="flex items-center">
-                <div className="mr-2">
-                  {getBetStatusIcon(bet.status)}
+        {bets.map((bet) => {
+          const isActive = bet.status === 'pending';
+          const expiryDate = new Date(bet.expiresAt);
+          const timeLeft = isActive ? formatDistanceToNow(expiryDate, { addSuffix: true }) : '';
+          
+          let statusIcon;
+          let statusClass;
+          
+          if (bet.status === 'pending') {
+            statusIcon = <HelpCircle className="h-4 w-4 text-yellow-400" />;
+            statusClass = 'text-yellow-400';
+          } else if (bet.status === 'won') {
+            statusIcon = <CheckCircle className="h-4 w-4 text-green-400" />;
+            statusClass = 'text-green-400';
+          } else {
+            statusIcon = <XCircle className="h-4 w-4 text-red-400" />;
+            statusClass = 'text-red-400';
+          }
+          
+          return (
+            <div 
+              key={bet.id} 
+              className={`bg-dream-foreground/5 rounded-md p-4 border transition-all ${
+                isActive 
+                  ? 'border-yellow-400/30 animate-pulse-slow' 
+                  : bet.status === 'won' 
+                    ? 'border-green-400/30' 
+                    : 'border-red-400/30'
+              }`}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2">
+                    {bet.betType === 'up' 
+                      ? <ArrowUp className="h-4 w-4 text-green-400" />
+                      : <ArrowDown className="h-4 w-4 text-red-400" />
+                    }
+                  </div>
+                  <div>
+                    <p className="font-semibold">{bet.tokenSymbol}</p>
+                    <p className="text-xs text-dream-foreground/60">{bet.tokenName}</p>
+                  </div>
                 </div>
-                <span className="font-medium">{bet.tokenSymbol}</span>
+                
+                <div className="text-right">
+                  <p className="font-semibold">{bet.betAmount} PXB</p>
+                  <p className="text-xs text-dream-foreground/60">
+                    Prediction: {bet.betType === 'up' ? 'MOON' : 'DIE'} by {bet.percentageChange}%
+                  </p>
+                </div>
               </div>
               
-              <div className="flex items-center text-sm">
-                <span className={bet.status === 'won' ? 'text-green-400' : 
-                  bet.status === 'lost' ? 'text-red-400' : 'text-dream-foreground/70'}>
-                  {bet.status === 'won' ? `+${bet.pointsWon} PXB` : 
-                   bet.status === 'lost' ? '-' + bet.betAmount + ' PXB' : 
-                   bet.betAmount + ' PXB'}
-                </span>
-              </div>
-            </div>
-            
-            <div className="flex justify-between mt-2 text-xs text-dream-foreground/60">
-              <div className="flex items-center">
-                {bet.betType === 'up' ? (
-                  <ArrowUp className="w-3 h-3 mr-1 text-green-400" />
-                ) : (
-                  <ArrowDown className="w-3 h-3 mr-1 text-red-400" />
+              <div className="flex justify-between items-center text-xs">
+                <div className="flex items-center">
+                  {statusIcon}
+                  <span className={`ml-1 ${statusClass}`}>
+                    {bet.status === 'pending' ? 'Active' : bet.status === 'won' ? 'Won' : 'Lost'}
+                  </span>
+                  {isActive && (
+                    <span className="ml-2 text-dream-foreground/60">
+                      Ends {timeLeft}
+                    </span>
+                  )}
+                </div>
+                
+                {bet.status === 'won' && (
+                  <span className="text-green-400 font-semibold">
+                    +{bet.pointsWon} PXB
+                  </span>
                 )}
-                <span>{bet.betType === 'up' ? 'Moon' : 'Die'}</span>
-              </div>
-              
-              <div className="flex items-center">
-                <Clock className="w-3 h-3 mr-1" />
-                <span>
-                  {bet.status === 'pending' ? getTimeRemaining(bet.expiresAt) : 
-                   new Date(bet.createdAt).toLocaleString()}
-                </span>
+                
+                {!isActive && bet.currentMarketCap && bet.initialMarketCap && (
+                  <span className="text-dream-foreground/60">
+                    Market cap change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
+                  </span>
+                )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
