@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 
 import SolanaWalletProvider from './providers/SolanaWalletProvider';
+import { PXBPointsProvider } from './contexts/PXBPointsContext';
 import Navbar from './components/Navbar';
 import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
@@ -24,27 +25,29 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SolanaWalletProvider>
-        <Router>
-          <div className="min-h-screen bg-dream-background text-dream-foreground overflow-x-hidden">
-            <Navbar />
-            <BetReel />
-            
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/betting" element={<BettingDashboard />} />
-              <Route path="/betting/token/:tokenId" element={<TokenBetting />} />
-              <Route path="/my-bets" element={<MyBets />} />
-              <Route path="/betting/points" element={<PointsBettingDashboard />} />
-              <Route path="/token/:tokenId" element={<TokenDetail />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            
-            <PXBBetCreatedAlert />
-            <Toaster position="bottom-right" />
-          </div>
-        </Router>
+        <PXBPointsProvider>
+          <Router>
+            <div className="min-h-screen bg-dream-background text-dream-foreground overflow-x-hidden">
+              <Navbar />
+              <BetReel />
+              
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/betting" element={<BettingDashboard />} />
+                <Route path="/betting/token/:tokenId" element={<TokenBetting />} />
+                <Route path="/my-bets" element={<MyBets />} />
+                <Route path="/betting/points" element={<PointsBettingDashboard />} />
+                <Route path="/token/:tokenId" element={<TokenDetail />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              
+              <PXBBetCreatedAlert />
+              <Toaster position="bottom-right" />
+            </div>
+          </Router>
+        </PXBPointsProvider>
       </SolanaWalletProvider>
     </QueryClientProvider>
   );
