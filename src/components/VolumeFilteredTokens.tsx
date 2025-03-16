@@ -97,8 +97,8 @@ const VolumeFilteredTokens: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {tokensAbove15k.map((token) => (
             <TokenCard 
-              key={token.address || token.id} 
-              token={transformSupabaseTokenToCardData(token)} 
+              key={token.token_mint || token.id} 
+              {...transformSupabaseTokenToCardData(token)} 
             />
           ))}
         </div>

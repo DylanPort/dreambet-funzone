@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users } from 'lucide-react';
@@ -18,8 +17,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PXBPointsProvider } from '@/contexts/pxb/PXBPointsContext';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
-import VolumeFilteredTokens from "@/components/VolumeFilteredTokens";
-import TopPumpFunTokensByVolume from "@/components/TopPumpFunTokensByVolume";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
 
@@ -303,14 +300,6 @@ const Index = () => {
                 <div className="glass-panel p-6">
                   <PXBLeaderboard />
                 </div>
-              </div>
-              
-              <div className="mt-12">
-                <VolumeFilteredTokens />
-              </div>
-              
-              <div className="mt-12">
-                <TopPumpFunTokensByVolume />
               </div>
             </PXBPointsProvider>
           </div>
