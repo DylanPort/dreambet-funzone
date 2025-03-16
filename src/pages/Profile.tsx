@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
-import { Clock, TrendingUp, TrendingDown, Settings, History, Coins, Activity, Filter, RefreshCw, User, Plus } from 'lucide-react';
+import { Clock, TrendingUp, TrendingDown, Settings, History, Coins, Activity, Filter, RefreshCw, User, Plus, Save, X, Edit2 } from 'lucide-react';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
 import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile, UserBet, UserStats } from '@/services/userService';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
 
 const Profile = () => {
   
@@ -32,6 +33,8 @@ const Profile = () => {
   const [betsFilter, setBetsFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [isMintingPoints, setIsMintingPoints] = useState(false);
   const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -191,6 +194,7 @@ const Profile = () => {
       return;
     }
     
+    setIsSavingUsername(true);
     const walletAddress = publicKey.toString();
     const success = await updateUsername(walletAddress, usernameInput);
     
@@ -199,7 +203,21 @@ const Profile = () => {
         ...user,
         username: usernameInput
       });
+      fetchPXBUserProfile();
+      toast.success("Username updated successfully");
+      setIsEditingUsername(false);
     }
+    setIsSavingUsername(false);
+  };
+
+  const startEditingUsername = () => {
+    setUsernameInput(user?.username || userProfile?.username || '');
+    setIsEditingUsername(true);
+  };
+
+  const cancelEditingUsername = () => {
+    setIsEditingUsername(false);
+    setUsernameInput(user?.username || userProfile?.username || '');
   };
 
   const handleRefresh = () => {
@@ -352,7 +370,62 @@ const Profile = () => {
             </div>
             
             <div className="text-center md:text-left">
-              <h1 className="text-2xl md:text-3xl font-display font-bold">{user?.username || publicKey.toString().substring(0, 8) || 'DreamPredictor'}</h1>
+              {isEditingUsername ? (
+                <div className="flex flex-col md:flex-row gap-2 items-center">
+                  <Input
+                    type="text"
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    placeholder="Enter new username"
+                    className="px-3 py-2 w-full md:w-auto"
+                    autoFocus
+                  />
+                  <div className="flex gap-2 mt-2 md:mt-0">
+                    <Button 
+                      onClick={handleUpdateProfile} 
+                      disabled={isSavingUsername}
+                      size="sm" 
+                      className="bg-dream-accent1 hover:bg-dream-accent1/80"
+                    >
+                      {isSavingUsername ? (
+                        <>
+                          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
+                          Saving
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-1" />
+                          Save
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      onClick={cancelEditingUsername} 
+                      variant="outline" 
+                      size="sm"
+                      className="border-dream-foreground/20 hover:bg-dream-foreground/5"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl md:text-3xl font-display font-bold">
+                    {user?.username || publicKey.toString().substring(0, 8) || 'DreamPredictor'}
+                  </h1>
+                  <Button 
+                    onClick={startEditingUsername} 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-foreground/10"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span className="sr-only">Edit username</span>
+                  </Button>
+                </div>
+              )}
               <p className="text-dream-foreground/60">{publicKey.toString()}</p>
               <p className="text-dream-foreground/60 text-sm mt-1">
                 <Clock className="inline w-3 h-3 mr-1" />
