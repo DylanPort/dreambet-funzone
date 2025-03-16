@@ -220,56 +220,18 @@ const Index = () => {
             
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="relative overflow-hidden group text-white text-lg px-8 py-6 
-                  rounded-xl transition-all duration-500 border border-white/10 backdrop-blur-lg
-                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px]
-                  hover:border-purple-400/50
-                  before:content-[''] before:absolute before:inset-0 
-                  before:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]
-                  before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100
-                  after:content-[''] after:absolute after:inset-0 after:-z-10 after:rounded-xl
-                  after:shadow-[0_0_30px_rgba(246,148,92,0.5)] after:opacity-50 hover:after:opacity-100
-                  after:transition-all after:duration-500 hover:after:shadow-[0_0_50px_rgba(246,148,92,0.8)]
-                  [&>span]:relative [&>span]:z-10
-                  group-hover:[&>span]:text-transparent group-hover:[&>span]:bg-gradient-to-r 
-                  group-hover:[&>span]:from-yellow-300 group-hover:[&>span]:to-orange-400">
-                  <span className="relative z-10 flex items-center font-bold text-white bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text drop-shadow-[0_0_10px_rgba(246,148,92,0.8)]">
+                <div className="relative cursor-pointer group transition-all duration-300 hover:scale-110 active:scale-95">
+                  <img 
+                    src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" 
+                    alt="Mint PXB Points" 
+                    className="w-16 h-16 md:w-20 md:h-20 animate-float filter drop-shadow-[0_0_15px_rgba(246,148,92,0.8)]" 
+                  />
+                  <div className="absolute inset-0 bg-yellow-500/30 rounded-full blur-xl animate-pulse-glow opacity-60"></div>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full blur-md opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+                  <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 whitespace-nowrap text-sm bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent font-bold">
                     {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
-                    <Coins className="ml-2 h-5 w-5 group-hover:animate-bounce transition-transform duration-300 text-yellow-500 filter drop-shadow-[0_0_8px_rgba(246,148,92,0.8)]" />
                   </span>
-                  
-                  
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400 via-orange-300 to-yellow-600
-                      animate-gradient-move bg-[length:400%_100%] opacity-70 transform-gpu"></div>
-                    
-                    <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-yellow-500 via-orange-400 via-yellow-500 to-orange-600
-                      opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500
-                      group-hover:blur-2xl animate-pulse-glow"></div>
-                    
-                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-xl">
-                      <div className="absolute -inset-[10px] bg-[radial-gradient(circle_at_50%_50%,rgba(246,148,92,0.5),transparent_60%)]
-                        animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                      
-                      <div className="absolute -bottom-2 left-0 right-0 h-12 bg-gradient-to-t from-yellow-400 via-orange-300 to-transparent
-                        filter blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500
-                        animate-bob [mask-image:linear-gradient(to_bottom,transparent,black)]"></div>
-                      
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-700">
-                        <div className="absolute top-[20%] left-[15%] w-4 h-4 rounded-full bg-yellow-300 filter blur-sm animate-float"></div>
-                        <div className="absolute top-[40%] left-[75%] w-3 h-3 rounded-full bg-orange-300 filter blur-sm animate-float-delayed"></div>
-                        <div className="absolute top-[70%] left-[30%] w-2 h-2 rounded-full bg-yellow-300 filter blur-sm animate-float-delayed-2"></div>
-                        <img 
-                          src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" 
-                          alt="Diamond" 
-                          className="absolute top-[45%] left-[50%] w-12 h-12 transform -translate-x-1/2 -translate-y-1/2 animate-float filter drop-shadow-[0_0_10px_rgba(246,148,92,0.8)]" 
-                        />
-                      </div>
-                      
-                      <div className="absolute inset-x-4 top-0 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
-                      <div className="absolute inset-x-8 bottom-0 h-[30%] bg-gradient-to-t from-black/40 to-transparent rounded-b-xl opacity-10 group-hover:opacity-40 transition-opacity duration-500"></div>
-                    </div>
-                  
-                </Button>
+                </div>
               </DialogTrigger>
               <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
                 <PXBOnboarding />
