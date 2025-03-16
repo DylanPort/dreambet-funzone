@@ -100,7 +100,7 @@ export const isAuthRateLimited = async () => {
     if (error && (
       error.message.includes('rate limit') || 
       error.code === '429' || 
-      error.status === 429
+      (typeof error.code === 'string' && error.code === '429')
     )) {
       console.warn('Supabase API rate limit detected:', error);
       rateLimitDetectedAt = Date.now();

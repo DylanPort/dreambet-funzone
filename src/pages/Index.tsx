@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins } from 'lucide-react';
@@ -13,6 +12,7 @@ import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pum
 import PXBOnboarding from '@/components/PXBOnboarding';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import RecentTokenTrades from '@/components/RecentTokenTrades';
 
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
@@ -36,7 +36,6 @@ const Index = () => {
     if (tokens.length < 3 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
       for (let i = 0; i < Math.min(3 - tokens.length, pumpPortal.rawTokens.length); i++) {
         const rawToken = pumpPortal.rawTokens[i];
-        // Ensure we don't add tokens with duplicate IDs
         if (!tokens.some(t => t.id === rawToken.mint)) {
           tokens.push({
             id: rawToken.mint,
@@ -52,7 +51,6 @@ const Index = () => {
     }
     while (tokens.length < 3) {
       const placeholderId = `placeholder-${tokens.length}`;
-      // Check if placeholder already exists
       if (!tokens.some(t => t.id === placeholderId)) {
         tokens.push({
           id: placeholderId,
@@ -202,6 +200,10 @@ const Index = () => {
           
           <div className="relative max-w-5xl mx-auto h-[300px] md:h-[400px] mb-16">
             <FuturisticTokenDisplay tokens={latestTokens} />
+          </div>
+          
+          <div className="max-w-5xl mx-auto mb-16">
+            <RecentTokenTrades />
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">

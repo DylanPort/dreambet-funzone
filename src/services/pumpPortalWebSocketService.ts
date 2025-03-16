@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 
 // Types for WebSocket messages
@@ -64,6 +65,18 @@ export interface RawTokenCreationEvent {
   liquidity?: number;
 }
 
+// Raw token trade format from PumpPortal
+export interface RawTokenTradeEvent {
+  signature: string;
+  mint: string;
+  traderPublicKey: string;
+  txType: 'buy' | 'sell';
+  tokenAmount: number;
+  pricePerToken: number;
+  solAmount: number;
+  timestamp?: string;
+}
+
 export type PumpPortalEvent = NewTokenEvent | TokenTradeEvent | RaydiumLiquidityEvent | TokenMetricsEvent;
 
 interface PumpPortalState {
@@ -71,6 +84,7 @@ interface PumpPortalState {
   connecting: boolean;
   recentTokens: NewTokenEvent['data'][];
   rawTokens: RawTokenCreationEvent[];
+  recentRawTrades: RawTokenTradeEvent[];
   recentTrades: Record<string, TokenTradeEvent['data'][]>;
   recentLiquidity: Record<string, RaydiumLiquidityEvent['data']>;
   tokenMetrics: Record<string, TokenMetricsEvent['data']>;
@@ -143,6 +157,7 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
   connecting: false,
   recentTokens: [],
   rawTokens: [],
+  recentRawTrades: [],
   recentTrades: {},
   recentLiquidity: {},
   tokenMetrics: {},
@@ -201,6 +216,12 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
           }
         };
       });
+    }, 500);
+
+    const debouncedRawTradeUpdate = debounce((newTrades: RawTokenTradeEvent[]) => {
+      set((state) => ({
+        recentRawTrades: [...newTrades, ...state.recentRawTrades].slice(0, 50)
+      }));
     }, 500);
 
     websocket.onmessage = (event) => {
@@ -322,6 +343,29 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
             }));
           }
         }
+        // Handle raw token trade format (buy/sell transactions)
+        else if ((rawData.txType === 'buy' || rawData.txType === 'sell') && rawData.mint) {
+          const tradeEvent = rawData as RawTokenTradeEvent;
+          
+          // Add to raw trades store
+          set((state) => ({
+            recentRawTrades: [tradeEvent, ...state.recentRawTrades].slice(0, 50)
+          }));
+          
+          // Also convert to standard format for compatibility
+          const standardFormat: TokenTradeEvent['data'] = {
+            token_mint: tradeEvent.mint,
+            price: tradeEvent.pricePerToken || 0,
+            amount: tradeEvent.tokenAmount || 0,
+            timestamp: tradeEvent.timestamp || new Date().toISOString(),
+            buyer: tradeEvent.txType === 'buy' ? tradeEvent.traderPublicKey : '',
+            seller: tradeEvent.txType === 'sell' ? tradeEvent.traderPublicKey : '',
+            side: tradeEvent.txType as 'buy' | 'sell'
+          };
+          
+          // Add to token-specific trades
+          debouncedTradeUpdate(tradeEvent.mint, [standardFormat]);
+        }
         // Log unknown formats for debugging
         else {
           console.info('Unknown message type:', rawData);
@@ -402,6 +446,19 @@ export const getLatestPriceFromTrades = (trades: TokenTradeEvent['data'][]) => {
     return 0;
   }
   return trades[0].price;
+};
+
+// Format a raw trade event for display
+export const formatRawTrade = (trade: RawTokenTradeEvent) => {
+  return {
+    mint: trade.mint,
+    type: trade.txType,
+    amount: trade.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+    price: trade.pricePerToken.toFixed(9),
+    solAmount: trade.solAmount.toFixed(3),
+    trader: `${trade.traderPublicKey.substring(0, 4)}...${trade.traderPublicKey.substring(trade.traderPublicKey.length - 4)}`,
+    timestamp: trade.timestamp || new Date().toISOString()
+  };
 };
 
 // Initialize websocket on import
