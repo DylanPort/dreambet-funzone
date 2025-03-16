@@ -74,7 +74,7 @@ const Navbar = () => {
               <div className="w-10 h-10 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
               </div>
-              <span>Betting</span>
+              <span>Playground</span>
             </Link>
             <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-10 h-10 flex items-center justify-center transition-transform hover:scale-105">
