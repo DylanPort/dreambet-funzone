@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -17,7 +18,7 @@ import {
 import {
   useFetchTokenPrice,
   useGetTokenMeta,
-  useGetToken মার্কেটCap,
+  useGetTokenMarketCap,
 } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
@@ -48,10 +49,10 @@ const TokenDetail = () => {
     error: tokenPriceError,
   } = useFetchTokenPrice();
   const {
-    getToken মার্কেটCap,
-    isLoading: isToken মার্কেটCapLoading,
-    error: token মার্কেটCapError,
-  } = useGetToken মার্কেটCap();
+    getTokenMarketCap,
+    isLoading: isTokenMarketCapLoading,
+    error: tokenMarketCapError,
+  } = useGetTokenMarketCap();
 
   const refreshData = () => {
     setRefreshKey((prevKey) => prevKey + 1);
@@ -93,13 +94,13 @@ const TokenDetail = () => {
         console.log(`Fetching token data for token address: ${tokenId}`);
         const tokenMeta = await getTokenMeta(tokenId);
         const tokenPrice = await getTokenPrice(tokenId);
-        const token মার্কেটCap = await getToken মার্কেটCap(tokenId);
+        const tokenMarketCap = await getTokenMarketCap(tokenId);
 
         if (tokenMeta) {
           setTokenData({
             ...tokenMeta,
             price: tokenPrice?.price,
-            marketCap: token মার্কেটCap?.market_cap,
+            marketCap: tokenMarketCap?.market_cap,
           });
         } else {
           toast.error('Token with specified address not found.');
@@ -118,7 +119,7 @@ const TokenDetail = () => {
     publicKey,
     getTokenMeta,
     getTokenPrice,
-    getToken মার্কেটCap,
+    getTokenMarketCap,
   ]);
 
   useEffect(() => {
