@@ -75,6 +75,32 @@ const BetCard: React.FC<BetCardProps> = ({
     statusClass = 'text-red-400';
   }
   
+  // Format large numbers with appropriate units (K, M, B)
+  const formatLargeNumber = (num) => {
+    if (num === null || num === undefined) return "N/A";
+    
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    } else if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    } else if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    } else {
+      return `$${num.toFixed(2)}`;
+    }
+  };
+  
+  // Calculate target market cap for winning
+  const calculateWinningMarketCap = () => {
+    if (!bet.initialMarketCap) return null;
+    
+    return bet.prediction === 'migrate'
+      ? bet.initialMarketCap * 1.1  // 10% increase
+      : bet.initialMarketCap * 0.9; // 10% decrease
+  };
+  
+  const winningMarketCap = calculateWinningMarketCap();
+  
   return (
     <div 
       className={`glass-panel p-4 border transition-all ${
@@ -107,8 +133,24 @@ const BetCard: React.FC<BetCardProps> = ({
         </div>
       </div>
       
-      {/* Progress Indicator */}
-      {progress !== null && (
+      {/* Market Cap Info */}
+      <div className="grid grid-cols-2 gap-2 mb-3 mt-2 text-xs">
+        <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+          <div className="text-dream-foreground/50 mb-1">Entry MCAP</div>
+          <div className="font-medium">
+            {formatLargeNumber(bet.initialMarketCap || 0)}
+          </div>
+        </div>
+        <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+          <div className="text-dream-foreground/50 mb-1">Win MCAP</div>
+          <div className="font-medium">
+            {formatLargeNumber(winningMarketCap || 0)}
+          </div>
+        </div>
+      </div>
+      
+      {/* Progress Indicator - only for active bets */}
+      {isActive && progress !== null && (
         <div className="mb-3 mt-3">
           <div className="flex justify-between text-xs mb-1">
             <span className="text-dream-foreground/60">Progress towards target</span>
@@ -130,50 +172,55 @@ const BetCard: React.FC<BetCardProps> = ({
       )}
       
       <div className="flex justify-between items-center text-xs">
-        <div className="flex items-center">
-          {statusIcon}
-          <span className={`ml-1 ${statusClass}`}>
-            {bet.status === 'open' ? 'Active' : bet.status === 'completed' && bet.winner === publicKeyString ? 'Won' : 'Lost'}
-          </span>
-          {isActive && (
-            <span className="ml-2 text-dream-foreground/60">
-              Ends {timeLeft}
+        {/* For active bets, show status and time left */}
+        {isActive ? (
+          <>
+            <div className="flex items-center">
+              {statusIcon}
+              <span className={`ml-1 ${statusClass}`}>Active</span>
+              <span className="ml-2 text-dream-foreground/60">
+                Ends {timeLeft}
+              </span>
+            </div>
+            <span className="text-dream-foreground/60">
+              Current: {formatLargeNumber(bet.currentMarketCap || 0)}
             </span>
-          )}
-        </div>
-        
-        {bet.status === 'completed' && bet.winner === publicKeyString && (
-          <span className="text-green-400 font-semibold">
-            +{bet.amount * 2} SOL
-          </span>
-        )}
-        
-        {!isActive && bet.currentMarketCap && bet.initialMarketCap && (
-          <span className="text-dream-foreground/60">
-            Final change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
-          </span>
-        )}
-      </div>
-      
-      {/* House betting explanation */}
-      <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
-        {bet.status === 'open' ? (
-          <p>Betting against the house: If you win, you'll earn {bet.amount} SOL from the house.</p>
-        ) : bet.status === 'completed' && bet.winner === publicKeyString ? (
-          <p>You won {bet.amount * 2} SOL from the house!</p>
+          </>
         ) : (
-          <p>Your {bet.amount} SOL has returned to the house.</p>
+          /* For expired bets, simply show win/loss status */
+          <div className="w-full flex justify-center items-center py-1">
+            {bet.status === 'completed' && bet.winner === publicKeyString ? (
+              <span className="text-green-400 font-semibold flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2" /> WIN (+{bet.amount * 2} SOL)
+              </span>
+            ) : (
+              <span className="text-red-400 font-semibold flex items-center">
+                <XCircle className="h-4 w-4 mr-2" /> LOSS
+              </span>
+            )}
+          </div>
         )}
       </div>
       
-      {isActive && publicKeyString !== bet.initiator && (
-        <Button 
-          onClick={handleAcceptBet}
-          className="w-full mt-3"
-          disabled={!connected}
-        >
-          Bet Against This
-        </Button>
+      {/* Additional info only for active bets */}
+      {isActive && (
+        <>
+          {/* House betting explanation */}
+          <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
+            <p>Betting against the house: If you win, you'll earn {bet.amount} SOL from the house.</p>
+          </div>
+          
+          {/* Accept bet button */}
+          {publicKeyString !== bet.initiator && (
+            <Button 
+              onClick={handleAcceptBet}
+              className="w-full mt-3"
+              disabled={!connected}
+            >
+              Bet Against This
+            </Button>
+          )}
+        </>
       )}
     </div>
   );
