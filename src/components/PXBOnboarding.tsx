@@ -144,88 +144,78 @@ const PXBOnboarding: React.FC = () => {
               <WalletConnectButton />
             </div>
           </div>
-        ) : alreadyClaimed ? (
-          <div className="p-4 border border-green-500/20 rounded-lg bg-green-500/5 text-center">
-            <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
-            <p className="text-dream-foreground/90 font-medium">
-              You've already claimed your PXB Points!
-            </p>
-            <p className="text-dream-foreground/70 text-sm mt-2">
-              Current balance: {userProfile?.pxbPoints || 0} PXB Points
-            </p>
-            
-            <div className="mt-4 space-y-4">
-              <div>
-                <label htmlFor="username-update" className="block text-sm text-dream-foreground/70 mb-1 text-left">
-                  Your Username
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    id="username-update"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your username"
-                    className="w-full bg-dream-foreground/5"
-                  />
-                  <Button 
-                    onClick={handleSaveUsername}
-                    disabled={isUpdatingUsername || username === userProfile?.username || !username.trim()}
-                    className="bg-green-500/80 hover:bg-green-500 text-white"
-                    title="Save username"
-                  >
-                    {isUpdatingUsername ? 
-                      <div className="flex items-center">
-                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
-                        <span>Saving</span>
-                      </div> : 
-                      <UserCheck className="w-4 h-4" />
-                    }
-                  </Button>
-                </div>
-                {userProfile?.username !== username && username.trim() && (
-                  <p className="text-xs text-dream-accent2 mt-1 text-left">
-                    Click save to update your username
-                  </p>
-                )}
-              </div>
-              
-              <Button 
-                className="w-full bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-all duration-300"
-                disabled={true}
-              >
-                Points Already Claimed
-              </Button>
-            </div>
-          </div>
         ) : (
-          <form onSubmit={handleMint} className="space-y-4">
+          <div className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm text-dream-foreground/70 mb-1 text-left">
-                Your Username (optional)
+              <label htmlFor="username-update" className="block text-sm text-dream-foreground/70 mb-1 text-left">
+                Your Username
               </label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter a username or use wallet address"
-                className="w-full bg-dream-foreground/5"
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="username-update"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
+                  className="w-full bg-dream-foreground/5"
+                />
+                <Button 
+                  onClick={handleSaveUsername}
+                  disabled={isUpdatingUsername || username === userProfile?.username || !username.trim()}
+                  className="bg-green-500/80 hover:bg-green-500 text-white"
+                  title="Save username"
+                >
+                  {isUpdatingUsername ? 
+                    <div className="flex items-center">
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
+                      <span>Saving</span>
+                    </div> : 
+                    <UserCheck className="w-4 h-4" />
+                  }
+                </Button>
+              </div>
+              {userProfile?.username !== username && username.trim() && (
+                <p className="text-xs text-dream-accent2 mt-1 text-left">
+                  Click save to update your username
+                </p>
+              )}
             </div>
-            <Button 
-              type="submit" 
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
-              disabled={isLoading || hasClaimedPoints}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <span>Claiming...</span>
-                </div>
-              ) : hasClaimedPoints ? 
-                "Points Claimed!" : 
-                'Claim 500 PXB Points'}
-            </Button>
-          </form>
+            
+            {alreadyClaimed ? (
+              <div className="p-4 border border-green-500/20 rounded-lg bg-green-500/5 text-center">
+                <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                <p className="text-dream-foreground/90 font-medium">
+                  You've already claimed your PXB Points!
+                </p>
+                <p className="text-dream-foreground/70 text-sm mt-2">
+                  Current balance: {userProfile?.pxbPoints || 0} PXB Points
+                </p>
+                
+                <Button 
+                  className="w-full mt-4 bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-all duration-300"
+                  disabled={true}
+                >
+                  Points Already Claimed
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleMint} className="space-y-4">
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
+                  disabled={isLoading || hasClaimedPoints}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <span>Claiming...</span>
+                    </div>
+                  ) : hasClaimedPoints ? 
+                    "Points Claimed!" : 
+                    'Claim 500 PXB Points'}
+                </Button>
+              </form>
+            )}
+          </div>
         )}
         
         <div className="mt-6 text-sm text-dream-foreground/50 text-center">
