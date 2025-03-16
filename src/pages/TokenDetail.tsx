@@ -2,28 +2,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
-import {
-  getParsedNftAccountsByOwner,
-  isValidSolanaAddress,
-} from '@nfteyez/sol-nft-parser';
 import { Connection, PublicKey } from '@solana/web3.js';
-import {
-  getTokenAccountsByOwner,
-  parseTokenAccount,
-} from '@nx-dapp/solana-utils';
-import {
-  DEFAULT_STRATEGIES,
-  useAssetList,
-} from '@solana/wallet-adapter-react-ui';
-import {
-  useFetchTokenPrice,
-  useGetTokenMeta,
-  useGetTokenMarketCap,
-} from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { CreateBetForm } from '@/components';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -31,10 +13,87 @@ import {
   DialogContent,
 } from '@/components/ui/dialog';
 
+// Mock component for CreateBetForm
+const CreateBetForm = ({
+  tokenId,
+  tokenName,
+  tokenSymbol,
+  onBetCreated,
+  token,
+  onSuccess,
+  onCancel,
+}) => {
+  return (
+    <div className="p-6">
+      <h2 className="text-2xl font-bold text-dream-foreground mb-4">Create Bet for {tokenName}</h2>
+      <p className="mb-4 text-dream-foreground/70">
+        Create a new bet for token {tokenSymbol || 'Unknown'}
+      </p>
+      <Button 
+        onClick={onSuccess} 
+        className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent3 text-white"
+      >
+        Submit Bet
+      </Button>
+    </div>
+  );
+};
+
+// Mock hooks for token data
+const useGetTokenMeta = () => {
+  return {
+    getTokenMeta: async (tokenId) => {
+      return {
+        name: `Token ${tokenId.substring(0, 4)}`,
+        symbol: 'TKN',
+        decimals: 9,
+      };
+    },
+    isLoading: false,
+    error: null,
+  };
+};
+
+const useFetchTokenPrice = () => {
+  return {
+    getTokenPrice: async (tokenId) => {
+      return {
+        price: 1.23,
+        change_24h: 5.6,
+      };
+    },
+    isLoading: false,
+    error: null,
+  };
+};
+
+const useGetTokenMarketCap = () => {
+  return {
+    getTokenMarketCap: async (tokenId) => {
+      return {
+        market_cap: 1234567,
+        volume_24h: 98765,
+      };
+    },
+    isLoading: false,
+    error: null,
+  };
+};
+
+// Mock function for Solana address validation
+const isValidSolanaAddress = (address) => {
+  try {
+    new PublicKey(address);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 const TokenDetail = () => {
-  const { tokenId } = useParams<{ tokenId: string }>();
+  const { tokenId } = useParams();
   const { publicKey, connected } = useWallet();
-  const [tokenData, setTokenData] = useState<any>(null);
+  const [tokenData, setTokenData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -66,47 +125,22 @@ const TokenDetail = () => {
 
     setIsLoading(true);
     try {
-      if (isValidSolanaAddress(tokenId)) {
-        // Fetch NFT Data
-        console.log(`Fetching NFT data for mint address: ${tokenId}`);
-        const connection = new Connection(
-          process.env.NEXT_PUBLIC_SOLANA_NETWORK_URL!
-        );
-        const nftArray = await getParsedNftAccountsByOwner({
-          publicAddress: publicKey!.toBase58(),
-          connection,
+      // Simplified token fetching logic
+      console.log(`Fetching token data for token address: ${tokenId}`);
+      const tokenMeta = await getTokenMeta(tokenId);
+      const tokenPrice = await getTokenPrice(tokenId);
+      const tokenMarketCap = await getTokenMarketCap(tokenId);
+
+      if (tokenMeta) {
+        setTokenData({
+          ...tokenMeta,
+          price: tokenPrice?.price,
+          marketCap: tokenMarketCap?.market_cap,
         });
-
-        const nft = nftArray.find((nft) => nft.mint === tokenId);
-
-        if (nft) {
-          setTokenData({
-            name: nft.data.name,
-            symbol: nft.data.symbol,
-            image: nft.data.uri,
-            mint: nft.mint,
-          });
-        } else {
-          toast.error('NFT with specified mint address not found in wallet.');
-        }
       } else {
-        // Fetch Token Data
-        console.log(`Fetching token data for token address: ${tokenId}`);
-        const tokenMeta = await getTokenMeta(tokenId);
-        const tokenPrice = await getTokenPrice(tokenId);
-        const tokenMarketCap = await getTokenMarketCap(tokenId);
-
-        if (tokenMeta) {
-          setTokenData({
-            ...tokenMeta,
-            price: tokenPrice?.price,
-            marketCap: tokenMarketCap?.market_cap,
-          });
-        } else {
-          toast.error('Token with specified address not found.');
-        }
+        toast.error('Token with specified address not found.');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching token data:', error);
       toast.error(
         error.message || 'Failed to fetch token data. Please try again.'
@@ -116,7 +150,6 @@ const TokenDetail = () => {
     }
   }, [
     tokenId,
-    publicKey,
     getTokenMeta,
     getTokenPrice,
     getTokenMarketCap,
@@ -175,7 +208,7 @@ const TokenDetail = () => {
                 Create a New Bet
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] p-0 border-dream-foreground/20 bg-dream-background">
+            <DialogContent className="sm:max-w-[550px] p-0 border-dream-foreground/20 bg-dream-background backdrop-blur-md">
               <CreateBetForm
                 tokenId={tokenId}
                 tokenName={tokenData?.name || ''}
