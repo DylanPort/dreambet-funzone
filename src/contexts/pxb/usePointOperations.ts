@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
@@ -230,7 +231,10 @@ export const usePointOperations = (
         timestamp: new Date().getTime(),
         expiresAt: new Date(new Date().getTime() + (durationSeconds * 1000)).getTime(),
         status: 'open',
-        duration: durationMinutes
+        duration: durationMinutes,
+        // Add the required properties with default values
+        onChainBetId: '',
+        transactionSignature: ''
       };
       
       const newBetCreatedEvent = new CustomEvent('newBetCreated', {

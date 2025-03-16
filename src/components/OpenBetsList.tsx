@@ -48,7 +48,10 @@ const OpenBetsList = () => {
         timestamp: new Date(pb.createdAt).getTime(),
         expiresAt: new Date(pb.expiresAt).getTime(),
         status: 'open',
-        duration: 30 // Default duration in minutes
+        duration: 30, // Default duration in minutes
+        // Add the required properties with default values
+        onChainBetId: '',
+        transactionSignature: ''
       }));
       
       // Only add fallback bets and PXB bets that don't exist in supabaseBets

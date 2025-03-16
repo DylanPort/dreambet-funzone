@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -41,7 +42,10 @@ const BetReel: React.FC = () => {
           timestamp: new Date(pb.createdAt).getTime(),
           expiresAt: new Date(pb.expiresAt).getTime(),
           status: 'open',
-          duration: 30
+          duration: 30,
+          // Add the required properties with default values
+          onChainBetId: '',
+          transactionSignature: ''
         }));
         
         const combinedBets = [...active];
