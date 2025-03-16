@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
@@ -161,28 +161,37 @@ const Index = () => {
                   </div>
                 </div>
                 
-                <div className="p-4 bg-gradient-to-b from-black/5 to-black/20">
-                  <h3 className="text-center font-bold mb-3 text-white">
-                    <span className="relative inline-block">
+                <div className="p-4 bg-gradient-to-b from-black/10 to-black/30 relative overflow-hidden">
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-gradient-to-r from-pink-300/20 via-purple-300/20 to-indigo-300/20 rounded-full blur-2xl"></div>
+                  
+                  <h3 className="text-center relative z-10">
+                    <span className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-200 via-pink-300 to-yellow-200 bg-clip-text text-transparent font-bold text-2xl animate-text-shimmer pb-2">
+                      <Cake className="h-6 w-6 text-pink-300 animate-pulse-subtle" />
                       It's that simple
-                      <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-dream-accent1 to-dream-accent2"></div>
+                      <PartyPopper className="h-6 w-6 text-yellow-300 animate-bob" />
                     </span>
                   </h3>
                   
-                  <div className="flex justify-around flex-wrap gap-2">
-                    <div className="relative px-4 py-2 glass-panel hover:bg-white/10 transition-colors rounded-lg">
-                      <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-dream-accent1/30 flex items-center justify-center text-sm font-bold">1</div>
-                      <span className="text-white">predict</span>
+                  <div className="flex justify-around flex-wrap gap-4 mt-4 relative z-10">
+                    <div className="relative px-5 py-3 rounded-xl bg-gradient-to-br from-pink-500/30 to-purple-500/30 backdrop-blur-sm border border-pink-500/20 hover:from-pink-500/40 hover:to-purple-500/40 transition-all duration-300 transform hover:scale-105 group">
+                      <div className="absolute -top-3 -left-3 size-7 rounded-full bg-gradient-to-br from-pink-300 to-pink-400 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-pink-500/20">1</div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-pink-300/10 via-pink-400/5 to-pink-300/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <Star className="absolute -top-1 -right-1 h-4 w-4 text-yellow-300 animate-pulse-subtle" />
+                      <span className="text-white font-medium">predict</span>
                     </div>
                     
-                    <div className="relative px-4 py-2 glass-panel hover:bg-white/10 transition-colors rounded-lg">
-                      <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-dream-accent2/30 flex items-center justify-center text-sm font-bold">2</div>
-                      <span className="text-white">place your bet</span>
+                    <div className="relative px-5 py-3 rounded-xl bg-gradient-to-br from-purple-500/30 to-indigo-500/30 backdrop-blur-sm border border-purple-500/20 hover:from-purple-500/40 hover:to-indigo-500/40 transition-all duration-300 transform hover:scale-105 group">
+                      <div className="absolute -top-3 -left-3 size-7 rounded-full bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-purple-500/20">2</div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-300/10 via-purple-400/5 to-purple-300/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <Gift className="absolute -top-1 -right-1 h-4 w-4 text-purple-300 animate-bob" />
+                      <span className="text-white font-medium">place your bet</span>
                     </div>
                     
-                    <div className="relative px-4 py-2 glass-panel hover:bg-white/10 transition-colors rounded-lg">
-                      <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-dream-accent3/30 flex items-center justify-center text-sm font-bold">3</div>
-                      <span className="text-white">build your reputation</span>
+                    <div className="relative px-5 py-3 rounded-xl bg-gradient-to-br from-indigo-500/30 to-blue-500/30 backdrop-blur-sm border border-indigo-500/20 hover:from-indigo-500/40 hover:to-blue-500/40 transition-all duration-300 transform hover:scale-105 group">
+                      <div className="absolute -top-3 -left-3 size-7 rounded-full bg-gradient-to-br from-indigo-300 to-indigo-400 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-indigo-500/20">3</div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-300/10 via-indigo-400/5 to-indigo-300/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <Trophy className="absolute -top-1 -right-1 h-4 w-4 text-yellow-300 animate-float" />
+                      <span className="text-white font-medium">build your reputation</span>
                     </div>
                   </div>
                 </div>
