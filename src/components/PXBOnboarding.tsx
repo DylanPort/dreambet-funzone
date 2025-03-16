@@ -62,7 +62,8 @@ const PXBOnboarding: React.FC = () => {
     const finalUsername = username.trim() || publicKey.toString().substring(0, 8);
     setHasMintedPoints(true);
     try {
-      await mintPoints(finalUsername);
+      // Pass the default amount (500) instead of username
+      await mintPoints(500);
       setShowSuccess(true);
     } catch (error) {
       console.error('Error minting points:', error);
@@ -248,4 +249,3 @@ const PXBOnboarding: React.FC = () => {
     </>;
 };
 export default PXBOnboarding;
-
