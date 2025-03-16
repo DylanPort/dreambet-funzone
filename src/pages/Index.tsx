@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users } from 'lucide-react';
@@ -294,7 +295,11 @@ const Index = () => {
                 <PXBSupplyProgress />
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div className="glass-panel p-6">
+                  <PXBUserStats />
+                </div>
+                
                 <div className="glass-panel p-6">
                   <PXBLeaderboard />
                 </div>
@@ -305,7 +310,7 @@ const Index = () => {
               </div>
               
               <div className="mt-12">
-                <PXBUserStats />
+                <TopPumpFunTokensByVolume />
               </div>
             </PXBPointsProvider>
           </div>
