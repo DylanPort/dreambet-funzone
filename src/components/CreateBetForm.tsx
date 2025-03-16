@@ -182,8 +182,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       console.log("Forcing wallet disconnect/reconnect");
       if (disconnect) {
         await disconnect();
-        toast({
-          title: "Reconnect wallet",
+        toast("Reconnect wallet", {
           description: "Please reconnect your wallet to continue",
         });
       }
@@ -194,8 +193,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
 
   const handleCheckWalletAgain = () => {
     setCheckAttempts(prev => prev + 1);
-    toast({
-      title: "Checking wallet connection",
+    toast("Checking wallet connection", {
       description: "Verifying your wallet connection status...",
     });
     
