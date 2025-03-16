@@ -18,7 +18,8 @@ interface GMGNChartResponse {
   };
 }
 
-const CACHE_EXPIRY = 60 * 1000; // 1 minute
+// Shorter cache expiry for more real-time data
+const CACHE_EXPIRY = 30 * 1000; // 30 seconds
 const tokenCache: Record<string, { data: GMGNTokenData; timestamp: number }> = {};
 
 export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData> => {
@@ -33,7 +34,7 @@ export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData
     const apiUrl = `https://www.gmgn.cc/api/token/sol/${tokenId}`;
     const encodedApiUrl = encodeURIComponent(apiUrl);
     
-    console.log(`Attempting to fetch GMGN data via CORS proxy: ${corsProxyUrl}${encodedApiUrl}`);
+    console.log(`Fetching GMGN data via CORS proxy: ${corsProxyUrl}${encodedApiUrl}`);
     
     const response = await fetch(`${corsProxyUrl}${encodedApiUrl}`);
     
@@ -125,11 +126,12 @@ export const subscribeToGMGNTokenData = (
     }
     
     if (isActive) {
-      timeoutId = window.setTimeout(fetchData, 15000); // Poll every 15 seconds
+      // More frequent polling for real-time updates
+      timeoutId = window.setTimeout(fetchData, 5000); // Poll every 5 seconds
     }
   };
   
-  // Start fetching
+  // Start fetching immediately
   fetchData();
   
   // Return cleanup function
