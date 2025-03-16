@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isAuthRateLimited, checkSupabaseTables, isAuthDisabled } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
@@ -92,60 +92,72 @@ export const usePointOperations = (
     try {
       const walletAddress = publicKey.toString();
       
-      // Get the current authenticated user's session
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      // First check if auth is disabled in Supabase
+      const authDisabled = await isAuthDisabled();
+      let isAuthenticated = false;
       
-      // Check if we have a valid session
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        toast.error('Authentication error. Please try reconnecting your wallet.');
-        return;
-      }
-      
-      // If no session exists, try to create one using the wallet address
-      if (!sessionData.session) {
-        console.log('No session found, attempting to sign in with wallet', walletAddress);
+      if (!authDisabled) {
+        // Get the current authenticated user's session
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
-        // Try to sign in with the wallet address
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: `${walletAddress}@solana.wallet`, // Use wallet address as email
-          password: walletAddress, // Use wallet address as password
-        });
+        // Check if we have a valid session
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          toast.error('Authentication error. Please try reconnecting your wallet.');
+          return;
+        }
         
-        if (signInError) {
-          // If sign in fails, try to sign up the user
-          console.log('Sign in failed, attempting to create account', signInError);
+        // If no session exists, try to create one using the wallet address
+        if (!sessionData.session) {
+          console.log('No session found, attempting to sign in with wallet', walletAddress);
           
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: `${walletAddress}@solana.wallet`,
-            password: walletAddress,
-            options: {
-              data: {
-                wallet_address: walletAddress
-              }
-            }
+          // Try to sign in with the wallet address
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: `${walletAddress}@solana.wallet`, // Use wallet address as email
+            password: walletAddress, // Use wallet address as password
           });
           
-          if (signUpError) {
-            console.error('Failed to create account:', signUpError);
-            toast.error('Failed to authenticate with your wallet. Please try again.');
-            return;
+          if (signInError) {
+            // If sign in fails due to auth being disabled, proceed without auth
+            if (signInError.message === 'Email logins are disabled') {
+              console.log('Sign in failed: Email authentication is disabled, proceeding without login');
+              // We can proceed without authentication since we have the wallet address
+            } else {
+              // Try to sign up the user
+              console.log('Sign in failed, attempting to create account', signInError);
+              
+              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                email: `${walletAddress}@solana.wallet`,
+                password: walletAddress,
+                options: {
+                  data: {
+                    wallet_address: walletAddress
+                  }
+                }
+              });
+              
+              if (signUpError) {
+                // If sign up fails due to signups being disabled, proceed without auth
+                if (signUpError.message === 'Signups not allowed for this instance') {
+                  console.log('Failed to create account: Signups are disabled, proceeding without authentication');
+                  // We can proceed without authentication since we have the wallet address
+                } else {
+                  console.error('Failed to authenticate with your wallet:', signUpError);
+                }
+              } else {
+                console.log('Successfully created account for wallet', walletAddress);
+                isAuthenticated = true;
+              }
+            }
+          } else {
+            console.log('Successfully signed in with wallet', walletAddress);
+            isAuthenticated = true;
           }
-          
-          // Check if we now have a session after signup
-          const { data: newSessionData } = await supabase.auth.getSession();
-          if (!newSessionData.session) {
-            toast.error('Authentication required. Please try reconnecting your wallet.');
-            return;
-          }
+        } else {
+          isAuthenticated = true;
         }
-      }
-      
-      // Re-check the session to ensure we're authenticated
-      const { data: verifySessionData } = await supabase.auth.getSession();
-      if (!verifySessionData.session) {
-        toast.error('Authentication failed. Please try reconnecting your wallet.');
-        return;
+      } else {
+        console.log('Authentication is disabled in Supabase, proceeding without auth');
       }
       
       // Fetch token data from TokenDataCache to get the initial market cap
