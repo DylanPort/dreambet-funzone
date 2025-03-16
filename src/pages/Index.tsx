@@ -18,7 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -26,13 +25,11 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -73,12 +70,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -89,7 +84,6 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -174,17 +168,17 @@ const Index = () => {
                   
                   <div className="flex justify-around flex-wrap gap-4 mt-4 relative z-10">
                     <div className="relative px-5 py-3 rounded-xl bg-gradient-to-br from-pink-500/30 to-purple-500/30 backdrop-blur-sm border border-pink-500/20 hover:bg-pink-500/20 transition-colors">
-                      <div className="absolute -top-3 -left-3 size-7 rounded-full bg-gradient-to-br from-pink-300 to-pink-400 flex items-center justify-center text-sm font-bold text-white shadow-md">1</div>
+                      
                       <span className="text-white font-medium">predict</span>
                     </div>
                     
                     <div className="relative px-5 py-3 rounded-xl bg-gradient-to-br from-purple-500/30 to-indigo-500/30 backdrop-blur-sm border border-purple-500/20 hover:bg-purple-500/20 transition-colors">
-                      <div className="absolute -top-3 -left-3 size-7 rounded-full bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center text-sm font-bold text-white shadow-md">2</div>
+                      
                       <span className="text-white font-medium">place your bet</span>
                     </div>
                     
                     <div className="relative px-5 py-3 rounded-xl bg-gradient-to-br from-indigo-500/30 to-blue-500/30 backdrop-blur-sm border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors">
-                      <div className="absolute -top-3 -left-3 size-7 rounded-full bg-gradient-to-br from-indigo-300 to-indigo-400 flex items-center justify-center text-sm font-bold text-white shadow-md">3</div>
+                      
                       <span className="text-white font-medium">build your reputation</span>
                     </div>
                   </div>
@@ -292,5 +286,4 @@ const Index = () => {
       </footer>
     </>;
 };
-
 export default Index;
