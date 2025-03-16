@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -840,4 +841,29 @@ const TokenDetail = () => {
                 </div>
                 
                 {bets.length === 0 ? (
-                  <div className="text-center py-8 text-dream-
+                  <div className="text-center py-8 text-dream-foreground/70">
+                    No active bets for this token yet. Be the first to place a bet!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bets.map(bet => (
+                      <BetCard 
+                        key={bet.id}
+                        bet={bet}
+                        connected={connected}
+                        publicKeyString={publicKey ? publicKey.toString() : null}
+                        onAcceptBet={handleAcceptBet}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </>
+  );
+};
+
+export default TokenDetail;
