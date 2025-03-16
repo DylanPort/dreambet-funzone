@@ -76,8 +76,8 @@ export const useBetProcessor = (
             .update({
               status: newStatus,
               points_won: pointsWon,
-              // Update to use the correct property name from the database schema
-              currentMarketCap: currentMarketCap
+              // Using the database field name for market cap
+              current_market_cap: currentMarketCap
             })
             .eq('bet_id', bet.id);
             
@@ -157,12 +157,12 @@ export const useBetProcessor = (
                   : b
               ));
               
-              // Optionally update in database if needed
+              // Update in database
               await supabase
                 .from('bets')
                 .update({
-                  // Fix: Use the field name that matches the database schema
-                  currentMarketCap: tokenData.marketCap 
+                  // Using the database field name for market cap
+                  current_market_cap: tokenData.marketCap 
                 })
                 .eq('bet_id', bet.id);
             }

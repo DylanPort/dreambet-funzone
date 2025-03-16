@@ -1,3 +1,4 @@
+
 export type BetPrediction = 'migrate' | 'die' | 'moon' | 'up' | 'down';
 
 export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed';

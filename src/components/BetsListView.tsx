@@ -2,6 +2,7 @@
 import React from 'react';
 import BetCard from './BetCard';
 import { Bet } from '@/types/bet';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface BetsListViewProps {
   bets: Bet[];
@@ -35,22 +36,31 @@ const BetsListView: React.FC<BetsListViewProps> = ({
   
   return (
     <div className="space-y-4">
-      {topBets.map((bet, index) => {
-        // Generate a unique key combining multiple identifiers
-        const uniqueKey = `${bet.id || 'unknown'}-${bet.onChainBetId || 'nochain'}-${
-          bet.transactionSignature ? bet.transactionSignature.substring(0, 8) : ''
-        }-${index}`;
-        
-        return (
-          <BetCard
-            key={uniqueKey}
-            bet={bet}
-            connected={connected}
-            publicKeyString={publicKeyString}
-            onAcceptBet={onAcceptBet}
-          />
-        );
-      })}
+      <AnimatePresence>
+        {topBets.map((bet, index) => {
+          // Generate a unique key combining multiple identifiers
+          const uniqueKey = `${bet.id || 'unknown'}-${bet.onChainBetId || 'nochain'}-${
+            bet.transactionSignature ? bet.transactionSignature.substring(0, 8) : ''
+          }-${index}`;
+          
+          return (
+            <motion.div
+              key={uniqueKey}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <BetCard
+                bet={bet}
+                connected={connected}
+                publicKeyString={publicKeyString}
+                onAcceptBet={onAcceptBet}
+              />
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
       
       {validBets.length > 10 && (
         <div className="text-center mt-4 text-sm text-dream-foreground/70">
