@@ -43,7 +43,7 @@ const BetReel: React.FC = () => {
           prediction: pb.betType === 'up' ? 'migrate' : 'die',
           timestamp: new Date(pb.createdAt).getTime(),
           expiresAt: new Date(pb.expiresAt).getTime(),
-          status: 'open',
+          status: 'open' as BetStatus,
           duration: 30,
           // Add the required properties with default values
           onChainBetId: '',
@@ -68,7 +68,7 @@ const BetReel: React.FC = () => {
         // Update status for any bets that have expired
         const updatedBets = combinedBets.map(bet => {
           if (bet.expiresAt < now && bet.status !== 'expired') {
-            return { ...bet, status: 'expired' };
+            return { ...bet, status: 'expired' as BetStatus };
           }
           return bet;
         });
@@ -118,7 +118,10 @@ const BetReel: React.FC = () => {
             } else {
               prediction = data.prediction_bettor1 as BetPrediction;
             }
+            
+            // Convert string status to BetStatus type
             const status = data.status as BetStatus;
+            
             const newBet: Bet = {
               id: data.bet_id,
               tokenId: data.token_mint,
@@ -198,7 +201,7 @@ const BetReel: React.FC = () => {
       setActiveBets(prev => 
         prev.map(bet => {
           if (bet.expiresAt < now && bet.status !== 'expired') {
-            return { ...bet, status: 'expired' };
+            return { ...bet, status: 'expired' as BetStatus };
           }
           return bet;
         })
@@ -321,3 +324,4 @@ const BetReel: React.FC = () => {
 };
 
 export default BetReel;
+
