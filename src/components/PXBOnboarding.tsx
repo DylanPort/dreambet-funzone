@@ -128,7 +128,11 @@ const PXBOnboarding: React.FC = () => {
       <div className="glass-panel p-6 max-w-md mx-auto">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-dream-accent2/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Coins className="w-8 h-8 text-dream-accent2" />
+            <img 
+              src="/lovable-uploads/442acdc8-611f-4c96-883e-d41b783890d2.png" 
+              alt="Diamond" 
+              className="w-8 h-8 object-contain filter drop-shadow-[0_0_8px_rgba(143,92,246,0.6)]"
+            />
           </div>
           <h2 className="text-2xl font-bold mb-2">Get Started with PXB Points</h2>
           <p className="text-dream-foreground/70">
@@ -210,7 +214,11 @@ const PXBOnboarding: React.FC = () => {
           }} className="text-center">
               <h3 className="text-xl font-bold mb-2">You Just Minted</h3>
               <div className="flex items-center justify-center space-x-2 mb-4">
-                <Coins className="w-6 h-6 text-yellow-300" />
+                <img 
+                  src="/lovable-uploads/442acdc8-611f-4c96-883e-d41b783890d2.png" 
+                  alt="Diamond" 
+                  className="w-6 h-6 object-contain filter drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]"
+                />
                 <span className="text-3xl font-black text-white">500 PXB Points!</span>
               </div>
               <p className="text-white/80">Your points are now stored securely and ready to use!</p>
