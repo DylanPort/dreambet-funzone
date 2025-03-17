@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Wallet, HelpCircle, Rocket, Skull, Trophy, Zap, Check, Gift, Star, Hand, HandMetal } from 'lucide-react';
+import { Wallet, HelpCircle, Rocket, Skull, Trophy, Zap, Check, Gift, Star, Hand, HandMetal, Sparkles } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import MigratingTokenList from '@/components/MigratingTokenList';
@@ -31,10 +30,15 @@ const BettingDashboard = () => {
   });
   const [showGift, setShowGift] = useState(false);
   const [unlockAnimation, setUnlockAnimation] = useState(false);
+  
+  const [isHovering, setIsHovering] = useState(false);
+  const [pulseEffect, setPulseEffect] = useState(false);
+  const [glowIntensity, setGlowIntensity] = useState(10);
+  
   console.log("BettingDashboard rendering, wallet connected:", connected);
 
-  // Check if all steps have been read
   const allStepsCompleted = Object.values(readSteps).every(step => step);
+  
   useEffect(() => {
     if (allStepsCompleted && !showGift) {
       setTimeout(() => {
@@ -47,65 +51,145 @@ const BettingDashboard = () => {
       }, 500);
     }
   }, [readSteps, showGift, toast]);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPulseEffect(prev => !prev);
+      setGlowIntensity(prev => (prev === 10 ? 20 : 10));
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   return <>
       <OrbitingParticles />
       <Navbar />
 
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-7xl mx-auto">
-          {/* Hero Section */}
           <section className="mb-12 text-center py-0 my-0 mx-[240px] px-[11px]">
             <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 text-gradient">SHOW YOUR TRADING SKILLS</h1>
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-6">Bet on whether tokens will go up or down and earn more PXB Points</p>
             
-            {/* Futuristic Game-like explanation of how the betting system works */}
-            <div className="glass-panel max-w-3xl mx-auto p-6 rounded-lg relative overflow-hidden">
-              {/* Dynamic animated glow effect in the background */}
-              <motion.div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/10 via-dream-accent2/10 to-dream-accent3/10" animate={{
-              background: unlockAnimation ? ["linear-gradient(90deg, rgba(255,61,252,0.2) 0%, rgba(0,238,255,0.2) 50%, rgba(123,97,255,0.2) 100%)", "linear-gradient(90deg, rgba(123,97,255,0.2) 0%, rgba(255,61,252,0.2) 50%, rgba(0,238,255,0.2) 100%)", "linear-gradient(90deg, rgba(0,238,255,0.2) 0%, rgba(123,97,255,0.2) 50%, rgba(255,61,252,0.2) 100%)"] : "linear-gradient(90deg, rgba(255,61,252,0.1) 0%, rgba(0,238,255,0.1) 50%, rgba(123,97,255,0.1) 100%)"
-            }} transition={{
-              duration: 5,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }} />
-              
-              {/* Decorative tech elements */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3"></div>
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-dream-accent3 via-dream-accent2 to-dream-accent1"></div>
-              
-              <h2 className="text-xl font-bold mb-3 flex items-center justify-center gap-2 relative">
-                <div className="w-8 h-8 rounded-full bg-dream-accent2/30 flex items-center justify-center animate-pulse-glow">
-                  <HelpCircle className="h-5 w-5 text-dream-accent2" />
-                </div>
-                <span className="text-gradient">BETTING INTERFACE</span>
-                {allStepsCompleted && <motion.div initial={{
-                scale: 0
-              }} animate={{
-                scale: 1
-              }} transition={{
-                type: "spring",
-                stiffness: 260,
-                damping: 20
-              }} className="ml-2">
+            <div 
+              className="glass-panel max-w-3xl mx-auto p-6 rounded-lg relative overflow-hidden"
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+            >
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-r from-dream-accent1/10 via-dream-accent2/10 to-dream-accent3/10" 
+                animate={{
+                  background: unlockAnimation 
+                    ? ["linear-gradient(90deg, rgba(255,61,252,0.2) 0%, rgba(0,238,255,0.2) 50%, rgba(123,97,255,0.2) 100%)", 
+                       "linear-gradient(90deg, rgba(123,97,255,0.2) 0%, rgba(255,61,252,0.2) 50%, rgba(0,238,255,0.2) 100%)", 
+                       "linear-gradient(90deg, rgba(0,238,255,0.2) 0%, rgba(123,97,255,0.2) 50%, rgba(255,61,252,0.2) 100%)"]
+                    : isHovering 
+                      ? `linear-gradient(90deg, rgba(255,61,252,0.${glowIntensity/100}) 0%, rgba(0,238,255,0.${glowIntensity/100}) 50%, rgba(123,97,255,0.${glowIntensity/100}) 100%)`
+                      : `linear-gradient(90deg, rgba(255,61,252,0.${glowIntensity/100}) 0%, rgba(0,238,255,0.${glowIntensity/100}) 50%, rgba(123,97,255,0.${glowIntensity/100}) 100%)`,
+                  boxShadow: pulseEffect 
+                    ? ["0 0 10px rgba(255,61,252,0.2)", "0 0 20px rgba(0,238,255,0.3)", "0 0 10px rgba(123,97,255,0.2)"]
+                    : ["0 0 15px rgba(255,61,252,0.1)", "0 0 10px rgba(0,238,255,0.15)", "0 0 15px rgba(123,97,255,0.1)"]
+                }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  repeatType: "reverse"
+                }}
+              >
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <motion.div
+                    key={index}
+                    className="absolute w-1 h-1 rounded-full bg-white/60"
+                    initial={{ 
+                      x: Math.random() * 100 + "%", 
+                      y: Math.random() * 100 + "%", 
+                      opacity: 0 
+                    }}
+                    animate={{ 
+                      y: ["-10%", "110%"],
+                      opacity: [0, 0.7, 0]
+                    }}
+                    transition={{
+                      duration: 7 + Math.random() * 5,
+                      repeat: Infinity,
+                      delay: Math.random() * 5
+                    }}
+                  />
+                ))}
+                
+                {isHovering && Array.from({ length: 5 }).map((_, index) => (
+                  <motion.div
+                    key={`sparkle-${index}`}
+                    className="absolute w-2 h-2"
+                    initial={{ 
+                      x: 40 + Math.random() * 60 + "%", 
+                      y: 40 + Math.random() * 60 + "%", 
+                      scale: 0,
+                      opacity: 0
+                    }}
+                    animate={{ 
+                      scale: [0, 1, 0],
+                      opacity: [0, 0.9, 0],
+                      rotate: [0, 90]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      delay: Math.random() * 2
+                    }}
+                  >
+                    <Sparkles className="text-yellow-400/70" size={16} />
+                  </motion.div>
+                ))}
+                
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3"></div>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-dream-accent3 via-dream-accent2 to-dream-accent1"></div>
+                
+                <motion.div 
+                  className="absolute left-0 w-full h-[2px] bg-dream-accent2/20"
+                  animate={{
+                    top: ["0%", "100%"]
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                />
+                
+                <h2 className="text-xl font-bold mb-3 flex items-center justify-center gap-2 relative">
+                  <div className="w-8 h-8 rounded-full bg-dream-accent2/30 flex items-center justify-center animate-pulse-glow">
+                    <HelpCircle className="h-5 w-5 text-dream-accent2" />
+                  </div>
+                  <span className="text-gradient">BETTING INTERFACE</span>
+                  {allStepsCompleted && <motion.div initial={{
+                  scale: 0
+                }} animate={{
+                  scale: 1
+                }} transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20
+                }} className="ml-2">
                     <Trophy className="h-5 w-5 text-yellow-400" />
                   </motion.div>}
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left relative z-10">
-                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(255,61,252,0.3)] ${readSteps.selectToken ? 'border-dream-accent1/50' : 'border-dream-accent1/20'} ${!readSteps.selectToken ? 'blur-[1px]' : ''} relative`} whileHover={{
-                y: -5
-              }} onClick={() => {
-                if (!readSteps.selectToken) {
-                  setReadSteps(prev => ({
-                    ...prev,
-                    selectToken: true
-                  }));
-                  toast({
-                    title: "Step 1 Completed!",
-                    description: "You've learned how to select tokens!"
-                  });
-                }
-              }}>
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left relative z-10">
+                  <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(255,61,252,0.3)] ${readSteps.selectToken ? 'border-dream-accent1/50' : 'border-dream-accent1/20'} ${!readSteps.selectToken ? 'blur-[1px]' : ''} relative`} whileHover={{
+                  y: -5
+                }} onClick={() => {
+                  if (!readSteps.selectToken) {
+                    setReadSteps(prev => ({
+                      ...prev,
+                      selectToken: true
+                    }));
+                    toast({
+                      title: "Step 1 Completed!",
+                      description: "You've learned how to select tokens!"
+                    });
+                  }
+                }}>
                   {!readSteps.selectToken && (
                     <TooltipProvider>
                       <Tooltip>
@@ -360,7 +444,6 @@ const BettingDashboard = () => {
               </div>}
           </section>
           
-          {/* Dashboard Sections */}
           <div className="grid lg:grid-cols-2 gap-8 mb-8">
             <MigratingTokenList />
             <OpenBetsList />
@@ -368,7 +451,6 @@ const BettingDashboard = () => {
         </div>
       </main>
       
-      {/* Footer */}
       <footer className="glass-panel px-6 py-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">

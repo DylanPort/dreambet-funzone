@@ -8,6 +8,7 @@ export interface Bet {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
+  tokenMint: string; // Required field that was missing
   initiator: string;
   counterParty?: string;
   amount: number;
