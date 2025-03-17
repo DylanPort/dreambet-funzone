@@ -172,32 +172,17 @@ const Index = () => {
                     </span>
                   </h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 relative z-10">
-                    <div className="relative px-5 py-4 rounded-xl bg-gradient-to-br from-pink-500/30 to-purple-500/30 backdrop-blur-sm border border-pink-500/30 hover:border-pink-500/50 hover:bg-pink-500/20 transition-all duration-300 transform hover:scale-105 group">
-                      <div className="absolute inset-0 bg-black/5 rounded-xl"></div>
-                      <div className="absolute -inset-px bg-gradient-to-r from-transparent via-pink-500/20 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-500"></div>
-                      <span className="text-white font-medium flex items-center justify-center gap-2">
-                        <img src="/lovable-uploads/8c486ae4-3f72-46b0-9d0a-ecbf63c37968.png" alt="predict" className="h-5 w-5 opacity-90 group-hover:opacity-100" />
-                        predict
-                      </span>
+                  <div className="flex flex-col space-y-4 text-center mt-6 relative z-10">
+                    <div className="text-lg font-medium">
+                      <span className="text-pink-300">1.</span> <span className="text-white/90">Predict whether a token will moon or crash to dust</span>
                     </div>
                     
-                    <div className="relative px-5 py-4 rounded-xl bg-gradient-to-br from-purple-500/30 to-indigo-500/30 backdrop-blur-sm border border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/20 transition-all duration-300 transform hover:scale-105 group">
-                      <div className="absolute inset-0 bg-black/5 rounded-xl"></div>
-                      <div className="absolute -inset-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-500"></div>
-                      <span className="text-white font-medium flex items-center justify-center gap-2">
-                        <img src="/lovable-uploads/b4c3d83c-03ad-43c5-bbc1-ade4e2d1c15b.png" alt="bet" className="h-5 w-5 opacity-90 group-hover:opacity-100" />
-                        place your bet
-                      </span>
+                    <div className="text-lg font-medium">
+                      <span className="text-purple-300">2.</span> <span className="text-white/90">Place your bet with PXB tokens to back your prediction</span>
                     </div>
                     
-                    <div className="relative px-5 py-4 rounded-xl bg-gradient-to-br from-indigo-500/30 to-blue-500/30 backdrop-blur-sm border border-indigo-500/30 hover:border-indigo-500/50 hover:bg-indigo-500/20 transition-all duration-300 transform hover:scale-105 group">
-                      <div className="absolute inset-0 bg-black/5 rounded-xl"></div>
-                      <div className="absolute -inset-px bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-500"></div>
-                      <span className="text-white font-medium flex items-center justify-center gap-2">
-                        <img src="/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png" alt="trophy" className="h-5 w-5 opacity-90 group-hover:opacity-100" />
-                        build your reputation
-                      </span>
+                    <div className="text-lg font-medium">
+                      <span className="text-indigo-300">3.</span> <span className="text-white/90">Earn points, climb the leaderboard, build your reputation</span>
                     </div>
                   </div>
                 </div>
