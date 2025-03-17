@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -45,6 +46,7 @@ const getFallbackBets = (): Bet[] => {
       const now = Date.now();
       return bets.filter(bet => bet.expiresAt > now).map(bet => ({
         ...bet,
+        tokenMint: bet.tokenMint || bet.tokenId, // Ensure tokenMint is present
         onChainBetId: bet.onChainBetId || '',
         transactionSignature: bet.transactionSignature || ''
       }));
@@ -96,6 +98,7 @@ export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
     
     return allBets.map(bet => ({
       ...bet,
+      tokenMint: bet.tokenMint || bet.tokenId, // Ensure tokenMint is present
       status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
     }));
   } catch (error) {
@@ -130,6 +133,7 @@ export const fetchOpenBets = async (): Promise<Bet[]> => {
     
     return allBets.map(bet => ({
       ...bet,
+      tokenMint: bet.tokenMint || bet.tokenId, // Ensure tokenMint is present
       status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
     }));
   } catch (error) {
@@ -143,6 +147,7 @@ export const fetchUserBets = async (userAddress: string): Promise<Bet[]> => {
     const bets = await fetchSupabaseUserBets(userAddress);
     return bets.map(bet => ({
       ...bet,
+      tokenMint: bet.tokenMint || bet.tokenId, // Ensure tokenMint is present
       status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
     }));
   } catch (error) {
@@ -225,6 +230,7 @@ export const createBet = async (
       tokenId,
       tokenName,
       tokenSymbol,
+      tokenMint: tokenId, // Add tokenMint field
       initiator: effectivePublicKey.toString(),
       amount,
       prediction,
@@ -272,6 +278,7 @@ export const createBet = async (
       
       return {
         ...bet,
+        tokenMint: bet.tokenMint || tokenId, // Ensure tokenMint is present
         onChainBetId: betId?.toString() || '',
         transactionSignature: txSignature || '',
         status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
@@ -335,6 +342,7 @@ export const acceptBet = async (
     
     return {
       ...updatedBet,
+      tokenMint: updatedBet.tokenMint || updatedBet.tokenId, // Ensure tokenMint is present 
       status: updatedBet.status as "open" | "matched" | "completed" | "expired" | "closed"
     };
   } catch (error) {

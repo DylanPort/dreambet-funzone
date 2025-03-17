@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -38,6 +37,7 @@ const BetReel: React.FC = () => {
           tokenId: pb.tokenMint,
           tokenName: pb.tokenName,
           tokenSymbol: pb.tokenSymbol,
+          tokenMint: pb.tokenMint,
           initiator: publicKey?.toString() || '',
           amount: pb.betAmount,
           prediction: pb.betType === 'up' ? 'migrate' : 'die',
@@ -45,7 +45,6 @@ const BetReel: React.FC = () => {
           expiresAt: new Date(pb.expiresAt).getTime(),
           status: 'open' as BetStatus,
           duration: 30,
-          // Add the required properties with default values
           onChainBetId: '',
           transactionSignature: ''
         }));
@@ -65,7 +64,6 @@ const BetReel: React.FC = () => {
 
         console.log('Active and expired bets for reel:', combinedBets);
         
-        // Update status for any bets that have expired
         const updatedBets = combinedBets.map(bet => {
           if (bet.expiresAt < now && bet.status !== 'expired') {
             return { ...bet, status: 'expired' as BetStatus };
@@ -119,7 +117,6 @@ const BetReel: React.FC = () => {
               prediction = data.prediction_bettor1 as BetPrediction;
             }
             
-            // Convert string status to BetStatus type
             const status = data.status as BetStatus;
             
             const newBet: Bet = {
@@ -195,7 +192,6 @@ const BetReel: React.FC = () => {
 
     window.addEventListener('newBetCreated', handleNewBet as EventListener);
     
-    // Set up an interval to check for expired bets
     const checkExpiredInterval = setInterval(() => {
       const now = Date.now();
       setActiveBets(prev => 
@@ -206,7 +202,7 @@ const BetReel: React.FC = () => {
           return bet;
         })
       );
-    }, 10000); // Check every 10 seconds
+    }, 10000);
 
     if (pxbBets.length > 0) {
       fetchBets();
@@ -247,7 +243,6 @@ const BetReel: React.FC = () => {
       </div>;
   }
 
-  // Count active and expired bets
   const activeBetsCount = activeBets.filter(bet => bet.status !== 'expired').length;
   const expiredBetsCount = activeBets.filter(bet => bet.status === 'expired').length;
 
@@ -331,3 +326,4 @@ const BetReel: React.FC = () => {
 };
 
 export default BetReel;
+

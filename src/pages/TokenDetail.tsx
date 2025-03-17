@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -587,6 +586,7 @@ const TokenDetail = () => {
       tokenId: lastCreatedBet.tokenMint,
       tokenName: lastCreatedBet.tokenName,
       tokenSymbol: lastCreatedBet.tokenSymbol,
+      tokenMint: lastCreatedBet.tokenMint,
       initiator: userProfile?.id || '',
       amount: lastCreatedBet.betAmount,
       prediction: lastCreatedBet.betType === 'up' ? 'migrate' : 'die',

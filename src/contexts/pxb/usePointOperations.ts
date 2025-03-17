@@ -305,25 +305,28 @@ export const usePointOperations = (
       
       // Dispatch a custom event to notify other components about the new bet
       // Use same event name and format as in supabaseService.ts
-      const newBetForEvent: Bet = {
-        id: betData.bet_id,
+      const betId = betData.bet_id;
+      const initiator = walletAddress;
+      const duration = durationMinutes;
+      const betObject: Bet = {
+        id: betId,
         tokenId: tokenId,
         tokenName: tokenName,
         tokenSymbol: tokenSymbol,
-        initiator: walletAddress,
+        tokenMint: tokenId,
+        initiator: initiator,
         amount: betAmount,
         prediction: betType === 'up' ? 'migrate' : 'die',
-        timestamp: new Date().getTime(),
-        expiresAt: new Date(new Date().getTime() + (durationSeconds * 1000)).getTime(),
+        timestamp: Date.now(),
+        expiresAt: Date.now() + (duration * 60 * 1000),
         status: 'open',
-        duration: durationMinutes,
-        // Add the required properties with default values
-        onChainBetId: '',
-        transactionSignature: ''
+        duration: duration,
+        onChainBetId: 'pxb-' + betId,
+        transactionSignature: 'pxb-tx-' + betId
       };
       
       const newBetCreatedEvent = new CustomEvent('newBetCreated', {
-        detail: { bet: newBetForEvent }
+        detail: { bet: betObject }
       });
       window.dispatchEvent(newBetCreatedEvent);
       
