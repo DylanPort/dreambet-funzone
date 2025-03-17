@@ -46,7 +46,7 @@ const BettingDashboard = () => {
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-7xl mx-auto">
           {/* Hero Section */}
-          <section className="mb-12 text-center">
+          <section className="mb-12 text-center py-0 my-0 mx-[240px] px-[11px]">
             <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 text-gradient">SHOW YOUR TRADING SKILLS</h1>
             <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-6">Bet on whether tokens will go up or down and earn more PXB Points</p>
             
