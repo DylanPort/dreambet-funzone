@@ -258,7 +258,7 @@ const BetReel: React.FC = () => {
           <span className="text-sm font-semibold">ACTIVE BETS</span>
         </div>
         
-        <div className="flex items-center ml-auto mr-4">
+        <div className="flex items-center ml-4">
           <div className="flex gap-2 items-center">
             <div className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs font-medium">
               Active: {activeBetsCount}
@@ -269,11 +269,17 @@ const BetReel: React.FC = () => {
           </div>
         </div>
         
-        <div className="overflow-hidden mr-4 flex-1">
-          <div className="flex gap-6 items-center animate-scroll">
-            {activeBets.map((bet, index) => <Link key={`${bet.id}-${index}`} to={`/betting/token/${bet.tokenId}`} className={`flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border 
-                  ${bet.status === 'expired' ? 'border-amber-500/30 bg-amber-500/5' : 'border-white/5'} transition-all duration-500 hover:bg-black/40 
-                  ${animateIndex === index ? 'animate-entrance' : ''}`}>
+        <div className="overflow-hidden mx-4 flex-1">
+          <div className="flex gap-4 items-center animate-scroll">
+            {activeBets.map((bet, index) => (
+              <Link 
+                key={`${bet.id}-${index}`} 
+                to={`/betting/token/${bet.tokenId}`} 
+                className={`flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border 
+                  ${bet.status === 'expired' ? 'border-amber-500/30 bg-amber-500/5' : 'border-green-500/30 bg-green-500/5'} 
+                  transition-all duration-500 hover:bg-black/40 
+                  ${animateIndex === index ? 'animate-entrance' : ''}`}
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
                     <span className="font-display font-bold text-sm">{bet.tokenSymbol.charAt(0)}</span>
@@ -316,7 +322,8 @@ const BetReel: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </Link>)}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
@@ -324,4 +331,3 @@ const BetReel: React.FC = () => {
 };
 
 export default BetReel;
-
