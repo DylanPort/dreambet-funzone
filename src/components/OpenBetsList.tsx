@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BetCard from './BetCard';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Progress } from '@/components/ui/progress';
+
 const OpenBetsList = () => {
   const {
     toast
@@ -24,18 +25,20 @@ const OpenBetsList = () => {
   const {
     bets: pxbBets
   } = usePXBPoints();
-  const [betCountsByToken, setBetCountsByToken] = useState<Record<string, {
-    moon: number;
-    dust: number;
-    moonPercentage: number;
-    dustPercentage: number;
-    moonWins: number;
-    dustWins: number;
-    moonLosses: number;
-    dustLosses: number;
-    averageMoonMarketCap: number;
-    averageDustMarketCap: number;
+
+  const [betCountsByToken, setBetCountsByToken] = useState<Record<string, { 
+    moon: number, 
+    dust: number, 
+    moonPercentage: number, 
+    dustPercentage: number,
+    moonWins: number,
+    dustWins: number,
+    moonLosses: number,
+    dustLosses: number,
+    averageMoonMarketCap: number,
+    averageDustMarketCap: number
   }>>({});
+
   const {
     data: supabaseBets = [],
     isLoading,
@@ -56,6 +59,7 @@ const OpenBetsList = () => {
     },
     refetchInterval: 30000
   });
+
   useEffect(() => {
     console.log('OpenBetsList - Component state:', {
       connected,
@@ -67,12 +71,15 @@ const OpenBetsList = () => {
       filterValue: filter
     });
   }, [connected, publicKey, supabaseBets, pxbBets, localBets, filter]);
+
   useEffect(() => {
     try {
       const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
       let fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+
       const now = Date.now();
       fallbackBets = fallbackBets.filter(bet => bet.expiresAt > now && bet.status === 'open');
+
       const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
         id: pb.id,
         tokenId: pb.tokenMint,
@@ -88,6 +95,7 @@ const OpenBetsList = () => {
         onChainBetId: '',
         transactionSignature: ''
       }));
+
       const combinedBets = [...fallbackBets, ...convertedPXBBets].filter(localBet => {
         return !supabaseBets.some(bet => bet.id === localBet.id || bet.onChainBetId && localBet.onChainBetId && bet.onChainBetId === localBet.onChainBetId);
       });
@@ -104,26 +112,28 @@ const OpenBetsList = () => {
       setLocalBets([]);
     }
   }, [supabaseBets, pxbBets, publicKey]);
+
   useEffect(() => {
     const allBets = [...supabaseBets, ...localBets];
-    const counts: Record<string, {
-      moon: number;
-      dust: number;
-      moonPercentage: number;
-      dustPercentage: number;
-      moonWins: number;
-      dustWins: number;
-      moonLosses: number;
-      dustLosses: number;
-      averageMoonMarketCap: number;
-      averageDustMarketCap: number;
+    const counts: Record<string, { 
+      moon: number, 
+      dust: number, 
+      moonPercentage: number, 
+      dustPercentage: number,
+      moonWins: number,
+      dustWins: number,
+      moonLosses: number,
+      dustLosses: number,
+      averageMoonMarketCap: number,
+      averageDustMarketCap: number
     }> = {};
+    
     allBets.forEach(bet => {
       if (!counts[bet.tokenId]) {
-        counts[bet.tokenId] = {
-          moon: 0,
-          dust: 0,
-          moonPercentage: 0,
+        counts[bet.tokenId] = { 
+          moon: 0, 
+          dust: 0, 
+          moonPercentage: 0, 
           dustPercentage: 0,
           moonWins: 0,
           dustWins: 0,
@@ -133,13 +143,16 @@ const OpenBetsList = () => {
           averageDustMarketCap: 0
         };
       }
+      
       if (bet.prediction === 'migrate') {
         counts[bet.tokenId].moon += 1;
+        
         if (bet.initialMarketCap) {
           const currentTotal = counts[bet.tokenId].averageMoonMarketCap * (counts[bet.tokenId].moon - 1);
           const newTotal = currentTotal + bet.initialMarketCap;
           counts[bet.tokenId].averageMoonMarketCap = newTotal / counts[bet.tokenId].moon;
         }
+        
         if (bet.status === 'completed') {
           if (bet.winner === bet.initiator) {
             counts[bet.tokenId].moonWins += 1;
@@ -149,11 +162,13 @@ const OpenBetsList = () => {
         }
       } else if (bet.prediction === 'die') {
         counts[bet.tokenId].dust += 1;
+        
         if (bet.initialMarketCap) {
           const currentTotal = counts[bet.tokenId].averageDustMarketCap * (counts[bet.tokenId].dust - 1);
           const newTotal = currentTotal + bet.initialMarketCap;
           counts[bet.tokenId].averageDustMarketCap = newTotal / counts[bet.tokenId].dust;
         }
+        
         if (bet.status === 'completed') {
           if (bet.winner === bet.initiator) {
             counts[bet.tokenId].dustWins += 1;
@@ -163,29 +178,35 @@ const OpenBetsList = () => {
         }
       }
     });
+    
     Object.keys(counts).forEach(tokenId => {
       const total = counts[tokenId].moon + counts[tokenId].dust;
       if (total > 0) {
-        counts[tokenId].moonPercentage = Math.round(counts[tokenId].moon / total * 100);
-        counts[tokenId].dustPercentage = Math.round(counts[tokenId].dust / total * 100);
+        counts[tokenId].moonPercentage = Math.round((counts[tokenId].moon / total) * 100);
+        counts[tokenId].dustPercentage = Math.round((counts[tokenId].dust / total) * 100);
       }
     });
+    
     console.log('Calculated bet counts and percentages by token:', counts);
     setBetCountsByToken(counts);
   }, [supabaseBets, localBets]);
+
   useEffect(() => {
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in OpenBetsList:", event.detail);
       const {
         bet
       } = event.detail;
+
       try {
         const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
         const fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+
         const exists = fallbackBets.some(existingBet => existingBet.id === bet.id);
         if (!exists) {
           fallbackBets.push(bet);
           localStorage.setItem('pumpxbounty_fallback_bets', JSON.stringify(fallbackBets));
+
           setLocalBets(prev => {
             const exists = prev.some(existingBet => existingBet.id === bet.id);
             if (!exists) {
@@ -208,11 +229,13 @@ const OpenBetsList = () => {
       window.removeEventListener('newBetCreated', handleNewBet as EventListener);
     };
   }, [toast]);
+
   const allBets = [...supabaseBets, ...localBets];
   const filteredBets = allBets.filter(bet => {
     if (filter === 'all') return true;
     return filter === bet.prediction;
   });
+
   const handleRefresh = () => {
     toast({
       title: "Refreshing open bets",
@@ -220,8 +243,10 @@ const OpenBetsList = () => {
     });
     refetch();
   };
+
   const formatMarketCap = (marketCap: number) => {
     if (!marketCap || isNaN(marketCap)) return 'N/A';
+    
     if (marketCap >= 1000000000) {
       return `$${(marketCap / 1000000000).toFixed(2)}B`;
     } else if (marketCap >= 1000000) {
@@ -232,11 +257,13 @@ const OpenBetsList = () => {
       return `$${marketCap.toFixed(2)}`;
     }
   };
+
   const calculateWinRate = (wins: number, losses: number) => {
     const total = wins + losses;
     if (total === 0) return "No data";
-    return `${Math.round(wins / total * 100)}%`;
+    return `${Math.round((wins / total) * 100)}%`;
   };
+
   if (isLoading) {
     return <div className="space-y-5">
         <div className="flex justify-between items-center">
@@ -268,6 +295,7 @@ const OpenBetsList = () => {
         </div>
       </div>;
   }
+
   if (error) {
     console.error('Error in OpenBetsList:', error);
     return <div className="glass-panel p-6 text-center">
@@ -281,6 +309,7 @@ const OpenBetsList = () => {
         </button>
       </div>;
   }
+
   return <div className="space-y-5">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
@@ -373,9 +402,13 @@ const OpenBetsList = () => {
                         <span className="font-semibold">{bet.amount} PXB</span>
                       </div>
                       
+                      <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
+                        <Clock className="w-3 h-3 mr-1" />
+                        <span>{formatTimeRemaining(bet.expiresAt)}</span>
+                      </div>
                       
-                      
-                      {betCountsByToken[bet.tokenId] && <div className="flex flex-col w-52 space-y-2 bg-black/20 p-2 rounded-lg border border-white/5">
+                      {betCountsByToken[bet.tokenId] && (
+                        <div className="flex flex-col w-52 space-y-2 bg-black/20 p-2 rounded-lg border border-white/5">
                           <div className="flex justify-between text-xs mb-1">
                             <span className="text-dream-foreground/70">Bet distribution</span>
                             <span className="text-dream-accent2 font-medium">
@@ -396,7 +429,10 @@ const OpenBetsList = () => {
                           </div>
                           
                           <div className="relative">
-                            <Progress value={betCountsByToken[bet.tokenId].moonPercentage} className="h-1.5 w-full bg-black/30" />
+                            <Progress 
+                              value={betCountsByToken[bet.tokenId].moonPercentage} 
+                              className="h-1.5 w-full bg-black/30" 
+                            />
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
                           </div>
                           
@@ -413,7 +449,10 @@ const OpenBetsList = () => {
                           </div>
                           
                           <div className="relative">
-                            <Progress value={betCountsByToken[bet.tokenId].dustPercentage} className="h-1.5 w-full bg-black/30" />
+                            <Progress 
+                              value={betCountsByToken[bet.tokenId].dustPercentage} 
+                              className="h-1.5 w-full bg-black/30"
+                            />
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
                           </div>
                           
@@ -448,7 +487,8 @@ const OpenBetsList = () => {
                               </span>
                             </div>
                           </div>
-                        </div>}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>
@@ -457,4 +497,5 @@ const OpenBetsList = () => {
         </div>}
     </div>;
 };
+
 export default OpenBetsList;
