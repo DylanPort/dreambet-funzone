@@ -60,6 +60,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         userProfile,
         isLoading,
         bets,
+        userBets: bets, // Add userBets property, using the same data as bets for now
         leaderboard,
         mintPoints,
         placeBet,

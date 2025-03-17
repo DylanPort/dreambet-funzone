@@ -90,6 +90,7 @@ export const fetchOpenBets = async () => {
       const transformedBet: Bet = {
         id: bet.bet_id,
         tokenId: bet.token_mint,
+        tokenMint: bet.token_mint, // Add tokenMint property
         tokenName: bet.tokens?.token_name || 'Unknown Token',
         tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
         initiator: bet.creator || 'Unknown',
@@ -160,6 +161,7 @@ export const fetchUserBets = async (userWalletAddress: string) => {
       return {
         id: bet.bet_id,
         tokenId: bet.token_mint,
+        tokenMint: bet.token_mint, // Add tokenMint property
         tokenName: bet.tokens?.token_name || 'Unknown Token',
         tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
         initiator: bet.creator,

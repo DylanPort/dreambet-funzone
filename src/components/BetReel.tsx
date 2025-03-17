@@ -36,6 +36,7 @@ const BetReel: React.FC = () => {
         const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
           id: pb.id,
           tokenId: pb.tokenMint,
+          tokenMint: pb.tokenMint, // Add tokenMint property
           tokenName: pb.tokenName,
           tokenSymbol: pb.tokenSymbol,
           initiator: publicKey?.toString() || '',
@@ -45,7 +46,6 @@ const BetReel: React.FC = () => {
           expiresAt: new Date(pb.expiresAt).getTime(),
           status: 'open' as BetStatus,
           duration: 30,
-          // Add the required properties with default values
           onChainBetId: '',
           transactionSignature: ''
         }));
@@ -261,10 +261,10 @@ const BetReel: React.FC = () => {
         <div className="flex items-center ml-4">
           <div className="flex gap-2 items-center">
             <div className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs font-medium">
-              Active: {activeBetsCount}
+              Active: {activeBets.filter(bet => bet.status !== 'expired').length}
             </div>
             <div className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-xs font-medium">
-              Expired: {expiredBetsCount}
+              Expired: {activeBets.filter(bet => bet.status === 'expired').length}
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BetCard from './BetCard';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Progress } from '@/components/ui/progress';
+
 const OpenBetsList = () => {
   const {
     toast
@@ -37,6 +38,7 @@ const OpenBetsList = () => {
     averageDustMarketCap: number;
     totalVolume: number;
   }>>({});
+
   const {
     data: supabaseBets = [],
     isLoading,
@@ -57,6 +59,7 @@ const OpenBetsList = () => {
     },
     refetchInterval: 30000
   });
+
   useEffect(() => {
     console.log('OpenBetsList - Component state:', {
       connected,
@@ -68,6 +71,7 @@ const OpenBetsList = () => {
       filterValue: filter
     });
   }, [connected, publicKey, supabaseBets, pxbBets, localBets, filter]);
+
   useEffect(() => {
     try {
       const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
@@ -77,6 +81,7 @@ const OpenBetsList = () => {
       const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
         id: pb.id,
         tokenId: pb.tokenMint,
+        tokenMint: pb.tokenMint,
         tokenName: pb.tokenName,
         tokenSymbol: pb.tokenSymbol,
         initiator: publicKey?.toString() || '',
@@ -105,6 +110,7 @@ const OpenBetsList = () => {
       setLocalBets([]);
     }
   }, [supabaseBets, pxbBets, publicKey]);
+
   useEffect(() => {
     const allBets = [...supabaseBets, ...localBets];
     const counts: Record<string, {
@@ -177,6 +183,7 @@ const OpenBetsList = () => {
     console.log('Calculated bet counts and percentages by token:', counts);
     setBetCountsByToken(counts);
   }, [supabaseBets, localBets]);
+
   useEffect(() => {
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in OpenBetsList:", event.detail);
@@ -212,11 +219,13 @@ const OpenBetsList = () => {
       window.removeEventListener('newBetCreated', handleNewBet as EventListener);
     };
   }, [toast]);
+
   const allBets = [...supabaseBets, ...localBets];
   const filteredBets = allBets.filter(bet => {
     if (filter === 'all') return true;
     return filter === bet.prediction;
   });
+
   const handleRefresh = () => {
     toast({
       title: "Refreshing open bets",
@@ -224,6 +233,7 @@ const OpenBetsList = () => {
     });
     refetch();
   };
+
   const formatMarketCap = (marketCap: number) => {
     if (!marketCap || isNaN(marketCap)) return 'N/A';
     if (marketCap >= 1000000000) {
@@ -236,11 +246,13 @@ const OpenBetsList = () => {
       return `$${marketCap.toFixed(2)}`;
     }
   };
+
   const calculateWinRate = (wins: number, losses: number) => {
     const total = wins + losses;
     if (total === 0) return "No data";
     return `${Math.round(wins / total * 100)}%`;
   };
+
   if (isLoading) {
     return <div className="space-y-5">
         <div className="flex justify-between items-center">
@@ -272,6 +284,7 @@ const OpenBetsList = () => {
         </div>
       </div>;
   }
+
   if (error) {
     console.error('Error in OpenBetsList:', error);
     return <div className="glass-panel p-6 text-center">
@@ -285,6 +298,7 @@ const OpenBetsList = () => {
         </button>
       </div>;
   }
+
   return <div className="space-y-5">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
@@ -470,4 +484,5 @@ const OpenBetsList = () => {
         </div>}
     </div>;
 };
+
 export default OpenBetsList;

@@ -60,9 +60,7 @@ const MigratingTokenList = () => {
                     priceUsd: dexScreenerData.priceUsd,
                     volume24h: dexScreenerData.volume24h,
                     priceChange24h: dexScreenerData.priceChange24h,
-                    liquidity: dexScreenerData.liquidity,
-                    fdv: dexScreenerData.fdv,
-                    pairAddress: dexScreenerData.pairAddress
+                    liquidity: dexScreenerData.liquidity
                   }
                 }));
               }
@@ -94,7 +92,7 @@ const MigratingTokenList = () => {
       total: tokenBets.length,
       up: upBets.length,
       down: downBets.length,
-      volume: tokenBets.reduce((sum, bet) => sum + bet.betAmount, 0)
+      volume: tokenBets.reduce((sum, bet) => sum + (bet.betAmount || 0), 0)
     };
   };
   
