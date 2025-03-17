@@ -308,7 +308,6 @@ export const usePointOperations = (
       const newBetForEvent: Bet = {
         id: betData.bet_id,
         tokenId: tokenId,
-        tokenMint: tokenId,
         tokenName: tokenName,
         tokenSymbol: tokenSymbol,
         initiator: walletAddress,
@@ -318,6 +317,7 @@ export const usePointOperations = (
         expiresAt: new Date(new Date().getTime() + (durationSeconds * 1000)).getTime(),
         status: 'open',
         duration: durationMinutes,
+        // Add the required properties with default values
         onChainBetId: '',
         transactionSignature: ''
       };

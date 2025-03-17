@@ -5,7 +5,6 @@ export interface PXBPointsContextType {
   userProfile: UserProfile | null;
   isLoading: boolean;
   bets: PXBBet[];
-  userBets: PXBBet[]; // Added this missing property
   leaderboard: UserProfile[];
   mintPoints: (amount?: number) => Promise<void>;
   placeBet: (

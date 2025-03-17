@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 
@@ -89,7 +90,6 @@ export const fetchOpenBets = async () => {
       const transformedBet: Bet = {
         id: bet.bet_id,
         tokenId: bet.token_mint,
-        tokenMint: bet.token_mint,
         tokenName: bet.tokens?.token_name || 'Unknown Token',
         tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
         initiator: bet.creator || 'Unknown',
@@ -261,7 +261,6 @@ export const createSupabaseBet = async (
     const newBet = {
       id: data.bet_id,
       tokenId: tokenMint,
-      tokenMint: tokenMint,
       tokenName: tokenName,
       tokenSymbol: tokenSymbol,
       initiator: creatorWalletAddress,
@@ -359,7 +358,6 @@ export const acceptBet = async (betId: string) => {
   return {
     id: data.bet_id,
     tokenId: data.token_mint,
-    tokenMint: data.token_mint,
     tokenName: betData.tokens?.token_name || 'Unknown',
     tokenSymbol: betData.tokens?.token_symbol || 'UNKNOWN',
     initiator: betData.creator,

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -35,7 +36,6 @@ const BetReel: React.FC = () => {
         const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
           id: pb.id,
           tokenId: pb.tokenMint,
-          tokenMint: pb.tokenMint,
           tokenName: pb.tokenName,
           tokenSymbol: pb.tokenSymbol,
           initiator: publicKey?.toString() || '',
@@ -45,6 +45,7 @@ const BetReel: React.FC = () => {
           expiresAt: new Date(pb.expiresAt).getTime(),
           status: 'open' as BetStatus,
           duration: 30,
+          // Add the required properties with default values
           onChainBetId: '',
           transactionSignature: ''
         }));
@@ -64,6 +65,7 @@ const BetReel: React.FC = () => {
 
         console.log('Active and expired bets for reel:', combinedBets);
         
+        // Update status for any bets that have expired
         const updatedBets = combinedBets.map(bet => {
           if (bet.expiresAt < now && bet.status !== 'expired') {
             return { ...bet, status: 'expired' as BetStatus };
@@ -117,12 +119,12 @@ const BetReel: React.FC = () => {
               prediction = data.prediction_bettor1 as BetPrediction;
             }
             
+            // Convert string status to BetStatus type
             const status = data.status as BetStatus;
             
             const newBet: Bet = {
               id: data.bet_id,
               tokenId: data.token_mint,
-              tokenMint: data.token_mint,
               tokenName: data.tokens?.token_name || 'Unknown Token',
               tokenSymbol: data.tokens?.token_symbol || 'UNKNOWN',
               initiator: data.creator,
@@ -172,16 +174,14 @@ const BetReel: React.FC = () => {
 
     const handleNewBet = (event: CustomEvent) => {
       console.log("New bet created event received in BetReel:", event.detail);
-      const { bet } = event.detail;
+      const {
+        bet
+      } = event.detail;
       if (bet) {
         setActiveBets(prev => {
           const exists = prev.some(existingBet => existingBet.id === bet.id);
           if (!exists) {
-            const newBet = {
-              ...bet,
-              tokenMint: bet.tokenMint || bet.tokenId
-            };
-            const newBets = [newBet, ...prev.slice(0, 4)];
+            const newBets = [bet, ...prev.slice(0, 4)];
             setAnimateIndex(0);
             setTimeout(() => {
               setAnimateIndex(null);
@@ -195,6 +195,7 @@ const BetReel: React.FC = () => {
 
     window.addEventListener('newBetCreated', handleNewBet as EventListener);
     
+    // Set up an interval to check for expired bets
     const checkExpiredInterval = setInterval(() => {
       const now = Date.now();
       setActiveBets(prev => 
@@ -205,7 +206,7 @@ const BetReel: React.FC = () => {
           return bet;
         })
       );
-    }, 10000);
+    }, 10000); // Check every 10 seconds
 
     if (pxbBets.length > 0) {
       fetchBets();
@@ -246,6 +247,7 @@ const BetReel: React.FC = () => {
       </div>;
   }
 
+  // Count active and expired bets
   const activeBetsCount = activeBets.filter(bet => bet.status !== 'expired').length;
   const expiredBetsCount = activeBets.filter(bet => bet.status === 'expired').length;
 

@@ -290,7 +290,6 @@ export const createSolanaBet = async (
     const localBet: Bet = {
       id: `local-${Date.now()}`,
       tokenId: tokenMint,
-      tokenMint: tokenMint,
       tokenName: tokenName,
       tokenSymbol: tokenSymbol,
       initiator: publicKey.toString(),
@@ -524,7 +523,6 @@ export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
     const mockBet: Bet = {
       id: `solana-${betId}`,
       tokenId: 'GALn4FcBs5PxZkhLX8DGFEZWAHdSD8LiWo48s9yPpump',
-      tokenMint: 'GALn4FcBs5PxZkhLX8DGFEZWAHdSD8LiWo48s9yPpump',
       tokenName: 'Mock Token',
       tokenSymbol: 'MOCK',
       initiator: '7FzXBBPjzrNJbm9MrZKZcyvP3ojVeYPUG2hTuzV892Fj',

@@ -6,7 +6,6 @@ export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed';
 export interface Bet {
   id: string;
   tokenId: string;
-  tokenMint: string; // Required field
   tokenName: string;
   tokenSymbol: string;
   initiator: string;
