@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -46,7 +47,8 @@ const getFallbackBets = (): Bet[] => {
       return bets.filter(bet => bet.expiresAt > now).map(bet => ({
         ...bet,
         onChainBetId: bet.onChainBetId || '',
-        transactionSignature: bet.transactionSignature || ''
+        transactionSignature: bet.transactionSignature || '',
+        tokenMint: bet.tokenMint || bet.tokenId // Ensure tokenMint is set
       }));
     }
   } catch (error) {
@@ -96,7 +98,8 @@ export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
     
     return allBets.map(bet => ({
       ...bet,
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
+      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed",
+      tokenMint: bet.tokenMint || bet.tokenId // Ensure tokenMint is set
     }));
   } catch (error) {
     console.error('Error fetching bets by token:', error);
@@ -130,7 +133,8 @@ export const fetchOpenBets = async (): Promise<Bet[]> => {
     
     return allBets.map(bet => ({
       ...bet,
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
+      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed",
+      tokenMint: bet.tokenMint || bet.tokenId // Ensure tokenMint is set
     }));
   } catch (error) {
     console.error('Error fetching open bets:', error);
@@ -223,6 +227,7 @@ export const createBet = async (
     const fallbackBet: Bet = {
       id: `local-${Date.now()}`,
       tokenId,
+      tokenMint: tokenId, // Set tokenMint to tokenId
       tokenName,
       tokenSymbol,
       initiator: effectivePublicKey.toString(),
@@ -274,7 +279,8 @@ export const createBet = async (
         ...bet,
         onChainBetId: betId?.toString() || '',
         transactionSignature: txSignature || '',
-        status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
+        status: bet.status as "open" | "matched" | "completed" | "expired" | "closed",
+        tokenMint: bet.tokenMint || tokenId // Ensure tokenMint is set
       };
     } catch (supabaseError) {
       console.warn("Failed to create bet in Supabase, using fallback data:", supabaseError);
@@ -335,7 +341,8 @@ export const acceptBet = async (
     
     return {
       ...updatedBet,
-      status: updatedBet.status as "open" | "matched" | "completed" | "expired" | "closed"
+      status: updatedBet.status as "open" | "matched" | "completed" | "expired" | "closed",
+      tokenMint: updatedBet.tokenMint || updatedBet.tokenId // Ensure tokenMint is set
     };
   } catch (error) {
     console.error('Error accepting bet:', error);
