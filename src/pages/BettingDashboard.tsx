@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Wallet, HelpCircle, Rocket, Skull, Trophy, Zap, Check, Gift, Star } from 'lucide-react';
+import { Wallet, HelpCircle, Rocket, Skull, Trophy, Zap, Check, Gift, Star, Hand, HandMetal } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import MigratingTokenList from '@/components/MigratingTokenList';
@@ -9,6 +10,13 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 const BettingDashboard = () => {
   const {
     connected
@@ -84,7 +92,7 @@ const BettingDashboard = () => {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left relative z-10">
-                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(255,61,252,0.3)] ${readSteps.selectToken ? 'border-dream-accent1/50' : 'border-dream-accent1/20'} ${!readSteps.selectToken ? 'blur-[3px]' : ''}`} whileHover={{
+                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(255,61,252,0.3)] ${readSteps.selectToken ? 'border-dream-accent1/50' : 'border-dream-accent1/20'} ${!readSteps.selectToken ? 'blur-[1px]' : ''} relative`} whileHover={{
                 y: -5
               }} onClick={() => {
                 if (!readSteps.selectToken) {
@@ -98,6 +106,30 @@ const BettingDashboard = () => {
                   });
                 }
               }}>
+                  {!readSteps.selectToken && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <motion.div 
+                            className="absolute -right-3 -bottom-3 z-20 w-10 h-10 bg-dream-accent1/30 rounded-full flex items-center justify-center"
+                            animate={{
+                              y: [0, -5, 0],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              repeatType: "reverse"
+                            }}
+                          >
+                            <Hand className="h-6 w-6 text-dream-accent1 transform -rotate-45" />
+                          </motion.div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-dream-accent1/90 border-dream-accent1">
+                          <p>Click here to learn about selecting tokens</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-10 h-10 rounded-full bg-dream-accent1/20 flex items-center justify-center animate-pulse-subtle">
                       <Zap className="h-6 w-6 text-dream-accent1" />
@@ -119,7 +151,7 @@ const BettingDashboard = () => {
                   {!readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent1 animate-pulse">Click to reveal this step</div>}
                 </motion.div>
                 
-                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(0,238,255,0.3)] ${readSteps.placeBet ? 'border-dream-accent2/50' : 'border-dream-accent2/20'} ${!readSteps.placeBet ? 'blur-[3px]' : ''}`} whileHover={{
+                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(0,238,255,0.3)] ${readSteps.placeBet ? 'border-dream-accent2/50' : 'border-dream-accent2/20'} ${!readSteps.placeBet ? 'blur-[1px]' : ''} relative`} whileHover={{
                 y: -5
               }} onClick={() => {
                 if (readSteps.selectToken && !readSteps.placeBet) {
@@ -139,6 +171,30 @@ const BettingDashboard = () => {
                   });
                 }
               }}>
+                  {readSteps.selectToken && !readSteps.placeBet && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <motion.div 
+                            className="absolute -right-3 -bottom-3 z-20 w-10 h-10 bg-dream-accent2/30 rounded-full flex items-center justify-center"
+                            animate={{
+                              y: [0, -5, 0],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              repeatType: "reverse"
+                            }}
+                          >
+                            <Hand className="h-6 w-6 text-dream-accent2 transform -rotate-45" />
+                          </motion.div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-dream-accent2/90 border-dream-accent2">
+                          <p>Click here to learn about placing bets</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-10 h-10 rounded-full bg-dream-accent2/20 flex items-center justify-center animate-pulse-subtle">
                       <div className="relative">
@@ -172,7 +228,7 @@ const BettingDashboard = () => {
                   {!readSteps.placeBet && readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent2 animate-pulse">Click to reveal this step</div>}
                 </motion.div>
                 
-                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(123,97,255,0.3)] ${readSteps.collectRewards ? 'border-dream-accent3/50' : 'border-dream-accent3/20'} ${!readSteps.collectRewards ? 'blur-[3px]' : ''}`} whileHover={{
+                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(123,97,255,0.3)] ${readSteps.collectRewards ? 'border-dream-accent3/50' : 'border-dream-accent3/20'} ${!readSteps.collectRewards ? 'blur-[1px]' : ''} relative`} whileHover={{
                 y: -5
               }} onClick={() => {
                 if (readSteps.selectToken && readSteps.placeBet && !readSteps.collectRewards) {
@@ -192,6 +248,30 @@ const BettingDashboard = () => {
                   });
                 }
               }}>
+                  {readSteps.placeBet && !readSteps.collectRewards && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <motion.div 
+                            className="absolute -right-3 -bottom-3 z-20 w-10 h-10 bg-dream-accent3/30 rounded-full flex items-center justify-center"
+                            animate={{
+                              y: [0, -5, 0],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              repeatType: "reverse"
+                            }}
+                          >
+                            <HandMetal className="h-6 w-6 text-dream-accent3 transform -rotate-45" />
+                          </motion.div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-dream-accent3/90 border-dream-accent3">
+                          <p>Click here to learn about collecting rewards</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-10 h-10 rounded-full bg-dream-accent3/20 flex items-center justify-center animate-pulse-subtle">
                       <Trophy className="h-6 w-6 text-dream-accent3" />
