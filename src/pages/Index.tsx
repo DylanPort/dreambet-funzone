@@ -106,88 +106,112 @@ const Index = () => {
               <AnimatedLogo />
               
               {isMobile && (
-                <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
-                  bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
-                  backdrop-blur-[1px] rounded-xl border border-white/5
-                  animate-entrance overflow-hidden
-                  before:content-[''] before:absolute before:inset-0 
-                  before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
-                  before:animate-pulse-glow">
-                  
-                  <div className="p-4 border-b border-white/10">
-                    <div className="flex flex-col space-y-3">
-                      <div className="flex items-center justify-center gap-2 text-white/90 hover:text-white/100 transition-colors group">
-                        <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="h-5 w-5 text-dream-accent1" />
-                        <span className="bg-gradient-to-r from-dream-accent1/90 to-dream-accent3/90 bg-clip-text text-transparent font-medium">Buy some PXB tokens</span>
+                <>
+                  <div className="max-w-7xl mx-auto px-4 py-6 mb-6">
+                    <h2 className="text-xl font-bold text-center mb-4 bg-gradient-to-r from-dream-accent1 to-dream-accent2 bg-clip-text text-transparent flex items-center justify-center gap-2">
+                      <Trophy className="h-5 w-5 text-dream-accent1" />
+                      PXB Leaderboard & Stats
+                      <Trophy className="h-5 w-5 text-dream-accent2" />
+                    </h2>
+                    
+                    <div className="glass-panel p-4 rounded-lg mb-4">
+                      <PXBSupplyProgress />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4 mb-4">
+                      <div className="glass-panel p-4">
+                        <PXBUserStats />
                       </div>
                       
-                      <div className="flex items-center justify-center gap-2 text-white/90 hover:text-white/100 transition-colors group">
-                        <img src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" alt="Lightning" className="h-5 w-5 text-dream-accent2" />
-                        <span className="bg-gradient-to-r from-dream-accent2/90 to-dream-accent1/90 bg-clip-text text-transparent font-medium">Connect your wallet securely</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-center gap-2 text-white/90 hover:text-white/100 transition-colors group">
-                        <img src="/lovable-uploads/4cf5638c-4544-455d-baf2-37470b161dbd.png" alt="Diamond" className="h-5 w-5 text-dream-accent3" />
-                        <span className="bg-gradient-to-r from-dream-accent3/90 to-dream-accent2/90 bg-clip-text text-transparent font-medium">Mint PXB points & start betting</span>
+                      <div className="glass-panel p-4">
+                        <PXBLeaderboard />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-black/20">
-                    <h3 className="text-center font-bold mb-2 text-white text-lg">
-                      <span className="inline-block relative">
-                        Bet on tokens
-                        <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-dream-accent2 to-dream-accent1"></div>
-                      </span>
-                    </h3>
+                  <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
+                    bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
+                    backdrop-blur-[1px] rounded-xl border border-white/5
+                    animate-entrance overflow-hidden
+                    before:content-[''] before:absolute before:inset-0 
+                    before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
+                    before:animate-pulse-glow">
                     
-                    <div className="flex justify-center items-center gap-6 my-2">
-                      <div className="relative group cursor-pointer">
-                        <span className="relative inline-flex items-center gap-1 text-green-400 font-bold animate-bob">
-                          <img src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" alt="Rocket" className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
-                          <span className="bg-green-500/80 px-2 py-0.5 rounded-lg text-white group-hover:bg-green-500 transition-colors">MOON</span>
+                    <div className="p-4 border-b border-white/10">
+                      <div className="flex flex-col space-y-3">
+                        <div className="flex items-center justify-center gap-2 text-white/90 hover:text-white/100 transition-colors group">
+                          <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="h-5 w-5 text-dream-accent1" />
+                          <span className="bg-gradient-to-r from-dream-accent1/90 to-dream-accent3/90 bg-clip-text text-transparent font-medium">Buy some PXB tokens</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-center gap-2 text-white/90 hover:text-white/100 transition-colors group">
+                          <img src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" alt="Lightning" className="h-5 w-5 text-dream-accent2" />
+                          <span className="bg-gradient-to-r from-dream-accent2/90 to-dream-accent1/90 bg-clip-text text-transparent font-medium">Connect your wallet securely</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-center gap-2 text-white/90 hover:text-white/100 transition-colors group">
+                          <img src="/lovable-uploads/4cf5638c-4544-455d-baf2-37470b161dbd.png" alt="Diamond" className="h-5 w-5 text-dream-accent3" />
+                          <span className="bg-gradient-to-r from-dream-accent3/90 to-dream-accent2/90 bg-clip-text text-transparent font-medium">Mint PXB points & start betting</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 bg-black/20">
+                      <h3 className="text-center font-bold mb-2 text-white text-lg">
+                        <span className="inline-block relative">
+                          Bet on tokens
+                          <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-dream-accent2 to-dream-accent1"></div>
                         </span>
-                        <div className="absolute inset-0 bg-green-400/10 blur-md rounded-full scale-0 group-hover:scale-125 transition-transform duration-300"></div>
+                      </h3>
+                      
+                      <div className="flex justify-center items-center gap-6 my-2">
+                        <div className="relative group cursor-pointer">
+                          <span className="relative inline-flex items-center gap-1 text-green-400 font-bold animate-bob">
+                            <img src="/lovable-uploads/5fbe719e-2eae-4c8e-ade1-fb21115ea119.png" alt="Rocket" className="h-8 w-8 animate-float filter drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]" />
+                            <span className="bg-green-500/80 px-2 py-0.5 rounded-lg text-white group-hover:bg-green-500 transition-colors">MOON</span>
+                          </span>
+                          <div className="absolute inset-0 bg-green-400/10 blur-md rounded-full scale-0 group-hover:scale-125 transition-transform duration-300"></div>
+                        </div>
+                        
+                        <div className="text-white/80 text-2xl font-light">or</div>
+                        
+                        <div className="relative group cursor-pointer">
+                          <span className="relative inline-flex items-center gap-1 text-red-400 font-bold">
+                            <img src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" alt="Skull" className="h-8 w-8 animate-pulse filter drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                            <span className="bg-red-500/80 px-2 py-0.5 rounded-lg text-white group-hover:bg-red-500 transition-colors">DUST</span>
+                          </span>
+                          <div className="absolute inset-0 bg-red-400/10 blur-md rounded-full scale-0 group-hover:scale-125 transition-transform duration-300"></div>
+                        </div>
                       </div>
+                    </div>
+                    
+                    <div className="p-6 bg-gradient-to-b from-black/10 to-black/30 relative overflow-hidden">
+                      <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-indigo-500/20 rounded-full blur-3xl opacity-70"></div>
                       
-                      <div className="text-white/80 text-2xl font-light">or</div>
-                      
-                      <div className="relative group cursor-pointer">
-                        <span className="relative inline-flex items-center gap-1 text-red-400 font-bold">
-                          <img src="/lovable-uploads/c97a2ff8-a872-40d8-9b65-59831498a464.png" alt="Skull" className="h-8 w-8 animate-pulse filter drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                          <span className="bg-red-500/80 px-2 py-0.5 rounded-lg text-white group-hover:bg-red-500 transition-colors">DUST</span>
+                      <h3 className="text-center relative z-10 mb-4">
+                        <span className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-200 via-pink-300 to-yellow-200 bg-clip-text text-transparent font-bold text-2xl pb-1">
+                          <img src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" alt="Star" className="h-6 w-6 animate-pulse-glow" />
+                          It's that simple
+                          <img src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" alt="Star" className="h-6 w-6 animate-pulse-glow" />
                         </span>
-                        <div className="absolute inset-0 bg-red-400/10 blur-md rounded-full scale-0 group-hover:scale-125 transition-transform duration-300"></div>
+                      </h3>
+                      
+                      <div className="flex flex-col space-y-4 text-center mt-6 relative z-10">
+                        <div className="text-lg font-medium">
+                          <span className="text-pink-300">1.</span> <span className="text-white/90">Predict whether a token will moon or crash to dust</span>
+                        </div>
+                        
+                        <div className="text-lg font-medium">
+                          <span className="text-purple-300">2.</span> <span className="text-white/90">Place your bet with PXB tokens to back your prediction</span>
+                        </div>
+                        
+                        <div className="text-lg font-medium">
+                          <span className="text-indigo-300">3.</span> <span className="text-white/90">Earn points, climb the leaderboard, build your reputation</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="p-6 bg-gradient-to-b from-black/10 to-black/30 relative overflow-hidden">
-                    <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-indigo-500/20 rounded-full blur-3xl opacity-70"></div>
-                    
-                    <h3 className="text-center relative z-10 mb-4">
-                      <span className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-200 via-pink-300 to-yellow-200 bg-clip-text text-transparent font-bold text-2xl pb-1">
-                        <img src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" alt="Star" className="h-6 w-6 animate-pulse-glow" />
-                        It's that simple
-                        <img src="/lovable-uploads/ac099dc7-7eb5-45db-9d89-615f8619a093.png" alt="Star" className="h-6 w-6 animate-pulse-glow" />
-                      </span>
-                    </h3>
-                    
-                    <div className="flex flex-col space-y-4 text-center mt-6 relative z-10">
-                      <div className="text-lg font-medium">
-                        <span className="text-pink-300">1.</span> <span className="text-white/90">Predict whether a token will moon or crash to dust</span>
-                      </div>
-                      
-                      <div className="text-lg font-medium">
-                        <span className="text-purple-300">2.</span> <span className="text-white/90">Place your bet with PXB tokens to back your prediction</span>
-                      </div>
-                      
-                      <div className="text-lg font-medium">
-                        <span className="text-indigo-300">3.</span> <span className="text-white/90">Earn points, climb the leaderboard, build your reputation</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                </>
               )}
             </div>
             
@@ -332,27 +356,29 @@ const Index = () => {
             <RecentTokenTrades />
           </div>
           
-          <div className="max-w-7xl mx-auto px-4 py-10">
-            <h2 className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-dream-accent1 to-dream-accent2 bg-clip-text text-transparent flex items-center justify-center gap-2">
-              <Trophy className="h-6 w-6 text-dream-accent1" />
-              PXB Leaderboard & Statistics
-              <Trophy className="h-6 w-6 text-dream-accent2" />
-            </h2>
-            
-            <div className="glass-panel p-6 rounded-lg mb-8 py-[16px] my-[80px]">
-              <PXBSupplyProgress />
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 py-[2px] my-0">
-              <div className="glass-panel p-6">
-                <PXBUserStats />
+          {!isMobile && (
+            <div className="max-w-7xl mx-auto px-4 py-10">
+              <h2 className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-dream-accent1 to-dream-accent2 bg-clip-text text-transparent flex items-center justify-center gap-2">
+                <Trophy className="h-6 w-6 text-dream-accent1" />
+                PXB Leaderboard & Statistics
+                <Trophy className="h-6 w-6 text-dream-accent2" />
+              </h2>
+              
+              <div className="glass-panel p-6 rounded-lg mb-8 py-[16px] my-[80px]">
+                <PXBSupplyProgress />
               </div>
               
-              <div className="glass-panel p-6">
-                <PXBLeaderboard />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 py-[2px] my-0">
+                <div className="glass-panel p-6">
+                  <PXBUserStats />
+                </div>
+                
+                <div className="glass-panel p-6">
+                  <PXBLeaderboard />
+                </div>
               </div>
             </div>
-          </div>
+          )}
         
         </section>
       </main>
