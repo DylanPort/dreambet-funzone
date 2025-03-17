@@ -4,7 +4,7 @@ import { fetchOpenBets } from '@/services/supabaseService';
 import { Bet } from '@/types/bet';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from '@/hooks/use-toast';
-import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users, BarChart } from 'lucide-react';
+import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users, BarChart, Trophy, XCircle } from 'lucide-react';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,7 +26,18 @@ const OpenBetsList = () => {
     bets: pxbBets
   } = usePXBPoints();
 
-  const [betCountsByToken, setBetCountsByToken] = useState<Record<string, { moon: number, dust: number, moonPercentage: number, dustPercentage: number }>>({}); 
+  const [betCountsByToken, setBetCountsByToken] = useState<Record<string, { 
+    moon: number, 
+    dust: number, 
+    moonPercentage: number, 
+    dustPercentage: number,
+    moonWins: number,
+    dustWins: number,
+    moonLosses: number,
+    dustLosses: number,
+    averageMoonMarketCap: number,
+    averageDustMarketCap: number
+  }>>({});
 
   const {
     data: supabaseBets = [],
@@ -104,17 +115,67 @@ const OpenBetsList = () => {
 
   useEffect(() => {
     const allBets = [...supabaseBets, ...localBets];
-    const counts: Record<string, { moon: number, dust: number, moonPercentage: number, dustPercentage: number }> = {};
+    const counts: Record<string, { 
+      moon: number, 
+      dust: number, 
+      moonPercentage: number, 
+      dustPercentage: number,
+      moonWins: number,
+      dustWins: number,
+      moonLosses: number,
+      dustLosses: number,
+      averageMoonMarketCap: number,
+      averageDustMarketCap: number
+    }> = {};
     
     allBets.forEach(bet => {
       if (!counts[bet.tokenId]) {
-        counts[bet.tokenId] = { moon: 0, dust: 0, moonPercentage: 0, dustPercentage: 0 };
+        counts[bet.tokenId] = { 
+          moon: 0, 
+          dust: 0, 
+          moonPercentage: 0, 
+          dustPercentage: 0,
+          moonWins: 0,
+          dustWins: 0,
+          moonLosses: 0,
+          dustLosses: 0,
+          averageMoonMarketCap: 0,
+          averageDustMarketCap: 0
+        };
       }
       
       if (bet.prediction === 'migrate') {
         counts[bet.tokenId].moon += 1;
+        
+        if (bet.initialMarketCap) {
+          const currentTotal = counts[bet.tokenId].averageMoonMarketCap * (counts[bet.tokenId].moon - 1);
+          const newTotal = currentTotal + bet.initialMarketCap;
+          counts[bet.tokenId].averageMoonMarketCap = newTotal / counts[bet.tokenId].moon;
+        }
+        
+        if (bet.status === 'completed') {
+          if (bet.winner === bet.initiator) {
+            counts[bet.tokenId].moonWins += 1;
+          } else {
+            counts[bet.tokenId].moonLosses += 1;
+          }
+        }
       } else if (bet.prediction === 'die') {
         counts[bet.tokenId].dust += 1;
+        
+        if (bet.initialMarketCap) {
+          const currentTotal = counts[bet.tokenId].averageDustMarketCap * (counts[bet.tokenId].dust - 1);
+          const newTotal = currentTotal + bet.initialMarketCap;
+          counts[bet.tokenId].averageDustMarketCap = newTotal / counts[bet.tokenId].dust;
+        }
+        
+        if (bet.status === 'completed') {
+          if (bet.winner === bet.initiator) {
+            counts[bet.tokenId].dustWins += 1;
+          } else {
+            counts[bet.tokenId].dustLosses += 1;
+          }
+        }
       }
     });
     
@@ -181,6 +242,26 @@ const OpenBetsList = () => {
       description: "Fetching the latest open bets..."
     });
     refetch();
+  };
+
+  const formatMarketCap = (marketCap: number) => {
+    if (!marketCap || isNaN(marketCap)) return 'N/A';
+    
+    if (marketCap >= 1000000000) {
+      return `$${(marketCap / 1000000000).toFixed(2)}B`;
+    } else if (marketCap >= 1000000) {
+      return `$${(marketCap / 1000000).toFixed(2)}M`;
+    } else if (marketCap >= 1000) {
+      return `$${(marketCap / 1000).toFixed(2)}K`;
+    } else {
+      return `$${marketCap.toFixed(2)}`;
+    }
+  };
+
+  const calculateWinRate = (wins: number, losses: number) => {
+    const total = wins + losses;
+    if (total === 0) return "No data";
+    return `${Math.round((wins / total) * 100)}%`;
   };
 
   if (isLoading) {
@@ -281,7 +362,18 @@ const OpenBetsList = () => {
         }}>
                 <Link to={`/token/${bet.tokenId}`} className="block w-full">
                   <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:to-dream-accent3/10 transition-all duration-500"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 via-[#2a203e]/10 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:via-[#2a203e]/20 group-hover:to-dream-accent3/10 transition-all duration-500 animate-pulse-slow">
+                      <div className="absolute inset-0 opacity-30 mix-blend-overlay">
+                        <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                          <defs>
+                            <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
+                              <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+                            </pattern>
+                          </defs>
+                          <rect width="100" height="100" fill="url(#grid)" />
+                        </svg>
+                      </div>
+                    </div>
                     <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
                     <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
                     
@@ -316,12 +408,19 @@ const OpenBetsList = () => {
                       </div>
                       
                       {betCountsByToken[bet.tokenId] && (
-                        <div className="flex flex-col w-36 space-y-2">
+                        <div className="flex flex-col w-52 space-y-2 bg-black/20 p-2 rounded-lg border border-white/5">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-dream-foreground/70">Bet distribution</span>
+                            <span className="text-dream-accent2 font-medium">
+                              {betCountsByToken[bet.tokenId].moon + betCountsByToken[bet.tokenId].dust} bets
+                            </span>
+                          </div>
+                          
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-1">
                               <ArrowUp className="h-3 w-3 text-green-400" />
                               <span className="font-semibold text-green-400">
-                                {betCountsByToken[bet.tokenId].moon}
+                                Moon ({betCountsByToken[bet.tokenId].moon})
                               </span>
                             </div>
                             <span className="font-bold text-dream-accent2">
@@ -329,16 +428,19 @@ const OpenBetsList = () => {
                             </span>
                           </div>
                           
-                          <Progress 
-                            value={betCountsByToken[bet.tokenId].moonPercentage} 
-                            className="h-1.5 w-full" 
-                          />
+                          <div className="relative">
+                            <Progress 
+                              value={betCountsByToken[bet.tokenId].moonPercentage} 
+                              className="h-1.5 w-full bg-black/30" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+                          </div>
                           
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-1">
                               <ArrowDown className="h-3 w-3 text-red-400" />
                               <span className="font-semibold text-red-400">
-                                {betCountsByToken[bet.tokenId].dust}
+                                Dust ({betCountsByToken[bet.tokenId].dust})
                               </span>
                             </div>
                             <span className="font-bold text-dream-accent1">
@@ -346,10 +448,45 @@ const OpenBetsList = () => {
                             </span>
                           </div>
                           
-                          <Progress 
-                            value={betCountsByToken[bet.tokenId].dustPercentage} 
-                            className="h-1.5 w-full bg-black/30"
-                          />
+                          <div className="relative">
+                            <Progress 
+                              value={betCountsByToken[bet.tokenId].dustPercentage} 
+                              className="h-1.5 w-full bg-black/30"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 mt-1 pt-1 border-t border-white/5">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] text-dream-foreground/50">Moon MCAP</span>
+                              <span className="text-[11px] font-medium text-green-400">
+                                {formatMarketCap(betCountsByToken[bet.tokenId].averageMoonMarketCap)}
+                              </span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[10px] text-dream-foreground/50">Dust MCAP</span>
+                              <span className="text-[11px] font-medium text-red-400">
+                                {formatMarketCap(betCountsByToken[bet.tokenId].averageDustMarketCap)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-[10px]">
+                            <div className="flex items-center">
+                              <Trophy className="h-2.5 w-2.5 mr-1 text-green-400" />
+                              <span className="text-dream-foreground/70">Moon wins: </span>
+                              <span className="ml-1 text-green-400 font-medium">
+                                {calculateWinRate(betCountsByToken[bet.tokenId].moonWins, betCountsByToken[bet.tokenId].moonLosses)}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <Trophy className="h-2.5 w-2.5 mr-1 text-red-400" />
+                              <span className="text-dream-foreground/70">Dust wins: </span>
+                              <span className="ml-1 text-red-400 font-medium">
+                                {calculateWinRate(betCountsByToken[bet.tokenId].dustWins, betCountsByToken[bet.tokenId].dustLosses)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
