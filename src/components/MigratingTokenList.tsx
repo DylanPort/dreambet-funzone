@@ -1,250 +1,223 @@
-
 import React, { useState, useEffect } from 'react';
+import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Rocket, Skull } from 'lucide-react';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { fetchDexScreenerData } from '@/services/dexScreenerService';
-import { usePumpPortal } from '@/hooks/usePumpPortal';
+import { Sparkles, TrendingUp, ArrowUp, ArrowDown, Clock, Users, BarChart, Trophy, XCircle, Activity, ExternalLink } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
 
-// Mock implementation if not available in pumpPortalService
-const fetchPumpFunTokens = async () => {
-  return [];
-};
+interface MigratingToken {
+  id: string;
+  name: string;
+  symbol: string;
+  logo: string;
+  currentPrice: number;
+  change24h: number;
+  migrationTime: number;
+}
 
-const MigratingTokenList = () => {
-  const { recentTokens } = usePumpPortal();
-  const [tokens, setTokens] = useState([]);
+const MigratingTokenList: React.FC = () => {
+  const [tokens, setTokens] = useState<MigratingToken[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [tokenMetrics, setTokenMetrics] = useState({});
-  const { userProfile, bets: userPXBBets } = usePXBPoints();
-  
-  useEffect(() => {
-    const loadTokens = async () => {
+  const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'migrationTime' | 'change24h'>('migrationTime');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const {
+    data: migratingTokens = [],
+    isLoading,
+    isError,
+    refetch
+  } = useQuery({
+    queryKey: ['migratingTokens'],
+    queryFn: async () => {
+      console.log('Fetching migrating tokens from Supabase...');
       try {
-        setLoading(true);
-        
-        // Use recentTokens from usePumpPortal or fetch from API
-        let tokenData = [];
-        if (recentTokens && recentTokens.length > 0) {
-          tokenData = [...recentTokens];
-        } else {
-          const fetchedTokens = await fetchPumpFunTokens();
-          tokenData = fetchedTokens || [];
-        }
-        
-        // Sort tokens by created_time (most recent first)
-        tokenData.sort((a, b) => {
-          const dateA = new Date(a.created_time || 0);
-          const dateB = new Date(b.created_time || 0);
-          return dateB.getTime() - dateA.getTime();
-        });
-        
-        // Take top 10 most recent tokens
-        const recentMigratingTokens = tokenData.slice(0, 10);
-        
-        setTokens(recentMigratingTokens);
-        
-        // Fetch market data for each token
-        for (const token of recentMigratingTokens) {
-          if (token.token_mint) {
-            try {
-              const dexScreenerData = await fetchDexScreenerData(token.token_mint);
-              if (dexScreenerData) {
-                setTokenMetrics(prevMetrics => ({
-                  ...prevMetrics,
-                  [token.token_mint]: {
-                    marketCap: dexScreenerData.marketCap,
-                    priceUsd: dexScreenerData.priceUsd,
-                    volume24h: dexScreenerData.volume24h,
-                    priceChange24h: dexScreenerData.priceChange24h,
-                    liquidity: dexScreenerData.liquidity
-                  }
-                }));
-              }
-            } catch (metricError) {
-              console.error(`Error fetching metrics for ${token.token_name}:`, metricError);
-            }
-          }
-        }
+        const tokens = await fetchMigratingTokens();
+        console.log('MigratingTokenList - Fetched tokens:', tokens);
+        return tokens;
       } catch (err) {
-        console.error('Error loading migrating tokens:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        console.error('Error fetching migrating tokens:', err);
+        throw err;
       }
+    },
+    refetchInterval: 60000
+  });
+
+  useEffect(() => {
+    setTokens(migratingTokens);
+  }, [migratingTokens]);
+
+  useEffect(() => {
+    const sortTokens = () => {
+      const sortedTokens = [...tokens];
+      sortedTokens.sort((a, b) => {
+        let comparison = 0;
+        if (sortBy === 'migrationTime') {
+          comparison = a.migrationTime - b.migrationTime;
+        } else if (sortBy === 'change24h') {
+          comparison = a.change24h - b.change24h;
+        }
+        return sortOrder === 'asc' ? comparison : comparison * -1;
+      });
+      setTokens(sortedTokens);
     };
-    
-    loadTokens();
-  }, [recentTokens]);
-  
-  // Calculate betting stats
-  const getBettingStats = (tokenMint) => {
-    if (!userPXBBets || !Array.isArray(userPXBBets)) return { total: 0, up: 0, down: 0 };
-    
-    const tokenBets = userPXBBets.filter(bet => bet.tokenMint === tokenMint);
-    const upBets = tokenBets.filter(bet => bet.betType === 'up');
-    const downBets = tokenBets.filter(bet => bet.betType === 'down');
-    
-    return {
-      total: tokenBets.length,
-      up: upBets.length,
-      down: downBets.length,
-      volume: tokenBets.reduce((sum, bet) => sum + (bet.betAmount || 0), 0)
-    };
-  };
-  
-  const formatLargeNumber = (num) => {
-    if (num === undefined || num === null) return "-";
-    
-    if (num >= 1000000000) {
-      return `$${(num / 1000000000).toFixed(2)}B`;
-    }
-    if (num >= 1000000) {
-      return `$${(num / 1000000).toFixed(2)}M`;
-    }
-    if (num >= 1000) {
-      return `$${(num / 1000).toFixed(2)}K`;
-    }
-    return `$${num.toFixed(2)}`;
-  };
-  
-  const renderTimeAgo = (timestamp) => {
-    if (!timestamp) return 'Unknown';
-    
-    const now = new Date();
-    const tokenTime = new Date(timestamp);
-    const diffMs = now - tokenTime;
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    
-    if (diffMins < 60) {
-      return `${diffMins}m ago`;
-    } else if (diffMins < 24 * 60) {
-      const hours = Math.floor(diffMins / 60);
-      return `${hours}h ago`;
+
+    sortTokens();
+  }, [sortBy, sortOrder, tokens]);
+
+  const handleSort = (newSortBy: 'migrationTime' | 'change24h') => {
+    if (newSortBy === sortBy) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
-      const days = Math.floor(diffMins / (60 * 24));
-      return `${days}d ago`;
+      setSortBy(newSortBy);
+      setSortOrder('asc');
     }
   };
-  
-  return (
-    <div className="w-full pb-6 overflow-hidden">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-display font-bold">Recently Migrated Tokens</h2>
-        <Link to="/betting">
-          <Button variant="outline" className="text-dream-accent2 border-dream-accent2/30 hover:bg-dream-accent2/10">
-            View All
-          </Button>
-        </Link>
+
+  const getSortIndicator = (column: 'migrationTime' | 'change24h') => {
+    if (column === sortBy) {
+      return sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 ml-1" /> : <ArrowDown className="w-3 h-3 ml-1" />;
+    }
+    return null;
+  };
+
+  const formatMarketCap = (marketCap: number) => {
+    if (!marketCap || isNaN(marketCap)) return 'N/A';
+    if (marketCap >= 1000000000) {
+      return `$${(marketCap / 1000000000).toFixed(2)}B`;
+    } else if (marketCap >= 1000000) {
+      return `$${(marketCap / 1000000).toFixed(2)}M`;
+    } else if (marketCap >= 1000) {
+      return `$${(marketCap / 1000).toFixed(2)}K`;
+    } else {
+      return `$${marketCap.toFixed(2)}`;
+    }
+  };
+
+  if (isLoading) {
+    return <div className="space-y-5">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-dream-accent1" />
+            <span>MIGRATING TOKENS</span>
+          </h2>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center text-sm bg-dream-background/50 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent1/30">
+              <Clock className="w-3.5 h-3.5 mr-1.5 text-dream-accent1" />
+              <span className="font-medium">Sort By</span>
+            </div>
+            
+            <div className="flex items-center text-sm bg-dream-background/30 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent2/20">
+              <TrendingUp className="w-4 h-4 text-dream-accent2" />
+              <span>Loading...</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map(i => <div key={i} className="glass-panel p-4 animate-pulse">
+              <div className="h-5 w-32 bg-gray-700/50 rounded mb-2"></div>
+              <div className="h-4 w-16 bg-gray-700/50 rounded mb-4"></div>
+              <div className="h-8 bg-gray-700/50 rounded mb-2"></div>
+              <div className="h-8 bg-gray-700/50 rounded"></div>
+            </div>)}
+        </div>
+      </div>;
+  }
+
+  if (error) {
+    return <div className="glass-panel p-6 text-center">
+        <p className="text-red-400 mb-2">Failed to load migrating tokens</p>
+        <p className="text-dream-foreground/60 text-sm">
+          There was an error fetching the migrating tokens. Please try again later.
+        </p>
+        <button onClick={() => refetch()} className="mt-4 px-4 py-2 bg-dream-accent1/20 border border-dream-accent1/30 text-dream-accent1 rounded-md flex items-center mx-auto">
+          <Clock className="w-4 h-4 mr-2" />
+          Try Again
+        </button>
+      </div>;
+  }
+
+  return <div className="space-y-5">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
+          <Sparkles className="w-6 h-6 text-dream-accent1" />
+          <span>MIGRATING TOKENS</span>
+        </h2>
+        
+        <div className="flex items-center gap-2">
+          <button onClick={() => handleSort('migrationTime')} className="flex items-center text-sm bg-dream-background/50 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent1/30 transition-colors hover:border-dream-accent1">
+            <Clock className="w-3.5 h-3.5 mr-1.5 text-dream-accent1" />
+            <span className="font-medium">Migration Time</span>
+            {getSortIndicator('migrationTime')}
+          </button>
+          
+          <button onClick={() => handleSort('change24h')} className="flex items-center text-sm bg-dream-background/30 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent2/20 transition-colors hover:border-dream-accent2">
+            <TrendingUp className="w-4 h-4 text-dream-accent2" />
+            <span>24h Change</span>
+            {getSortIndicator('change24h')}
+          </button>
+        </div>
       </div>
-      
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-10 h-10 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      ) : error ? (
-        <div className="text-center py-8 text-red-400">
-          <p>Error loading tokens: {error}</p>
-        </div>
-      ) : tokens.length === 0 ? (
-        <div className="text-center py-8 text-dream-foreground/70">
-          <p>No recently migrated tokens found</p>
-        </div>
-      ) : (
-        <div className="glass-panel p-4 overflow-x-auto">
-          <Table className="w-full">
-            <TableHeader>
-              <TableRow className="border-b border-white/10">
-                <TableHead className="py-3 px-4 text-left text-dream-foreground/70">Token</TableHead>
-                <TableHead className="py-3 px-4 text-center text-dream-foreground/70">Migrated</TableHead>
-                <TableHead className="py-3 px-4 text-right text-dream-foreground/70">Market Cap</TableHead>
-                <TableHead className="py-3 px-4 text-center text-dream-foreground/70">Betting Stats</TableHead>
-                <TableHead className="py-3 px-4 text-right text-dream-foreground/70">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tokens.map((token, index) => {
-                const tokenMetric = tokenMetrics[token.token_mint] || {};
-                const bettingStats = getBettingStats(token.token_mint);
-                const totalUpPercentage = bettingStats.total > 0 ? (bettingStats.up / bettingStats.total) * 100 : 50;
-                
-                return (
-                  <TableRow 
-                    key={token.token_mint || index} 
-                    className="border-b border-white/5 hover:bg-white/5 transition-colors"
-                  >
-                    <TableCell className="py-3 px-4">
-                      <Link to={`/token/${token.token_mint}`} className="flex items-center group">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-xl border border-white/10 mr-3">
-                          {token.token_symbol ? token.token_symbol.charAt(0) : '🪙'}
-                        </div>
-                        <div>
-                          <div className="font-medium group-hover:text-dream-accent2 transition-colors">
-                            {token.token_name || "Unknown Token"}
-                          </div>
-                          <div className="text-sm text-dream-foreground/60 flex items-center">
-                            {token.token_symbol || "???"}
-                            <a 
-                              href={`https://solscan.io/token/${token.token_mint}`}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="ml-2 text-dream-foreground/40 hover:text-dream-accent2"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
-                        </div>
-                      </Link>
-                    </TableCell>
-                    <TableCell className="py-3 px-4 text-center text-dream-foreground/60">
-                      {renderTimeAgo(token.created_time)}
-                    </TableCell>
-                    <TableCell className="py-3 px-4 text-right">
-                      {formatLargeNumber(tokenMetric.marketCap || 0)}
-                    </TableCell>
-                    <TableCell className="py-3 px-4 text-center">
-                      <div className="flex flex-col items-center">
-                        <div className="text-sm font-medium">
-                          {bettingStats.total} Bets ({formatLargeNumber(bettingStats.volume || 0)} volume)
-                        </div>
-                        <div className="w-full h-2 bg-dream-foreground/10 rounded-full mt-1 overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-green-500 to-green-400" 
-                            style={{ width: `${totalUpPercentage}%` }}
-                          ></div>
-                        </div>
-                        <div className="flex justify-between w-full text-xs mt-1">
-                          <div className="flex items-center">
-                            <Rocket className="w-3 h-3 mr-1 text-green-500" />
-                            <span>{bettingStats.up}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Skull className="w-3 h-3 mr-1 text-red-500" />
-                            <span>{bettingStats.down}</span>
-                          </div>
-                        </div>
+
+      {tokens.length === 0 ? <div className="glass-panel p-6 text-center">
+          <p className="text-dream-foreground/80 mb-2">No migrating tokens available</p>
+          <p className="text-dream-foreground/60 text-sm">
+            Check back later for a list of tokens migrating to our platform.
+          </p>
+        </div> : <div className="space-y-4">
+          {tokens.map(token => <Link to={`/token/${token.id}`} key={token.id} className="block">
+                <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 via-[#2a203e]/10 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:via-[#2a203e]/20 group-hover:to-dream-accent3/10 transition-all duration-500 animate-pulse-slow">
+                    <div className="absolute inset-0 opacity-30 mix-blend-overlay">
+                      <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
+                            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+                          </pattern>
+                        </defs>
+                        <rect width="100" height="100" fill="url(#grid)" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
+                  <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
+                  
+                  <div className="flex items-center justify-between gap-4 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
+                        <span className="font-display font-bold text-lg">{token.symbol.charAt(0)}</span>
                       </div>
-                    </TableCell>
-                    <TableCell className="py-3 px-4 text-right">
-                      <Link to={`/token/${token.token_mint}`}>
-                        <Button size="sm" className="bg-dream-accent2/20 text-dream-accent2 hover:bg-dream-accent2/30 border border-dream-accent2/30">
-                          View Token
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
-  );
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <h3 className="font-display font-semibold text-lg">{token.name}</h3>
+                          <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
+                        </div>
+                        <p className="text-dream-foreground/60 text-sm">{token.symbol}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-end">
+                        <p className="text-sm font-medium">{token.currentPrice.toFixed(4)}</p>
+                        <p className={`text-xs font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {token.change24h >= 0 ? <ArrowUp className="w-3 h-3 inline mr-1" /> : <ArrowDown className="w-3 h-3 inline mr-1" />}
+                          {token.change24h.toFixed(2)}%
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
+                        <Clock className="w-3 h-3 mr-1" />
+                        <span>{formatDistanceToNow(token.migrationTime)} ago</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>)}
+        </div>}
+    </div>;
 };
 
 export default MigratingTokenList;

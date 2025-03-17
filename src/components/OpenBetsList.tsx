@@ -78,22 +78,24 @@ const OpenBetsList = () => {
       let fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
       const now = Date.now();
       fallbackBets = fallbackBets.filter(bet => bet.expiresAt > now && bet.status === 'open');
-      const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
-        id: pb.id,
-        tokenId: pb.tokenMint,
-        tokenMint: pb.tokenMint,
-        tokenName: pb.tokenName,
-        tokenSymbol: pb.tokenSymbol,
-        initiator: publicKey?.toString() || '',
-        amount: pb.betAmount,
-        prediction: pb.betType === 'up' ? 'migrate' : 'die',
-        timestamp: new Date(pb.createdAt).getTime(),
-        expiresAt: new Date(pb.expiresAt).getTime(),
-        status: 'open',
-        duration: 30,
-        onChainBetId: '',
-        transactionSignature: ''
-      }));
+      
+        const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
+          id: pb.id,
+          tokenId: pb.tokenMint,
+          tokenMint: pb.tokenMint, // Add tokenMint property
+          tokenName: pb.tokenName,
+          tokenSymbol: pb.tokenSymbol,
+          initiator: publicKey?.toString() || '',
+          amount: pb.betAmount,
+          prediction: pb.betType === 'up' ? 'migrate' : 'die',
+          timestamp: new Date(pb.createdAt).getTime(),
+          expiresAt: new Date(pb.expiresAt).getTime(),
+          status: 'open' as BetStatus,
+          duration: 30,
+          onChainBetId: '',
+          transactionSignature: ''
+        }));
+      
       const combinedBets = [...fallbackBets, ...convertedPXBBets].filter(localBet => {
         return !supabaseBets.some(bet => bet.id === localBet.id || bet.onChainBetId && localBet.onChainBetId && bet.onChainBetId === localBet.onChainBetId);
       });

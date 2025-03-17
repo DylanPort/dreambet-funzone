@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -125,6 +124,7 @@ const BetReel: React.FC = () => {
             const newBet: Bet = {
               id: data.bet_id,
               tokenId: data.token_mint,
+              tokenMint: data.token_mint, // Add tokenMint property
               tokenName: data.tokens?.token_name || 'Unknown Token',
               tokenSymbol: data.tokens?.token_symbol || 'UNKNOWN',
               initiator: data.creator,
