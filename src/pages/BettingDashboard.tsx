@@ -168,7 +168,7 @@ const BettingDashboard = () => {
                       <span className="text-sm font-bold text-red-400">DUST</span>
                     </div>
                   </div>
-                  <p className="text-sm text-dream-foreground/80">Bet whether the token will rise or fall by at least 10% after migration.</p>
+                  <p className="text-sm text-dream-foreground/80">Bet whether the token will rise or fall.</p>
                   {!readSteps.placeBet && readSteps.selectToken && <div className="mt-3 text-xs text-dream-accent2 animate-pulse">Click to reveal this step</div>}
                 </motion.div>
                 
