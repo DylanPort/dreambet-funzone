@@ -1,329 +1,147 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
-import { formatTimeRemaining } from '@/utils/betUtils';
-import { Link } from 'react-router-dom';
-import { supabase } from "@/integrations/supabase/client";
-import { fetchOpenBets } from "@/services/supabaseService";
-import { toast } from 'sonner';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { Token } from '@/types/token';
+import { formatDistanceToNow } from 'date-fns';
+import { ArrowUpCircle, ArrowDownCircle, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const BetReel: React.FC = () => {
-  const [activeBets, setActiveBets] = useState<Bet[]>([]);
-  const [animateIndex, setAnimateIndex] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const {
-    bets: pxbBets
-  } = usePXBPoints();
-  const {
-    publicKey
-  } = useWallet();
+interface BetReelProps {
+  tokens: Token[];
+}
 
+const BetReel: React.FC<BetReelProps> = ({ tokens }) => {
+  const [bets, setBets] = useState<Bet[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Generate random bets
   useEffect(() => {
-    const fetchBets = async () => {
-      try {
-        setLoading(true);
-        const bets = await fetchOpenBets();
-        const active = bets.filter(bet => bet.status === 'open' || bet.status === 'matched' || bet.status === 'expired');
-        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
-        let fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
-        
-        const now = Date.now();
-        fallbackBets = fallbackBets.filter(bet => bet.expiresAt > now);
-        
-        const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
-          id: pb.id,
-          tokenId: pb.tokenMint,
-          tokenName: pb.tokenName,
-          tokenSymbol: pb.tokenSymbol,
-          tokenMint: pb.tokenMint,
-          initiator: publicKey?.toString() || '',
-          amount: pb.betAmount,
-          prediction: pb.betType === 'up' ? 'migrate' : 'die',
-          timestamp: new Date(pb.createdAt).getTime(),
-          expiresAt: new Date(pb.expiresAt).getTime(),
-          status: 'open' as BetStatus,
-          duration: 30,
-          onChainBetId: '',
-          transactionSignature: ''
-        }));
+    if (tokens.length === 0) return;
 
-        const combinedBets = [...active];
-        fallbackBets.forEach(fallbackBet => {
-          if (!combinedBets.some(bet => bet.id === fallbackBet.id)) {
-            combinedBets.push(fallbackBet);
-          }
-        });
+    const generateRandomBet = () => {
+      const token = tokens[Math.floor(Math.random() * tokens.length)];
+      const predictionType = Math.random() > 0.5 ? 'up' : 'down' as BetPrediction;
+      const randomAmount = Math.floor(Math.random() * 1000) + 100;
+      const duration = [300, 600, 900, 1800, 3600][Math.floor(Math.random() * 5)];
+      const status = Math.random() > 0.7 ? 'active' : 'pending';
 
-        convertedPXBBets.forEach(pxbBet => {
-          if (!combinedBets.some(bet => bet.id === pxbBet.id)) {
-            combinedBets.push(pxbBet);
-          }
-        });
-
-        console.log('Active and expired bets for reel:', combinedBets);
-        
-        const updatedBets = combinedBets.map(bet => {
-          if (bet.expiresAt < now && bet.status !== 'expired') {
-            return { ...bet, status: 'expired' as BetStatus };
-          }
-          return bet;
-        });
-        
-        setActiveBets(updatedBets);
-      } catch (error) {
-        console.error('Error fetching bets for reel:', error);
-        toast.error('Error loading bets');
-      } finally {
-        setLoading(false);
-      }
+      return {
+        id: crypto.randomUUID(),
+        tokenId: token.id,
+        tokenName: token.name,
+        tokenSymbol: token.symbol,
+        initiator: "0xRandomAddress",
+        amount: randomAmount,
+        prediction: predictionType,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + duration * 1000,
+        status: status as BetStatus,
+        duration: duration,
+        onChainBetId: "mocked-id",
+        transactionSignature: "mocked-signature",
+        tokenMint: token.id,
+      };
     };
 
-    fetchBets();
-
-    const channel = supabase.channel('public:bets')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'bets'
-      }, async payload => {
-        console.log('New bet inserted in reel:', payload);
-        try {
-          const {
-            data,
-            error
-          } = await supabase.from('bets').select(`
-              bet_id,
-              token_mint,
-              tokens (token_name, token_symbol),
-              creator,
-              prediction_bettor1,
-              sol_amount,
-              created_at,
-              status,
-              duration,
-              on_chain_id,
-              transaction_signature
-            `).eq('bet_id', payload.new.bet_id).single();
-          if (error) throw error;
-          if (data) {
-            let prediction: BetPrediction;
-            if (data.prediction_bettor1 === 'up') {
-              prediction = 'migrate';
-            } else if (data.prediction_bettor1 === 'down') {
-              prediction = 'die';
-            } else {
-              prediction = data.prediction_bettor1 as BetPrediction;
-            }
-            
-            const status = data.status as BetStatus;
-            
-            const newBet: Bet = {
-              id: data.bet_id,
-              tokenId: data.token_mint,
-              tokenName: data.tokens?.token_name || 'Unknown Token',
-              tokenSymbol: data.tokens?.token_symbol || 'UNKNOWN',
-              initiator: data.creator,
-              amount: data.sol_amount,
-              prediction: prediction,
-              timestamp: new Date(data.created_at).getTime(),
-              expiresAt: new Date(data.created_at).getTime() + data.duration * 1000,
-              status: status,
-              duration: Math.floor(data.duration / 60),
-              onChainBetId: data.on_chain_id?.toString() || '',
-              transactionSignature: data.transaction_signature || ''
-            };
-            setActiveBets(prev => {
-              const newBets = [newBet, ...prev.slice(0, 4)];
-              return newBets;
-            });
-            setAnimateIndex(0);
-            toast.success('New bet created!');
-            setTimeout(() => {
-              setAnimateIndex(null);
-            }, 3000);
-          }
-        } catch (error) {
-          console.error('Error fetching new bet details:', error);
-        }
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'bets'
-      }, payload => {
-        console.log('Bet updated in reel:', payload);
-        if (payload.new.status !== payload.old.status) {
-          if (payload.new.status === 'open' || payload.new.status === 'matched' || payload.new.status === 'expired') {
-            fetchBets();
-            if (payload.new.status === 'expired') {
-              toast.info('A bet has expired', {
-                description: 'Check the bet details for more information'
-              });
-            }
-          } else {
-            setActiveBets(prev => prev.filter(bet => bet.id !== payload.new.bet_id));
-          }
-        }
-      })
-      .subscribe();
-
-    const handleNewBet = (event: CustomEvent) => {
-      console.log("New bet created event received in BetReel:", event.detail);
-      const {
-        bet
-      } = event.detail;
-      if (bet) {
-        setActiveBets(prev => {
-          const exists = prev.some(existingBet => existingBet.id === bet.id);
-          if (!exists) {
-            const newBets = [bet, ...prev.slice(0, 4)];
-            setAnimateIndex(0);
-            setTimeout(() => {
-              setAnimateIndex(null);
-            }, 3000);
-            return newBets;
-          }
-          return prev;
-        });
-      }
-    };
-
-    window.addEventListener('newBetCreated', handleNewBet as EventListener);
+    // Initial bets
+    const initialBets = Array(10)
+      .fill(null)
+      .map(() => generateRandomBet());
     
-    const checkExpiredInterval = setInterval(() => {
-      const now = Date.now();
-      setActiveBets(prev => 
-        prev.map(bet => {
-          if (bet.expiresAt < now && bet.status !== 'expired') {
-            return { ...bet, status: 'expired' as BetStatus };
+    setBets(initialBets);
+
+    // Add new bet every 3-7 seconds
+    const interval = setInterval(() => {
+      if (!isPaused) {
+        setBets(prevBets => {
+          const newBets = [...prevBets, generateRandomBet()];
+          if (newBets.length > 20) {
+            return newBets.slice(1);
           }
-          return bet;
-        })
-      );
-    }, 10000);
+          return newBets;
+        });
+      }
+    }, Math.random() * 4000 + 3000);
 
-    if (pxbBets.length > 0) {
-      fetchBets();
-    }
+    return () => clearInterval(interval);
+  }, [tokens, isPaused]);
 
-    return () => {
-      supabase.removeChannel(channel);
-      window.removeEventListener('newBetCreated', handleNewBet as EventListener);
-      clearInterval(checkExpiredInterval);
-    };
-  }, [pxbBets, publicKey]);
+  const handleMouseEnter = () => {
+    setIsPaused(true);
+  };
 
-  if (loading) {
-    return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
-        <div className="flex items-center">
-          <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
-            <img src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" alt="Crown" className="h-5 w-5 mr-2" />
-            <span className="text-sm font-semibold">ACTIVE BETS</span>
-          </div>
-          <div className="overflow-hidden mx-4 flex-1">
-            <div className="text-sm text-gray-400">Loading active bets...</div>
-          </div>
-        </div>
-      </div>;
-  }
+  const handleMouseLeave = () => {
+    setIsPaused(false);
+  };
 
-  if (activeBets.length === 0) {
-    return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 overflow-hidden py-[3px] my-[36px]">
-        <div className="flex items-center">
-          <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
-            <img src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" alt="Crown" className="h-4 w-26 mr-1 object-cover" />
-            <span className="text-sm font-semibold">ACTIVE BETS</span>
-          </div>
-          <div className="overflow-hidden mx-4 flex-1">
-            <div className="text-sm text-gray-400 italic">No active or expired bets at the moment</div>
-          </div>
-        </div>
-      </div>;
-  }
-
-  const activeBetsCount = activeBets.filter(bet => bet.status !== 'expired').length;
-  const expiredBetsCount = activeBets.filter(bet => bet.status === 'expired').length;
-
-  return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
-      <div className="flex items-center">
-        <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
-          <img src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" alt="Crown" className="h-5 w-5 mr-2" />
-          <span className="text-sm font-semibold">ACTIVE BETS</span>
-        </div>
-        
-        <div className="flex items-center ml-4">
-          <div className="flex gap-2 items-center">
-            <div className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs font-medium">
-              Active: {activeBetsCount}
-            </div>
-            <div className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-xs font-medium">
-              Expired: {expiredBetsCount}
-            </div>
-          </div>
-        </div>
-        
-        <div className="overflow-hidden mx-4 flex-1">
-          <div className="flex gap-4 items-center animate-scroll">
-            {activeBets.map((bet, index) => (
-              <Link 
-                key={`${bet.id}-${index}`} 
-                to={`/betting/token/${bet.tokenId}`} 
-                className={`flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border 
-                  ${bet.status === 'expired' ? 'border-amber-500/30 bg-amber-500/5' : 'border-green-500/30 bg-green-500/5'} 
-                  transition-all duration-500 hover:bg-black/40 
-                  ${animateIndex === index ? 'animate-entrance' : ''}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
-                    <span className="font-display font-bold text-sm">{bet.tokenSymbol.charAt(0)}</span>
-                  </div>
-                  
-                  <div className="mr-2">
-                    <div className="flex items-center gap-1">
-                      <div className="text-sm font-semibold">{bet.tokenName}</div>
-                      <ExternalLink className="w-3 h-3 text-dream-foreground/40" />
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] text-dream-foreground/60">
-                      <span>{bet.tokenSymbol}</span>
-                      <span className="flex items-center">
-                        <Clock className="h-2.5 w-2.5 mr-0.5" />
-                        <span>{formatTimeRemaining(bet.expiresAt)}</span>
-                      </span>
-                      {bet.status === 'expired' && 
-                        <span className="bg-amber-500/20 text-amber-400 px-1 rounded-sm">
-                          Expired
-                        </span>
-                      }
-                      {bet.status !== 'expired' && 
-                        <span className="bg-green-500/20 text-green-400 px-1 rounded-sm">
-                          Active
-                        </span>
-                      }
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3 items-center">
-                    <div className={`flex items-center px-2 py-0.5 rounded-md text-xs
-                      ${bet.prediction === 'migrate' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {bet.prediction === 'migrate' ? <ArrowUp className="h-3 w-3 mr-1" /> : <ArrowDown className="h-3 w-3 mr-1" />}
-                      <span>{bet.prediction === 'migrate' ? 'Moon' : 'Die'}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-xs bg-dream-accent2/10 px-2 py-0.5 rounded-md">
-                      <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
-                      <span className="font-semibold">{bet.amount} SOL</span>
-                    </div>
+  return (
+    <div 
+      className="w-full overflow-hidden glass-panel p-4 relative"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      ref={containerRef}
+    >
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-dream-background/80 to-transparent z-10"></div>
+        <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-dream-background/80 to-transparent z-10"></div>
+      </div>
+      
+      <h3 className="text-xl font-bold mb-4 text-gradient">Live Bets Feed</h3>
+      
+      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-dream-accent3/30 scrollbar-track-transparent">
+        <AnimatePresence initial={false}>
+          {bets.map((bet, index) => (
+            <motion.div
+              key={bet.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "glass-panel p-3 flex items-center justify-between gap-3 border",
+                bet.prediction === 'up' 
+                  ? "border-green-500/30 bg-green-500/5" 
+                  : "border-red-500/30 bg-red-500/5",
+                bet.status === 'active' && "animate-pulse-slow"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center",
+                  bet.prediction === 'up' ? "bg-green-500/20" : "bg-red-500/20"
+                )}>
+                  {bet.prediction === 'up' 
+                    ? <ArrowUpCircle className="text-green-500" /> 
+                    : <ArrowDownCircle className="text-red-500" />}
+                </div>
+                
+                <div>
+                  <div className="font-medium">{bet.tokenName} ({bet.tokenSymbol})</div>
+                  <div className="text-sm text-dream-foreground/60 flex items-center gap-1">
+                    <Clock size={12} />
+                    {formatDistanceToNow(new Date(bet.expiresAt), { addSuffix: true })}
                   </div>
                 </div>
-              </Link>
-            ))}
-          </div>
-        </div>
+              </div>
+              
+              <div className="text-right">
+                <div className={cn(
+                  "font-bold",
+                  bet.prediction === 'up' ? "text-green-400" : "text-red-400"
+                )}>
+                  {bet.amount.toLocaleString()} PXB
+                </div>
+                <div className="text-xs text-dream-foreground/60">
+                  {bet.status === 'active' ? 'Active' : 'Pending'}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 export default BetReel;
-

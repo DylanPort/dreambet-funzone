@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOpenBets } from '@/services/supabaseService';
-import { Bet } from '@/types/bet';
+import { Bet, BetPrediction, BetStatus } from '@/types/bet';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from '@/hooks/use-toast';
 import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users, BarChart, Trophy, XCircle, Activity, TrendingUp } from 'lucide-react';
