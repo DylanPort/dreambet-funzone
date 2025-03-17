@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Coins, PartyPopper, AlertCircle, CheckCircle, UserCheck } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -12,7 +11,6 @@ import { toast } from 'sonner';
 import { updateUsername } from '@/services/userService';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-
 const PXBOnboarding: React.FC = () => {
   const {
     mintPoints,
@@ -30,7 +28,6 @@ const PXBOnboarding: React.FC = () => {
     publicKey
   } = useWallet();
   const navigate = useNavigate();
-
   useEffect(() => {
     if (connected && publicKey) {
       if (!username && userProfile?.username) {
@@ -45,20 +42,17 @@ const PXBOnboarding: React.FC = () => {
       setAlreadyMinted(false);
     }
   }, [connected, publicKey, userProfile, username]);
-
   useEffect(() => {
     if (connected) {
       fetchUserProfile();
     }
   }, [connected, fetchUserProfile]);
-
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
       return;
     }
-
     const finalUsername = username.trim() || publicKey.toString().substring(0, 8);
     setHasMintedPoints(true);
     try {
@@ -71,7 +65,6 @@ const PXBOnboarding: React.FC = () => {
       toast.error('Failed to mint PXB Points');
     }
   };
-
   const handleSaveUsername = async () => {
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
@@ -96,7 +89,6 @@ const PXBOnboarding: React.FC = () => {
       setIsUpdatingUsername(false);
     }
   };
-
   useEffect(() => {
     const checkUserExists = async () => {
       if (connected && publicKey && !userProfile && !isLoading) {
@@ -116,23 +108,17 @@ const PXBOnboarding: React.FC = () => {
     };
     checkUserExists();
   }, [connected, publicKey, userProfile, isLoading, fetchUserProfile]);
-
   const handleGoToBettingPage = () => {
     setShowSuccess(false);
     setHasMintedPoints(false);
     fetchUserProfile();
     navigate('/betting');
   };
-
   return <>
       <div className="glass-panel p-6 max-w-md mx-auto">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-dream-accent2/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <img 
-              src="/lovable-uploads/442acdc8-611f-4c96-883e-d41b783890d2.png" 
-              alt="Diamond" 
-              className="w-8 h-8 object-contain filter drop-shadow-[0_0_8px_rgba(143,92,246,0.6)]"
-            />
+            <img src="/lovable-uploads/442acdc8-611f-4c96-883e-d41b783890d2.png" alt="Diamond" className="w-8 h-8 object-contain filter drop-shadow-[0_0_8px_rgba(143,92,246,0.6)]" />
           </div>
           <h2 className="text-2xl font-bold mb-2">Get Started with PXB Points</h2>
           <p className="text-dream-foreground/70">
@@ -214,11 +200,7 @@ const PXBOnboarding: React.FC = () => {
           }} className="text-center">
               <h3 className="text-xl font-bold mb-2">You Just Minted</h3>
               <div className="flex items-center justify-center space-x-2 mb-4">
-                <img 
-                  src="/lovable-uploads/442acdc8-611f-4c96-883e-d41b783890d2.png" 
-                  alt="Diamond" 
-                  className="w-6 h-6 object-contain filter drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]"
-                />
+                <img src="/lovable-uploads/442acdc8-611f-4c96-883e-d41b783890d2.png" alt="Diamond" className="w-6 h-6 object-contain filter drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]" />
                 <span className="text-3xl font-black text-white">500 PXB Points!</span>
               </div>
               <p className="text-white/80">Your points are now stored securely and ready to use!</p>
