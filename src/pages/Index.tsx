@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -25,11 +26,13 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -70,10 +73,12 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -84,6 +89,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -137,7 +143,7 @@ const Index = () => {
           
           <div className="flex justify-center gap-4 mt-10 mb-16">
             <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
-              <Link to="/betting">
+              <Link to="/betting" className="transform transition-all duration-500 hover:scale-105 animate-float">
                 <div className="relative overflow-hidden group transition-all duration-500
                   transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
                   
@@ -159,7 +165,7 @@ const Index = () => {
               <Dialog>
                 <DialogTrigger asChild>
                   <div className="relative overflow-hidden group transition-all duration-500
-                    transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
+                    transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer animate-float-delayed">
                     
                     <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
                       transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" />
@@ -228,4 +234,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
