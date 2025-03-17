@@ -1,16 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOpenBets } from '@/services/supabaseService';
 import { Bet } from '@/types/bet';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from '@/hooks/use-toast';
-import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users } from 'lucide-react';
+import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users, BarChart } from 'lucide-react';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BetCard from './BetCard';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { Progress } from '@/components/ui/progress';
 
 const OpenBetsList = () => {
   const {
@@ -26,8 +26,7 @@ const OpenBetsList = () => {
     bets: pxbBets
   } = usePXBPoints();
 
-  // Add new state to track bet counts by token
-  const [betCountsByToken, setBetCountsByToken] = useState<Record<string, { moon: number, dust: number }>>({}); 
+  const [betCountsByToken, setBetCountsByToken] = useState<Record<string, { moon: number, dust: number, moonPercentage: number, dustPercentage: number }>>({}); 
 
   const {
     data: supabaseBets = [],
@@ -103,14 +102,13 @@ const OpenBetsList = () => {
     }
   }, [supabaseBets, pxbBets, publicKey]);
 
-  // New effect to calculate bet counts by token
   useEffect(() => {
     const allBets = [...supabaseBets, ...localBets];
-    const counts: Record<string, { moon: number, dust: number }> = {};
+    const counts: Record<string, { moon: number, dust: number, moonPercentage: number, dustPercentage: number }> = {};
     
     allBets.forEach(bet => {
       if (!counts[bet.tokenId]) {
-        counts[bet.tokenId] = { moon: 0, dust: 0 };
+        counts[bet.tokenId] = { moon: 0, dust: 0, moonPercentage: 0, dustPercentage: 0 };
       }
       
       if (bet.prediction === 'migrate') {
@@ -120,7 +118,15 @@ const OpenBetsList = () => {
       }
     });
     
-    console.log('Calculated bet counts by token:', counts);
+    Object.keys(counts).forEach(tokenId => {
+      const total = counts[tokenId].moon + counts[tokenId].dust;
+      if (total > 0) {
+        counts[tokenId].moonPercentage = Math.round((counts[tokenId].moon / total) * 100);
+        counts[tokenId].dustPercentage = Math.round((counts[tokenId].dust / total) * 100);
+      }
+    });
+    
+    console.log('Calculated bet counts and percentages by token:', counts);
     setBetCountsByToken(counts);
   }, [supabaseBets, localBets]);
 
@@ -309,19 +315,41 @@ const OpenBetsList = () => {
                         <span>{formatTimeRemaining(bet.expiresAt)}</span>
                       </div>
                       
-                      {/* New betting stats section */}
                       {betCountsByToken[bet.tokenId] && (
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-green-500/10 text-green-400 text-xs">
-                            <ArrowUp className="h-3 w-3" />
-                            <Users className="h-3 w-3 mr-1" />
-                            <span className="font-semibold">{betCountsByToken[bet.tokenId].moon}</span>
+                        <div className="flex flex-col w-36 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <ArrowUp className="h-3 w-3 text-green-400" />
+                              <span className="font-semibold text-green-400">
+                                {betCountsByToken[bet.tokenId].moon}
+                              </span>
+                            </div>
+                            <span className="font-bold text-dream-accent2">
+                              {betCountsByToken[bet.tokenId].moonPercentage}%
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-red-500/10 text-red-400 text-xs">
-                            <ArrowDown className="h-3 w-3" />
-                            <Users className="h-3 w-3 mr-1" />
-                            <span className="font-semibold">{betCountsByToken[bet.tokenId].dust}</span>
+                          
+                          <Progress 
+                            value={betCountsByToken[bet.tokenId].moonPercentage} 
+                            className="h-1.5 w-full" 
+                          />
+                          
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <ArrowDown className="h-3 w-3 text-red-400" />
+                              <span className="font-semibold text-red-400">
+                                {betCountsByToken[bet.tokenId].dust}
+                              </span>
+                            </div>
+                            <span className="font-bold text-dream-accent1">
+                              {betCountsByToken[bet.tokenId].dustPercentage}%
+                            </span>
                           </div>
+                          
+                          <Progress 
+                            value={betCountsByToken[bet.tokenId].dustPercentage} 
+                            className="h-1.5 w-full bg-black/30"
+                          />
                         </div>
                       )}
                     </div>
