@@ -4,7 +4,7 @@ import { fetchOpenBets } from '@/services/supabaseService';
 import { Bet } from '@/types/bet';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from '@/hooks/use-toast';
-import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users, BarChart, Trophy, XCircle } from 'lucide-react';
+import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users, BarChart, Trophy, XCircle, Activity, TrendingUp } from 'lucide-react';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,7 +36,8 @@ const OpenBetsList = () => {
     moonLosses: number,
     dustLosses: number,
     averageMoonMarketCap: number,
-    averageDustMarketCap: number
+    averageDustMarketCap: number,
+    totalVolume: number
   }>>({});
 
   const {
@@ -125,7 +126,8 @@ const OpenBetsList = () => {
       moonLosses: number,
       dustLosses: number,
       averageMoonMarketCap: number,
-      averageDustMarketCap: number
+      averageDustMarketCap: number,
+      totalVolume: number
     }> = {};
     
     allBets.forEach(bet => {
@@ -140,9 +142,12 @@ const OpenBetsList = () => {
           moonLosses: 0,
           dustLosses: 0,
           averageMoonMarketCap: 0,
-          averageDustMarketCap: 0
+          averageDustMarketCap: 0,
+          totalVolume: 0
         };
       }
+      
+      counts[bet.tokenId].totalVolume += bet.amount;
       
       if (bet.prediction === 'migrate') {
         counts[bet.tokenId].moon += 1;
@@ -408,12 +413,15 @@ const OpenBetsList = () => {
                       </div>
                       
                       {betCountsByToken[bet.tokenId] && (
-                        <div className="flex flex-col w-52 space-y-2 bg-black/20 p-2 rounded-lg border border-white/5">
+                        <div className="flex flex-col w-[280px] space-y-2 bg-black/20 p-3 rounded-lg border border-white/5">
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-dream-foreground/70">Bet distribution</span>
-                            <span className="text-dream-accent2 font-medium">
-                              {betCountsByToken[bet.tokenId].moon + betCountsByToken[bet.tokenId].dust} bets
-                            </span>
+                            <span className="text-dream-foreground/70">Collective Betting Stats</span>
+                            <div className="flex items-center gap-1">
+                              <Activity className="h-3 w-3 text-dream-accent2" />
+                              <span className="text-dream-accent2 font-medium">
+                                {betCountsByToken[bet.tokenId].moon + betCountsByToken[bet.tokenId].dust} bets
+                              </span>
+                            </div>
                           </div>
                           
                           <div className="flex items-center justify-between text-xs">
@@ -456,34 +464,44 @@ const OpenBetsList = () => {
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-2 mt-1 pt-1 border-t border-white/5">
+                          <div className="flex justify-between mt-1 pt-1 border-t border-white/5">
                             <div className="flex flex-col">
-                              <span className="text-[10px] text-dream-foreground/50">Moon MCAP</span>
-                              <span className="text-[11px] font-medium text-green-400">
-                                {formatMarketCap(betCountsByToken[bet.tokenId].averageMoonMarketCap)}
+                              <span className="text-[10px] text-dream-foreground/50">Total Volume</span>
+                              <span className="text-xs font-bold text-dream-accent2">
+                                {betCountsByToken[bet.tokenId].totalVolume.toFixed(2)} PXB
                               </span>
                             </div>
+
                             <div className="flex flex-col">
-                              <span className="text-[10px] text-dream-foreground/50">Dust MCAP</span>
-                              <span className="text-[11px] font-medium text-red-400">
-                                {formatMarketCap(betCountsByToken[bet.tokenId].averageDustMarketCap)}
-                              </span>
+                              <span className="text-[10px] text-dream-foreground/50">Win Rate</span>
+                              <div className="flex justify-between text-xs">
+                                <div className="flex items-center gap-1 mr-2">
+                                  <div className="h-2 w-2 rounded-full bg-green-400"></div>
+                                  <span className="text-green-400">
+                                    {calculateWinRate(betCountsByToken[bet.tokenId].moonWins, betCountsByToken[bet.tokenId].moonLosses)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <div className="h-2 w-2 rounded-full bg-red-400"></div>
+                                  <span className="text-red-400">
+                                    {calculateWinRate(betCountsByToken[bet.tokenId].dustWins, betCountsByToken[bet.tokenId].dustLosses)}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                           
                           <div className="grid grid-cols-2 gap-2 text-[10px]">
-                            <div className="flex items-center">
-                              <Trophy className="h-2.5 w-2.5 mr-1 text-green-400" />
-                              <span className="text-dream-foreground/70">Moon wins: </span>
-                              <span className="ml-1 text-green-400 font-medium">
-                                {calculateWinRate(betCountsByToken[bet.tokenId].moonWins, betCountsByToken[bet.tokenId].moonLosses)}
+                            <div className="flex flex-col">
+                              <span className="text-dream-foreground/50">Moon MCAP</span>
+                              <span className="text-green-400 font-medium">
+                                {formatMarketCap(betCountsByToken[bet.tokenId].averageMoonMarketCap)}
                               </span>
                             </div>
-                            <div className="flex items-center">
-                              <Trophy className="h-2.5 w-2.5 mr-1 text-red-400" />
-                              <span className="text-dream-foreground/70">Dust wins: </span>
-                              <span className="ml-1 text-red-400 font-medium">
-                                {calculateWinRate(betCountsByToken[bet.tokenId].dustWins, betCountsByToken[bet.tokenId].dustLosses)}
+                            <div className="flex flex-col">
+                              <span className="text-dream-foreground/50">Dust MCAP</span>
+                              <span className="text-red-400 font-medium">
+                                {formatMarketCap(betCountsByToken[bet.tokenId].averageDustMarketCap)}
                               </span>
                             </div>
                           </div>
