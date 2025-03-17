@@ -308,7 +308,6 @@ export const usePointOperations = (
       const newBetForEvent: Bet = {
         id: betData.bet_id,
         tokenId: tokenId,
-        tokenMint: tokenId, // Add tokenMint to match tokenId
         tokenName: tokenName,
         tokenSymbol: tokenSymbol,
         initiator: walletAddress,

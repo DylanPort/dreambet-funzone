@@ -8,7 +8,6 @@ export interface Bet {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  tokenMint: string; // Required property
   initiator: string;
   counterParty?: string;
   amount: number;

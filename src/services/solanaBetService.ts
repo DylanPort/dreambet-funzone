@@ -287,22 +287,20 @@ export const createSolanaBet = async (
     console.log(`Bet created with ID: ${betId}, tx: ${txSignature}`);
     
     // Store bet in local storage as a fallback for persistence
-    const effectivePublicKey = publicKey;
-    const fallbackBet: Bet = {
+    const localBet: Bet = {
       id: `local-${Date.now()}`,
       tokenId: tokenMint,
-      tokenMint: tokenMint,
-      tokenName,
-      tokenSymbol,
-      initiator: effectivePublicKey.toString(),
+      tokenName: tokenName,
+      tokenSymbol: tokenSymbol,
+      initiator: publicKey.toString(),
       amount: solAmount,
-      prediction,
+      prediction: prediction,
       timestamp: Date.now(),
       expiresAt: Date.now() + (durationMinutes * 60 * 1000),
-      status: "open",
+      status: 'open',
       duration: durationMinutes,
-      onChainBetId: betId?.toString() || '',
-      transactionSignature: txSignature || ''
+      onChainBetId: betId.toString(),
+      transactionSignature: txSignature
     };
     
     try {
@@ -311,7 +309,7 @@ export const createSolanaBet = async (
       const existingBets = existingBetsJson ? JSON.parse(existingBetsJson) : [];
       
       // Add new bet
-      existingBets.push(fallbackBet);
+      existingBets.push(localBet);
       
       // Save back to local storage
       localStorage.setItem('localBets', JSON.stringify(existingBets));
@@ -522,11 +520,9 @@ export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
     }
     
     // Create mock bet data
-    const mockTokenMint = 'GALn4FcBs5PxZkhLX8DGFEZWAHdSD8LiWo48s9yPpump';
     const mockBet: Bet = {
       id: `solana-${betId}`,
-      tokenId: mockTokenMint,
-      tokenMint: mockTokenMint,
+      tokenId: 'GALn4FcBs5PxZkhLX8DGFEZWAHdSD8LiWo48s9yPpump',
       tokenName: 'Mock Token',
       tokenSymbol: 'MOCK',
       initiator: '7FzXBBPjzrNJbm9MrZKZcyvP3ojVeYPUG2hTuzV892Fj',

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -35,7 +36,6 @@ const BetReel: React.FC = () => {
         const convertedPXBBets: Bet[] = pxbBets.filter(pb => pb.status === 'pending').map(pb => ({
           id: pb.id,
           tokenId: pb.tokenMint,
-          tokenMint: pb.tokenMint, // Add tokenMint property
           tokenName: pb.tokenName,
           tokenSymbol: pb.tokenSymbol,
           initiator: publicKey?.toString() || '',
@@ -45,6 +45,7 @@ const BetReel: React.FC = () => {
           expiresAt: new Date(pb.expiresAt).getTime(),
           status: 'open' as BetStatus,
           duration: 30,
+          // Add the required properties with default values
           onChainBetId: '',
           transactionSignature: ''
         }));
@@ -124,7 +125,6 @@ const BetReel: React.FC = () => {
             const newBet: Bet = {
               id: data.bet_id,
               tokenId: data.token_mint,
-              tokenMint: data.token_mint, // Add tokenMint property
               tokenName: data.tokens?.token_name || 'Unknown Token',
               tokenSymbol: data.tokens?.token_symbol || 'UNKNOWN',
               initiator: data.creator,
@@ -261,10 +261,10 @@ const BetReel: React.FC = () => {
         <div className="flex items-center ml-4">
           <div className="flex gap-2 items-center">
             <div className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs font-medium">
-              Active: {activeBets.filter(bet => bet.status !== 'expired').length}
+              Active: {activeBetsCount}
             </div>
             <div className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-xs font-medium">
-              Expired: {activeBets.filter(bet => bet.status === 'expired').length}
+              Expired: {expiredBetsCount}
             </div>
           </div>
         </div>
