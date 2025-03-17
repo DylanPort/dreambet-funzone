@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, Clock, AlertCircle, Zap, Filter, ArrowUpDown, ChevronDown, ExternalLink } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, AlertCircle, Zap, Filter, ArrowUpDown, ChevronDown, ExternalLink, TrendingUp, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
@@ -13,15 +13,19 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { supabase } from '@/integrations/supabase/client';
 
 const MigratingTokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
-  const {
-    toast
-  } = useToast();
+  const [tokenBetStats, setTokenBetStats] = useState<Record<string, { 
+    upBets: number, 
+    downBets: number, 
+    totalVolume: number 
+  }>>({});
+  const { toast } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
 
   useEffect(() => {
@@ -50,6 +54,46 @@ const MigratingTokenList = () => {
     const interval = setInterval(loadTokens, 120000);
     return () => clearInterval(interval);
   }, [toast]);
+
+  useEffect(() => {
+    const fetchTokenBetStatistics = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('bets')
+          .select('token_mint, prediction_bettor1, sol_amount');
+        
+        if (error) {
+          console.error('Error fetching bet statistics:', error);
+          return;
+        }
+        
+        const stats: Record<string, { upBets: number, downBets: number, totalVolume: number }> = {};
+        
+        data?.forEach(bet => {
+          if (!stats[bet.token_mint]) {
+            stats[bet.token_mint] = { upBets: 0, downBets: 0, totalVolume: 0 };
+          }
+          
+          if (bet.prediction_bettor1 === 'up') {
+            stats[bet.token_mint].upBets += 1;
+          } else if (bet.prediction_bettor1 === 'down') {
+            stats[bet.token_mint].downBets += 1;
+          }
+          
+          stats[bet.token_mint].totalVolume += Number(bet.sol_amount) || 0;
+        });
+        
+        setTokenBetStats(stats);
+      } catch (err) {
+        console.error('Error processing bet statistics:', err);
+      }
+    };
+    
+    fetchTokenBetStatistics();
+    
+    const interval = setInterval(fetchTokenBetStatistics, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const processRawWebSocketData = (data: any) => {
     if (!data) return null;
@@ -385,7 +429,48 @@ const MigratingTokenList = () => {
                     </div>
                   </Link>
                 </TableCell>
-                <TableCell className="py-3 px-4 text-right font-medium">${formatPrice(token.currentPrice || 0)}</TableCell>
+                <TableCell className="py-3 px-4 text-right">
+                  <div className="font-medium">${formatPrice(token.currentPrice || 0)}</div>
+                  
+                  {!token.isPlaceholder && tokenBetStats[token.id] && (
+                    <div className="mt-1 text-xs text-dream-foreground/60 space-y-0.5">
+                      <div className="flex justify-end items-center gap-1.5">
+                        <Users className="w-3 h-3 text-dream-accent2/80" />
+                        <span>{tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets || 0} bets</span>
+                      </div>
+                      
+                      {tokenBetStats[token.id].totalVolume > 0 && (
+                        <div className="flex justify-end items-center gap-1.5">
+                          <TrendingUp className="w-3 h-3 text-dream-accent1/80" />
+                          <span>{tokenBetStats[token.id].totalVolume.toFixed(2)} volume</span>
+                        </div>
+                      )}
+                      
+                      {(tokenBetStats[token.id].upBets > 0 || tokenBetStats[token.id].downBets > 0) && (
+                        <div className="flex justify-end items-center gap-1">
+                          <div className="h-1.5 w-16 bg-dream-foreground/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-green-500 to-green-400" 
+                              style={{ 
+                                width: `${tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets > 0 
+                                  ? (tokenBetStats[token.id].upBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100 
+                                  : 0}%` 
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-[10px]">
+                            {tokenBetStats[token.id].upBets > 0 && (
+                              <span className="text-green-400">{Math.round((tokenBetStats[token.id].upBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100)}% ▲</span>
+                            )}
+                            {tokenBetStats[token.id].downBets > 0 && (
+                              <span className="text-red-400"> {Math.round((tokenBetStats[token.id].downBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100)}% ▼</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell className="py-3 px-4 text-right">
                   <span className={`${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {token.change24h >= 0 ? '+' : ''}{token.change24h || 0}%
