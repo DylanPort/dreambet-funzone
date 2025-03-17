@@ -1,10 +1,13 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
 import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
+import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { toast } from 'sonner';
 
 interface BetCardProps {
   bet: Bet;
@@ -21,10 +24,48 @@ const BetCard: React.FC<BetCardProps> = ({
   onAcceptBet,
   onBetAccepted
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(bet.currentMarketCap || null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  
   const isExpiringSoon = bet.expiresAt - new Date().getTime() < 3600000; // less than 1 hour
   const isActive = bet.status === 'open';
   const expiryDate = new Date(bet.expiresAt);
   const timeLeft = isActive ? formatDistanceToNow(expiryDate, { addSuffix: true }) : '';
+  
+  // Fetch current market cap on component mount and set up refresh interval
+  useEffect(() => {
+    let intervalId: number;
+    
+    const fetchMarketCapData = async () => {
+      if (!bet.tokenMint || !isActive) return;
+      
+      try {
+        setIsLoading(true);
+        const data = await fetchDexScreenerData(bet.tokenMint);
+        if (data && data.marketCap) {
+          setCurrentMarketCap(data.marketCap);
+          setLastUpdated(new Date());
+        }
+      } catch (error) {
+        console.error("Error fetching market cap data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // Initial fetch
+    fetchMarketCapData();
+    
+    // Set up interval to refresh data every 30 seconds if bet is active
+    if (isActive) {
+      intervalId = window.setInterval(fetchMarketCapData, 30000);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [bet.tokenMint, isActive]);
   
   const handleAcceptBet = async () => {
     try {
@@ -39,9 +80,9 @@ const BetCard: React.FC<BetCardProps> = ({
   };
   
   const calculateProgress = () => {
-    if (!bet.initialMarketCap || !bet.currentMarketCap) return null;
+    if (!bet.initialMarketCap || !currentMarketCap) return null;
     
-    const actualChange = ((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
+    const actualChange = ((currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
     const targetChange = 10; // Default target change percentage
     
     if (bet.prediction === 'migrate') {
@@ -53,7 +94,27 @@ const BetCard: React.FC<BetCardProps> = ({
     }
   };
   
+  const calculateActualPercentageChange = () => {
+    if (!bet.initialMarketCap || !currentMarketCap) return null;
+    
+    return ((currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
+  };
+  
+  const isCurrentlyWinning = () => {
+    if (!bet.initialMarketCap || !currentMarketCap) return null;
+    
+    const actualChange = ((currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
+    
+    if (bet.prediction === 'migrate') {
+      return actualChange > 0; // For "migrate" bets, winning if market cap increased
+    } else {
+      return actualChange < 0; // For "die" bets, winning if market cap decreased
+    }
+  };
+  
   const progress = calculateProgress();
+  const percentageChange = calculateActualPercentageChange();
+  const winning = isCurrentlyWinning();
   
   let statusIcon;
   let statusClass;
@@ -100,6 +161,19 @@ const BetCard: React.FC<BetCardProps> = ({
   };
   
   const winningMarketCap = calculateWinningMarketCap();
+  
+  // Format last updated time
+  const getLastUpdatedText = () => {
+    if (!lastUpdated) return "";
+    
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - lastUpdated.getTime()) / 1000);
+    
+    if (diffSeconds < 10) return "just now";
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+    return `${Math.floor(diffSeconds / 3600)}h ago`;
+  };
   
   return (
     <div 
@@ -150,11 +224,30 @@ const BetCard: React.FC<BetCardProps> = ({
               {formatLargeNumber(bet.initialMarketCap || 0)}
             </div>
           </div>
-          <div className="bg-dream-foreground/10 px-2 py-2 rounded-lg">
+          <div className="bg-dream-foreground/10 px-2 py-2 rounded-lg relative overflow-hidden">
             <div className="text-dream-foreground/50 mb-1">Current MCAP</div>
-            <div className="font-medium">
-              {formatLargeNumber(bet.currentMarketCap || 0)}
+            <div className="font-medium flex items-center">
+              {isLoading ? (
+                <span className="animate-pulse">Loading...</span>
+              ) : (
+                <>
+                  {formatLargeNumber(currentMarketCap || 0)}
+                  {lastUpdated && (
+                    <span className="ml-1 text-xs text-dream-foreground/40">
+                      ({getLastUpdatedText()})
+                    </span>
+                  )}
+                </>
+              )}
             </div>
+            {isActive && lastUpdated && (
+              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-dream-accent2/20">
+                <div 
+                  className="h-full bg-dream-accent2/50 animate-pulse"
+                  style={{ width: `${Math.min(100, (Date.now() - lastUpdated.getTime()) / 300)}%` }}
+                ></div>
+              </div>
+            )}
           </div>
           <div className="bg-dream-foreground/10 px-2 py-2 rounded-lg">
             <div className="text-dream-foreground/50 mb-1">Win MCAP</div>
@@ -179,13 +272,16 @@ const BetCard: React.FC<BetCardProps> = ({
               />
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
             </div>
-            {bet.currentMarketCap && bet.initialMarketCap && (
-              <div className="text-xs text-dream-foreground/60 mt-1">
-                Market cap change: {(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100).toFixed(2)}%
-                {bet.prediction === 'migrate'
-                  ? ` / Target: +10%`
-                  : ` / Target: -10%`
-                }
+            {percentageChange !== null && (
+              <div className="text-xs text-dream-foreground/60 mt-1 flex justify-between">
+                <span>
+                  Market cap change: <span className={percentageChange >= 0 ? 'text-green-400' : 'text-red-400'}>
+                    {percentageChange.toFixed(2)}%
+                  </span>
+                </span>
+                <span>
+                  Target: {bet.prediction === 'migrate' ? '+10%' : '-10%'}
+                </span>
               </div>
             )}
           </div>
@@ -202,6 +298,23 @@ const BetCard: React.FC<BetCardProps> = ({
                   {timeLeft}
                 </span>
               </div>
+              
+              {/* Real-time win/loss indicator for active bets */}
+              {winning !== null && (
+                <div className={`px-2 py-1 rounded ${winning ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} flex items-center`}>
+                  {winning ? (
+                    <>
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      <span>WINNING</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="h-3 w-3 mr-1" />
+                      <span>LOSING</span>
+                    </>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <div className="w-full flex justify-center items-center py-1">
