@@ -61,7 +61,8 @@ const BettingDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  return <>
+  return (
+    <>
       <OrbitingParticles />
       <Navbar />
 
@@ -141,42 +142,43 @@ const BettingDashboard = () => {
                     <Sparkles className="text-yellow-400/70" size={16} />
                   </motion.div>
                 ))}
+              </motion.div>
                 
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3"></div>
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-dream-accent3 via-dream-accent2 to-dream-accent1"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3"></div>
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-dream-accent3 via-dream-accent2 to-dream-accent1"></div>
                 
-                <motion.div 
-                  className="absolute left-0 w-full h-[2px] bg-dream-accent2/20"
-                  animate={{
-                    top: ["0%", "100%"]
-                  }}
-                  transition={{
-                    duration: 8,
-                    repeat: Infinity,
-                    ease: "linear"
-                  }}
-                />
+              <motion.div 
+                className="absolute left-0 w-full h-[2px] bg-dream-accent2/20"
+                animate={{
+                  top: ["0%", "100%"]
+                }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+              />
                 
-                <h2 className="text-xl font-bold mb-3 flex items-center justify-center gap-2 relative">
-                  <div className="w-8 h-8 rounded-full bg-dream-accent2/30 flex items-center justify-center animate-pulse-glow">
-                    <HelpCircle className="h-5 w-5 text-dream-accent2" />
-                  </div>
-                  <span className="text-gradient">BETTING INTERFACE</span>
-                  {allStepsCompleted && <motion.div initial={{
-                  scale: 0
-                }} animate={{
-                  scale: 1
-                }} transition={{
-                  type: "spring",
-                  stiffness: 260,
-                  damping: 20
-                }} className="ml-2">
-                    <Trophy className="h-5 w-5 text-yellow-400" />
-                  </motion.div>}
-                </h2>
+              <h2 className="text-xl font-bold mb-3 flex items-center justify-center gap-2 relative">
+                <div className="w-8 h-8 rounded-full bg-dream-accent2/30 flex items-center justify-center animate-pulse-glow">
+                  <HelpCircle className="h-5 w-5 text-dream-accent2" />
+                </div>
+                <span className="text-gradient">BETTING INTERFACE</span>
+                {allStepsCompleted && <motion.div initial={{
+                scale: 0
+              }} animate={{
+                scale: 1
+              }} transition={{
+                type: "spring",
+                stiffness: 260,
+                damping: 20
+              }} className="ml-2">
+                  <Trophy className="h-5 w-5 text-yellow-400" />
+                </motion.div>}
+              </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left relative z-10">
-                  <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(255,61,252,0.3)] ${readSteps.selectToken ? 'border-dream-accent1/50' : 'border-dream-accent1/20'} ${!readSteps.selectToken ? 'blur-[1px]' : ''} relative`} whileHover={{
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left relative z-10">
+                <motion.div className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border transition-all duration-300 hover:transform hover:scale-105 hover:shadow-[0_0_15px_rgba(255,61,252,0.3)] ${readSteps.selectToken ? 'border-dream-accent1/50' : 'border-dream-accent1/20'} ${!readSteps.selectToken ? 'blur-[1px]' : ''} relative`} whileHover={{
                   y: -5
                 }} onClick={() => {
                   if (!readSteps.selectToken) {
@@ -463,6 +465,8 @@ const BettingDashboard = () => {
           </div>
         </div>
       </footer>
-    </>;
+    </>
+  );
 };
 export default BettingDashboard;
+

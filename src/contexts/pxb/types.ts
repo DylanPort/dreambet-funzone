@@ -19,4 +19,5 @@ export interface PXBPointsContextType {
   fetchUserProfile: () => Promise<void>;
   fetchUserBets: () => Promise<void>;
   fetchLeaderboard: () => Promise<void>;
+  userBets?: PXBBet[]; // Added missing property
 }
