@@ -72,8 +72,7 @@ export const usePumpPortal = (tokenId?: string) => {
     const timeThreshold = new Date(currentTime.getTime() - timeWindowHours * 60 * 60 * 1000);
     
     return tokens.filter(token => {
-      // Since RawTokenCreationEvent doesn't have a timestamp property directly,
-      // we'll create one if it doesn't exist or use a fallback
+      // For filtering, use current time since we don't have actual creation timestamps
       const tokenCreationTime = new Date(); // Default to current time as fallback
       
       return (
