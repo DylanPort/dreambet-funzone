@@ -1,8 +1,15 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const AnimatedLogo = () => {
+  const isMobile = useIsMobile();
+  
+  if (isMobile) {
+    return null; // Don't render on mobile
+  }
+  
   return (
     <div className="flex justify-center items-center w-full my-12 mx-auto">
       <motion.div
