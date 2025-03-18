@@ -42,8 +42,7 @@ const BetCard: React.FC<BetCardProps> = ({
     try {
       await navigator.clipboard.writeText(bet.tokenMint);
       setCopiedAddress(true);
-      toast({
-        title: "Address copied",
+      toast("Address copied", {
         description: "Token contract address copied to clipboard",
       });
       
@@ -52,8 +51,7 @@ const BetCard: React.FC<BetCardProps> = ({
       }, 2000);
     } catch (err) {
       console.error('Failed to copy text: ', err);
-      toast({
-        title: "Copy failed",
+      toast("Copy failed", {
         description: "Failed to copy address to clipboard",
         variant: "destructive"
       });

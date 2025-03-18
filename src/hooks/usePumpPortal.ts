@@ -67,7 +67,7 @@ export const usePumpPortal = (tokenId?: string) => {
     recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens,
-    tokenData: tokenId ? (pumpPortal.tokenData && pumpPortal.tokenData[tokenId]) : null
+    tokenData: tokenId ? (pumpPortal.tokenMetrics && pumpPortal.tokenMetrics[tokenId]) : null
   };
 };
 
