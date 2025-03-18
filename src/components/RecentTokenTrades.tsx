@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
-import { ArrowUpRight, ArrowDownRight, Clock, TrendingUp, User, Users, Layers, DollarSign } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, TrendingUp, User, Users, Layers, DollarSign, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,6 +17,10 @@ const RecentTokenTrades: React.FC = () => {
   const isMobile = useIsMobile();
   const [recentBets, setRecentBets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const pageSize = 5;
 
   const formatTimeAgo = (timestamp: string) => {
     try {
@@ -27,80 +31,95 @@ const RecentTokenTrades: React.FC = () => {
     }
   };
 
-  // Show more bets
-  const handleShowMore = () => {
-    setDisplayLimit(prev => prev + 5);
-  };
-
   // Fetch recent bets
-  useEffect(() => {
-    const fetchRecentBets = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('bets')
-          .select(`
-            bet_id,
-            token_mint,
-            tokens (token_name, token_symbol),
-            creator,
-            prediction_bettor1,
-            sol_amount,
-            status,
-            created_at,
-            percentage_change
-          `)
-          .order('created_at', { ascending: false })
-          .limit(20);
-        
-        if (error) {
-          console.error('Error fetching recent bets:', error);
-          return;
+  const fetchRecentBets = async (pageNum = 0, append = false) => {
+    const loadingState = append ? setIsLoadingMore : setIsLoading;
+    loadingState(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('bets')
+        .select(`
+          bet_id,
+          token_mint,
+          tokens (token_name, token_symbol),
+          creator,
+          prediction_bettor1,
+          sol_amount,
+          status,
+          created_at,
+          percentage_change
+        `)
+        .order('created_at', { ascending: false })
+        .range(pageNum * pageSize, (pageNum * pageSize) + pageSize - 1);
+      
+      if (error) {
+        console.error('Error fetching recent bets:', error);
+        return;
+      }
+      
+      // Check if we've reached the end of available data
+      if (data.length < pageSize) {
+        setHasMore(false);
+      }
+      
+      // Transform the data for display
+      const formattedBets = data.map(bet => {
+        // Map prediction values for display
+        let predictionDisplay: string;
+        if (bet.prediction_bettor1 === 'up') {
+          predictionDisplay = 'MOON';
+        } else if (bet.prediction_bettor1 === 'down') {
+          predictionDisplay = 'DIE';
+        } else {
+          predictionDisplay = bet.prediction_bettor1.toUpperCase();
         }
         
-        // Transform the data for display
-        const formattedBets = data.map(bet => {
-          // Map prediction values for display
-          let predictionDisplay: string;
-          if (bet.prediction_bettor1 === 'up') {
-            predictionDisplay = 'MOON';
-          } else if (bet.prediction_bettor1 === 'down') {
-            predictionDisplay = 'DIE';
-          } else {
-            predictionDisplay = bet.prediction_bettor1.toUpperCase();
-          }
-          
-          return {
-            id: bet.bet_id,
-            tokenMint: bet.token_mint,
-            tokenName: bet.tokens?.token_name || 'Unknown Token',
-            tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
-            creator: bet.creator || 'Unknown',
-            amount: bet.sol_amount,
-            prediction: bet.prediction_bettor1,
-            predictionDisplay,
-            percentageChange: bet.percentage_change || 0,
-            timestamp: bet.created_at,
-            status: bet.status
-          };
-        });
-        
+        return {
+          id: bet.bet_id,
+          tokenMint: bet.token_mint,
+          tokenName: bet.tokens?.token_name || 'Unknown Token',
+          tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
+          creator: bet.creator || 'Unknown',
+          amount: bet.sol_amount,
+          prediction: bet.prediction_bettor1,
+          predictionDisplay,
+          percentageChange: bet.percentage_change || 0,
+          timestamp: bet.created_at,
+          status: bet.status
+        };
+      });
+      
+      if (append) {
+        setRecentBets(prev => [...prev, ...formattedBets]);
+      } else {
         setRecentBets(formattedBets);
-      } catch (error) {
-        console.error('Error in fetchRecentBets:', error);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error in fetchRecentBets:', error);
+    } finally {
+      loadingState(false);
+    }
+  };
 
+  useEffect(() => {
     if (isConnected) {
       fetchRecentBets();
       
       // Set up polling for live updates
-      const interval = setInterval(fetchRecentBets, 30000);
+      const interval = setInterval(() => fetchRecentBets(), 30000);
       return () => clearInterval(interval);
     }
   }, [isConnected]);
+
+  // Show more bets
+  const handleShowMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await fetchRecentBets(nextPage, true);
+  };
 
   // Format large numbers
   const formatNumber = (num: number) => {
@@ -167,9 +186,9 @@ const RecentTokenTrades: React.FC = () => {
       
       <ScrollArea className="max-h-[400px]">
         <div className="divide-y divide-dream-accent1/10">
-          {recentBets.slice(0, displayLimit).map((bet, index) => (
+          {recentBets.map((bet, index) => (
             <Link 
-              key={`bet-${index}`} 
+              key={`bet-${bet.id}`} 
               to={`/betting/token/${bet.tokenMint}`}
               className="block"
             >
@@ -250,13 +269,21 @@ const RecentTokenTrades: React.FC = () => {
         </div>
       </ScrollArea>
       
-      {recentBets.length > displayLimit && (
+      {hasMore && (
         <div className="p-3 text-center border-t border-dream-accent1/20">
           <button 
             onClick={handleShowMore}
-            className="text-dream-accent1 text-sm hover:underline"
+            className="text-dream-accent1 text-sm hover:underline flex items-center justify-center gap-2 w-full"
+            disabled={isLoadingMore}
           >
-            Show more bets
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              "Show more bets"
+            )}
           </button>
         </div>
       )}
