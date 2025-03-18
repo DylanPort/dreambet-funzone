@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOpenBets } from '@/services/supabaseService';
@@ -10,6 +9,7 @@ import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BetCard from './BetCard';
+import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,12 +36,8 @@ const OpenBetsList = () => {
   }>>({});
   const isMobile = useIsMobile();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const {
-    data: supabaseBets = [],
-    isLoading,
-    error,
-    refetch
-  } = useQuery({
+
+  const { data: supabaseBets = [], isLoading, error, refetch } = useQuery({
     queryKey: ['openBets'],
     queryFn: async () => {
       console.log('Fetching open bets from Supabase...');
@@ -262,6 +258,11 @@ const OpenBetsList = () => {
     }
   };
 
+  const formatAddress = (address: string) => {
+    if (!address) return 'N/A';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
   if (isLoading) {
     return <div className="space-y-5">
         <div className="flex justify-between items-center">
@@ -374,17 +375,141 @@ const OpenBetsList = () => {
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               <AnimatePresence>
-                {filteredBets.map((bet, index) => (
+                {filteredBets.map((bet, index) => {
+                  const { tokenMetrics } = usePumpPortal(bet.tokenId);
+                  const tokenHolders = tokenMetrics[bet.tokenId]?.holders || 0;
+                  
+                  return (
+                    <motion.div 
+                      key={bet.id} 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="min-w-[350px] w-[350px] snap-center"
+                    >
+                      <Link to={`/token/${bet.tokenId}`} className="block w-full">
+                        <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group h-full">
+                          <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 via-[#2a203e]/10 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:via-[#2a203e]/20 group-hover:to-dream-accent3/10 transition-all duration-500 animate-pulse-slow">
+                            <div className="absolute inset-0 opacity-30 mix-blend-overlay">
+                              <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                  <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
+                                    <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+                                  </pattern>
+                                </defs>
+                                <rect width="100" height="100" fill="url(#grid)" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
+                          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
+                          
+                          <div className="flex flex-col gap-3 relative z-10">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
+                                <span className="font-display font-bold text-lg">{bet.tokenSymbol.charAt(0)}</span>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1">
+                                  <h3 className="font-display font-semibold text-lg">{bet.tokenName}</h3>
+                                  <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
+                                </div>
+                                <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-col space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-dream-foreground/60">Contract:</span>
+                                <span className="font-mono text-dream-accent2/90">{formatAddress(bet.tokenMint)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-dream-foreground/60">Holders:</span>
+                                <div className="flex items-center gap-1">
+                                  <Users className="w-3 h-3 text-dream-accent1" />
+                                  <span className="text-dream-accent1">{tokenHolders.toLocaleString() || 'N/A'}</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
+                              <Clock className="w-3 h-3 mr-1" />
+                              <span>{formatTimeRemaining(bet.expiresAt)}</span>
+                            </div>
+                            
+                            {betCountsByToken[bet.tokenId] && (
+                              <div className="flex flex-col w-full space-y-2 bg-black/20 p-3 rounded-lg border border-white/5">
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span className="text-dream-foreground/70">Collective Betting Stats</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-dream-accent3 font-medium">{bet.tokenSymbol}</span>
+                                    <Activity className="h-3 w-3 text-dream-accent2" />
+                                    <span className="text-dream-accent2 font-medium">
+                                      {betCountsByToken[bet.tokenId].moon + betCountsByToken[bet.tokenId].dust} bets
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center justify-between text-xs">
+                                  <div className="flex items-center gap-1">
+                                    <ArrowUp className="h-3 w-3 text-green-400" />
+                                    <span className="font-semibold text-green-400">
+                                      Moon ({betCountsByToken[bet.tokenId].moon})
+                                    </span>
+                                  </div>
+                                  <span className="font-bold text-dream-accent2">
+                                    {betCountsByToken[bet.tokenId].moonPercentage}%
+                                  </span>
+                                </div>
+                                
+                                <div className="relative">
+                                  <Progress value={betCountsByToken[bet.tokenId].moonPercentage} className="h-1.5 w-full bg-black/30" />
+                                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+                                </div>
+                                
+                                <div className="flex items-center justify-between text-xs">
+                                  <div className="flex items-center gap-1">
+                                    <ArrowDown className="h-3 w-3 text-red-400" />
+                                    <span className="font-semibold text-red-400">
+                                      Dust ({betCountsByToken[bet.tokenId].dust})
+                                    </span>
+                                  </div>
+                                  <span className="font-bold text-dream-accent1">
+                                    {betCountsByToken[bet.tokenId].dustPercentage}%
+                                  </span>
+                                </div>
+                                
+                                <div className="relative">
+                                  <Progress value={betCountsByToken[bet.tokenId].dustPercentage} className="h-1.5 w-full bg-black/30" />
+                                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <AnimatePresence>
+              {filteredBets.map(bet => {
+                const { tokenMetrics } = usePumpPortal(bet.tokenId);
+                const tokenHolders = tokenMetrics[bet.tokenId]?.holders || 0;
+                
+                return (
                   <motion.div 
                     key={bet.id} 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}
-                    className="min-w-[350px] w-[350px] snap-center"
                   >
                     <Link to={`/token/${bet.tokenId}`} className="block w-full">
-                      <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group h-full">
+                      <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 via-[#2a203e]/10 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:via-[#2a203e]/20 group-hover:to-dream-accent3/10 transition-all duration-500 animate-pulse-slow">
                           <div className="absolute inset-0 opacity-30 mix-blend-overlay">
                             <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -400,7 +525,7 @@ const OpenBetsList = () => {
                         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
                         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
                         
-                        <div className="flex flex-col gap-3 relative z-10">
+                        <div className="flex items-center justify-between gap-4 relative z-10">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
                               <span className="font-display font-bold text-lg">{bet.tokenSymbol.charAt(0)}</span>
@@ -411,6 +536,17 @@ const OpenBetsList = () => {
                                 <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
                               </div>
                               <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
+                              
+                              <div className="flex items-center gap-3 mt-1 text-xs">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-dream-foreground/60">Contract:</span>
+                                  <span className="font-mono text-dream-accent2/90">{formatAddress(bet.tokenMint)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Users className="w-3 h-3 text-dream-accent1" />
+                                  <span className="text-dream-accent1">{tokenHolders.toLocaleString() || 'N/A'} holders</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                           
@@ -420,7 +556,7 @@ const OpenBetsList = () => {
                           </div>
                           
                           {betCountsByToken[bet.tokenId] && (
-                            <div className="flex flex-col w-full space-y-2 bg-black/20 p-3 rounded-lg border border-white/5">
+                            <div className="flex flex-col w-[280px] space-y-2 bg-black/20 p-3 rounded-lg border border-white/5">
                               <div className="flex justify-between text-xs mb-1">
                                 <span className="text-dream-foreground/70">Collective Betting Stats</span>
                                 <div className="flex items-center gap-1">
@@ -465,154 +601,56 @@ const OpenBetsList = () => {
                                 <Progress value={betCountsByToken[bet.tokenId].dustPercentage} className="h-1.5 w-full bg-black/30" />
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
                               </div>
+                              
+                              <div className="flex justify-between mt-1 pt-1 border-t border-white/5">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-dream-foreground/50">Total Volume</span>
+                                  <span className="text-xs font-bold text-dream-accent2">
+                                    {betCountsByToken[bet.tokenId].totalVolume.toFixed(2)} PXB
+                                  </span>
+                                </div>
+
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-dream-foreground/50">Win Rate</span>
+                                  <div className="flex justify-between text-xs">
+                                    <div className="flex items-center gap-1 mr-2">
+                                      <div className="h-2 w-2 rounded-full bg-green-400"></div>
+                                      <span className="text-green-400">
+                                        {calculateWinRate(betCountsByToken[bet.tokenId].moonWins, betCountsByToken[bet.tokenId].moonLosses)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="h-2 w-2 rounded-full bg-red-400"></div>
+                                      <span className="text-red-400">
+                                        {calculateWinRate(betCountsByToken[bet.tokenId].dustWins, betCountsByToken[bet.tokenId].dustLosses)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                <div className="flex flex-col">
+                                  <span className="text-dream-foreground/50">Moon MCAP</span>
+                                  <span className="text-green-400 font-medium">
+                                    {formatMarketCap(betCountsByToken[bet.tokenId].averageMoonMarketCap)}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-dream-foreground/50">Dust MCAP</span>
+                                  <span className="text-red-400 font-medium">
+                                    {formatMarketCap(betCountsByToken[bet.tokenId].averageDustMarketCap)}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
                       </div>
                     </Link>
                   </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          ) : (
-            <AnimatePresence>
-              {filteredBets.map(bet => (
-                <motion.div 
-                  key={bet.id} 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Link to={`/token/${bet.tokenId}`} className="block w-full">
-                    <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 via-[#2a203e]/10 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:via-[#2a203e]/20 group-hover:to-dream-accent3/10 transition-all duration-500 animate-pulse-slow">
-                        <div className="absolute inset-0 opacity-30 mix-blend-overlay">
-                          <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                              <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
-                                <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                              </pattern>
-                            </defs>
-                            <rect width="100" height="100" fill="url(#grid)" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
-                      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
-                      
-                      <div className="flex items-center justify-between gap-4 relative z-10">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
-                            <span className="font-display font-bold text-lg">{bet.tokenSymbol.charAt(0)}</span>
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1">
-                              <h3 className="font-display font-semibold text-lg">{bet.tokenName}</h3>
-                              <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
-                            </div>
-                            <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
-                          <Clock className="w-3 h-3 mr-1" />
-                          <span>{formatTimeRemaining(bet.expiresAt)}</span>
-                        </div>
-                        
-                        {betCountsByToken[bet.tokenId] && <div className="flex flex-col w-[280px] space-y-2 bg-black/20 p-3 rounded-lg border border-white/5">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className="text-dream-foreground/70">Collective Betting Stats</span>
-                              <div className="flex items-center gap-1">
-                                <span className="text-dream-accent3 font-medium">{bet.tokenSymbol}</span>
-                                <Activity className="h-3 w-3 text-dream-accent2" />
-                                <span className="text-dream-accent2 font-medium">
-                                  {betCountsByToken[bet.tokenId].moon + betCountsByToken[bet.tokenId].dust} bets
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-1">
-                                <ArrowUp className="h-3 w-3 text-green-400" />
-                                <span className="font-semibold text-green-400">
-                                  Moon ({betCountsByToken[bet.tokenId].moon})
-                                </span>
-                              </div>
-                              <span className="font-bold text-dream-accent2">
-                                {betCountsByToken[bet.tokenId].moonPercentage}%
-                              </span>
-                            </div>
-                            
-                            <div className="relative">
-                              <Progress value={betCountsByToken[bet.tokenId].moonPercentage} className="h-1.5 w-full bg-black/30" />
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
-                            </div>
-                            
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-1">
-                                <ArrowDown className="h-3 w-3 text-red-400" />
-                                <span className="font-semibold text-red-400">
-                                  Dust ({betCountsByToken[bet.tokenId].dust})
-                                </span>
-                              </div>
-                              <span className="font-bold text-dream-accent1">
-                                {betCountsByToken[bet.tokenId].dustPercentage}%
-                              </span>
-                            </div>
-                            
-                            <div className="relative">
-                              <Progress value={betCountsByToken[bet.tokenId].dustPercentage} className="h-1.5 w-full bg-black/30" />
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
-                            </div>
-                            
-                            <div className="flex justify-between mt-1 pt-1 border-t border-white/5">
-                              <div className="flex flex-col">
-                                <span className="text-[10px] text-dream-foreground/50">Total Volume</span>
-                                <span className="text-xs font-bold text-dream-accent2">
-                                  {betCountsByToken[bet.tokenId].totalVolume.toFixed(2)} PXB
-                                </span>
-                              </div>
-
-                              <div className="flex flex-col">
-                                <span className="text-[10px] text-dream-foreground/50">Win Rate</span>
-                                <div className="flex justify-between text-xs">
-                                  <div className="flex items-center gap-1 mr-2">
-                                    <div className="h-2 w-2 rounded-full bg-green-400"></div>
-                                    <span className="text-green-400">
-                                      {calculateWinRate(betCountsByToken[bet.tokenId].moonWins, betCountsByToken[bet.tokenId].moonLosses)}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <div className="h-2 w-2 rounded-full bg-red-400"></div>
-                                    <span className="text-red-400">
-                                      {calculateWinRate(betCountsByToken[bet.tokenId].dustWins, betCountsByToken[bet.tokenId].dustLosses)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-2 text-[10px]">
-                              <div className="flex flex-col">
-                                <span className="text-dream-foreground/50">Moon MCAP</span>
-                                <span className="text-green-400 font-medium">
-                                  {formatMarketCap(betCountsByToken[bet.tokenId].averageMoonMarketCap)}
-                                </span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-dream-foreground/50">Dust MCAP</span>
-                                <span className="text-red-400 font-medium">
-                                  {formatMarketCap(betCountsByToken[bet.tokenId].averageDustMarketCap)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>}
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+                );
+              })}
             </AnimatePresence>
           )}
         </div>

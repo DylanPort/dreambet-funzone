@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { usePumpPortalWebSocket, RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
+import { usePumpPortalWebSocket, RawTokenTradeEvent, TokenMetricsEvent } from '@/services/pumpPortalWebSocketService';
 
 // Hook for component to use PumpPortal data
 export const usePumpPortal = (tokenId?: string) => {
@@ -65,6 +65,7 @@ export const usePumpPortal = (tokenId?: string) => {
     recentTrades: tokenId ? pumpPortal.recentTrades[tokenId] || [] : {},
     recentRawTrades: pumpPortal.recentRawTrades || [],
     recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
+    tokenMetrics: pumpPortal.tokenMetrics || {}, // Expose token metrics that has holders count
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens
   };
