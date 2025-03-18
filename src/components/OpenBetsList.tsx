@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BetCard from './BetCard';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Progress } from '@/components/ui/progress';
+import { BetStatus } from '@/types/bet';
 
 const OpenBetsList = () => {
   const {
