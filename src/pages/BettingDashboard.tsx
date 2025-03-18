@@ -9,6 +9,7 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +24,7 @@ const BettingDashboard = () => {
   const {
     toast
   } = useToast();
+  const isMobile = useIsMobile();
   const [readSteps, setReadSteps] = useState({
     selectToken: false,
     placeBet: false,
@@ -67,13 +69,13 @@ const BettingDashboard = () => {
       <Navbar />
 
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
-        <div className="max-w-7xl mx-auto">
-          <section className="mb-12 text-center py-0 my-0 mx-[240px] px-[11px]">
-            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 text-gradient">SHOW YOUR TRADING SKILLS</h1>
-            <p className="text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-6">Bet on whether tokens will go up or down and earn more PXB Points</p>
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
+          <section className="mb-12 text-center py-0 my-0 mx-0 sm:mx-4 md:mx-8 lg:mx-[240px] px-1 sm:px-[11px]">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-4 text-gradient">SHOW YOUR TRADING SKILLS</h1>
+            <p className="text-base sm:text-lg md:text-xl text-dream-foreground/80 max-w-3xl mx-auto mb-6">Bet on whether tokens will go up or down and earn more PXB Points</p>
             
             <div 
-              className="glass-panel max-w-3xl mx-auto p-6 rounded-lg relative overflow-hidden"
+              className="glass-panel max-w-3xl mx-auto p-3 sm:p-6 rounded-lg relative overflow-hidden"
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
             >
@@ -159,9 +161,9 @@ const BettingDashboard = () => {
                 }}
               />
                 
-              <h2 className="text-xl font-bold mb-3 flex items-center justify-center gap-2 relative">
-                <div className="w-8 h-8 rounded-full bg-dream-accent2/30 flex items-center justify-center animate-pulse-glow">
-                  <HelpCircle className="h-5 w-5 text-dream-accent2" />
+              <h2 className="text-lg sm:text-xl font-bold mb-3 flex items-center justify-center gap-2 relative">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-dream-accent2/30 flex items-center justify-center animate-pulse-glow">
+                  <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5 text-dream-accent2" />
                 </div>
                 <span className="text-gradient">BETTING INTERFACE</span>
                 {allStepsCompleted && <motion.div initial={{
@@ -439,27 +441,27 @@ const BettingDashboard = () => {
               </div>
             </div>
             
-            {!connected && <div className="mt-8 glass-panel inline-flex items-center gap-3 p-4">
+            {!connected && <div className="mt-8 glass-panel inline-flex flex-col sm:flex-row items-center gap-3 p-4">
                 <Wallet className="text-dream-accent2" />
                 <span>Connect your Solana wallet to start betting</span>
                 <WalletConnectButton />
               </div>}
           </section>
           
-          <div className="grid lg:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">
             <MigratingTokenList />
             <OpenBetsList />
           </div>
         </div>
       </main>
       
-      <footer className="glass-panel px-6 py-10">
+      <footer className="glass-panel px-4 sm:px-6 py-6 sm:py-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
-            <p className="text-dream-foreground/60 max-w-md mx-auto text-sm">
+            <p className="text-dream-foreground/60 max-w-md mx-auto text-xs sm:text-sm">
               This app allows you to bet on tokens migrating from PumpFun to Raydium. All bets are facilitated through smart contracts on the Solana blockchain.
             </p>
-            <div className="mt-6 border-t border-white/10 pt-6 text-sm text-dream-foreground/40">
+            <div className="mt-4 sm:mt-6 border-t border-white/10 pt-4 sm:pt-6 text-xs sm:text-sm text-dream-foreground/40">
               © {new Date().getFullYear()} PumpXBounty. All rights reserved.
             </div>
           </div>
@@ -469,4 +471,3 @@ const BettingDashboard = () => {
   );
 };
 export default BettingDashboard;
-

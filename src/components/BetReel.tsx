@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -124,6 +125,7 @@ const BetReel: React.FC = () => {
               tokenId: data.token_mint,
               tokenName: data.tokens?.token_name || 'Unknown Token',
               tokenSymbol: data.tokens?.token_symbol || 'UNKNOWN',
+              tokenMint: data.token_mint,
               initiator: data.creator,
               amount: data.sol_amount,
               prediction: prediction,
@@ -326,4 +328,3 @@ const BetReel: React.FC = () => {
 };
 
 export default BetReel;
-
