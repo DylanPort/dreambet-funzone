@@ -65,6 +65,22 @@ export const usePumpPortal = (tokenId?: string) => {
       .filter(Boolean);
   };
   
+  // Filter tokens above specified market cap and created within time period
+  const getTokensAboveMarketCap = (marketCapSol: number, timeWindowHours: number = 1) => {
+    const tokens = pumpPortal.rawTokens || [];
+    const currentTime = new Date();
+    const timeThreshold = new Date(currentTime.getTime() - timeWindowHours * 60 * 60 * 1000);
+    
+    return tokens.filter(token => {
+      const tokenTime = token.timestamp ? new Date(token.timestamp) : new Date();
+      return (
+        token.marketCapSol && 
+        token.marketCapSol >= marketCapSol && 
+        tokenTime >= timeThreshold
+      );
+    });
+  };
+  
   return {
     isConnected: pumpPortal.connected,
     recentTokens: pumpPortal.recentTokens,
@@ -74,7 +90,8 @@ export const usePumpPortal = (tokenId?: string) => {
     recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens,
-    tokenMetrics: tokenId ? (pumpPortal.tokenMetrics && pumpPortal.tokenMetrics[tokenId]) : null
+    tokenMetrics: tokenId ? (pumpPortal.tokenMetrics && pumpPortal.tokenMetrics[tokenId]) : null,
+    getTokensAboveMarketCap // Expose the new filtering function
   };
 };
 

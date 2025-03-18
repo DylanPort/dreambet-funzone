@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { formatDistanceToNow } from 'date-fns';
 import { formatAddress } from '@/utils/betUtils';
-import { ExternalLink, Clock, Loader } from 'lucide-react';
+import { ExternalLink, Clock, Loader, Zap, Filter } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Card, CardContent, CardHeader } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Button } from './ui/button';
 
 // Define types for token data
 interface TokenData {
@@ -14,24 +16,35 @@ interface TokenData {
   name: string;
   traderPublicKey: string;
   marketCapSol?: number;
-  createdTime?: string;
   supply?: number;
+  timestamp?: string;
 }
 
 const OpenBetsList = () => {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
-  const { rawTokens } = usePumpPortal();
+  const [viewMode, setViewMode] = useState<'latest' | 'highValue'>('latest');
+  const { rawTokens, getTokensAboveMarketCap } = usePumpPortal();
   const isMobile = useIsMobile();
   
-  if (!rawTokens || rawTokens.length === 0) {
+  // Get high value tokens (above 45 SOL market cap in the past hour)
+  const highValueTokens = getTokensAboveMarketCap(45, 1);
+  
+  // Determine which tokens to display based on view mode
+  const displayTokens = viewMode === 'latest' ? rawTokens : highValueTokens;
+  
+  if (!displayTokens || displayTokens.length === 0) {
     return (
       <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
-        <p className="text-center text-dream-foreground/60">No recent tokens found</p>
+        <p className="text-center text-dream-foreground/60">
+          {viewMode === 'latest' 
+            ? "No recent tokens found" 
+            : "No tokens above 45 SOL initial market cap in the last hour"}
+        </p>
       </Card>
     );
   }
   
-  const mostRecentToken = rawTokens[0];
+  const mostRecentToken = displayTokens[0];
   
   // Use the current date as creation date since RawTokenCreationEvent doesn't have created_time
   const creationDate = new Date();
@@ -41,6 +54,16 @@ const OpenBetsList = () => {
   
   return (
     <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <CardTitle className="text-xl text-dream-foreground">Recent Tokens</CardTitle>
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'latest' | 'highValue')} className="w-auto">
+          <TabsList className="grid w-full grid-cols-2 h-9">
+            <TabsTrigger value="latest" className="text-xs">Latest Created</TabsTrigger>
+            <TabsTrigger value="highValue" className="text-xs">45+ SOL MCAP</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
       <div className="flex items-center justify-between gap-4 relative z-10">
         <div className="flex flex-col space-y-2 w-full">
           <div className="flex items-center justify-between">
@@ -123,6 +146,13 @@ const OpenBetsList = () => {
           </div>
         </div>
       </div>
+      
+      {viewMode === 'highValue' && (
+        <div className="mt-4 text-xs text-dream-foreground/60 flex items-center">
+          <Zap className="h-3.5 w-3.5 mr-1.5 text-dream-accent2" />
+          <span>Showing {highValueTokens.length} tokens with 45+ SOL initial market cap from the last hour</span>
+        </div>
+      )}
     </Card>
   );
 };
