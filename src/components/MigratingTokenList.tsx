@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, Clock, AlertCircle, Zap, Filter, ArrowUpDown, ChevronDown, ExternalLink, TrendingUp, Users } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, AlertCircle, Zap, Filter, ArrowUpDown, ChevronDown, ExternalLink, TrendingUp, Users, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,14 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious
+} from "@/components/ui/carousel";
 
 const MigratingTokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
@@ -27,6 +35,7 @@ const MigratingTokenList = () => {
   }>>({});
   const { toast } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (pumpPortal.connected) {
@@ -332,6 +341,121 @@ const MigratingTokenList = () => {
     };
   }, [sortMenuOpen]);
 
+  const renderMobileTokenCards = () => {
+    return (
+      <Carousel
+        opts={{
+          align: "start",
+          loop: false,
+        }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-2 md:ml-0">
+          {displayTokens.map((token, index) => (
+            <CarouselItem key={token.id || `token-${index}`} className="pl-2 md:pl-0 basis-[85%] sm:basis-[60%] md:basis-full">
+              <div 
+                className={`glass-panel bg-dream-foreground/5 p-4 rounded-lg border border-dream-accent1/20 h-full ${token.isPlaceholder ? 'opacity-60' : ''} hover:bg-dream-accent1/5 transition-colors`}
+              >
+                <div className="flex items-center mb-3">
+                  <div className="w-10 h-10 mr-3 flex items-center justify-center">
+                    <img 
+                      src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" 
+                      alt="Token"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Link to={token.isPlaceholder ? '#' : `/token/${token.id}`} className="font-medium text-dream-foreground flex items-center gap-1">
+                      <span className="truncate max-w-[150px]">{token.name || 'Unknown'}</span>
+                      <ExternalLink className="w-3 h-3 text-dream-foreground/40 flex-shrink-0" />
+                    </Link>
+                    <div className="text-xs text-dream-foreground/60">{token.symbol || '???'}</div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <div className="text-sm text-dream-foreground/60">Price</div>
+                    <div className="font-medium">${formatPrice(token.currentPrice || 0)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-dream-foreground/60">Change</div>
+                    <span className={`${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {token.change24h >= 0 ? '+' : ''}{token.change24h || 0}%
+                    </span>
+                  </div>
+                </div>
+                
+                {!token.isPlaceholder && tokenBetStats[token.id] && (
+                  <div className="mb-4 text-xs text-dream-foreground/60 space-y-1.5">
+                    <div className="flex justify-between items-center gap-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3 h-3 text-dream-accent2/80" />
+                        <span>Bets</span>
+                      </div>
+                      <span>{tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets || 0}</span>
+                    </div>
+                    
+                    {tokenBetStats[token.id].totalVolume > 0 && (
+                      <div className="flex justify-between items-center gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <TrendingUp className="w-3 h-3 text-dream-accent1/80" />
+                          <span>Volume</span> 
+                        </div>
+                        <span>{tokenBetStats[token.id].totalVolume.toFixed(2)}</span>
+                      </div>
+                    )}
+                    
+                    {(tokenBetStats[token.id].upBets > 0 || tokenBetStats[token.id].downBets > 0) && (
+                      <div className="mt-2">
+                        <div className="flex justify-between items-center text-[10px] mb-1">
+                          <span className="text-green-400">▲ {Math.round((tokenBetStats[token.id].upBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100)}%</span>
+                          <span className="text-red-400">▼ {Math.round((tokenBetStats[token.id].downBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100)}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-dream-foreground/10 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-green-500 to-green-400" 
+                            style={{ 
+                              width: `${tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets > 0 
+                                ? (tokenBetStats[token.id].upBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100 
+                                : 0}%` 
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <div className="text-xs text-dream-foreground/60 mb-3">
+                  Created {token.migrationTime ? formatTimeSince(token.migrationTime) : 'New'}
+                </div>
+                
+                <div className="flex justify-center gap-2">
+                  <button className="btn-moon py-1.5 px-3 text-sm flex items-center gap-1 bg-gradient-to-r from-green-500/20 to-green-500/10 rounded-lg hover:from-green-500/30 hover:to-green-500/20 transition-all" disabled={token.isPlaceholder}>
+                    <ArrowUp className="w-3 h-3" />
+                    <span className="text-green-400 font-bold">MOON</span>
+                  </button>
+                  <button className="btn-die py-1.5 px-3 text-sm flex items-center gap-1 bg-gradient-to-r from-red-500/20 to-red-500/10 rounded-lg hover:from-red-500/30 hover:to-red-500/20 transition-all" disabled={token.isPlaceholder}>
+                    <ArrowDown className="w-3 h-3" />
+                    <span className="text-red-400 font-bold">DIE</span>
+                  </button>
+                </div>
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <div className="flex justify-center mt-4 md:hidden">
+          <div className="flex items-center gap-2">
+            <CarouselPrevious className="relative inset-auto h-8 w-8" />
+            <div className="text-xs text-dream-foreground/60">Swipe for more</div>
+            <CarouselNext className="relative inset-auto h-8 w-8" />
+          </div>
+        </div>
+      </Carousel>
+    );
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex justify-between items-center">
@@ -349,7 +473,8 @@ const MigratingTokenList = () => {
                 onClick={toggleSortMenu}
               >
                 <ArrowUpDown className="w-3.5 h-3.5" />
-                <span>Sort By: {sortBy.replace('-', ' ')}</span>
+                <span className="hidden sm:inline">Sort By: {sortBy.replace('-', ' ')}</span>
+                <span className="sm:hidden">Sort</span>
                 <ChevronDown className="w-3.5 h-3.5 ml-1" />
               </Button>
               {sortMenuOpen && (
@@ -380,7 +505,7 @@ const MigratingTokenList = () => {
             </div>
           </div>
           
-          <div className="flex items-center text-sm bg-dream-background/50 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent1/30">
+          <div className="hidden sm:flex items-center text-sm bg-dream-background/50 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent1/30">
             <Filter className="w-3.5 h-3.5 mr-1.5 text-dream-accent1" />
             <span className="font-medium">Filter</span>
           </div>
@@ -388,114 +513,118 @@ const MigratingTokenList = () => {
           <div className="flex items-center text-sm bg-dream-background/30 backdrop-blur-sm px-3 py-1 rounded-full border border-dream-accent2/20">
             <span className={`flex items-center gap-1 ${pumpPortal.connected ? 'text-green-400' : 'text-yellow-400'}`}>
               <Zap className="w-4 h-4" />
-              <span>{pumpPortal.connected ? 'Connected' : 'Connecting...'}</span>
+              <span className="hidden sm:inline">{pumpPortal.connected ? 'Connected' : 'Connecting...'}</span>
             </span>
           </div>
         </div>
       </div>
       
-      <div className="rounded-lg overflow-hidden border border-dream-accent1/20">
-        <Table>
-          <TableHeader className="bg-dream-background/50 backdrop-blur-sm">
-            <TableRow>
-              <TableHead className="py-3 px-4 text-left text-xs font-semibold text-dream-foreground/70">Token</TableHead>
-              <TableHead className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Price</TableHead>
-              <TableHead className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Change</TableHead>
-              <TableHead className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Time</TableHead>
-              <TableHead className="py-3 px-4 text-center text-xs font-semibold text-dream-foreground/70">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="divide-y divide-dream-accent1/10">
-            {displayTokens.map((token, index) => (
-              <TableRow 
-                key={token.id || `token-${index}`} 
-                className={`hover:bg-dream-accent1/5 transition-colors ${token.isPlaceholder ? 'opacity-60' : ''}`}
-              >
-                <TableCell className="py-3 px-4">
-                  <Link to={token.isPlaceholder ? '#' : `/token/${token.id}`} className="flex items-center">
-                    <div className="w-8 h-8 mr-3 flex items-center justify-center">
-                      <img 
-                        src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" 
-                        alt="Token"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <div>
-                      <div className="font-medium text-dream-foreground flex items-center gap-1">
-                        <span className="truncate max-w-[150px]">{token.name || 'Unknown'}</span>
-                        <ExternalLink className="w-3 h-3 text-dream-foreground/40" />
-                      </div>
-                      <div className="text-xs text-dream-foreground/60">{token.symbol || '???'}</div>
-                    </div>
-                  </Link>
-                </TableCell>
-                <TableCell className="py-3 px-4 text-right">
-                  <div className="font-medium">${formatPrice(token.currentPrice || 0)}</div>
-                  
-                  {!token.isPlaceholder && tokenBetStats[token.id] && (
-                    <div className="mt-1 text-xs text-dream-foreground/60 space-y-0.5">
-                      <div className="flex justify-end items-center gap-1.5">
-                        <Users className="w-3 h-3 text-dream-accent2/80" />
-                        <span>{tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets || 0} bets</span>
-                      </div>
-                      
-                      {tokenBetStats[token.id].totalVolume > 0 && (
-                        <div className="flex justify-end items-center gap-1.5">
-                          <TrendingUp className="w-3 h-3 text-dream-accent1/80" />
-                          <span>{tokenBetStats[token.id].totalVolume.toFixed(2)} volume</span>
-                        </div>
-                      )}
-                      
-                      {(tokenBetStats[token.id].upBets > 0 || tokenBetStats[token.id].downBets > 0) && (
-                        <div className="flex justify-end items-center gap-1">
-                          <div className="h-1.5 w-16 bg-dream-foreground/10 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-green-500 to-green-400" 
-                              style={{ 
-                                width: `${tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets > 0 
-                                  ? (tokenBetStats[token.id].upBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100 
-                                  : 0}%` 
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-[10px]">
-                            {tokenBetStats[token.id].upBets > 0 && (
-                              <span className="text-green-400">{Math.round((tokenBetStats[token.id].upBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100)}% ▲</span>
-                            )}
-                            {tokenBetStats[token.id].downBets > 0 && (
-                              <span className="text-red-400"> {Math.round((tokenBetStats[token.id].downBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100)}% ▼</span>
-                            )}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell className="py-3 px-4 text-right">
-                  <span className={`${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {token.change24h >= 0 ? '+' : ''}{token.change24h || 0}%
-                  </span>
-                </TableCell>
-                <TableCell className="py-3 px-4 text-right text-xs text-dream-foreground/70">
-                  {token.migrationTime ? formatTimeSince(token.migrationTime) : 'New'}
-                </TableCell>
-                <TableCell className="py-3 px-4">
-                  <div className="flex justify-center gap-2">
-                    <button className="btn-moon py-1 px-2 text-xs flex items-center gap-1" disabled={token.isPlaceholder}>
-                      <ArrowUp className="w-3 h-3" />
-                      <span>Moon</span>
-                    </button>
-                    <button className="btn-die py-1 px-2 text-xs flex items-center gap-1" disabled={token.isPlaceholder}>
-                      <ArrowDown className="w-3 h-3" />
-                      <span>Die</span>
-                    </button>
-                  </div>
-                </TableCell>
+      {isMobile ? (
+        renderMobileTokenCards()
+      ) : (
+        <div className="rounded-lg overflow-hidden border border-dream-accent1/20">
+          <Table>
+            <TableHeader className="bg-dream-background/50 backdrop-blur-sm">
+              <TableRow>
+                <TableHead className="py-3 px-4 text-left text-xs font-semibold text-dream-foreground/70">Token</TableHead>
+                <TableHead className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Price</TableHead>
+                <TableHead className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Change</TableHead>
+                <TableHead className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Time</TableHead>
+                <TableHead className="py-3 px-4 text-center text-xs font-semibold text-dream-foreground/70">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody className="divide-y divide-dream-accent1/10">
+              {displayTokens.map((token, index) => (
+                <TableRow 
+                  key={token.id || `token-${index}`} 
+                  className={`hover:bg-dream-accent1/5 transition-colors ${token.isPlaceholder ? 'opacity-60' : ''}`}
+                >
+                  <TableCell className="py-3 px-4">
+                    <Link to={token.isPlaceholder ? '#' : `/token/${token.id}`} className="flex items-center">
+                      <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                        <img 
+                          src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" 
+                          alt="Token"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div>
+                        <div className="font-medium text-dream-foreground flex items-center gap-1">
+                          <span className="truncate max-w-[150px]">{token.name || 'Unknown'}</span>
+                          <ExternalLink className="w-3 h-3 text-dream-foreground/40" />
+                        </div>
+                        <div className="text-xs text-dream-foreground/60">{token.symbol || '???'}</div>
+                      </div>
+                    </Link>
+                  </TableCell>
+                  <TableCell className="py-3 px-4 text-right">
+                    <div className="font-medium">${formatPrice(token.currentPrice || 0)}</div>
+                    
+                    {!token.isPlaceholder && tokenBetStats[token.id] && (
+                      <div className="mt-1 text-xs text-dream-foreground/60 space-y-0.5">
+                        <div className="flex justify-end items-center gap-1.5">
+                          <Users className="w-3 h-3 text-dream-accent2/80" />
+                          <span>{tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets || 0} bets</span>
+                        </div>
+                        
+                        {tokenBetStats[token.id].totalVolume > 0 && (
+                          <div className="flex justify-end items-center gap-1.5">
+                            <TrendingUp className="w-3 h-3 text-dream-accent1/80" />
+                            <span>{tokenBetStats[token.id].totalVolume.toFixed(2)} volume</span>
+                          </div>
+                        )}
+                        
+                        {(tokenBetStats[token.id].upBets > 0 || tokenBetStats[token.id].downBets > 0) && (
+                          <div className="flex justify-end items-center gap-1">
+                            <div className="h-1.5 w-16 bg-dream-foreground/10 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-green-500 to-green-400" 
+                                style={{ 
+                                  width: `${tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets > 0 
+                                    ? (tokenBetStats[token.id].upBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100 
+                                    : 0}%` 
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-[10px]">
+                              {tokenBetStats[token.id].upBets > 0 && (
+                                <span className="text-green-400">{Math.round((tokenBetStats[token.id].upBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100)}% ▲</span>
+                              )}
+                              {tokenBetStats[token.id].downBets > 0 && (
+                                <span className="text-red-400"> {Math.round((tokenBetStats[token.id].downBets / (tokenBetStats[token.id].upBets + tokenBetStats[token.id].downBets)) * 100)}% ▼</span>
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-3 px-4 text-right">
+                    <span className={`${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {token.change24h >= 0 ? '+' : ''}{token.change24h || 0}%
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-3 px-4 text-right text-xs text-dream-foreground/70">
+                    {token.migrationTime ? formatTimeSince(token.migrationTime) : 'New'}
+                  </TableCell>
+                  <TableCell className="py-3 px-4">
+                    <div className="flex justify-center gap-2">
+                      <button className="btn-moon py-1 px-2 text-xs flex items-center gap-1" disabled={token.isPlaceholder}>
+                        <ArrowUp className="w-3 h-3" />
+                        <span>Moon</span>
+                      </button>
+                      <button className="btn-die py-1 px-2 text-xs flex items-center gap-1" disabled={token.isPlaceholder}>
+                        <ArrowDown className="w-3 h-3" />
+                        <span>Die</span>
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };
