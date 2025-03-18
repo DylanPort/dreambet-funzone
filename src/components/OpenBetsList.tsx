@@ -4,14 +4,11 @@ import { fetchOpenBets } from '@/services/supabaseService';
 import { Bet, BetStatus } from '@/types/bet';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from '@/hooks/use-toast';
-import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users, BarChart, Trophy, XCircle, Activity, TrendingUp, ChevronLeft, ChevronRight, Copy, CheckCheck } from 'lucide-react';
-import { formatTimeRemaining, formatAddress } from '@/utils/betUtils';
+import { Zap, ArrowUp, ArrowDown, Clock, ExternalLink, Filter, RefreshCw, ChevronLeft, ChevronRight, Copy, CheckCheck } from 'lucide-react';
+import { formatAddress } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import BetCard from './BetCard';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const OpenBetsList = () => {
@@ -20,19 +17,6 @@ const OpenBetsList = () => {
   const [filter, setFilter] = useState('all');
   const [localBets, setLocalBets] = useState<Bet[]>([]);
   const { bets: pxbBets } = usePXBPoints();
-  const [betCountsByToken, setBetCountsByToken] = useState<Record<string, {
-    moon: number;
-    dust: number;
-    moonPercentage: number;
-    dustPercentage: number;
-    moonWins: number;
-    dustWins: number;
-    moonLosses: number;
-    dustLosses: number;
-    averageMoonMarketCap: number;
-    averageDustMarketCap: number;
-    totalVolume: number;
-  }>>({});
   const isMobile = useIsMobile();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
@@ -109,115 +93,6 @@ const OpenBetsList = () => {
     }
   }, [supabaseBets, pxbBets, publicKey]);
 
-  useEffect(() => {
-    const allBets = [...supabaseBets, ...localBets];
-    const counts: Record<string, {
-      moon: number;
-      dust: number;
-      moonPercentage: number;
-      dustPercentage: number;
-      moonWins: number;
-      dustWins: number;
-      moonLosses: number;
-      dustLosses: number;
-      averageMoonMarketCap: number;
-      averageDustMarketCap: number;
-      totalVolume: number;
-    }> = {};
-    allBets.forEach(bet => {
-      if (!counts[bet.tokenId]) {
-        counts[bet.tokenId] = {
-          moon: 0,
-          dust: 0,
-          moonPercentage: 0,
-          dustPercentage: 0,
-          moonWins: 0,
-          dustWins: 0,
-          moonLosses: 0,
-          dustLosses: 0,
-          averageMoonMarketCap: 0,
-          averageDustMarketCap: 0,
-          totalVolume: 0
-        };
-      }
-      counts[bet.tokenId].totalVolume += bet.amount;
-      if (bet.prediction === 'migrate') {
-        counts[bet.tokenId].moon += 1;
-        if (bet.initialMarketCap) {
-          const currentTotal = counts[bet.tokenId].averageMoonMarketCap * (counts[bet.tokenId].moon - 1);
-          const newTotal = currentTotal + bet.initialMarketCap;
-          counts[bet.tokenId].averageMoonMarketCap = newTotal / counts[bet.tokenId].moon;
-        }
-        if (bet.status === 'completed') {
-          if (bet.winner === bet.initiator) {
-            counts[bet.tokenId].moonWins += 1;
-          } else {
-            counts[bet.tokenId].moonLosses += 1;
-          }
-        }
-      } else if (bet.prediction === 'die') {
-        counts[bet.tokenId].dust += 1;
-        if (bet.initialMarketCap) {
-          const currentTotal = counts[bet.tokenId].averageDustMarketCap * (counts[bet.tokenId].dust - 1);
-          const newTotal = currentTotal + bet.initialMarketCap;
-          counts[bet.tokenId].averageDustMarketCap = newTotal / counts[bet.tokenId].dust;
-        }
-        if (bet.status === 'completed') {
-          if (bet.winner === bet.initiator) {
-            counts[bet.tokenId].dustWins += 1;
-          } else {
-            counts[bet.tokenId].dustLosses += 1;
-          }
-        }
-      }
-    });
-    Object.keys(counts).forEach(tokenId => {
-      const total = counts[tokenId].moon + counts[tokenId].dust;
-      if (total > 0) {
-        counts[tokenId].moonPercentage = Math.round(counts[tokenId].moon / total * 100);
-        counts[tokenId].dustPercentage = Math.round(counts[tokenId].dust / total * 100);
-      }
-    });
-    console.log('Calculated bet counts and percentages by token:', counts);
-    setBetCountsByToken(counts);
-  }, [supabaseBets, localBets]);
-
-  useEffect(() => {
-    const handleNewBet = (event: CustomEvent) => {
-      console.log("New bet created event received in OpenBetsList:", event.detail);
-      const {
-        bet
-      } = event.detail;
-      try {
-        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
-        const fallbackBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
-        const exists = fallbackBets.some(existingBet => existingBet.id === bet.id);
-        if (!exists) {
-          fallbackBets.push(bet);
-          localStorage.setItem('pumpxbounty_fallback_bets', JSON.stringify(fallbackBets));
-          setLocalBets(prev => {
-            const exists = prev.some(existingBet => existingBet.id === bet.id);
-            if (!exists) {
-              return [bet, ...prev];
-            }
-            return prev;
-          });
-          console.log('Added new bet to local storage:', bet);
-          toast({
-            title: "New bet created",
-            description: `Your ${bet.prediction} bet for ${bet.amount} SOL on ${bet.tokenSymbol} has been stored locally`
-          });
-        }
-      } catch (error) {
-        console.error('Error storing new bet in local storage:', error);
-      }
-    };
-    window.addEventListener('newBetCreated', handleNewBet as EventListener);
-    return () => {
-      window.removeEventListener('newBetCreated', handleNewBet as EventListener);
-    };
-  }, [toast]);
-
   const copyToClipboard = async (text: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -255,25 +130,6 @@ const OpenBetsList = () => {
       description: "Fetching the latest open bets..."
     });
     refetch();
-  };
-
-  const formatMarketCap = (marketCap: number) => {
-    if (!marketCap || isNaN(marketCap)) return 'N/A';
-    if (marketCap >= 1000000000) {
-      return `$${(marketCap / 1000000000).toFixed(2)}B`;
-    } else if (marketCap >= 1000000) {
-      return `$${(marketCap / 1000000).toFixed(2)}M`;
-    } else if (marketCap >= 1000) {
-      return `$${(marketCap / 1000).toFixed(2)}K`;
-    } else {
-      return `$${marketCap.toFixed(2)}`;
-    }
-  };
-
-  const calculateWinRate = (wins: number, losses: number) => {
-    const total = wins + losses;
-    if (total === 0) return "No data";
-    return `${Math.round(wins / total * 100)}%`;
   };
 
   const scrollLeft = () => {
@@ -411,18 +267,7 @@ const OpenBetsList = () => {
                   >
                     <Link to={`/token/${bet.tokenId}`} className="block w-full">
                       <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group h-full">
-                        <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 via-[#2a203e]/10 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:via-[#2a203e]/20 group-hover:to-dream-accent3/10 transition-all duration-500 animate-pulse-slow">
-                          <div className="absolute inset-0 opacity-30 mix-blend-overlay">
-                            <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                              <defs>
-                                <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
-                                  <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                                </pattern>
-                              </defs>
-                              <rect width="100" height="100" fill="url(#grid)" />
-                            </svg>
-                          </div>
-                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 via-[#2a203e]/10 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:via-[#2a203e]/20 group-hover:to-dream-accent3/10 transition-all duration-500 animate-pulse-slow"></div>
                         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
                         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
                         
@@ -444,70 +289,32 @@ const OpenBetsList = () => {
                             <div className="truncate max-w-[200px] text-dream-foreground/70">
                               {formatAddress(bet.tokenMint)}
                             </div>
-                            <button 
-                              onClick={(e) => copyToClipboard(bet.tokenMint, e)}
-                              className="p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
-                            >
-                              {copiedAddress === bet.tokenMint ? 
-                                <CheckCheck className="h-3 w-3 text-green-400" /> : 
-                                <Copy className="h-3 w-3 text-dream-foreground/60" />
-                              }
-                            </button>
-                          </div>
-                          
-                          <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
-                            <Clock className="w-3 h-3 mr-1" />
-                            <span>{formatTimeRemaining(bet.expiresAt)}</span>
-                          </div>
-                          
-                          {betCountsByToken[bet.tokenId] && (
-                            <div className="flex flex-col w-full space-y-2 bg-black/20 p-3 rounded-lg border border-white/5">
-                              <div className="flex justify-between text-xs mb-1">
-                                <span className="text-dream-foreground/70">Collective Betting Stats</span>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-dream-accent3 font-medium">{bet.tokenSymbol}</span>
-                                  <Activity className="h-3 w-3 text-dream-accent2" />
-                                  <span className="text-dream-accent2 font-medium">
-                                    {betCountsByToken[bet.tokenId].moon + betCountsByToken[bet.tokenId].dust} bets
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center justify-between text-xs">
-                                <div className="flex items-center gap-1">
-                                  <ArrowUp className="h-3 w-3 text-green-400" />
-                                  <span className="font-semibold text-green-400">
-                                    Moon ({betCountsByToken[bet.tokenId].moon})
-                                  </span>
-                                </div>
-                                <span className="font-bold text-dream-accent2">
-                                  {betCountsByToken[bet.tokenId].moonPercentage}%
-                                </span>
-                              </div>
-                              
-                              <div className="relative">
-                                <Progress value={betCountsByToken[bet.tokenId].moonPercentage} className="h-1.5 w-full bg-black/30" />
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
-                              </div>
-                              
-                              <div className="flex items-center justify-between text-xs">
-                                <div className="flex items-center gap-1">
-                                  <ArrowDown className="h-3 w-3 text-red-400" />
-                                  <span className="font-semibold text-red-400">
-                                    Dust ({betCountsByToken[bet.tokenId].dust})
-                                  </span>
-                                </div>
-                                <span className="font-bold text-dream-accent1">
-                                  {betCountsByToken[bet.tokenId].dustPercentage}%
-                                </span>
-                              </div>
-                              
-                              <div className="relative">
-                                <Progress value={betCountsByToken[bet.tokenId].dustPercentage} className="h-1.5 w-full bg-black/30" />
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
-                              </div>
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={(e) => copyToClipboard(bet.tokenMint, e)}
+                                className="p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
+                              >
+                                {copiedAddress === bet.tokenMint ? 
+                                  <CheckCheck className="h-3 w-3 text-green-400" /> : 
+                                  <Copy className="h-3 w-3 text-dream-foreground/60" />
+                                }
+                              </button>
+                              <a 
+                                href={`https://solscan.io/token/${bet.tokenMint}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
+                              >
+                                <ExternalLink className="h-3 w-3 text-dream-foreground/60" />
+                              </a>
                             </div>
-                          )}
+                          </div>
+                          
+                          <div className="flex items-center gap-1 text-xs text-dream-foreground/60">
+                            <Clock className="w-3 h-3 mr-1" />
+                            <span>Expires in: {new Date(bet.expiresAt).toLocaleString()}</span>
+                          </div>
                         </div>
                       </div>
                     </Link>
@@ -527,18 +334,7 @@ const OpenBetsList = () => {
                 >
                   <Link to={`/token/${bet.tokenId}`} className="block w-full">
                     <div className="glass-panel p-4 hover:border-white/20 transition-all duration-300 relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 via-[#2a203e]/10 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:via-[#2a203e]/20 group-hover:to-dream-accent3/10 transition-all duration-500 animate-pulse-slow">
-                        <div className="absolute inset-0 opacity-30 mix-blend-overlay">
-                          <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                              <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
-                                <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                              </pattern>
-                            </defs>
-                            <rect width="100" height="100" fill="url(#grid)" />
-                          </svg>
-                        </div>
-                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 via-[#2a203e]/10 to-dream-accent3/5 group-hover:from-dream-accent1/10 group-hover:via-[#2a203e]/20 group-hover:to-dream-accent3/10 transition-all duration-500 animate-pulse-slow"></div>
                       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent2 to-transparent opacity-50"></div>
                       <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50"></div>
                       
@@ -553,127 +349,38 @@ const OpenBetsList = () => {
                               <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
                             </div>
                             <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
-                            
-                            <div className="flex items-center mt-1 text-xs">
-                              <div className="bg-black/30 rounded-md py-1 px-2 flex items-center">
-                                <span className="mr-1 text-dream-foreground/50">Contract:</span>
-                                <span className="text-dream-foreground/70">{formatAddress(bet.tokenMint)}</span>
-                                <button 
-                                  onClick={(e) => copyToClipboard(bet.tokenMint, e)}
-                                  className="ml-2 p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
-                                >
-                                  {copiedAddress === bet.tokenMint ? 
-                                    <CheckCheck className="h-3 w-3 text-green-400" /> : 
-                                    <Copy className="h-3 w-3 text-dream-foreground/60" />
-                                  }
-                                </button>
-                                <a 
-                                  href={`https://solscan.io/token/${bet.tokenMint}`} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="ml-1 p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
-                                >
-                                  <ExternalLink className="h-3 w-3 text-dream-foreground/60" />
-                                </a>
-                              </div>
-                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 bg-black/30 rounded-md py-1.5 px-3">
+                          <span className="text-xs text-dream-foreground/70 mr-1">Contract:</span>
+                          <span className="text-xs text-dream-foreground/90">{formatAddress(bet.tokenMint)}</span>
+                          <div className="flex items-center">
+                            <button 
+                              onClick={(e) => copyToClipboard(bet.tokenMint, e)}
+                              className="p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
+                            >
+                              {copiedAddress === bet.tokenMint ? 
+                                <CheckCheck className="h-3 w-3 text-green-400" /> : 
+                                <Copy className="h-3 w-3 text-dream-foreground/60" />
+                              }
+                            </button>
+                            <a 
+                              href={`https://solscan.io/token/${bet.tokenMint}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="ml-1 p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
+                            >
+                              <ExternalLink className="h-3 w-3 text-dream-foreground/60" />
+                            </a>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
-                          <Clock className="w-3 h-3 mr-1" />
-                          <span>{formatTimeRemaining(bet.expiresAt)}</span>
+                          <Clock className="w-3.5 h-3.5 mr-1" />
+                          <span>Expires: {new Date(bet.expiresAt).toLocaleString()}</span>
                         </div>
-                        
-                        {betCountsByToken[bet.tokenId] && <div className="flex flex-col w-[280px] space-y-2 bg-black/20 p-3 rounded-lg border border-white/5">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className="text-dream-foreground/70">Collective Betting Stats</span>
-                              <div className="flex items-center gap-1">
-                                <span className="text-dream-accent3 font-medium">{bet.tokenSymbol}</span>
-                                <Activity className="h-3 w-3 text-dream-accent2" />
-                                <span className="text-dream-accent2 font-medium">
-                                  {betCountsByToken[bet.tokenId].moon + betCountsByToken[bet.tokenId].dust} bets
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-1">
-                                <ArrowUp className="h-3 w-3 text-green-400" />
-                                <span className="font-semibold text-green-400">
-                                  Moon ({betCountsByToken[bet.tokenId].moon})
-                                </span>
-                              </div>
-                              <span className="font-bold text-dream-accent2">
-                                {betCountsByToken[bet.tokenId].moonPercentage}%
-                              </span>
-                            </div>
-                            
-                            <div className="relative">
-                              <Progress value={betCountsByToken[bet.tokenId].moonPercentage} className="h-1.5 w-full bg-black/30" />
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
-                            </div>
-                            
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-1">
-                                <ArrowDown className="h-3 w-3 text-red-400" />
-                                <span className="font-semibold text-red-400">
-                                  Dust ({betCountsByToken[bet.tokenId].dust})
-                                </span>
-                              </div>
-                              <span className="font-bold text-dream-accent1">
-                                {betCountsByToken[bet.tokenId].dustPercentage}%
-                              </span>
-                            </div>
-                            
-                            <div className="relative">
-                              <Progress value={betCountsByToken[bet.tokenId].dustPercentage} className="h-1.5 w-full bg-black/30" />
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
-                            </div>
-                            
-                            <div className="flex justify-between mt-1 pt-1 border-t border-white/5">
-                              <div className="flex flex-col">
-                                <span className="text-[10px] text-dream-foreground/50">Total Volume</span>
-                                <span className="text-xs font-bold text-dream-accent2">
-                                  {betCountsByToken[bet.tokenId].totalVolume.toFixed(2)} PXB
-                                </span>
-                              </div>
-
-                              <div className="flex flex-col">
-                                <span className="text-[10px] text-dream-foreground/50">Win Rate</span>
-                                <div className="flex justify-between text-xs">
-                                  <div className="flex items-center gap-1 mr-2">
-                                    <div className="h-2 w-2 rounded-full bg-green-400"></div>
-                                    <span className="text-green-400">
-                                      {calculateWinRate(betCountsByToken[bet.tokenId].moonWins, betCountsByToken[bet.tokenId].moonLosses)}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <div className="h-2 w-2 rounded-full bg-red-400"></div>
-                                    <span className="text-red-400">
-                                      {calculateWinRate(betCountsByToken[bet.tokenId].dustWins, betCountsByToken[bet.tokenId].dustLosses)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-2 text-[10px]">
-                              <div className="flex flex-col">
-                                <span className="text-dream-foreground/50">Moon MCAP</span>
-                                <span className="text-green-400 font-medium">
-                                  {formatMarketCap(betCountsByToken[bet.tokenId].averageMoonMarketCap)}
-                                </span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-dream-foreground/50">Dust MCAP</span>
-                                <span className="text-red-400 font-medium">
-                                  {formatMarketCap(betCountsByToken[bet.tokenId].averageDustMarketCap)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>}
                       </div>
                     </div>
                   </Link>
