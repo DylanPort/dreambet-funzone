@@ -8,7 +8,6 @@ import SolanaWalletProvider from "./providers/SolanaWalletProvider";
 import { PXBPointsProvider } from "./contexts/pxb/PXBPointsContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import TokenDetail from "./pages/TokenDetail";
 import BettingDashboard from "./pages/BettingDashboard";
@@ -30,7 +29,6 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/token/:id" element={<TokenDetail />} />
                 <Route path="/betting" element={<BettingDashboard />} />

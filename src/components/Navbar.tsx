@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Coins } from 'lucide-react';
@@ -70,12 +71,6 @@ const Navbar = () => {
           </Link>
           
           <nav className="hidden md:flex space-x-8 items-center">
-            <Link to="/dashboard" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <div className="w-20 h-20 flex items-center justify-center transition-transform hover:scale-105">
-                <img alt="Bet-Scope" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(0,238,255,0.5)]" src="/lovable-uploads/96ff57ae-37d6-4216-9d6f-a6227e40f0dd.png" />
-              </div>
-              <span>Bet-Scope</span>
-            </Link>
             <Link to="/betting" className={`nav-link flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-20 h-20 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
@@ -122,12 +117,6 @@ const Navbar = () => {
       
       {isOpen && <div className="md:hidden glass-panel p-4">
           <nav className="flex flex-col space-y-4">
-            <Link to="/dashboard" className={`py-2 flex items-center gap-2 ${location.pathname === '/dashboard' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
-              <div className="w-10 h-10 flex items-center justify-center transition-transform hover:scale-105">
-                <img src="/lovable-uploads/716d1861-1000-4986-ba2f-15693a5816af.png" alt="Bet-Scope" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(0,238,255,0.5)]" />
-              </div>
-              <span>Bet-Scope</span>
-            </Link>
             <Link to="/betting" className={`py-2 flex items-center gap-2 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
               <div className="w-10 h-10 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
