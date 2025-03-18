@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { usePumpPortalWebSocket, RawTokenCreationEvent } from '@/services/pumpPortalWebSocketService';
+import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
 
 // Hook for component to use PumpPortal data
 export const usePumpPortal = (tokenId?: string) => {
@@ -48,39 +48,14 @@ export const usePumpPortal = (tokenId?: string) => {
             token_mint: data.mint,
             token_name: data.name || 'Unknown Token',
             token_symbol: data.symbol || '',
-            created_time: new Date().toISOString(), // Add creation time
-            supply: data.supply || 1000000000, // Add default supply
-            mint: data.mint,
-            name: data.name || 'Unknown Token',
-            symbol: data.symbol || '',
-            traderPublicKey: data.traderPublicKey || 'Unknown',
-            marketCapSol: data.marketCapSol || null,
-            // Add timestamp property for compatibility
-            timestamp: new Date().toISOString()
+            created_time: new Date().toISOString(),
+            supply: data.supply || 1000000000 // Add default supply
           };
         } catch (e) {
           return null;
         }
       })
       .filter(Boolean);
-  };
-  
-  // Filter tokens above specified market cap and created within time period
-  const getTokensAboveMarketCap = (marketCapSol: number, timeWindowHours: number = 1) => {
-    const tokens = pumpPortal.rawTokens || [];
-    const currentTime = new Date();
-    const timeThreshold = new Date(currentTime.getTime() - timeWindowHours * 60 * 60 * 1000);
-    
-    return tokens.filter(token => {
-      // For filtering, use current time since we don't have actual creation timestamps
-      const tokenCreationTime = new Date(); // Default to current time as fallback
-      
-      return (
-        token.marketCapSol && 
-        token.marketCapSol >= marketCapSol && 
-        tokenCreationTime >= timeThreshold
-      );
-    });
   };
   
   return {
@@ -92,8 +67,7 @@ export const usePumpPortal = (tokenId?: string) => {
     recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens,
-    tokenMetrics: tokenId ? (pumpPortal.tokenMetrics && pumpPortal.tokenMetrics[tokenId]) : null,
-    getTokensAboveMarketCap // Expose the new filtering function
+    tokenData: tokenId ? (pumpPortal.tokenData && pumpPortal.tokenData[tokenId]) : null
   };
 };
 
