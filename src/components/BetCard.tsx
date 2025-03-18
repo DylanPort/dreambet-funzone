@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUp, ArrowDown, Clock, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle, Copy, ExternalLink } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle, Copy, ExternalLink, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
@@ -237,7 +237,7 @@ const BetCard: React.FC<BetCardProps> = ({
                 onClick={() => copyToClipboard(bet.tokenMint)}
                 className="text-dream-accent2 hover:text-dream-accent1 transition-colors"
               >
-                {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {isCopied ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               </button>
               <button 
                 onClick={() => openInExplorer(bet.tokenMint)}
@@ -248,7 +248,7 @@ const BetCard: React.FC<BetCardProps> = ({
             </div>
           </div>
           <div className="font-mono text-xs text-dream-foreground/80 mt-1 break-all">
-            {formatAddress(bet.tokenMint, 12, 8)}
+            {formatAddress(bet.tokenMint)}
           </div>
           
           <div className="flex items-center mt-1 text-xs text-dream-foreground/70">
