@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDistanceToNow } from 'date-fns';
@@ -49,17 +48,14 @@ const MigratingTokenList = () => {
   const [viewMode, setViewMode] = useState<'all' | 'highValue'>('all');
   const isMobile = useIsMobile();
 
-  // Fetch active bets from Supabase
   useEffect(() => {
     const fetchAllData = async () => {
       try {
         setLoading(true);
         
-        // Fetch bets data
         const fetchedBets = await fetchOpenBets();
         setBets(fetchedBets);
         
-        // Calculate statistics
         const betTotal = fetchedBets.length;
         const valueTotal = fetchedBets.reduce((sum, bet) => sum + bet.amount, 0);
         const upPredictions = fetchedBets.filter(bet => bet.prediction === 'migrate' || bet.prediction === 'up').length;
@@ -70,7 +66,6 @@ const MigratingTokenList = () => {
         setUpVotes(upPredictions);
         setDownVotes(downPredictions);
         
-        // Fetch tokens data
         const { data: tokensData, error: tokensError } = await supabase
           .from('tokens')
           .select('*')
@@ -91,24 +86,18 @@ const MigratingTokenList = () => {
     
     fetchAllData();
     
-    // Set up polling for real-time updates
-    const interval = setInterval(fetchAllData, 60000); // Refresh every minute
-    
+    const interval = setInterval(fetchAllData, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // Get high value bets (above 1 SOL)
   const highValueBets = bets.filter(bet => bet.amount >= 1);
   
-  // Determine which bets to display based on view mode
   const displayBets = viewMode === 'all' ? bets : highValueBets;
   
-  // Format time ago
   const formatTimeAgo = (timestamp: number) => {
     return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   };
   
-  // Format time remaining
   const formatTimeRemaining = (expiresAt: number) => {
     const now = new Date().getTime();
     const timeRemaining = expiresAt - now;
@@ -127,7 +116,6 @@ const MigratingTokenList = () => {
     }
   };
   
-  // Get prediction color and text
   const getPredictionDetails = (prediction: string) => {
     switch (prediction) {
       case 'migrate':
@@ -142,7 +130,6 @@ const MigratingTokenList = () => {
     }
   };
 
-  // Get token details by mint
   const getTokenDetails = (tokenMint: string) => {
     return tokens.find(token => token.token_mint === tokenMint) || null;
   };
@@ -197,7 +184,6 @@ const MigratingTokenList = () => {
   }
   
   const renderStats = () => {
-    // Calculate percentage distribution of up vs down votes
     const totalVotes = upVotes + downVotes;
     const upPercentage = totalVotes > 0 ? Math.round((upVotes / totalVotes) * 100) : 50;
     const downPercentage = totalVotes > 0 ? 100 - upPercentage : 50;
@@ -233,7 +219,11 @@ const MigratingTokenList = () => {
             
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                <Progress value={upPercentage} className="h-2 bg-dream-background/40" indicatorClassName="bg-green-500" />
+                <Progress 
+                  value={upPercentage} 
+                  className="h-2 bg-dream-background/40" 
+                  progressClassName="bg-green-500"
+                />
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
@@ -243,7 +233,11 @@ const MigratingTokenList = () => {
             
             <div className="flex items-center gap-3 mt-2">
               <div className="flex-1">
-                <Progress value={downPercentage} className="h-2 bg-dream-background/40" indicatorClassName="bg-red-500" />
+                <Progress 
+                  value={downPercentage} 
+                  className="h-2 bg-dream-background/40" 
+                  progressClassName="bg-red-500"
+                />
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
