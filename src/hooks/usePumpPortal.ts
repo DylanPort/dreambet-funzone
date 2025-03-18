@@ -10,6 +10,7 @@ export const usePumpPortal = (tokenId?: string) => {
   // Subscribe to specific token trades when needed
   useEffect(() => {
     if (pumpPortal.connected && tokenId && !isSubscribed) {
+      console.log(`Subscribing to token ${tokenId} in usePumpPortal`);
       pumpPortal.subscribeToToken(tokenId);
       pumpPortal.fetchTokenMetrics(tokenId); // Also fetch metrics for this token
       setIsSubscribed(true);
@@ -25,6 +26,7 @@ export const usePumpPortal = (tokenId?: string) => {
       
       // If we have any tokens in the list, fetch metrics for all of them
       if (pumpPortal.recentTokens.length > 0) {
+        console.log(`Fetching metrics for ${pumpPortal.recentTokens.length} recent tokens`);
         pumpPortal.recentTokens.forEach(token => {
           pumpPortal.fetchTokenMetrics(token.token_mint);
         });
@@ -32,6 +34,7 @@ export const usePumpPortal = (tokenId?: string) => {
       
       // Also fetch metrics for any raw tokens
       if (pumpPortal.rawTokens.length > 0) {
+        console.log(`Fetching metrics for ${pumpPortal.rawTokens.length} raw tokens`);
         pumpPortal.rawTokens.forEach(token => {
           pumpPortal.fetchTokenMetrics(token.mint);
         });
@@ -61,6 +64,7 @@ export const usePumpPortal = (tokenId?: string) => {
           
           // If we found a token, make sure to fetch its metrics
           if (pumpPortal.connected && data.mint) {
+            console.log(`Fetching metrics for newly discovered token ${data.mint}`);
             pumpPortal.fetchTokenMetrics(data.mint);
           }
           
