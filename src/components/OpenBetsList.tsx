@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOpenBets } from '@/services/supabaseService';
 import { Bet, BetStatus } from '@/types/bet';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from '@/hooks/use-toast';
-import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users, BarChart, Trophy, XCircle, Activity, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatTimeRemaining } from '@/utils/betUtils';
+import { Zap, ArrowUp, ArrowDown, Wallet, Clock, ExternalLink, Filter, RefreshCw, Users, BarChart, Trophy, XCircle, Activity, TrendingUp, ChevronLeft, ChevronRight, Copy, CheckCheck } from 'lucide-react';
+import { formatTimeRemaining, formatAddress } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BetCard from './BetCard';
@@ -36,6 +35,8 @@ const OpenBetsList = () => {
   }>>({});
   const isMobile = useIsMobile();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
   const {
     data: supabaseBets = [],
     isLoading,
@@ -216,6 +217,31 @@ const OpenBetsList = () => {
       window.removeEventListener('newBetCreated', handleNewBet as EventListener);
     };
   }, [toast]);
+
+  const copyToClipboard = async (text: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedAddress(text);
+      toast({
+        title: "Address copied",
+        description: "Token contract address copied to clipboard",
+      });
+      
+      setTimeout(() => {
+        setCopiedAddress(null);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+      toast({
+        title: "Copy failed",
+        description: "Couldn't copy address to clipboard",
+        variant: "destructive"
+      });
+    }
+  };
 
   const allBets = [...supabaseBets, ...localBets];
   const filteredBets = allBets.filter(bet => {
@@ -414,6 +440,21 @@ const OpenBetsList = () => {
                             </div>
                           </div>
                           
+                          <div className="flex items-center justify-between text-xs bg-black/30 rounded-md p-2">
+                            <div className="truncate max-w-[200px] text-dream-foreground/70">
+                              {formatAddress(bet.tokenMint)}
+                            </div>
+                            <button 
+                              onClick={(e) => copyToClipboard(bet.tokenMint, e)}
+                              className="p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
+                            >
+                              {copiedAddress === bet.tokenMint ? 
+                                <CheckCheck className="h-3 w-3 text-green-400" /> : 
+                                <Copy className="h-3 w-3 text-dream-foreground/60" />
+                              }
+                            </button>
+                          </div>
+                          
                           <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
                             <Clock className="w-3 h-3 mr-1" />
                             <span>{formatTimeRemaining(bet.expiresAt)}</span>
@@ -512,6 +553,31 @@ const OpenBetsList = () => {
                               <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
                             </div>
                             <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
+                            
+                            <div className="flex items-center mt-1 text-xs">
+                              <div className="bg-black/30 rounded-md py-1 px-2 flex items-center">
+                                <span className="mr-1 text-dream-foreground/50">Contract:</span>
+                                <span className="text-dream-foreground/70">{formatAddress(bet.tokenMint)}</span>
+                                <button 
+                                  onClick={(e) => copyToClipboard(bet.tokenMint, e)}
+                                  className="ml-2 p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
+                                >
+                                  {copiedAddress === bet.tokenMint ? 
+                                    <CheckCheck className="h-3 w-3 text-green-400" /> : 
+                                    <Copy className="h-3 w-3 text-dream-foreground/60" />
+                                  }
+                                </button>
+                                <a 
+                                  href={`https://solscan.io/token/${bet.tokenMint}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="ml-1 p-1 bg-dream-background/40 rounded hover:bg-dream-background/60 transition-colors"
+                                >
+                                  <ExternalLink className="h-3 w-3 text-dream-foreground/60" />
+                                </a>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         
