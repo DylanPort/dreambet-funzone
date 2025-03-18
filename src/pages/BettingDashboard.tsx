@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Tooltip,
   TooltipContent,
@@ -448,13 +447,11 @@ const BettingDashboard = () => {
                 <WalletConnectButton />
               </div>}
           </section>
-        
-          <ScrollArea className="w-full pb-4 overflow-x-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8" style={{ minWidth: '1200px' }}>
-              <MigratingTokenList />
-              <OpenBetsList />
-            </div>
-          </ScrollArea>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">
+            <MigratingTokenList />
+            <OpenBetsList />
+          </div>
         </div>
       </main>
       
@@ -474,7 +471,3 @@ const BettingDashboard = () => {
   );
 };
 export default BettingDashboard;
-
-
-
-
