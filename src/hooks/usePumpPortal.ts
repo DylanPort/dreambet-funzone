@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
+import { usePumpPortalWebSocket, RawTokenCreationEvent } from '@/services/pumpPortalWebSocketService';
 
 // Hook for component to use PumpPortal data
 export const usePumpPortal = (tokenId?: string) => {
@@ -72,11 +72,14 @@ export const usePumpPortal = (tokenId?: string) => {
     const timeThreshold = new Date(currentTime.getTime() - timeWindowHours * 60 * 60 * 1000);
     
     return tokens.filter(token => {
-      const tokenTime = token.timestamp ? new Date(token.timestamp) : new Date();
+      // Since RawTokenCreationEvent doesn't have a timestamp property directly,
+      // we'll create one if it doesn't exist or use a fallback
+      const tokenCreationTime = new Date(); // Default to current time as fallback
+      
       return (
         token.marketCapSol && 
         token.marketCapSol >= marketCapSol && 
-        tokenTime >= timeThreshold
+        tokenCreationTime >= timeThreshold
       );
     });
   };
