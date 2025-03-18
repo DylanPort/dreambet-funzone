@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
-import { ArrowUpRight, ArrowDownRight, Clock, TrendingUp, User, Users, Layers, DollarSign, Loader2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, TrendingUp, User, Users, Layers, DollarSign, Loader2, ExternalLink } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { BetPrediction, BetStatus } from '@/types/bet';
 import { formatDistanceToNow } from 'date-fns';
@@ -21,6 +20,7 @@ const RecentTokenTrades: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const pageSize = 5;
+  const navigate = useNavigate();
 
   const formatTimeAgo = (timestamp: string) => {
     try {
@@ -31,7 +31,6 @@ const RecentTokenTrades: React.FC = () => {
     }
   };
 
-  // Fetch recent bets
   const fetchRecentBets = async (pageNum = 0, append = false) => {
     const loadingState = append ? setIsLoadingMore : setIsLoading;
     loadingState(true);
@@ -58,14 +57,11 @@ const RecentTokenTrades: React.FC = () => {
         return;
       }
       
-      // Check if we've reached the end of available data
       if (data.length < pageSize) {
         setHasMore(false);
       }
       
-      // Transform the data for display
       const formattedBets = data.map(bet => {
-        // Map prediction values for display
         let predictionDisplay: string;
         if (bet.prediction_bettor1 === 'up') {
           predictionDisplay = 'MOON';
@@ -106,13 +102,11 @@ const RecentTokenTrades: React.FC = () => {
     if (isConnected) {
       fetchRecentBets();
       
-      // Set up polling for live updates
       const interval = setInterval(() => fetchRecentBets(), 30000);
       return () => clearInterval(interval);
     }
   }, [isConnected]);
 
-  // Show more bets
   const handleShowMore = async () => {
     if (isLoadingMore || !hasMore) return;
     
@@ -121,7 +115,6 @@ const RecentTokenTrades: React.FC = () => {
     await fetchRecentBets(nextPage, true);
   };
 
-  // Format large numbers
   const formatNumber = (num: number) => {
     if (num >= 1000000000) {
       return `${(num / 1000000000).toFixed(2)}B`;
@@ -133,6 +126,10 @@ const RecentTokenTrades: React.FC = () => {
       return `${(num / 1000).toFixed(2)}K`;
     }
     return num.toFixed(2);
+  };
+
+  const handleNavigateToBetting = () => {
+    navigate('/betting');
   };
 
   if (isLoading) {
@@ -269,24 +266,15 @@ const RecentTokenTrades: React.FC = () => {
         </div>
       </ScrollArea>
       
-      {hasMore && (
-        <div className="p-3 text-center border-t border-dream-accent1/20">
-          <button 
-            onClick={handleShowMore}
-            className="text-dream-accent1 text-sm hover:underline flex items-center justify-center gap-2 w-full"
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              "Show more bets"
-            )}
-          </button>
-        </div>
-      )}
+      <div className="p-3 text-center border-t border-dream-accent1/20">
+        <button 
+          onClick={handleNavigateToBetting}
+          className="text-dream-accent1 text-sm hover:underline flex items-center justify-center gap-2 w-full"
+        >
+          View all bets
+          <ExternalLink className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 };
