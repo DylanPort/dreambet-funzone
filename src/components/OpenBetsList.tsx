@@ -19,15 +19,8 @@ const OpenBetsList = () => {
   
   const mostRecentToken = rawTokens[0];
   
-  // Determine the creation date - use the created_time property if available, otherwise use current date
-  const creationDate = mostRecentToken.created_time 
-    ? new Date(mostRecentToken.created_time) 
-    : new Date();
-  
-  // Calculate the relative time (e.g., "2 hours ago")
-  const relativeTime = mostRecentToken.created_time
-    ? formatDistanceToNow(new Date(mostRecentToken.created_time), { addSuffix: true })
-    : 'just now';
+  // Use the current date as fallback if timestamp is not available
+  const creationDate = new Date();
   
   return (
     <div className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
@@ -80,7 +73,7 @@ const OpenBetsList = () => {
               <div className="text-sm font-medium">
                 {creationDate.toLocaleString()} 
                 <span className="text-xs text-dream-foreground/60 ml-2">
-                  ({relativeTime})
+                  (just now)
                 </span>
               </div>
             </div>
