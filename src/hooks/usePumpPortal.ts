@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { usePumpPortalWebSocket, RawTokenTradeEvent, TokenMetricsEvent } from '@/services/pumpPortalWebSocketService';
+import { usePumpPortalWebSocket, RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
 
 // Hook for component to use PumpPortal data
 export const usePumpPortal = (tokenId?: string) => {
@@ -10,12 +10,10 @@ export const usePumpPortal = (tokenId?: string) => {
   // Subscribe to specific token trades when needed
   useEffect(() => {
     if (pumpPortal.connected && tokenId && !isSubscribed) {
-      console.log(`Subscribing to token ${tokenId} in usePumpPortal`);
       pumpPortal.subscribeToToken(tokenId);
-      pumpPortal.fetchTokenMetrics(tokenId); // Also fetch metrics for this token
       setIsSubscribed(true);
     }
-  }, [pumpPortal.connected, tokenId, isSubscribed, pumpPortal]);
+  }, [pumpPortal.connected, tokenId, isSubscribed]);
   
   // Check if already subscribed to new tokens in the first render
   useEffect(() => {
@@ -23,28 +21,8 @@ export const usePumpPortal = (tokenId?: string) => {
     if (pumpPortal.connected && !tokenId && !isSubscribed) {
       pumpPortal.subscribeToNewTokens();
       setIsSubscribed(true);
-      
-      // If we have any tokens in the list, fetch metrics for all of them
-      if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
-        console.log(`Fetching metrics for ${pumpPortal.recentTokens.length} recent tokens`);
-        pumpPortal.recentTokens.forEach(token => {
-          if (token && token.token_mint) {
-            pumpPortal.fetchTokenMetrics(token.token_mint);
-          }
-        });
-      }
-      
-      // Also fetch metrics for any raw tokens
-      if (pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
-        console.log(`Fetching metrics for ${pumpPortal.rawTokens.length} raw tokens`);
-        pumpPortal.rawTokens.forEach(token => {
-          if (token && token.mint) {
-            pumpPortal.fetchTokenMetrics(token.mint);
-          }
-        });
-      }
     }
-  }, [pumpPortal.connected, pumpPortal.recentTokens, pumpPortal.rawTokens, tokenId, isSubscribed, pumpPortal]);
+  }, [pumpPortal.connected, tokenId, isSubscribed]);
   
   // Get token creation events from console logs
   const getRawTokensFromLogs = () => {
@@ -66,12 +44,6 @@ export const usePumpPortal = (tokenId?: string) => {
           const data = JSON.parse(match[1]);
           if (!data.txType || data.txType !== 'create' || !data.mint) return null;
           
-          // If we found a token, make sure to fetch its metrics
-          if (pumpPortal.connected && data.mint) {
-            console.log(`Fetching metrics for newly discovered token ${data.mint}`);
-            pumpPortal.fetchTokenMetrics(data.mint);
-          }
-          
           return {
             token_mint: data.mint,
             token_name: data.name || 'Unknown Token',
@@ -87,16 +59,14 @@ export const usePumpPortal = (tokenId?: string) => {
   };
   
   return {
-    isConnected: pumpPortal.connected || false,
-    recentTokens: pumpPortal.recentTokens || [],
+    isConnected: pumpPortal.connected,
+    recentTokens: pumpPortal.recentTokens,
     rawTokens: pumpPortal.rawTokens || [],
-    recentTrades: tokenId ? (pumpPortal.recentTrades && pumpPortal.recentTrades[tokenId]) || [] : {},
+    recentTrades: tokenId ? pumpPortal.recentTrades[tokenId] || [] : {},
     recentRawTrades: pumpPortal.recentRawTrades || [],
-    recentLiquidity: tokenId ? (pumpPortal.recentLiquidity && pumpPortal.recentLiquidity[tokenId]) || null : null,
-    tokenMetrics: pumpPortal.tokenMetrics || {}, // Ensure we always return an object
+    recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
     subscribeToToken: pumpPortal.subscribeToToken,
-    subscribeToNewTokens: pumpPortal.subscribeToNewTokens,
-    fetchTokenMetrics: pumpPortal.fetchTokenMetrics
+    subscribeToNewTokens: pumpPortal.subscribeToNewTokens
   };
 };
 
