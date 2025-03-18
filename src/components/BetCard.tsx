@@ -29,12 +29,12 @@ const BetCard: React.FC<BetCardProps> = ({ bet, connected, publicKeyString, onAc
               {bet.prediction === 'migrate' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
             </div>
             <span className="font-semibold">
-              {bet.tokenSymbol}
+              {bet.tokenSymbol || 'Unknown'}
             </span>
           </div>
-          <p className="text-sm text-dream-foreground/70">{bet.tokenName}</p>
+          <p className="text-sm text-dream-foreground/70">{bet.tokenName || 'Unknown Token'}</p>
           
-          <TokenContractInfo tokenId={bet.tokenMint} />
+          {bet.tokenMint && <TokenContractInfo tokenId={bet.tokenMint} />}
         </div>
         
         <div className="text-right">

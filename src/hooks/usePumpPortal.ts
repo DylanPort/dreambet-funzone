@@ -15,7 +15,7 @@ export const usePumpPortal = (tokenId?: string) => {
       pumpPortal.fetchTokenMetrics(tokenId); // Also fetch metrics for this token
       setIsSubscribed(true);
     }
-  }, [pumpPortal.connected, tokenId, isSubscribed]);
+  }, [pumpPortal.connected, tokenId, isSubscribed, pumpPortal]);
   
   // Check if already subscribed to new tokens in the first render
   useEffect(() => {
@@ -25,22 +25,26 @@ export const usePumpPortal = (tokenId?: string) => {
       setIsSubscribed(true);
       
       // If we have any tokens in the list, fetch metrics for all of them
-      if (pumpPortal.recentTokens.length > 0) {
+      if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
         console.log(`Fetching metrics for ${pumpPortal.recentTokens.length} recent tokens`);
         pumpPortal.recentTokens.forEach(token => {
-          pumpPortal.fetchTokenMetrics(token.token_mint);
+          if (token && token.token_mint) {
+            pumpPortal.fetchTokenMetrics(token.token_mint);
+          }
         });
       }
       
       // Also fetch metrics for any raw tokens
-      if (pumpPortal.rawTokens.length > 0) {
+      if (pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
         console.log(`Fetching metrics for ${pumpPortal.rawTokens.length} raw tokens`);
         pumpPortal.rawTokens.forEach(token => {
-          pumpPortal.fetchTokenMetrics(token.mint);
+          if (token && token.mint) {
+            pumpPortal.fetchTokenMetrics(token.mint);
+          }
         });
       }
     }
-  }, [pumpPortal.connected, pumpPortal.recentTokens, pumpPortal.rawTokens, tokenId, isSubscribed]);
+  }, [pumpPortal.connected, pumpPortal.recentTokens, pumpPortal.rawTokens, tokenId, isSubscribed, pumpPortal]);
   
   // Get token creation events from console logs
   const getRawTokensFromLogs = () => {
@@ -83,13 +87,13 @@ export const usePumpPortal = (tokenId?: string) => {
   };
   
   return {
-    isConnected: pumpPortal.connected,
-    recentTokens: pumpPortal.recentTokens,
+    isConnected: pumpPortal.connected || false,
+    recentTokens: pumpPortal.recentTokens || [],
     rawTokens: pumpPortal.rawTokens || [],
-    recentTrades: tokenId ? pumpPortal.recentTrades[tokenId] || [] : {},
+    recentTrades: tokenId ? (pumpPortal.recentTrades && pumpPortal.recentTrades[tokenId]) || [] : {},
     recentRawTrades: pumpPortal.recentRawTrades || [],
-    recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
-    tokenMetrics: pumpPortal.tokenMetrics || {}, // Expose token metrics that has holders count
+    recentLiquidity: tokenId ? (pumpPortal.recentLiquidity && pumpPortal.recentLiquidity[tokenId]) || null : null,
+    tokenMetrics: pumpPortal.tokenMetrics || {}, // Ensure we always return an object
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens,
     fetchTokenMetrics: pumpPortal.fetchTokenMetrics

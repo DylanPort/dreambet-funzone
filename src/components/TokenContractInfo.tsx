@@ -18,7 +18,7 @@ const TokenContractInfo: React.FC<TokenContractInfoProps> = ({
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const pumpPortal = usePumpPortal();
   
-  // Get token holder count from pumpPortal metrics
+  // Get token holder count from pumpPortal metrics with null check
   const getHolderCount = (tokenId: string) => {
     if (!pumpPortal.tokenMetrics || !pumpPortal.tokenMetrics[tokenId]) {
       return null;
@@ -41,9 +41,13 @@ const TokenContractInfo: React.FC<TokenContractInfoProps> = ({
       console.log(`TokenContractInfo: Fetching metrics for token ${tokenId}`);
       pumpPortal.fetchTokenMetrics(tokenId);
     }
-  }, [pumpPortal.isConnected, tokenId, pumpPortal.tokenMetrics]);
+  }, [pumpPortal.isConnected, tokenId, pumpPortal.tokenMetrics, pumpPortal.fetchTokenMetrics]);
   
   const holderCount = getHolderCount(tokenId);
+  
+  if (!tokenId) {
+    return null;
+  }
   
   return (
     <div className={`flex items-center gap-1 ${className}`}>
