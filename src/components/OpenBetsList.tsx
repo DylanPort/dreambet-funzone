@@ -423,6 +423,7 @@ const OpenBetsList = () => {
                               <div className="flex justify-between text-xs mb-1">
                                 <span className="text-dream-foreground/70">Collective Betting Stats</span>
                                 <div className="flex items-center gap-1">
+                                  <span className="text-dream-accent3 font-medium">{bet.tokenSymbol}</span>
                                   <Activity className="h-3 w-3 text-dream-accent2" />
                                   <span className="text-dream-accent2 font-medium">
                                     {betCountsByToken[bet.tokenId].moon + betCountsByToken[bet.tokenId].dust} bets
@@ -513,10 +514,6 @@ const OpenBetsList = () => {
                           </div>
                         </div>
                         
-                        
-                        
-                        
-                        
                         <div className="flex items-center gap-1 text-sm text-dream-foreground/60">
                           <Clock className="w-3 h-3 mr-1" />
                           <span>{formatTimeRemaining(bet.expiresAt)}</span>
@@ -526,6 +523,7 @@ const OpenBetsList = () => {
                             <div className="flex justify-between text-xs mb-1">
                               <span className="text-dream-foreground/70">Collective Betting Stats</span>
                               <div className="flex items-center gap-1">
+                                <span className="text-dream-accent3 font-medium">{bet.tokenSymbol}</span>
                                 <Activity className="h-3 w-3 text-dream-accent2" />
                                 <span className="text-dream-accent2 font-medium">
                                   {betCountsByToken[bet.tokenId].moon + betCountsByToken[bet.tokenId].dust} bets
@@ -609,7 +607,6 @@ const OpenBetsList = () => {
                               </div>
                             </div>
                           </div>}
-                      </div>
                     </div>
                   </Link>
                 </motion.div>
