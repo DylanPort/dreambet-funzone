@@ -60,7 +60,7 @@ export const usePumpPortal = (tokenId?: string) => {
   return {
     isConnected: pumpPortal.connected,
     recentTokens: pumpPortal.recentTokens,
-    rawTokens: getRawTokensFromLogs(),
+    rawTokens: pumpPortal.rawTokens || [],
     recentTrades: tokenId ? pumpPortal.recentTrades[tokenId] || [] : {},
     recentRawTrades: pumpPortal.recentRawTrades || [],
     recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
