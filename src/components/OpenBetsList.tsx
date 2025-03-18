@@ -33,10 +33,8 @@ const OpenBetsList = () => {
   
   const mostRecentToken = rawTokens[0];
   
-  // Use the token's creation time or current date as fallback
-  const creationDate = mostRecentToken.created_time 
-    ? new Date(mostRecentToken.created_time)
-    : new Date();
+  // Use the current date as creation date since RawTokenCreationEvent doesn't have created_time
+  const creationDate = new Date();
   
   // Format the time distance
   const timeAgo = formatDistanceToNow(creationDate, { addSuffix: true });

@@ -55,6 +55,8 @@ export const usePumpPortal = (tokenId?: string) => {
             symbol: data.symbol || '',
             traderPublicKey: data.traderPublicKey || 'Unknown',
             marketCapSol: data.marketCapSol || null,
+            // Add timestamp property for compatibility
+            timestamp: new Date().toISOString()
           };
         } catch (e) {
           return null;
