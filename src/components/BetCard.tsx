@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { ArrowUp, ArrowDown, Clock, AlertTriangle, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, Wallet, Users, Timer, HelpCircle, CheckCircle, XCircle, Copy, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatBetDuration } from '@/utils/betUtils';
@@ -8,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
 import { toast } from 'sonner';
+import { usePumpPortal } from '@/hooks/usePumpPortal';
 
 interface BetCardProps {
   bet: Bet;
@@ -27,13 +27,15 @@ const BetCard: React.FC<BetCardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(bet.currentMarketCap || null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  
+  const pumpPortal = usePumpPortal(bet.tokenMint);
   
   const isExpiringSoon = bet.expiresAt - new Date().getTime() < 3600000; // less than 1 hour
   const isActive = bet.status === 'open';
   const expiryDate = new Date(bet.expiresAt);
   const timeLeft = isActive ? formatDistanceToNow(expiryDate, { addSuffix: true }) : '';
   
-  // Fetch current market cap on component mount and set up refresh interval
   useEffect(() => {
     let intervalId: number;
     
@@ -54,10 +56,8 @@ const BetCard: React.FC<BetCardProps> = ({
       }
     };
     
-    // Initial fetch
     fetchMarketCapData();
     
-    // Set up interval to refresh data every 30 seconds if bet is active
     if (isActive) {
       intervalId = window.setInterval(fetchMarketCapData, 30000);
     }
@@ -77,6 +77,19 @@ const BetCard: React.FC<BetCardProps> = ({
     } catch (error) {
       console.error("Error accepting bet:", error);
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setIsCopied(true);
+      toast.success("Contract address copied");
+      setTimeout(() => setIsCopied(false), 2000);
+    });
+  };
+  
+  const openInExplorer = (address: string) => {
+    if (!address) return;
+    window.open(`https://solscan.io/token/${address}`, '_blank');
   };
   
   const calculateProgress = () => {
@@ -162,7 +175,6 @@ const BetCard: React.FC<BetCardProps> = ({
   
   const winningMarketCap = calculateWinningMarketCap();
   
-  // Format last updated time
   const getLastUpdatedText = () => {
     if (!lastUpdated) return "";
     
@@ -214,6 +226,36 @@ const BetCard: React.FC<BetCardProps> = ({
                 {bet.prediction === 'migrate' ? 'MOON' : 'DIE'}
               </span>
             </p>
+          </div>
+        </div>
+
+        <div className="bg-dream-foreground/5 rounded-lg p-2 mb-3 mt-1">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-dream-foreground/70">Contract Address:</div>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => copyToClipboard(bet.tokenMint)}
+                className="text-dream-accent2 hover:text-dream-accent1 transition-colors"
+              >
+                {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              </button>
+              <button 
+                onClick={() => openInExplorer(bet.tokenMint)}
+                className="text-dream-accent2 hover:text-dream-accent1 transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+          <div className="font-mono text-xs text-dream-foreground/80 mt-1 break-all">
+            {formatAddress(bet.tokenMint, 12, 8)}
+          </div>
+          
+          <div className="flex items-center mt-1 text-xs text-dream-foreground/70">
+            <Users className="h-3.5 w-3.5 mr-1.5" />
+            <span>
+              {pumpPortal.getTokenHolders(bet.tokenMint) || 'Fetching holders...'}
+            </span>
           </div>
         </div>
         
@@ -299,7 +341,6 @@ const BetCard: React.FC<BetCardProps> = ({
                 </span>
               </div>
               
-              {/* Real-time win/loss indicator for active bets */}
               {winning !== null && (
                 <div className={`px-2 py-1 rounded ${winning ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} flex items-center`}>
                   {winning ? (
