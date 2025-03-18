@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOpenBets } from '@/services/supabaseService';
@@ -607,6 +608,7 @@ const OpenBetsList = () => {
                               </div>
                             </div>
                           </div>}
+                      </div>
                     </div>
                   </Link>
                 </motion.div>
