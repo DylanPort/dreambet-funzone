@@ -11,6 +11,7 @@ export const usePumpPortal = (tokenId?: string) => {
   useEffect(() => {
     if (pumpPortal.connected && tokenId && !isSubscribed) {
       pumpPortal.subscribeToToken(tokenId);
+      pumpPortal.fetchTokenMetrics(tokenId); // Also fetch metrics for this token
       setIsSubscribed(true);
     }
   }, [pumpPortal.connected, tokenId, isSubscribed]);
@@ -21,8 +22,22 @@ export const usePumpPortal = (tokenId?: string) => {
     if (pumpPortal.connected && !tokenId && !isSubscribed) {
       pumpPortal.subscribeToNewTokens();
       setIsSubscribed(true);
+      
+      // If we have any tokens in the list, fetch metrics for all of them
+      if (pumpPortal.recentTokens.length > 0) {
+        pumpPortal.recentTokens.forEach(token => {
+          pumpPortal.fetchTokenMetrics(token.token_mint);
+        });
+      }
+      
+      // Also fetch metrics for any raw tokens
+      if (pumpPortal.rawTokens.length > 0) {
+        pumpPortal.rawTokens.forEach(token => {
+          pumpPortal.fetchTokenMetrics(token.mint);
+        });
+      }
     }
-  }, [pumpPortal.connected, tokenId, isSubscribed]);
+  }, [pumpPortal.connected, pumpPortal.recentTokens, pumpPortal.rawTokens, tokenId, isSubscribed]);
   
   // Get token creation events from console logs
   const getRawTokensFromLogs = () => {
@@ -43,6 +58,11 @@ export const usePumpPortal = (tokenId?: string) => {
           
           const data = JSON.parse(match[1]);
           if (!data.txType || data.txType !== 'create' || !data.mint) return null;
+          
+          // If we found a token, make sure to fetch its metrics
+          if (pumpPortal.connected && data.mint) {
+            pumpPortal.fetchTokenMetrics(data.mint);
+          }
           
           return {
             token_mint: data.mint,
@@ -67,7 +87,8 @@ export const usePumpPortal = (tokenId?: string) => {
     recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
     tokenMetrics: pumpPortal.tokenMetrics || {}, // Expose token metrics that has holders count
     subscribeToToken: pumpPortal.subscribeToToken,
-    subscribeToNewTokens: pumpPortal.subscribeToNewTokens
+    subscribeToNewTokens: pumpPortal.subscribeToNewTokens,
+    fetchTokenMetrics: pumpPortal.fetchTokenMetrics
   };
 };
 

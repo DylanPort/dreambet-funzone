@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMigratingTokens } from '@/api/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, Clock, AlertCircle, Zap, Filter, ArrowUpDown, ChevronDown, ExternalLink, TrendingUp, Users, ChevronRight } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, AlertCircle, Zap, Filter, ArrowUpDown, ChevronDown, ExternalLink, TrendingUp, Users, ChevronRight, Link as LinkIcon, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,8 @@ import {
   CarouselNext,
   CarouselPrevious
 } from "@/components/ui/carousel";
+import { usePumpPortal } from '@/hooks/usePumpPortal';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const MigratingTokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
@@ -35,6 +37,7 @@ const MigratingTokenList = () => {
   }>>({});
   const { toast } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
+  const { tokenMetrics } = usePumpPortal();
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -341,6 +344,19 @@ const MigratingTokenList = () => {
     };
   }, [sortMenuOpen]);
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied to clipboard",
+      description: "Token address copied to clipboard",
+    });
+  };
+
+  const formatAddress = (address: string) => {
+    if (!address) return '';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
   const renderMobileTokenCards = () => {
     return (
       <Carousel
@@ -372,6 +388,27 @@ const MigratingTokenList = () => {
                     <div className="text-xs text-dream-foreground/60">{token.symbol || '???'}</div>
                   </div>
                 </div>
+                
+                {!token.isPlaceholder && (
+                  <div className="mb-3 text-xs">
+                    <div className="flex items-center text-dream-foreground/60 mb-1">
+                      <LinkIcon className="w-3 h-3 mr-1" />
+                      <span className="truncate">{formatAddress(token.id)}</span>
+                      <button 
+                        onClick={() => copyToClipboard(token.id)}
+                        className="ml-1 text-dream-accent1 hover:text-dream-accent1/80"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </div>
+                    {tokenMetrics[token.id] && (
+                      <div className="flex items-center text-dream-foreground/60">
+                        <Users className="w-3 h-3 mr-1" />
+                        <span>{tokenMetrics[token.id].holders.toLocaleString()} holders</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 
                 <div className="flex justify-between items-center mb-3">
                   <div>
@@ -527,6 +564,7 @@ const MigratingTokenList = () => {
             <TableHeader className="bg-dream-background/50 backdrop-blur-sm">
               <TableRow>
                 <TableHead className="py-3 px-4 text-left text-xs font-semibold text-dream-foreground/70">Token</TableHead>
+                <TableHead className="py-3 px-4 text-left text-xs font-semibold text-dream-foreground/70">Contract</TableHead>
                 <TableHead className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Price</TableHead>
                 <TableHead className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Change</TableHead>
                 <TableHead className="py-3 px-4 text-right text-xs font-semibold text-dream-foreground/70">Time</TableHead>
@@ -557,10 +595,40 @@ const MigratingTokenList = () => {
                       </div>
                     </Link>
                   </TableCell>
+                  <TableCell className="py-3 px-4">
+                    {!token.isPlaceholder && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center text-xs text-dream-foreground/60">
+                              <LinkIcon className="w-3 h-3 mr-1 text-dream-accent2/80" />
+                              <span className="truncate max-w-[80px]">{formatAddress(token.id)}</span>
+                              <button 
+                                onClick={() => copyToClipboard(token.id)}
+                                className="ml-1 text-dream-accent1 hover:text-dream-accent1/80"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">{token.id}</p>
+                            <p className="text-xs text-dream-foreground/60">Click to copy</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    {!token.isPlaceholder && tokenMetrics[token.id] && (
+                      <div className="flex items-center text-xs text-dream-foreground/60 mt-1">
+                        <Users className="w-3 h-3 mr-1 text-dream-accent1/80" />
+                        <span>{tokenMetrics[token.id].holders.toLocaleString()} holders</span>
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="py-3 px-4 text-right">
                     <div className="font-medium">${formatPrice(token.currentPrice || 0)}</div>
                     
-                    {!token.isPlaceholder && tokenBetStats[token.id] && (
+                    {!token.isPlaceholder && (
                       <div className="mt-1 text-xs text-dream-foreground/60 space-y-0.5">
                         <div className="flex justify-end items-center gap-1.5">
                           <Users className="w-3 h-3 text-dream-accent2/80" />
