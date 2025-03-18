@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { updateUsername } from '@/services/userService';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+
 const PXBOnboarding: React.FC = () => {
   const {
     mintPoints,
@@ -28,6 +29,7 @@ const PXBOnboarding: React.FC = () => {
     publicKey
   } = useWallet();
   const navigate = useNavigate();
+
   useEffect(() => {
     if (connected && publicKey) {
       if (!username && userProfile?.username) {
@@ -35,28 +37,39 @@ const PXBOnboarding: React.FC = () => {
       } else if (!username) {
         setUsername(publicKey.toString().substring(0, 8));
       }
-      if (userProfile?.pxbPoints >= 500) {
+      
+      if (userProfile?.pxbPoints > 0) {
         setAlreadyMinted(true);
       }
     } else {
       setAlreadyMinted(false);
     }
   }, [connected, publicKey, userProfile, username]);
+
   useEffect(() => {
     if (connected) {
       fetchUserProfile();
     }
   }, [connected, fetchUserProfile]);
+
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
       return;
     }
+    
+    if (userProfile?.pxbPoints > 0) {
+      toast.error("You have already minted PXB Points with this wallet");
+      setAlreadyMinted(true);
+      return;
+    }
+
     const finalUsername = username.trim() || publicKey.toString().substring(0, 8);
     setHasMintedPoints(true);
+    
     try {
-      // Pass the default amount (500) instead of username
       await mintPoints(500);
       setShowSuccess(true);
     } catch (error) {
@@ -65,6 +78,7 @@ const PXBOnboarding: React.FC = () => {
       toast.error('Failed to mint PXB Points');
     }
   };
+
   const handleSaveUsername = async () => {
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
@@ -89,15 +103,19 @@ const PXBOnboarding: React.FC = () => {
       setIsUpdatingUsername(false);
     }
   };
+
   useEffect(() => {
     const checkUserExists = async () => {
-      if (connected && publicKey && !userProfile && !isLoading) {
+      if (connected && publicKey && !isLoading) {
         try {
           const walletAddress = publicKey.toString();
-          const {
-            data: existingUser
-          } = await supabase.from('users').select('points').eq('wallet_address', walletAddress).single();
-          if (existingUser && existingUser.points >= 500) {
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('points')
+            .eq('wallet_address', walletAddress)
+            .single();
+            
+          if (existingUser && existingUser.points > 0) {
             setAlreadyMinted(true);
             fetchUserProfile();
           }
@@ -106,14 +124,17 @@ const PXBOnboarding: React.FC = () => {
         }
       }
     };
+    
     checkUserExists();
   }, [connected, publicKey, userProfile, isLoading, fetchUserProfile]);
+
   const handleGoToBettingPage = () => {
     setShowSuccess(false);
     setHasMintedPoints(false);
     fetchUserProfile();
     navigate('/betting');
   };
+
   return <>
       <div className="glass-panel p-6 max-w-md mx-auto">
         <div className="text-center mb-6">
@@ -149,7 +170,11 @@ const PXBOnboarding: React.FC = () => {
                   Points Already Minted
                 </Button>
               </div> : <form onSubmit={handleMint} className="space-y-4">
-                <Button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300" disabled={isLoading || hasMintedPoints}>
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300" 
+                  disabled={isLoading || hasMintedPoints || alreadyMinted}
+                >
                   {isLoading ? <div className="flex items-center justify-center">
                       <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                       <span>Minting...</span>
@@ -238,4 +263,5 @@ const PXBOnboarding: React.FC = () => {
       </Dialog>
     </>;
 };
+
 export default PXBOnboarding;
