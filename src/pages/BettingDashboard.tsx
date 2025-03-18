@@ -449,8 +449,8 @@ const BettingDashboard = () => {
               </div>}
           </section>
         
-          <ScrollArea className="w-full pb-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8 min-w-[1200px]">
+          <ScrollArea className="w-full pb-4 overflow-x-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8" style={{ minWidth: '1200px' }}>
               <MigratingTokenList />
               <OpenBetsList />
             </div>
@@ -474,3 +474,7 @@ const BettingDashboard = () => {
   );
 };
 export default BettingDashboard;
+
+
+
+
