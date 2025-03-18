@@ -48,7 +48,8 @@ export const usePumpPortal = (tokenId?: string) => {
             token_mint: data.mint,
             token_name: data.name || 'Unknown Token',
             token_symbol: data.symbol || '',
-            created_time: new Date().toISOString()
+            created_time: new Date().toISOString(),
+            supply: data.supply || 1000000000 // Add default supply
           };
         } catch (e) {
           return null;

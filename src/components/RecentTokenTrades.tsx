@@ -27,13 +27,18 @@ const RecentTokenTrades: React.FC = () => {
   };
 
   const formatTokenCreation = (token: RawTokenCreationEvent) => {
+    // Default supply value if not provided
+    const tokenSupply = token.supply || token.token_supply ? 
+      Number(token.supply || token.token_supply) : 
+      1000000000;
+      
     return {
       mint: token.mint,
       type: 'create',
       name: token.name || 'Unknown Token',
       symbol: token.symbol || '',
       marketCap: token.marketCapSol || 0,
-      supply: token.supply || 1000000000,
+      supply: tokenSupply,
       pool: token.pool || '',
       holders: token.holders || 0,
       volume24h: token.volume24h || 0,
@@ -102,7 +107,11 @@ const RecentTokenTrades: React.FC = () => {
         <div className="divide-y divide-dream-accent1/10">
           {rawTokens.slice(0, displayLimit).map((token, index) => {
             const formattedToken = formatTokenCreation(token);
-            const tokenPrice = token.marketCapSol && token.supply ? token.marketCapSol / token.supply : 0;
+            // Calculate price safely with defaults
+            const tokenSupply = token.supply || token.token_supply ? 
+              Number(token.supply || token.token_supply) : 
+              1000000000;
+            const tokenPrice = token.marketCapSol && tokenSupply ? token.marketCapSol / tokenSupply : 0;
             
             return (
               <div key={`token-${index}`} className="p-4 hover:bg-dream-accent1/5 transition-colors">

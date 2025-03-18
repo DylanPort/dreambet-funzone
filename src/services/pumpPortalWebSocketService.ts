@@ -63,6 +63,8 @@ export interface RawTokenCreationEvent {
   holders?: number;
   volume24h?: number;
   liquidity?: number;
+  supply?: number;  // Add the missing supply property with optional flag
+  token_supply?: string; // Alternative supply property
 }
 
 // Raw token trade format from PumpPortal
