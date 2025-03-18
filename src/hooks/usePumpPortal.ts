@@ -6,7 +6,6 @@ import { usePumpPortalWebSocket, RawTokenTradeEvent } from '@/services/pumpPorta
 export const usePumpPortal = (tokenId?: string) => {
   const pumpPortal = usePumpPortalWebSocket();
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [tokenMetrics, setTokenMetrics] = useState<Record<string, any>>({});
   
   // Subscribe to specific token trades when needed
   useEffect(() => {
@@ -24,16 +23,6 @@ export const usePumpPortal = (tokenId?: string) => {
       setIsSubscribed(true);
     }
   }, [pumpPortal.connected, tokenId, isSubscribed]);
-  
-  // Ensure token metrics are updated when we have data
-  useEffect(() => {
-    if (tokenId && pumpPortal.tokenMetrics && pumpPortal.tokenMetrics[tokenId]) {
-      setTokenMetrics(prevMetrics => ({
-        ...prevMetrics,
-        [tokenId]: pumpPortal.tokenMetrics[tokenId]
-      }));
-    }
-  }, [tokenId, pumpPortal.tokenMetrics]);
   
   // Get token creation events from console logs
   const getRawTokensFromLogs = () => {
@@ -71,15 +60,11 @@ export const usePumpPortal = (tokenId?: string) => {
   
   return {
     isConnected: pumpPortal.connected,
-    recentTokens: pumpPortal.recentTokens || [],
+    recentTokens: pumpPortal.recentTokens,
     rawTokens: pumpPortal.rawTokens || [],
     recentTrades: tokenId ? pumpPortal.recentTrades[tokenId] || [] : {},
     recentRawTrades: pumpPortal.recentRawTrades || [],
     recentLiquidity: tokenId ? pumpPortal.recentLiquidity[tokenId] : null,
-    tokenMetrics: tokenId ? pumpPortal.tokenMetrics?.[tokenId] || {} : pumpPortal.tokenMetrics || {},
-    getTokenContractAddress: (mint: string) => mint || 'Unknown Contract',
-    getTokenHolders: (mint: string) => 
-      pumpPortal.tokenMetrics?.[mint]?.holders || 'Unknown',
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens
   };
