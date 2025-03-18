@@ -12,7 +12,7 @@ import BetCard from './BetCard';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const OpenBetsList = () => {
   const { toast } = useToast();
@@ -33,7 +33,7 @@ const OpenBetsList = () => {
     averageDustMarketCap: number;
     totalVolume: number;
   }>>({});
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const {
     data: supabaseBets = [],
