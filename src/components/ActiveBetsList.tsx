@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/carousel";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
-import { Bet } from '@/types/bet';
+import { Bet, BetStatus } from '@/types/bet';
 
 const ActiveBetsList = () => {
   const [bets, setBets] = useState<Bet[]>([]);
@@ -79,6 +79,11 @@ const ActiveBetsList = () => {
             predictionValue = bet.prediction_bettor1;
           }
           
+          // Ensure status is a valid BetStatus type
+          const validStatus: BetStatus = ['open', 'matched', 'completed', 'expired', 'closed'].includes(bet.status as string) 
+            ? (bet.status as BetStatus) 
+            : 'open'; // Default to 'open' if invalid status
+          
           return {
             id: bet.bet_id,
             tokenId: bet.token_mint,
@@ -90,7 +95,7 @@ const ActiveBetsList = () => {
             prediction: predictionValue,
             timestamp: new Date(bet.created_at).getTime(),
             expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-            status: bet.status,
+            status: validStatus,
             duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
             onChainBetId: '',
             transactionSignature: ''
