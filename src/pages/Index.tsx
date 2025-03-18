@@ -18,7 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -26,13 +25,11 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -73,12 +70,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -89,53 +84,62 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
-    <OrbitingParticles />
-    <Navbar />
-    <BetReel />
-    
-    <div className="h-20 py-0 my-0"></div>
-    
-    <main className="min-h-screen overflow-hidden">
-      <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
-        <FloatingImages />
-        
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
-          <div className="text-center md:text-left md:flex-1">
-            <AnimatedLogo />
-            
-            {isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
-                bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
-                backdrop-blur-[1px] rounded-xl border border-white/5
-                animate-entrance overflow-hidden
-                before:content-[''] before:absolute before:inset-0 
-                before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
-                before:animate-pulse-glow">
-                
+      <OrbitingParticles />
+      <Navbar />
+      <BetReel />
+      
+      <div className="h-20 py-0 my-0"></div>
+      
+      <main className="min-h-screen overflow-hidden">
+        <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
+          <FloatingImages />
+          
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
+            <div className="text-center md:text-left md:flex-1">
+              <AnimatedLogo />
+              
+              {isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
+                  bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
+                  backdrop-blur-[1px] rounded-xl border border-white/5
+                  animate-entrance overflow-hidden
+                  before:content-[''] before:absolute before:inset-0 
+                  before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
+                  before:animate-pulse-glow">
+                  
+                  
+                  
+                  
+                  
+                  
                 </div>}
+            </div>
+            
+            <div className="md:flex-1 flex justify-center mt-8 md:mt-0">
+              <FuturisticTokenDisplay tokens={latestTokens} />
+            </div>
           </div>
           
-          <div className="md:flex-1 flex justify-center mt-8 md:mt-0">
-            <FuturisticTokenDisplay tokens={latestTokens} />
-          </div>
-        </div>
-        
-        {!isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
-            bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
-            backdrop-blur-[1px] rounded-xl border border-white/5
-            animate-entrance overflow-hidden
-            before:content-[''] before:absolute before:inset-0 
-            before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
-            before:animate-pulse-glow">
-            
+          {!isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
+              bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
+              backdrop-blur-[1px] rounded-xl border border-white/5
+              animate-entrance overflow-hidden
+              before:content-[''] before:absolute before:inset-0 
+              before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
+              before:animate-pulse-glow">
+              
+              
+              
+              
+              
+              
             </div>}
-        
-        <div className="flex justify-center gap-4 mt-10 mb-16">
-          <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
-            <Link to="/betting" className="transform transition-all duration-500 hover:scale-105 animate-float">
-              <div className="relative overflow-hidden group transition-all duration-500
-                transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
+          
+          <div className="flex justify-center gap-4 mt-10 mb-16">
+            <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
+              <Link to="/betting" className="transform transition-all duration-500 hover:scale-105 animate-float">
+                <div className="relative overflow-hidden group transition-all duration-500
+                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
                   
                   <img src="/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png" alt="Start Betting" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(139,92,246,0.7)]
                     transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(139,92,246,0.9)]" />
@@ -150,43 +154,79 @@ const Index = () => {
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                   </div>
                 </div>
-            </Link>
-            
-            <Dialog>
-              <DialogTrigger asChild>
-                <div className="relative overflow-hidden group transition-all duration-500
-                  transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer animate-float-delayed">
+              </Link>
+              
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="relative overflow-hidden group transition-all duration-500
+                    transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer animate-float-delayed">
                     
-                  <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
-                    transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" />
+                    <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
+                      transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" />
                     
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/10 to-dream-accent1/10 
-                    opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/10 to-dream-accent1/10 
+                      opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                     
-                  <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
-                    text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
-                    drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
-                    {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
-                    <Sparkles className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
+                      text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
+                      drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
+                      {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
+                      <Sparkles className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                    </div>
                   </div>
-                </div>
-              </DialogTrigger>
-              <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
-                <PXBOnboarding />
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
+                  <PXBOnboarding />
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+          
+          <div className="max-w-5xl mx-auto mb-16">
+            <RecentTokenTrades />
+          </div>
+          
+          <div className="max-w-7xl mx-auto px-4 py-10">
+            <h2 className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-dream-accent1 to-dream-accent2 bg-clip-text text-transparent 
+                flex items-center justify-center gap-2 text-shadow-sm filter drop-shadow-[0_0_8px_rgba(255,61,252,0.3)]">
+              <img src="/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png" alt="Crown" className="h-16 w-16" />
+              PXB Leaderboard & Statistics
+              
+            </h2>
+            
+            <div className="glass-panel p-6 rounded-lg mb-8 py-[16px] my-[80px]">
+              <PXBSupplyProgress />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 py-[2px] my-0">
+              <div className="glass-panel p-6">
+                <PXBUserStats />
+              </div>
+              
+              <div className="glass-panel p-6">
+                <PXBLeaderboard />
+              </div>
+            </div>
+          </div>
+        
+        </section>
+      </main>
+      
+      <footer className="glass-panel mt-20 px-6 py-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <Link to="/" className="text-xl font-display font-bold text-gradient mb-3 inline-block">
+              PumpXBounty
+            </Link>
+            <p className="text-white/80 max-w-md mx-auto text-sm">
+              PumpXBounty is a platform for predicting the future of tokens migrating from PumpFun to Raydium. This is for entertainment purposes only.
+            </p>
+            <div className="mt-6 border-t border-white/10 pt-6 text-sm text-white/60">
+              © {new Date().getFullYear()} PumpXBounty. All rights reserved.
+            </div>
           </div>
         </div>
-        
-        <div className="max-w-5xl mx-auto mb-16">
-          <RecentTokenTrades />
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 py-10">
-          <h2 className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-dream-accent1 to-dream-accent2 bg-clip-text text-transparent 
-              flex items-center justify-center gap-2 text-shadow-sm filter drop-shadow-[0_0_8px_rgba(255,61,252,0.3)]">
-            <img src="/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png" alt="Crown" className="h-16 w-16" />
-            PXB Leaderboard & Statistics
-            
-
-
+      </footer>
+    </>;
+};
+export default Index;

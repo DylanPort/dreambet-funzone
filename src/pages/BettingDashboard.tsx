@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Tooltip,
   TooltipContent,
@@ -449,24 +448,9 @@ const BettingDashboard = () => {
               </div>}
           </section>
           
-          <div className="mb-8">
-            <div className="lg:hidden">
-              <ScrollArea className="w-full whitespace-nowrap pb-4">
-                <div className="flex gap-4 sm:gap-8 pr-4">
-                  <div className="min-w-[90vw] sm:min-w-[85vw]">
-                    <MigratingTokenList />
-                  </div>
-                  <div className="min-w-[90vw] sm:min-w-[85vw]">
-                    <OpenBetsList />
-                  </div>
-                </div>
-              </ScrollArea>
-            </div>
-            
-            <div className="hidden lg:grid lg:grid-cols-2 gap-8">
-              <MigratingTokenList />
-              <OpenBetsList />
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">
+            <MigratingTokenList />
+            <OpenBetsList />
           </div>
         </div>
       </main>
