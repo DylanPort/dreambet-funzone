@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Coins } from 'lucide-react';
@@ -8,7 +7,6 @@ import useSolanaBalance from '@/hooks/useSolanaBalance';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -21,7 +19,6 @@ const Navbar = () => {
     fetchUserProfile
   } = usePXBPoints();
   const [pxbPoints, setPxbPoints] = useState<number | null>(null);
-
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -33,17 +30,14 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
-
   useEffect(() => {
     if (userProfile) {
       setPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
-
   useEffect(() => {
     if (!userProfile) return;
     const channel = supabase.channel('public:users').on('postgres_changes', {
@@ -62,7 +56,6 @@ const Navbar = () => {
       supabase.removeChannel(channel);
     };
   }, [userProfile, fetchUserProfile]);
-
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
@@ -79,7 +72,7 @@ const Navbar = () => {
             </Link>
             <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-20 h-20 flex items-center justify-center transition-transform hover:scale-105">
-                <img src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" />
+                <img alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" src="/lovable-uploads/f4f0715a-b593-4250-b09f-b31137657bf2.png" />
               </div>
               <span>PXB Space</span>
             </Link>
@@ -163,5 +156,4 @@ const Navbar = () => {
         </div>}
     </header>;
 };
-
 export default Navbar;
