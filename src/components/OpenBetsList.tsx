@@ -19,6 +19,9 @@ const OpenBetsList = () => {
   
   const mostRecentToken = rawTokens[0];
   
+  // Use the current date as fallback if timestamp is not available
+  const creationDate = new Date();
+  
   return (
     <div className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
       <div className="flex items-center justify-between gap-4 relative z-10">
@@ -68,13 +71,9 @@ const OpenBetsList = () => {
             <div className="bg-dream-foreground/10 p-3 rounded-lg">
               <div className="text-xs text-dream-foreground/60 mb-1">Created</div>
               <div className="text-sm font-medium">
-                {mostRecentToken.timestamp 
-                  ? new Date(mostRecentToken.timestamp).toLocaleString()
-                  : new Date().toLocaleString()} 
+                {creationDate.toLocaleString()} 
                 <span className="text-xs text-dream-foreground/60 ml-2">
-                  ({mostRecentToken.timestamp 
-                    ? formatDistanceToNow(new Date(mostRecentToken.timestamp), { addSuffix: true })
-                    : 'just now'})
+                  (just now)
                 </span>
               </div>
             </div>
