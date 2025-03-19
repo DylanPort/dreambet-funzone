@@ -286,6 +286,29 @@ const OpenBetsList = () => {
                     </div>
                   </div>
                 </div>
+                
+                {/* Moon and Dust buttons, styled like FuturisticTokenDisplay */}
+                <div className="flex justify-around py-4 mt-3">
+                  <div className="relative group cursor-pointer">
+                    <img 
+                      src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
+                      alt="MOON" 
+                      className="w-16 h-16 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]"
+                    />
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/0 via-cyan-400/20 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+                    <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent">MOON</span>
+                  </div>
+                  
+                  <div className="relative group cursor-pointer">
+                    <img 
+                      src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
+                      alt="DUST" 
+                      className="w-16 h-16 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]"
+                    />
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/0 via-cyan-400/20 to-magenta-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+                    <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent">DUST</span>
+                  </div>
+                </div>
               </div>
             </div>
           );
