@@ -730,4 +730,4 @@ const TokenDetail = () => {
               <p className="text-dream-foreground/70 mb-4">
                 The token you're looking for could not be found or has been removed.
               </p>
-              <Button onClick={() => window.
+              <Link to="/" className="text
