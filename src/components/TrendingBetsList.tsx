@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatAddress } from '@/utils/betUtils';
-import { ExternalLink, BarChart, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { ExternalLink, BarChart, ChevronDown, ChevronUp, Zap, ArrowUp, ArrowDown } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from './ui/scroll-area';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
@@ -16,6 +16,8 @@ interface TrendingToken {
   token_symbol: string;
   bet_count: number;
   total_amount: number;
+  moon_bets: number;
+  die_bets: number;
 }
 
 const TrendingBetsList = () => {
@@ -31,7 +33,7 @@ const TrendingBetsList = () => {
         const {
           data,
           error
-        } = await supabase.from('bets').select('token_mint, token_name, token_symbol, sol_amount').order('created_at', {
+        } = await supabase.from('bets').select('token_mint, token_name, token_symbol, sol_amount, prediction_bettor1').order('created_at', {
           ascending: false
         });
         if (error) {
@@ -47,6 +49,8 @@ const TrendingBetsList = () => {
           token_symbol: string;
           bet_count: number;
           total_amount: number;
+          moon_bets: number;
+          die_bets: number;
         }>();
         data.forEach(bet => {
           if (!bet.token_mint) return;
@@ -54,13 +58,31 @@ const TrendingBetsList = () => {
           if (existing) {
             existing.bet_count += 1;
             existing.total_amount += Number(bet.sol_amount) || 0;
+            
+            // Count moon vs die bets
+            if (bet.prediction_bettor1 === 'up') {
+              existing.moon_bets += 1;
+            } else if (bet.prediction_bettor1 === 'down') {
+              existing.die_bets += 1;
+            }
           } else {
+            let moonBets = 0;
+            let dieBets = 0;
+            
+            if (bet.prediction_bettor1 === 'up') {
+              moonBets = 1;
+            } else if (bet.prediction_bettor1 === 'down') {
+              dieBets = 1;
+            }
+            
             tokenMap.set(bet.token_mint, {
               token_mint: bet.token_mint,
               token_name: bet.token_name || 'Unknown Token',
               token_symbol: bet.token_symbol || 'UNKNOWN',
               bet_count: 1,
-              total_amount: Number(bet.sol_amount) || 0
+              total_amount: Number(bet.sol_amount) || 0,
+              moon_bets: moonBets,
+              die_bets: dieBets
             });
           }
         });
@@ -122,7 +144,7 @@ const TrendingBetsList = () => {
             <img 
               src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
               alt="Fire" 
-              className="h-8 w-8 mr-1.5 animate-pulse" 
+              className="h-16 w-16 mr-1.5 animate-pulse" 
             />
             <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING</span>
           </div>
@@ -189,6 +211,27 @@ const TrendingBetsList = () => {
                               <ExternalLink className="h-3.5 w-3.5" />
                             </a>
                           </div>
+                          
+                          <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                            <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                              <span className="text-dream-foreground/60">Total Volume</span>
+                              <span className="font-medium text-dream-accent2">{token.total_amount.toFixed(2)} PXB</span>
+                            </div>
+                            <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <ArrowUp className="h-3 w-3 text-green-400" />
+                                <span className="text-dream-foreground/60">Moon</span>
+                              </div>
+                              <span className="font-medium text-green-400">{token.moon_bets}</span>
+                            </div>
+                            <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <ArrowDown className="h-3 w-3 text-red-400" />
+                                <span className="text-dream-foreground/60">Die</span>
+                              </div>
+                              <span className="font-medium text-red-400">{token.die_bets}</span>
+                            </div>
+                          </div>
                         </div>
                         
                         <div className="flex items-center justify-between gap-2">
@@ -241,6 +284,27 @@ const TrendingBetsList = () => {
                         <a href={`https://solscan.io/token/${token.token_mint}`} target="_blank" rel="noopener noreferrer" className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0 ml-1">
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
+                      </div>
+                      
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                        <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                          <span className="text-dream-foreground/60">Total Volume</span>
+                          <span className="font-medium text-dream-accent2">{token.total_amount.toFixed(2)} PXB</span>
+                        </div>
+                        <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                          <div className="flex items-center gap-1">
+                            <ArrowUp className="h-3 w-3 text-green-400" />
+                            <span className="text-dream-foreground/60">Moon</span>
+                          </div>
+                          <span className="font-medium text-green-400">{token.moon_bets}</span>
+                        </div>
+                        <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                          <div className="flex items-center gap-1">
+                            <ArrowDown className="h-3 w-3 text-red-400" />
+                            <span className="text-dream-foreground/60">Die</span>
+                          </div>
+                          <span className="font-medium text-red-400">{token.die_bets}</span>
+                        </div>
                       </div>
                     </div>
                     
