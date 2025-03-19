@@ -41,6 +41,36 @@ const OpenBetsList = () => {
   const { rawTokens } = usePumpPortal();
   const isMobile = useIsMobile();
   
+  // Define the sortTokens function before using it
+  const sortTokens = (tokensToSort: TokenData[]) => {
+    const tokens = [...tokensToSort];
+    
+    switch(sortBy) {
+      case 'newest':
+        return tokens.sort((a, b) => {
+          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return dateB - dateA;
+        });
+      case 'oldest':
+        return tokens.sort((a, b) => {
+          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return dateA - dateB;
+        });
+      case 'market-cap-high':
+        return tokens.sort((a, b) => (b.marketCapSol || 0) - (a.marketCapSol || 0));
+      case 'market-cap-low':
+        return tokens.sort((a, b) => (a.marketCapSol || 0) - (b.marketCapSol || 0));
+      case 'supply-high':
+        return tokens.sort((a, b) => (b.supply || 0) - (a.supply || 0));
+      case 'supply-low':
+        return tokens.sort((a, b) => (a.supply || 0) - (b.supply || 0));
+      default:
+        return tokens;
+    }
+  };
+  
   // Only show the first 5 tokens when not expanded
   const visibleTokens = isExpanded ? sortTokens(rawTokens) : sortTokens(rawTokens).slice(0, 5);
   
@@ -74,35 +104,6 @@ const OpenBetsList = () => {
         description: "Failed to copy address to clipboard",
         variant: "destructive",
       });
-    }
-  };
-  
-  const sortTokens = (tokensToSort: TokenData[]) => {
-    const tokens = [...tokensToSort];
-    
-    switch(sortBy) {
-      case 'newest':
-        return tokens.sort((a, b) => {
-          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-          return dateB - dateA;
-        });
-      case 'oldest':
-        return tokens.sort((a, b) => {
-          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-          return dateA - dateB;
-        });
-      case 'market-cap-high':
-        return tokens.sort((a, b) => (b.marketCapSol || 0) - (a.marketCapSol || 0));
-      case 'market-cap-low':
-        return tokens.sort((a, b) => (a.marketCapSol || 0) - (b.marketCapSol || 0));
-      case 'supply-high':
-        return tokens.sort((a, b) => (b.supply || 0) - (a.supply || 0));
-      case 'supply-low':
-        return tokens.sort((a, b) => (a.supply || 0) - (b.supply || 0));
-      default:
-        return tokens;
     }
   };
   
