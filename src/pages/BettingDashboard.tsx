@@ -64,7 +64,7 @@ const BettingDashboard = () => {
 
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
-          <section className="mb-12 text-center py-0 my-0 mx-0 sm:mx-4 md:mx-8 lg:mx-[240px] px-1 sm:px-[11px]">
+          <section className="mb-6 text-center py-0 my-0 mx-0 sm:mx-4 md:mx-8 lg:mx-[240px] px-1 sm:px-[11px]">
             {!connected && <div className="mt-8 glass-panel inline-flex flex-col sm:flex-row items-center gap-3 p-4">
                 <Wallet className="text-dream-accent2" />
                 <span>Connect your Solana wallet to start betting</span>
@@ -72,13 +72,13 @@ const BettingDashboard = () => {
               </div>}
           </section>
           
+          <div className="mb-4">
+            <TrendingBetsList />
+          </div>
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">
             <MigratingTokenList />
             <OpenBetsList />
-          </div>
-          
-          <div className="mb-8">
-            <TrendingBetsList />
           </div>
         </div>
       </main>
