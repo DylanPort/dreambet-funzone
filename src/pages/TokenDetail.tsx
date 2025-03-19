@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -93,6 +94,17 @@ const TokenChart = ({
         <div 
           className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
           onClick={() => {
+            // Create custom event with moon prediction details
+            const moonPredictionEvent = new CustomEvent('predictionSelected', {
+              detail: {
+                prediction: 'moon',
+                percentageChange: 80, // Minimum 80% for moon predictions
+                defaultBetAmount: 10, // Default bet amount
+                defaultDuration: 30 // Default duration in minutes
+              }
+            });
+            window.dispatchEvent(moonPredictionEvent);
+            
             refreshData('up');
             setShowCreateBet(true);
           }}
@@ -109,6 +121,17 @@ const TokenChart = ({
         <div 
           className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
           onClick={() => {
+            // Create custom event with dust prediction details
+            const dustPredictionEvent = new CustomEvent('predictionSelected', {
+              detail: {
+                prediction: 'die',
+                percentageChange: 50, // Minimum 50% for dust predictions
+                defaultBetAmount: 10, // Default bet amount
+                defaultDuration: 30 // Default duration in minutes
+              }
+            });
+            window.dispatchEvent(dustPredictionEvent);
+            
             refreshData('down');
             setShowCreateBet(true);
           }}

@@ -5,7 +5,7 @@ import { ArrowUp, ArrowDown, Clock, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { BetPrediction } from '@/types/bet';
 import { Slider } from '@/components/ui/slider';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { Input } from '@/components/ui/input';
 import { 
   AlertDialog,
@@ -53,6 +53,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [percentageChange, setPercentageChange] = useState<string>('10');
   const [isConfirmOpen, setIsConfirmOpen] = useState<boolean>(false);
+  const [rewardMultiplier, setRewardMultiplier] = useState<number>(1);
 
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { userProfile, placeBet } = usePXBPoints();
@@ -73,6 +74,69 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       });
     }
   }, [token, tokenId, tokenName, tokenSymbol]);
+
+  // Listen for prediction selection events from the Moon/Dust buttons
+  useEffect(() => {
+    const handlePredictionSelected = (event: CustomEvent) => {
+      if (event.detail) {
+        const { prediction: predictionType, percentageChange: percent, defaultBetAmount, defaultDuration } = event.detail;
+        
+        setPrediction(predictionType as BetPrediction);
+        setPercentageChange(percent.toString());
+        
+        if (defaultBetAmount) {
+          setAmount(defaultBetAmount.toString());
+        }
+        
+        if (defaultDuration) {
+          setDuration(defaultDuration);
+        }
+        
+        calculateMultiplier(percent);
+      }
+    };
+
+    window.addEventListener('predictionSelected', handlePredictionSelected as EventListener);
+    return () => {
+      window.removeEventListener('predictionSelected', handlePredictionSelected as EventListener);
+    };
+  }, []);
+
+  // Calculate reward multiplier based on percentage change
+  const calculateMultiplier = (percent: number) => {
+    let multiplier = 1;
+    
+    // For moon predictions (minimum 80%)
+    if (percent >= 200) {
+      multiplier = 3; // 3x for 200% or more
+    } else if (percent >= 150) {
+      multiplier = 2; // 2x for 150-199%
+    } else if (percent >= 100) {
+      multiplier = 1.5; // 1.5x for 100-149%
+    }
+    
+    setRewardMultiplier(multiplier);
+  };
+
+  // Update multiplier when percentage changes
+  useEffect(() => {
+    const percent = parseInt(percentageChange, 10);
+    if (!isNaN(percent)) {
+      calculateMultiplier(percent);
+    }
+  }, [percentageChange]);
+
+  // Enforce minimum percentage values based on prediction type
+  useEffect(() => {
+    if (prediction) {
+      const minPercent = prediction === 'moon' ? 80 : prediction === 'die' ? 50 : 0;
+      const currentPercent = parseInt(percentageChange, 10);
+      
+      if (isNaN(currentPercent) || currentPercent < minPercent) {
+        setPercentageChange(minPercent.toString());
+      }
+    }
+  }, [prediction, percentageChange]);
 
   useEffect(() => {
     const handleWalletReady = (event: CustomEvent) => {
@@ -189,12 +253,17 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const handlePercentageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9]/g, ''); // Only allow numbers
     
-    // Limit to reasonable percentage values (e.g., max 1000%)
+    // Enforce minimum percentage based on prediction type
     const numValue = parseInt(value || '0', 10);
-    if (numValue > 1000) {
+    const minPercent = prediction === 'moon' ? 80 : prediction === 'die' ? 50 : 0;
+    
+    if (numValue < minPercent && numValue !== 0) {
+      setPercentageChange(minPercent.toString());
+    } else if (numValue > 1000) {
       setPercentageChange('1000');
     } else {
       setPercentageChange(value);
+      calculateMultiplier(numValue);
     }
   };
 
@@ -398,7 +467,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setPrediction('moon')}
+            onClick={() => {
+              setPrediction('moon');
+              // Set minimum percentage for moon
+              const currentPercent = parseInt(percentageChange, 10);
+              if (isNaN(currentPercent) || currentPercent < 80) {
+                setPercentageChange('80');
+              }
+              calculateMultiplier(Math.max(80, currentPercent));
+            }}
             className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
               prediction === 'moon'
                 ? 'bg-green-500/20 border-green-500 text-green-400'
@@ -415,7 +492,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           
           <button
             type="button"
-            onClick={() => setPrediction('die')}
+            onClick={() => {
+              setPrediction('die');
+              // Set minimum percentage for die
+              const currentPercent = parseInt(percentageChange, 10);
+              if (isNaN(currentPercent) || currentPercent < 50) {
+                setPercentageChange('50');
+              }
+              calculateMultiplier(Math.max(50, currentPercent));
+            }}
             className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
               prediction === 'die'
                 ? 'bg-red-500/20 border-red-500 text-red-400'
@@ -430,7 +515,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       <div>
         <label className="block text-sm text-dream-foreground/70 mb-1">
-          Percentage Change Prediction
+          Percentage Change Prediction {prediction === 'moon' ? '(min 80%)' : prediction === 'die' ? '(min 50%)' : ''}
         </label>
         <div className="relative">
           <Input
@@ -445,6 +530,11 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         </div>
         <p className="text-xs text-dream-foreground/50 mt-1">
           Predict how much the market cap will {prediction === 'moon' ? 'increase' : prediction === 'die' ? 'decrease' : 'change'} by
+          {rewardMultiplier > 1 && (
+            <span className="ml-1 text-dream-accent2">
+              (Reward multiplier: {rewardMultiplier}x)
+            </span>
+          )}
         </p>
       </div>
       
@@ -498,7 +588,10 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           </p>
           {parseInt(amount, 10) > 0 && (
             <p className="text-sm text-dream-foreground/70 mt-1">
-              If your prediction is correct, you'll win <span className="text-green-400">{parseInt(amount, 10) * 2} PXB Points</span>.
+              If your prediction is correct, you'll win <span className="text-green-400">{parseInt(amount, 10) * 2 * rewardMultiplier} PXB Points</span> 
+              {rewardMultiplier > 1 && (
+                <span className="text-dream-accent2"> (including {rewardMultiplier}x multiplier for ambitious prediction)</span>
+              )}
             </p>
           )}
         </div>
