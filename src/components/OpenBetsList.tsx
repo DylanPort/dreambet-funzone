@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { formatDistanceToNow } from 'date-fns';
@@ -9,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import {
   Tooltip,
   TooltipContent,
@@ -22,7 +22,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Define types for token data
 interface TokenData {
   mint: string;
   symbol: string;
@@ -40,8 +39,8 @@ const OpenBetsList = () => {
   const [sortBy, setSortBy] = useState('newest');
   const { rawTokens } = usePumpPortal();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   
-  // Define the sortTokens function before using it
   const sortTokens = (tokensToSort: TokenData[]) => {
     const tokens = [...tokensToSort];
     
@@ -71,26 +70,22 @@ const OpenBetsList = () => {
     }
   };
   
-  // Only show the first 5 tokens when not expanded
   const visibleTokens = isExpanded ? sortTokens(rawTokens) : sortTokens(rawTokens).slice(0, 5);
   
   const copyToClipboard = async (text: string, index: number) => {
     try {
       await navigator.clipboard.writeText(text);
       
-      // Set the copied state for this specific address
       setCopiedAddresses(prev => ({
         ...prev,
         [index]: true
       }));
       
-      // Show toast notification
       toast({
         title: "Address copied",
         description: "Token contract address copied to clipboard",
       });
       
-      // Reset the copied state after 2 seconds
       setTimeout(() => {
         setCopiedAddresses(prev => ({
           ...prev,
@@ -105,6 +100,10 @@ const OpenBetsList = () => {
         variant: "destructive",
       });
     }
+  };
+  
+  const navigateToTokenDetail = (tokenMint: string) => {
+    navigate(`/token/${tokenMint}`);
   };
   
   if (!rawTokens || rawTokens.length === 0) {
@@ -178,10 +177,8 @@ const OpenBetsList = () => {
 
       <div className="space-y-4">
         {visibleTokens.map((token, index) => {
-          // Use the current date as creation date since RawTokenCreationEvent doesn't have created_time
           const creationDate = token.timestamp ? new Date(token.timestamp) : new Date();
           
-          // Format the time distance
           const timeAgo = formatDistanceToNow(creationDate, { addSuffix: true });
           
           return (
@@ -287,9 +284,11 @@ const OpenBetsList = () => {
                   </div>
                 </div>
                 
-                {/* Moon and Dust buttons, styled like FuturisticTokenDisplay */}
                 <div className="flex justify-around py-4 mt-3">
-                  <div className="relative group cursor-pointer">
+                  <div 
+                    className="relative group cursor-pointer"
+                    onClick={() => navigateToTokenDetail(token.mint)}
+                  >
                     <img 
                       src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
                       alt="MOON" 
@@ -299,7 +298,10 @@ const OpenBetsList = () => {
                     <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent">MOON</span>
                   </div>
                   
-                  <div className="relative group cursor-pointer">
+                  <div 
+                    className="relative group cursor-pointer"
+                    onClick={() => navigateToTokenDetail(token.mint)}
+                  >
                     <img 
                       src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
                       alt="DUST" 
