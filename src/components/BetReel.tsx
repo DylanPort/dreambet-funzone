@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink, Flame, BarChart } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -7,7 +6,6 @@ import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTrendingTokens } from "@/services/supabaseService";
 import { toast } from 'sonner';
-
 interface TrendingToken {
   tokenMint: string;
   tokenName: string;
@@ -15,11 +13,9 @@ interface TrendingToken {
   betCount: number;
   totalAmount: number;
 }
-
 const BetReel: React.FC = () => {
   const [trendingTokens, setTrendingTokens] = useState<TrendingToken[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchTokens = async () => {
       try {
@@ -33,9 +29,8 @@ const BetReel: React.FC = () => {
         setLoading(false);
       }
     };
-    
     fetchTokens();
-    
+
     // Set up a channel to listen for new bets
     const channel = supabase.channel('public:bets').on('postgres_changes', {
       event: 'INSERT',
@@ -45,12 +40,10 @@ const BetReel: React.FC = () => {
       console.log('New bet inserted, refreshing trending tokens:', payload);
       fetchTokens();
     }).subscribe();
-    
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
-
   if (loading) {
     return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
         <div className="flex items-center">
@@ -64,7 +57,6 @@ const BetReel: React.FC = () => {
         </div>
       </div>;
   }
-
   if (trendingTokens.length === 0) {
     return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 overflow-hidden py-[3px] my-[36px]">
         <div className="flex items-center">
@@ -85,18 +77,16 @@ const BetReel: React.FC = () => {
     if (betCount > 5) return "text-amber-400 bg-amber-500/20";
     return "text-green-400 bg-green-500/20";
   };
-
   return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 overflow-hidden py-0 my-[27px]">
       <div className="flex items-center">
         <div className="flex-shrink-0 px-3 py-1 bg-dream-accent3/40 border-r border-white/10 flex items-center">
           <Flame className="h-4 w-4 text-dream-accent2 mr-1.5 animate-pulse" />
-          <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING TOKENS</span>
+          <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING BETS</span>
         </div>
         
         <div className="overflow-hidden mx-4 flex-1">
           <div className="flex gap-4 items-center animate-scroll">
-            {trendingTokens.map((token, index) => (
-              <Link key={`${token.tokenMint}-${index}`} to={`/betting/token/${token.tokenMint}`} className="flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500 hover:bg-black/40">
+            {trendingTokens.map((token, index) => <Link key={`${token.tokenMint}-${index}`} to={`/betting/token/${token.tokenMint}`} className="flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500 hover:bg-black/40">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
                     <span className="font-display font-bold text-sm">{token.tokenSymbol.charAt(0)}</span>
@@ -127,12 +117,10 @@ const BetReel: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </Link>
-            ))}
+              </Link>)}
           </div>
         </div>
       </div>
     </div>;
 };
-
 export default BetReel;
