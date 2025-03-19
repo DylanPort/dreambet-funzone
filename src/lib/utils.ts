@@ -21,6 +21,11 @@ const customKeyframes = {
   'shine': {
     '0%': { transform: 'translateX(-100%) skewX(-20deg)' },
     '100%': { transform: 'translateX(100%) skewX(-20deg)' }
+  },
+  'pulse-slow': {
+    '0%': { opacity: '0.6' },
+    '50%': { opacity: '1' },
+    '100%': { opacity: '0.6' }
   }
 };
 
@@ -28,7 +33,8 @@ const customKeyframes = {
 const customAnimations = {
   'fast-particle': 'fast-particle 1s linear infinite',
   'supply-particle': 'supply-particle 0.8s ease-in-out infinite',
-  'shine': 'shine 2s linear infinite'
+  'shine': 'shine 2s linear infinite',
+  'pulse-slow': 'pulse-slow 2s ease-in-out infinite'
 };
 
 export { customKeyframes, customAnimations };

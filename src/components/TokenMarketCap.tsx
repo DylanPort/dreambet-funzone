@@ -15,6 +15,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   const [marketCap, setMarketCap] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [pulseEffect, setPulseEffect] = useState(false);
   const { toast } = useToast();
   
   // Use PumpPortal hook to get SOL market cap data
@@ -52,6 +53,9 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
         setMarketCap(estimatedSolValue);
         setLastUpdated(new Date());
         setLoading(false);
+        // Trigger pulse animation
+        setPulseEffect(true);
+        setTimeout(() => setPulseEffect(false), 1000);
         
         // Cache in localStorage
         try {
@@ -88,6 +92,10 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       setMarketCap(tokenMetrics.market_cap);
       setLastUpdated(new Date());
       setLoading(false);
+      
+      // Trigger pulse animation on update
+      setPulseEffect(true);
+      setTimeout(() => setPulseEffect(false), 1000);
       
       // Cache in localStorage
       try {
@@ -141,7 +149,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
           </span>
         )}
       </div>
-      <div className="text-3xl font-bold relative z-10 flex items-center">
+      <div className={`text-3xl font-bold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent1 transition-colors duration-500' : ''}`}>
         {loading && !marketCap ? (
           <span className="animate-pulse">Loading...</span>
         ) : (
@@ -149,7 +157,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
             <span className="mr-2">{formatLargeNumber(marketCap)}</span>
             <div className="flex items-center h-2">
               <div className="w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></div>
-              <span className="text-xs text-green-400">LIVE</span>
+              <span className="text-xs text-green-400 font-semibold animate-pulse-slow">LIVE</span>
             </div>
           </>
         )}
@@ -165,12 +173,14 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
           <ExternalLink className="w-4 h-4" />
         </a>
       </div>
-      {marketCap !== null && (
+      
+      {/* Add constant shimmering effect to bottom bar */}
+      <div className="absolute bottom-0 left-0 right-0 overflow-hidden h-1">
         <div 
-          className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent1 to-dream-accent2 animate-pulse-glow" 
-          style={{ width: `${Math.min(100, (marketCap / 10000) * 100)}%` }}
+          className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent1 animate-pulse-glow" 
         ></div>
-      )}
+        <div className="absolute bottom-0 left-0 h-1 w-1/3 bg-white/30 backdrop-blur-sm transform -skew-x-45 animate-shine"></div>
+      </div>
     </div>
   );
 };
