@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatAddress } from '@/utils/betUtils';
 import { ExternalLink, BarChart, ChevronDown, ChevronUp, Zap, ArrowUp, ArrowDown } from 'lucide-react';
@@ -59,7 +59,6 @@ const TrendingBetsList = () => {
             existing.bet_count += 1;
             existing.total_amount += Number(bet.sol_amount) || 0;
             
-            // Count moon vs die bets
             if (bet.prediction_bettor1 === 'up') {
               existing.moon_bets += 1;
             } else if (bet.prediction_bettor1 === 'down') {
@@ -181,77 +180,79 @@ const TrendingBetsList = () => {
             <CarouselContent>
               {visibleTokens.map((token, index) => <CarouselItem key={`${token.token_mint}-${index}`} className="md:basis-1/2 lg:basis-1/3">
                   <div className="p-1">
-                    <div className="rounded-xl overflow-hidden bg-gradient-to-br from-dream-background/70 to-dream-background/40 border border-dream-accent1/10 p-4 h-full backdrop-blur-md hover:border-dream-accent1/30 transition-all duration-300">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getHeatColor(token.bet_count)} flex items-center justify-center`}>
-                            <span className="text-sm font-bold text-white">{token.token_symbol.charAt(0)}</span>
-                          </div>
-                          <div>
-                            <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">
-                              {token.token_symbol}
+                    <Link to={`/token/${token.token_mint}`} className="block">
+                      <div className="rounded-xl overflow-hidden bg-gradient-to-br from-dream-background/70 to-dream-background/40 border border-dream-accent1/10 p-4 h-full backdrop-blur-md hover:border-dream-accent1/30 transition-all duration-300">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getHeatColor(token.bet_count)} flex items-center justify-center`}>
+                              <span className="text-sm font-bold text-white">{token.token_symbol.charAt(0)}</span>
                             </div>
-                            <div className="text-xs text-dream-foreground/60">{token.token_name}</div>
+                            <div>
+                              <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">
+                                {token.token_symbol}
+                              </div>
+                              <div className="text-xs text-dream-foreground/60">{token.token_name}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs bg-dream-accent3/20 px-2 py-1 rounded-full">
+                            <BarChart className="h-3 w-3 text-dream-accent3" />
+                            <span>{token.bet_count} bets</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 text-xs bg-dream-accent3/20 px-2 py-1 rounded-full">
-                          <BarChart className="h-3 w-3 text-dream-accent3" />
-                          <span>{token.bet_count} bets</span>
-                        </div>
-                      </div>
                     
-                      <div className="space-y-2 mt-3">
-                        <div className="bg-dream-background/30 p-3 rounded-lg">
-                          <div className="text-xs text-dream-foreground/60 mb-1">Token Contract</div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm font-medium overflow-hidden text-ellipsis">
-                              {formatAddress(token.token_mint)}
-                            </div>
-                            <a href={`https://solscan.io/token/${token.token_mint}`} target="_blank" rel="noopener noreferrer" className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0 ml-1">
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
-                          </div>
-                          
-                          <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-                            <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
-                              <span className="text-dream-foreground/60">Total Volume</span>
-                              <span className="font-medium text-dream-accent2">{token.total_amount.toFixed(2)} PXB</span>
-                            </div>
-                            <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <ArrowUp className="h-3 w-3 text-green-400" />
-                                <span className="text-dream-foreground/60">Moon</span>
+                        <div className="space-y-2 mt-3">
+                          <div className="bg-dream-background/30 p-3 rounded-lg">
+                            <div className="text-xs text-dream-foreground/60 mb-1">Token Contract</div>
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm font-medium overflow-hidden text-ellipsis">
+                                {formatAddress(token.token_mint)}
                               </div>
-                              <span className="font-medium text-green-400">{token.moon_bets}</span>
+                              <a href={`https://solscan.io/token/${token.token_mint}`} target="_blank" rel="noopener noreferrer" className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0 ml-1">
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
                             </div>
-                            <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <ArrowDown className="h-3 w-3 text-red-400" />
-                                <span className="text-dream-foreground/60">Die</span>
+                            
+                            <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                              <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                                <span className="text-dream-foreground/60">Total Volume</span>
+                                <span className="font-medium text-dream-accent2">{token.total_amount.toFixed(2)} PXB</span>
                               </div>
-                              <span className="font-medium text-red-400">{token.die_bets}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
-                            <div className="text-xs text-dream-foreground/60 mb-1">Total Bet Amount</div>
-                            <div className="text-sm font-medium text-dream-accent2">
-                              {token.total_amount.toFixed(2)} PXB
+                              <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                                <div className="flex items-center gap-1">
+                                  <ArrowUp className="h-3 w-3 text-green-400" />
+                                  <span className="text-dream-foreground/60">Moon</span>
+                                </div>
+                                <span className="font-medium text-green-400">{token.moon_bets}</span>
+                              </div>
+                              <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                                <div className="flex items-center gap-1">
+                                  <ArrowDown className="h-3 w-3 text-red-400" />
+                                  <span className="text-dream-foreground/60">Die</span>
+                                </div>
+                                <span className="font-medium text-red-400">{token.die_bets}</span>
+                              </div>
                             </div>
                           </div>
                         
-                          <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
-                            <div className="text-xs text-dream-foreground/60 mb-1">Heat Level</div>
-                            <div className="flex items-center gap-1.5">
-                              <div className={`flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-r ${getHeatColor(token.bet_count)}`}></div>
-                              <span className="text-sm font-medium">{getHeatText(token.bet_count)}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
+                              <div className="text-xs text-dream-foreground/60 mb-1">Total Bet Amount</div>
+                              <div className="text-sm font-medium text-dream-accent2">
+                                {token.total_amount.toFixed(2)} PXB
+                              </div>
+                            </div>
+                        
+                            <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
+                              <div className="text-xs text-dream-foreground/60 mb-1">Heat Level</div>
+                              <div className="flex items-center gap-1.5">
+                                <div className={`flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-r ${getHeatColor(token.bet_count)}`}></div>
+                                <span className="text-sm font-medium">{getHeatText(token.bet_count)}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   </div>
                 </CarouselItem>)}
             </CarouselContent>
@@ -260,74 +261,78 @@ const TrendingBetsList = () => {
           </Carousel>}
 
         {isMobile && <div className="space-y-4">
-            {visibleTokens.map((token, index) => <div key={`${token.token_mint}-${index}`} className="flex items-center justify-between gap-4 relative z-10 p-4 bg-dream-background/40 rounded-lg border border-dream-accent1/10">
-                <div className="flex flex-col space-y-2 w-full">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xl font-semibold text-dream-accent2 flex items-center gap-2">
-                      <div className={`flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r ${getHeatColor(token.bet_count)}`}>
-                        <span className="text-xs font-bold text-white">{index + 1}</span>
+            {visibleTokens.map((token, index) => 
+              <Link key={`${token.token_mint}-${index}`} to={`/token/${token.token_mint}`} className="block">
+                <div className="flex items-center justify-between gap-4 relative z-10 p-4 bg-dream-background/40 rounded-lg border border-dream-accent1/10 hover:border-dream-accent1/30 transition-all duration-300">
+                  <div className="flex flex-col space-y-2 w-full">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xl font-semibold text-dream-accent2 flex items-center gap-2">
+                        <div className={`flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r ${getHeatColor(token.bet_count)}`}>
+                          <span className="text-xs font-bold text-white">{index + 1}</span>
+                        </div>
+                        {token.token_symbol || 'Unknown'}
                       </div>
-                      {token.token_symbol || 'Unknown'}
-                    </div>
-                    <div className="text-sm text-dream-foreground/60">
-                      {token.token_name || 'Unknown Token'}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-2 mt-2">
-                    <div className="bg-dream-foreground/10 p-3 rounded-lg">
-                      <div className="text-xs text-dream-foreground/60 mb-1">Token Contract</div>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium overflow-hidden text-ellipsis">
-                          {formatAddress(token.token_mint)}
-                        </div>
-                        <a href={`https://solscan.io/token/${token.token_mint}`} target="_blank" rel="noopener noreferrer" className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0 ml-1">
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
-                      
-                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-                        <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
-                          <span className="text-dream-foreground/60">Total Volume</span>
-                          <span className="font-medium text-dream-accent2">{token.total_amount.toFixed(2)} PXB</span>
-                        </div>
-                        <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
-                          <div className="flex items-center gap-1">
-                            <ArrowUp className="h-3 w-3 text-green-400" />
-                            <span className="text-dream-foreground/60">Moon</span>
-                          </div>
-                          <span className="font-medium text-green-400">{token.moon_bets}</span>
-                        </div>
-                        <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
-                          <div className="flex items-center gap-1">
-                            <ArrowDown className="h-3 w-3 text-red-400" />
-                            <span className="text-dream-foreground/60">Die</span>
-                          </div>
-                          <span className="font-medium text-red-400">{token.die_bets}</span>
-                        </div>
+                      <div className="text-sm text-dream-foreground/60">
+                        {token.token_name || 'Unknown Token'}
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="bg-dream-foreground/10 p-3 rounded-lg flex-1">
-                        <div className="text-xs text-dream-foreground/60 mb-1">Total Bets</div>
-                        <div className="flex items-center gap-1.5">
-                          <BarChart className="h-3.5 w-3.5 text-dream-accent2" />
-                          <span className="text-sm font-medium">{token.bet_count} bets</span>
+                    <div className="grid grid-cols-1 gap-2 mt-2">
+                      <div className="bg-dream-foreground/10 p-3 rounded-lg">
+                        <div className="text-xs text-dream-foreground/60 mb-1">Token Contract</div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium overflow-hidden text-ellipsis">
+                            {formatAddress(token.token_mint)}
+                          </div>
+                          <a href={`https://solscan.io/token/${token.token_mint}`} target="_blank" rel="noopener noreferrer" className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0 ml-1">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </div>
+                        
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                          <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                            <span className="text-dream-foreground/60">Total Volume</span>
+                            <span className="font-medium text-dream-accent2">{token.total_amount.toFixed(2)} PXB</span>
+                          </div>
+                          <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                            <div className="flex items-center gap-1">
+                              <ArrowUp className="h-3 w-3 text-green-400" />
+                              <span className="text-dream-foreground/60">Moon</span>
+                            </div>
+                            <span className="font-medium text-green-400">{token.moon_bets}</span>
+                          </div>
+                          <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                            <div className="flex items-center gap-1">
+                              <ArrowDown className="h-3 w-3 text-red-400" />
+                              <span className="text-dream-foreground/60">Die</span>
+                            </div>
+                            <span className="font-medium text-red-400">{token.die_bets}</span>
+                          </div>
                         </div>
                       </div>
                     
-                      <div className="bg-dream-foreground/10 p-3 rounded-lg flex-1">
-                        <div className="text-xs text-dream-foreground/60 mb-1">Heat Level</div>
-                        <div className="flex items-center gap-1.5">
-                          <div className={`h-2 w-2 rounded-full bg-gradient-to-r ${getHeatColor(token.bet_count)}`}></div>
-                          <span className="text-sm font-medium">{getHeatText(token.bet_count)}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="bg-dream-foreground/10 p-3 rounded-lg flex-1">
+                          <div className="text-xs text-dream-foreground/60 mb-1">Total Bets</div>
+                          <div className="flex items-center gap-1.5">
+                            <BarChart className="h-3.5 w-3.5 text-dream-accent2" />
+                            <span className="text-sm font-medium">{token.bet_count} bets</span>
+                          </div>
+                        </div>
+                    
+                        <div className="bg-dream-foreground/10 p-3 rounded-lg flex-1">
+                          <div className="text-xs text-dream-foreground/60 mb-1">Heat Level</div>
+                          <div className="flex items-center gap-1.5">
+                            <div className={`h-2 w-2 rounded-full bg-gradient-to-r ${getHeatColor(token.bet_count)}`}></div>
+                            <span className="text-sm font-medium">{getHeatText(token.bet_count)}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>)}
+              </Link>
+            )}
           </div>}
         
         {trendingTokens.length > 5 && <div className="flex justify-center mt-4">
