@@ -30,6 +30,67 @@ export const fetchTokenById = async (tokenMint: string) => {
   return data;
 };
 
+// Trending tokens function
+export const fetchTrendingTokens = async (limit = 10) => {
+  try {
+    console.log("Fetching trending tokens from Supabase...");
+    
+    // Get tokens with bet counts from the bets table
+    const { data, error } = await supabase
+      .from('bets')
+      .select(`
+        token_mint,
+        token_name,
+        token_symbol,
+        sol_amount
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching trending tokens:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('No bets found for trending analysis');
+      return [];
+    }
+    
+    // Group by token and count bets
+    const tokenMap = new Map();
+    
+    data.forEach(bet => {
+      if (!bet.token_mint) return;
+      
+      const key = bet.token_mint;
+      if (tokenMap.has(key)) {
+        const token = tokenMap.get(key);
+        token.betCount += 1;
+        token.totalAmount += Number(bet.sol_amount) || 0;
+      } else {
+        tokenMap.set(key, {
+          tokenMint: bet.token_mint,
+          tokenName: bet.token_name || 'Unknown Token',
+          tokenSymbol: bet.token_symbol || 'UNKNOWN',
+          betCount: 1,
+          totalAmount: Number(bet.sol_amount) || 0
+        });
+      }
+    });
+    
+    // Convert to array and sort by bet count
+    const trendingTokens = Array.from(tokenMap.values())
+      .sort((a, b) => b.betCount - a.betCount)
+      .slice(0, limit);
+    
+    console.log('Trending tokens:', trendingTokens);
+    return trendingTokens;
+  } catch (error) {
+    console.error('Error in fetchTrendingTokens:', error);
+    throw error;
+  }
+};
+
 // Bet related functions
 export const fetchOpenBets = async () => {
   try {
