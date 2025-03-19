@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink } from 'lucide-react';
+import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink, Flame } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { fetchOpenBets } from "@/services/supabaseService";
 import { toast } from 'sonner';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
+
 const BetReel: React.FC = () => {
   const [activeBets, setActiveBets] = useState<Bet[]>([]);
   const [animateIndex, setAnimateIndex] = useState<number | null>(null);
@@ -18,6 +19,7 @@ const BetReel: React.FC = () => {
   const {
     publicKey
   } = useWallet();
+
   useEffect(() => {
     const fetchBets = async () => {
       try {
@@ -198,39 +200,43 @@ const BetReel: React.FC = () => {
       clearInterval(checkExpiredInterval);
     };
   }, [pxbBets, publicKey]);
+
   if (loading) {
     return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
         <div className="flex items-center">
-          <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
-            <img src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" alt="Crown" className="h-5 w-5 mr-2" />
-            <span className="text-sm font-semibold">ACTIVE BETS</span>
+          <div className="flex-shrink-0 px-3 py-1 bg-dream-accent3/40 border-r border-white/10 flex items-center">
+            <Flame className="h-4 w-4 text-dream-accent2 mr-1.5 animate-pulse" />
+            <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING BETS</span>
           </div>
           <div className="overflow-hidden mx-4 flex-1">
-            <div className="text-sm text-gray-400">Loading active bets...</div>
+            <div className="text-sm text-gray-400">Loading trending bets...</div>
           </div>
         </div>
       </div>;
   }
+
   if (activeBets.length === 0) {
     return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 overflow-hidden py-[3px] my-[36px]">
         <div className="flex items-center">
-          <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
-            <img src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" alt="Crown" className="h-4 w-26 mr-1 object-cover" />
-            <span className="text-sm font-semibold">ACTIVE BETS</span>
+          <div className="flex-shrink-0 px-3 py-1 bg-dream-accent3/40 border-r border-white/10 flex items-center">
+            <Flame className="h-4 w-4 text-dream-accent2 mr-1.5 animate-pulse" />
+            <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING BETS</span>
           </div>
           <div className="overflow-hidden mx-4 flex-1">
-            <div className="text-sm text-gray-400 italic">No active or expired bets at the moment</div>
+            <div className="text-sm text-gray-400 italic">No trending bets at the moment</div>
           </div>
         </div>
       </div>;
   }
+
   const activeBetsCount = activeBets.filter(bet => bet.status !== 'expired').length;
   const expiredBetsCount = activeBets.filter(bet => bet.status === 'expired').length;
+
   return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 overflow-hidden py-0 my-[27px]">
       <div className="flex items-center">
-        <div className="flex-shrink-0 px-3 py-1 bg-dream-accent1/20 border-r border-white/10 flex items-center">
-          <img src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" alt="Crown" className="h-5 w-5 mr-2" />
-          <span className="text-sm font-semibold">ACTIVE BETS</span>
+        <div className="flex-shrink-0 px-3 py-1 bg-dream-accent3/40 border-r border-white/10 flex items-center">
+          <Flame className="h-4 w-4 text-dream-accent2 mr-1.5 animate-pulse" />
+          <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING BETS</span>
         </div>
         
         <div className="flex items-center ml-4">
@@ -294,4 +300,5 @@ const BetReel: React.FC = () => {
       </div>
     </div>;
 };
+
 export default BetReel;
