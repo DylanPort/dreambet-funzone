@@ -114,6 +114,14 @@ const config = {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(calc(-100% - 20px))" }
         },
+        "focus-glow": {
+          "0%, 100%": { boxShadow: "0 0 5px 0px rgba(232, 68, 195, 0)" },
+          "50%": { boxShadow: "0 0 8px 2px rgba(232, 68, 195, 0.3)" }
+        },
+        "border-pulse": {
+          "0%, 100%": { borderColor: "rgba(255, 255, 255, 0.1)" },
+          "50%": { borderColor: "rgba(232, 68, 195, 0.3)" }
+        },
         ...customKeyframes
       },
       animation: {
@@ -127,6 +135,8 @@ const config = {
         "pulse-slow": "pulse-slow 3s ease-in-out infinite",
         "scan-line": "scan-line 2s linear infinite",
         "scroll": "scroll 15s linear infinite",
+        "focus-glow": "focus-glow 2s ease-in-out infinite",
+        "border-pulse": "border-pulse 2s ease-in-out infinite",
         ...customAnimations
       },
     },

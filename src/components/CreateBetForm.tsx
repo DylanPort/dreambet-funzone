@@ -602,16 +602,29 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             </span>
           )}
         </div>
-        <div className="relative">
+        <div className="relative group">
           <Input
             type="text"
             value={percentageChange}
             onChange={handlePercentageChange}
-            className={`w-full p-3 bg-dream-surface border ${prediction ? (prediction === 'moon' ? 'border-green-500/30' : 'border-red-500/30') : 'border-dream-foreground/20'} rounded-md focus:outline-none focus:border-dream-accent2`}
+            className={`w-full p-3 bg-black/30 border ${
+              prediction 
+                ? (prediction === 'moon' 
+                  ? 'border-green-500/30 focus-visible:border-green-500/60 focus-visible:ring-green-500/30' 
+                  : 'border-red-500/30 focus-visible:border-red-500/60 focus-visible:ring-red-500/30') 
+                : 'border-dream-foreground/20'
+            } rounded-md focus:outline-none focus-visible:border-dream-accent2/50 backdrop-blur-lg`}
           />
           <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dream-foreground/50">
             %
           </span>
+          <div className={`absolute inset-0 -z-10 opacity-0 group-hover:opacity-30 transition-opacity duration-300 pointer-events-none ${
+            prediction === 'moon' 
+              ? 'bg-gradient-to-r from-green-500/10 to-dream-accent2/10' 
+              : prediction === 'die' 
+                ? 'bg-gradient-to-r from-red-500/10 to-dream-accent3/10' 
+                : 'bg-gradient-to-r from-dream-accent1/10 to-dream-accent3/10'
+          } rounded-md filter blur-sm`}></div>
         </div>
         {showExplanations && (
           <>
@@ -645,16 +658,17 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             </span>
           )}
         </div>
-        <div className="relative">
-          <input
+        <div className="relative group">
+          <Input
             type="text"
             value={amount}
             onChange={handleAmountChange}
-            className="w-full p-3 bg-dream-surface border border-dream-foreground/20 rounded-md focus:outline-none focus:border-dream-accent2"
+            className="w-full p-3 bg-black/30 border border-dream-foreground/20 rounded-md focus:outline-none backdrop-blur-lg"
           />
           <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dream-foreground/50">
             PXB
           </span>
+          <div className="absolute inset-0 -z-10 opacity-0 group-hover:opacity-30 transition-opacity duration-300 pointer-events-none bg-gradient-to-r from-dream-accent2/10 to-dream-accent1/10 rounded-md filter blur-sm"></div>
         </div>
         {showExplanations && (
           <div className="flex justify-between items-center mt-1">
