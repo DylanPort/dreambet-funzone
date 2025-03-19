@@ -89,29 +89,25 @@ const TokenChart = ({
       </div>
       
       <div className="mt-8 grid grid-cols-2 gap-4">
-        <button 
-          onClick={() => refreshData('up')} 
-          className="p-0 w-full h-20 flex justify-center items-center transition-transform hover:scale-105 active:scale-95 rounded-lg overflow-hidden"
-          aria-label="MOON"
-        >
+        <div className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30">
           <img 
-            src="/lovable-uploads/48531fef-2dd2-49d7-92d4-eb1df39d9f1c.png" 
-            alt="Rocket to the Moon" 
-            className="h-16 object-contain" 
+            src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
+            alt="MOON" 
+            className="w-20 h-20 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]"
           />
-        </button>
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-cyan-400/20 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent">MOON</span>
+        </div>
         
-        <button 
-          onClick={() => refreshData('down')} 
-          className="p-0 w-full h-20 flex justify-center items-center transition-transform hover:scale-105 active:scale-95 rounded-lg overflow-hidden bg-transparent"
-          aria-label="Dust"
-        >
+        <div className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30">
           <img 
-            src="/lovable-uploads/175e9558-ddfe-4265-bee0-912eb02e6fb3.png" 
-            alt="Dust Skull" 
-            className="h-16 object-contain" 
+            src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
+            alt="DUST" 
+            className="w-20 h-20 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]"
           />
-        </button>
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-cyan-400/20 to-magenta-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent">DUST</span>
+        </div>
       </div>
     </div>;
 };
