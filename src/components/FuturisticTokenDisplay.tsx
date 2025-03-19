@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, ArrowUp, ArrowDown, Zap, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePumpPortal } from '@/hooks/usePumpPortal';
 
 interface FuturisticTokenCardProps {
   token: any;
@@ -15,7 +16,25 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
 }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [marketCap, setMarketCap] = useState<number | null>(null);
   const isPositive = token.change24h >= 0;
+  
+  // Use the PumpPortal hook to get token metrics
+  const { tokenMetrics, subscribeToToken } = usePumpPortal(token.id);
+  
+  // Subscribe to token when component mounts
+  useEffect(() => {
+    if (token && token.id) {
+      subscribeToToken(token.id);
+    }
+  }, [token, subscribeToToken]);
+  
+  // Update market cap when token metrics change
+  useEffect(() => {
+    if (tokenMetrics && tokenMetrics.market_cap) {
+      setMarketCap(tokenMetrics.market_cap);
+    }
+  }, [tokenMetrics]);
   
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
@@ -33,6 +52,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
     });
   };
   
+  // Fallback calculation in case market cap isn't available from PumpPortal
   const calculateMarketCap = (price: number) => {
     // Assuming a standard supply of 1 billion for PumpFun tokens
     const totalSupply = 1000000000;
@@ -53,6 +73,11 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         });
     }
   };
+  
+  // Get the market cap to display - use tokenMetrics if available, otherwise calculate
+  const displayMarketCap = marketCap !== null 
+    ? marketCap 
+    : calculateMarketCap(token.currentPrice);
   
   return (
     <Link to={`/token/${token.id}`} className="block">
@@ -117,7 +142,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
             <div className="text-xs text-white/50 mb-1">Market Cap</div>
             <div className="relative">
               <span className={`text-3xl font-bold ${isPositive ? 'text-green-300' : 'text-red-300'}`}>
-                {formatPrice(calculateMarketCap(token.currentPrice))} SOL
+                {formatPrice(displayMarketCap)} SOL
               </span>
               <div className="absolute -right-8 -top-4">
                 <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
