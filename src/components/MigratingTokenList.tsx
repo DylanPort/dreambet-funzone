@@ -4,7 +4,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { formatAddress, formatNumberWithCommas } from '@/utils/betUtils';
 import { 
   ExternalLink, Clock, Flame, Filter, ArrowUpDown, ChevronDown, 
-  Target, Trophy, Zap, Coins, TrendingUp, BarChart2, Users
+  Target, Trophy, Zap, Coins, TrendingUp, BarChart2, Users,
+  Copy
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -34,6 +35,12 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const MigratingTokenList = () => {
   const [bets, setBets] = useState<Bet[]>([]);
@@ -47,6 +54,15 @@ const MigratingTokenList = () => {
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'all' | 'highValue'>('all');
   const isMobile = useIsMobile();
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Address copied to clipboard");
+    }).catch((err) => {
+      console.error('Failed to copy: ', err);
+      toast.error("Failed to copy address");
+    });
+  };
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -280,7 +296,24 @@ const MigratingTokenList = () => {
                       </div>
                       <div className="flex flex-col">
                         <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
-                        <div className="text-xs text-dream-foreground/40 mt-0.5">{formatAddress(bet.tokenMint)}</div>
+                        <div className="text-xs text-dream-foreground/40 mt-0.5 flex items-center">
+                          <span className="truncate mr-1">{formatAddress(bet.tokenMint)}</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => copyToClipboard(bet.tokenMint)}
+                                  className="hover:text-dream-accent1 transition-colors"
+                                >
+                                  <Copy size={12} />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Copy address</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                       </div>
                     </div>
                     <Badge className={`${bgColor} ${color} border-none`}>
@@ -499,7 +532,24 @@ const MigratingTokenList = () => {
                           </HoverCard>
                           <div className="flex flex-col">
                             <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
-                            <div className="text-xs text-dream-foreground/40 mt-0.5">{formatAddress(bet.tokenMint)}</div>
+                            <div className="text-xs text-dream-foreground/40 mt-0.5 flex items-center">
+                              <span className="truncate mr-1">{formatAddress(bet.tokenMint)}</span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => copyToClipboard(bet.tokenMint)}
+                                      className="hover:text-dream-accent1 transition-colors"
+                                    >
+                                      <Copy size={12} />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs">Copy address</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
                           </div>
                         </div>
                       </div>

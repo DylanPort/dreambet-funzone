@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDistanceToNow } from 'date-fns';
 import { formatAddress } from '@/utils/betUtils';
-import { ExternalLink, Clock, Flame, Filter, ArrowUpDown, ChevronDown, Target, Trophy } from 'lucide-react';
+import { ExternalLink, Clock, Flame, Filter, ArrowUpDown, ChevronDown, Target, Trophy, Copy } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -24,6 +24,12 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
 import { Bet, BetStatus } from '@/types/bet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const ActiveBetsList = () => {
   const [bets, setBets] = useState<Bet[]>([]);
@@ -217,6 +223,15 @@ const ActiveBetsList = () => {
     );
   }
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Address copied to clipboard");
+    }).catch((err) => {
+      console.error('Failed to copy: ', err);
+      toast.error("Failed to copy address");
+    });
+  };
+
   const renderMobileBetCards = () => {
     return (
       <Carousel
@@ -245,7 +260,24 @@ const ActiveBetsList = () => {
                     </div>
                     <div className="flex flex-col">
                       <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
-                      <div className="text-xs text-dream-foreground/40 mt-0.5">{formatAddress(bet.tokenMint)}</div>
+                      <div className="text-xs text-dream-foreground/40 mt-0.5 flex items-center">
+                        <span className="truncate mr-1">{formatAddress(bet.tokenMint)}</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => copyToClipboard(bet.tokenMint)}
+                                className="hover:text-dream-accent1 transition-colors"
+                              >
+                                <Copy size={12} />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Copy address</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -394,7 +426,24 @@ const ActiveBetsList = () => {
                         </div>
                         <div className="flex flex-col">
                           <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
-                          <div className="text-xs text-dream-foreground/40 mt-0.5">{formatAddress(bet.tokenMint)}</div>
+                          <div className="text-xs text-dream-foreground/40 mt-0.5 flex items-center">
+                            <span className="truncate mr-1">{formatAddress(bet.tokenMint)}</span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => copyToClipboard(bet.tokenMint)}
+                                    className="hover:text-dream-accent1 transition-colors"
+                                  >
+                                    <Copy size={12} />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Copy address</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         </div>
                       </div>
                     </div>
