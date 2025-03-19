@@ -6,7 +6,6 @@ import { formatAddress } from '@/utils/betUtils';
 import { ExternalLink, Clock, Loader, Zap, Filter, ChevronDown, ChevronUp, Copy, CheckCheck } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { toast } from '@/hooks/use-toast';
@@ -30,20 +29,13 @@ interface TokenData {
 
 const OpenBetsList = () => {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'latest' | 'highValue'>('latest');
   const [isExpanded, setIsExpanded] = useState(false);
   const [copiedAddresses, setCopiedAddresses] = useState<Record<string, boolean>>({});
-  const { rawTokens, getTokensAboveMarketCap } = usePumpPortal();
+  const { rawTokens } = usePumpPortal();
   const isMobile = useIsMobile();
   
-  // Get high value tokens (above 45 SOL market cap in the past hour)
-  const highValueTokens = getTokensAboveMarketCap(45, 1);
-  
-  // Determine which tokens to display based on view mode
-  const displayTokens = viewMode === 'latest' ? rawTokens : highValueTokens;
-  
   // Only show the first 5 tokens when not expanded
-  const visibleTokens = isExpanded ? displayTokens : displayTokens.slice(0, 5);
+  const visibleTokens = isExpanded ? rawTokens : rawTokens.slice(0, 5);
   
   const copyToClipboard = async (text: string, index: number) => {
     try {
@@ -78,13 +70,11 @@ const OpenBetsList = () => {
     }
   };
   
-  if (!displayTokens || displayTokens.length === 0) {
+  if (!rawTokens || rawTokens.length === 0) {
     return (
       <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <p className="text-center text-dream-foreground/60">
-          {viewMode === 'latest' 
-            ? "No recent tokens found" 
-            : "No tokens above 45 SOL initial market cap in the last hour"}
+          No recent tokens found
         </p>
       </Card>
     );
@@ -94,12 +84,6 @@ const OpenBetsList = () => {
     <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
       <div className="flex items-center justify-between mb-4">
         <CardTitle className="text-xl text-dream-foreground">Recent Tokens</CardTitle>
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'latest' | 'highValue')} className="w-auto">
-          <TabsList className="grid w-full grid-cols-2 h-9">
-            <TabsTrigger value="latest" className="text-xs">Latest Created</TabsTrigger>
-            <TabsTrigger value="highValue" className="text-xs">45+ SOL MCAP</TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
 
       <div className="space-y-4">
@@ -218,7 +202,7 @@ const OpenBetsList = () => {
         })}
       </div>
       
-      {displayTokens.length > 5 && (
+      {rawTokens.length > 5 && (
         <div className="flex justify-center mt-4">
           <Button 
             variant="outline" 
@@ -233,17 +217,10 @@ const OpenBetsList = () => {
             ) : (
               <>
                 <ChevronDown className="h-4 w-4" />
-                <span>Show All ({displayTokens.length} Tokens)</span>
+                <span>Show All ({rawTokens.length} Tokens)</span>
               </>
             )}
           </Button>
-        </div>
-      )}
-      
-      {viewMode === 'highValue' && highValueTokens.length > 0 && (
-        <div className="mt-4 text-xs text-dream-foreground/60 flex items-center">
-          <Zap className="h-3.5 w-3.5 mr-1.5 text-dream-accent2" />
-          <span>Showing {isExpanded ? highValueTokens.length : Math.min(5, highValueTokens.length)} of {highValueTokens.length} tokens with 45+ SOL initial market cap from the last hour</span>
         </div>
       )}
     </Card>

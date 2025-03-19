@@ -65,24 +65,6 @@ export const usePumpPortal = (tokenId?: string) => {
       .filter(Boolean);
   };
   
-  // Filter tokens above specified market cap and created within time period
-  const getTokensAboveMarketCap = (marketCapSol: number, timeWindowHours: number = 1) => {
-    const tokens = pumpPortal.rawTokens || [];
-    const currentTime = new Date();
-    const timeThreshold = new Date(currentTime.getTime() - timeWindowHours * 60 * 60 * 1000);
-    
-    return tokens.filter(token => {
-      // For filtering, use current time since we don't have actual creation timestamps
-      const tokenCreationTime = new Date(); // Default to current time as fallback
-      
-      return (
-        token.marketCapSol && 
-        token.marketCapSol >= marketCapSol && 
-        tokenCreationTime >= timeThreshold
-      );
-    });
-  };
-  
   return {
     isConnected: pumpPortal.connected,
     recentTokens: pumpPortal.recentTokens,
@@ -93,8 +75,7 @@ export const usePumpPortal = (tokenId?: string) => {
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens,
     tokenMetrics: tokenId ? (pumpPortal.tokenMetrics && pumpPortal.tokenMetrics[tokenId]) : null,
-    fetchTokenMetrics: pumpPortal.fetchTokenMetrics, // Expose the fetchTokenMetrics function
-    getTokensAboveMarketCap // Expose the new filtering function
+    fetchTokenMetrics: pumpPortal.fetchTokenMetrics
   };
 };
 
