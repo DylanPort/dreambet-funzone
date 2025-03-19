@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown, Clock, RefreshCw, Info, TrendingUp, TrendingDown, Coin, HelpCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, RefreshCw, Info, TrendingUp, TrendingDown, Coins, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { BetPrediction } from '@/types/bet';
 import { Slider } from '@/components/ui/slider';
@@ -506,7 +506,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
               <div className="space-y-3 text-sm">
                 <div className="flex gap-2 items-start">
                   <div className="bg-dream-accent2/20 p-1 rounded-full">
-                    <Coin className="h-4 w-4 text-dream-accent2" />
+                    <Coins className="h-4 w-4 text-dream-accent2" />
                   </div>
                   <p><span className="font-semibold">Place Bets with PXB Points</span><br />
                   Use your PXB Points to bet on whether tokens will moon (increase) or die (decrease).</p>
@@ -710,7 +710,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
               </p>
               {parseInt(amount, 10) > 0 && (
                 <div className="flex items-center mt-2 gap-1">
-                  <Coin className="h-4 w-4 text-dream-accent2" />
+                  <Coins className="h-4 w-4 text-dream-accent2" />
                   <p className="text-sm">
                     <span className="text-dream-foreground/70">If correct, you'll win </span>
                     <span className="text-green-400 font-semibold">{calculatePotentialReward()} PXB Points</span>
