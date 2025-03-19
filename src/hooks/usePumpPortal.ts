@@ -93,6 +93,7 @@ export const usePumpPortal = (tokenId?: string) => {
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens,
     tokenMetrics: tokenId ? (pumpPortal.tokenMetrics && pumpPortal.tokenMetrics[tokenId]) : null,
+    fetchTokenMetrics: pumpPortal.fetchTokenMetrics, // Expose the fetchTokenMetrics function
     getTokensAboveMarketCap // Expose the new filtering function
   };
 };

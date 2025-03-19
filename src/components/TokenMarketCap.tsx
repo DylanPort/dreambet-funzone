@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { BarChart3, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { BarChart3, ExternalLink, RefreshCcw } from 'lucide-react';
 import { subscribeToMarketCap } from '@/services/dexScreenerService';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
@@ -16,10 +16,45 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [pulseEffect, setPulseEffect] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
   
   // Use PumpPortal hook to get SOL market cap data
-  const { tokenMetrics, subscribeToToken } = usePumpPortal(tokenId);
+  const { tokenMetrics, subscribeToToken, fetchTokenMetrics } = usePumpPortal(tokenId);
+  
+  // Reference to track if component is mounted
+  const isMounted = useRef(true);
+
+  // Set up interval to refresh data every second
+  useEffect(() => {
+    if (!tokenId) return;
+    
+    const intervalId = setInterval(() => {
+      if (isMounted.current) {
+        fetchTokenMetrics(tokenId);
+        setRefreshing(true);
+        setTimeout(() => {
+          if (isMounted.current) {
+            setRefreshing(false);
+          }
+        }, 300);
+      }
+    }, 1000);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [tokenId, fetchTokenMetrics]);
+  
+  useEffect(() => {
+    // Set mounted flag
+    isMounted.current = true;
+    
+    return () => {
+      // Clear mounted flag on unmount
+      isMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!tokenId) return;
@@ -49,7 +84,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       // This is a fallback if PumpPortal doesn't provide data
       const estimatedSolValue = newMarketCap / 150; // Rough USD/SOL conversion
       
-      if (!tokenMetrics?.market_cap) { // Only use if PumpPortal doesn't have data
+      if (!tokenMetrics?.market_cap && isMounted.current) { // Only use if PumpPortal doesn't have data
         setMarketCap(estimatedSolValue);
         setLastUpdated(new Date());
         setLoading(false);
@@ -71,7 +106,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
     
     // Shorter timeout for toast (5 seconds instead of 10)
     const timeoutId = setTimeout(() => {
-      if (loading && !marketCap) {
+      if (loading && !marketCap && isMounted.current) {
         toast({
           title: "Still loading data",
           description: "Market cap data is taking longer than expected",
@@ -88,7 +123,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
 
   // Update when PumpPortal data changes
   useEffect(() => {
-    if (tokenMetrics && tokenMetrics.market_cap) {
+    if (tokenMetrics && tokenMetrics.market_cap && isMounted.current) {
       setMarketCap(tokenMetrics.market_cap);
       setLastUpdated(new Date());
       setLoading(false);
@@ -162,7 +197,11 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
           </>
         )}
       </div>
-      <div className="absolute top-2 right-2 flex items-center">
+      <div className="absolute top-2 right-2 flex items-center gap-2">
+        <RefreshCcw 
+          className={`w-4 h-4 text-dream-accent2/70 ${refreshing ? 'animate-spin' : ''}`} 
+          title="Updates every second"
+        />
         <a 
           href={`https://pumpfun.io/token/${tokenId}`} 
           target="_blank" 
