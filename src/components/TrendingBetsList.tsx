@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatAddress } from '@/utils/betUtils';
-import { ExternalLink, Flame, BarChart, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { ExternalLink, BarChart, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from './ui/scroll-area';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+
 interface TrendingToken {
   token_mint: string;
   token_name: string;
@@ -15,6 +17,7 @@ interface TrendingToken {
   bet_count: number;
   total_amount: number;
 }
+
 const TrendingBetsList = () => {
   const [trendingTokens, setTrendingTokens] = useState<TrendingToken[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -117,12 +120,17 @@ const TrendingBetsList = () => {
     if (betCount > 5) return "Hot";
     return "Warming Up";
   };
+
   return <>
       {/* Scrolling Reel at top */}
       <div className="mb-4 overflow-hidden bg-gradient-to-r from-dream-accent3/20 to-dream-accent1/20 rounded-xl border border-dream-accent1/30 backdrop-blur-lg p-1">
         <div className="flex items-center gap-2 px-2">
           <div className="flex-shrink-0 px-3 py-1.5 bg-dream-accent3/40 rounded-lg flex items-center">
-            <Flame className="h-4 w-4 text-dream-accent2 mr-1.5 animate-pulse" />
+            <img 
+              src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
+              alt="Fire" 
+              className="h-4 w-4 mr-1.5 animate-pulse" 
+            />
             <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING</span>
           </div>
           
@@ -146,7 +154,11 @@ const TrendingBetsList = () => {
       <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
         <div className="flex items-center justify-between mb-4">
           <CardTitle className="text-xl text-dream-foreground flex items-center gap-2">
-            <Flame className="h-5 w-5 text-dream-accent2" />
+            <img 
+              src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
+              alt="Fire" 
+              className="h-5 w-5" 
+            />
             <span>Trending Tokens</span>
           </CardTitle>
         </div>
@@ -270,4 +282,5 @@ const TrendingBetsList = () => {
       </Card>
     </>;
 };
+
 export default TrendingBetsList;
