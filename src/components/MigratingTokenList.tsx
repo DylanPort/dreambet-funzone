@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { fetchOpenBets } from '@/services/supabaseService';
 import { Bet } from '@/types/bet';
@@ -37,7 +38,7 @@ const MigratingTokenList: React.FC = () => {
     <div className="space-y-4">
       {bets.map((bet) => {
         if (bet.prediction === 'dust') {
-          // Skip rendering "die" bets
+          // Skip rendering "dust" bets
           return null;
         }
 
