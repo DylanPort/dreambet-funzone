@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, ExternalLink } from 'lucide-react';
 import { subscribeToMarketCap } from '@/services/dexScreenerService';
 import { useToast } from '@/hooks/use-toast';
+import { usePumpPortal } from '@/hooks/usePumpPortal';
 
 interface TokenMarketCapProps {
   tokenId: string;
@@ -15,9 +16,15 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const { toast } = useToast();
+  
+  // Use PumpPortal hook to get SOL market cap data
+  const { tokenMetrics, subscribeToToken } = usePumpPortal(tokenId);
 
   useEffect(() => {
     if (!tokenId) return;
+    
+    // Subscribe to token updates from PumpPortal
+    subscribeToToken(tokenId);
     
     // Immediately try to load from localStorage for instant display
     try {
@@ -35,20 +42,26 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       console.error("Error loading cached market cap:", e);
     }
     
-    // Only use DexScreener as data source
+    // Still use DexScreener as fallback data source
     const cleanupDexScreener = subscribeToMarketCap(tokenId, (newMarketCap) => {
-      setMarketCap(newMarketCap);
-      setLastUpdated(new Date());
-      setLoading(false);
+      // Convert USD market cap to estimated SOL value (simplified conversion)
+      // This is a fallback if PumpPortal doesn't provide data
+      const estimatedSolValue = newMarketCap / 150; // Rough USD/SOL conversion
       
-      // Cache in localStorage
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY + tokenId, JSON.stringify({
-          value: newMarketCap,
-          timestamp: Date.now()
-        }));
-      } catch (e) {
-        console.error("Error caching market cap:", e);
+      if (!tokenMetrics?.market_cap) { // Only use if PumpPortal doesn't have data
+        setMarketCap(estimatedSolValue);
+        setLastUpdated(new Date());
+        setLoading(false);
+        
+        // Cache in localStorage
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY + tokenId, JSON.stringify({
+            value: estimatedSolValue,
+            timestamp: Date.now()
+          }));
+        } catch (e) {
+          console.error("Error caching market cap:", e);
+        }
       }
     });
     
@@ -67,21 +80,40 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       cleanupDexScreener();
       clearTimeout(timeoutId);
     };
-  }, [tokenId, loading, toast, marketCap]);
+  }, [tokenId, loading, toast, marketCap, subscribeToToken]);
+
+  // Update when PumpPortal data changes
+  useEffect(() => {
+    if (tokenMetrics && tokenMetrics.market_cap) {
+      setMarketCap(tokenMetrics.market_cap);
+      setLastUpdated(new Date());
+      setLoading(false);
+      
+      // Cache in localStorage
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY + tokenId, JSON.stringify({
+          value: tokenMetrics.market_cap,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.error("Error caching market cap:", e);
+      }
+    }
+  }, [tokenMetrics, tokenId]);
 
   const formatLargeNumber = (num: number | null) => {
     if (num === null) return "Loading...";
     
     if (num >= 1000000000) {
-      return `$${(num / 1000000000).toFixed(2)}B`;
+      return `${(num / 1000000000).toFixed(2)}B SOL`;
     }
     if (num >= 1000000) {
-      return `$${(num / 1000000).toFixed(2)}M`;
+      return `${(num / 1000000).toFixed(2)}M SOL`;
     }
     if (num >= 1000) {
-      return `$${(num / 1000).toFixed(2)}K`;
+      return `${(num / 1000).toFixed(2)}K SOL`;
     }
-    return `$${num.toFixed(2)}`;
+    return `${num.toFixed(4)} SOL`;
   };
 
   // Format timestamp to show how recently the data was updated
@@ -102,7 +134,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/10 to-dream-accent2/10 animate-gradient-move"></div>
       <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
         <BarChart3 size={20} className="mr-3 text-dream-accent1 animate-pulse-glow" />
-        <span className="text-lg font-semibold">Market Cap</span>
+        <span className="text-lg font-semibold">Market Cap (SOL)</span>
         {lastUpdated && (
           <span className="ml-auto text-xs text-dream-foreground/50">
             {getLastUpdatedText()}
@@ -124,11 +156,11 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       </div>
       <div className="absolute top-2 right-2 flex items-center">
         <a 
-          href={`https://dexscreener.com/solana/${tokenId}`} 
+          href={`https://pumpfun.io/token/${tokenId}`} 
           target="_blank" 
           rel="noopener noreferrer"
           className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
-          title="View on DexScreener"
+          title="View on PumpFun"
         >
           <ExternalLink className="w-4 h-4" />
         </a>
@@ -136,7 +168,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       {marketCap !== null && (
         <div 
           className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent1 to-dream-accent2 animate-pulse-glow" 
-          style={{ width: `${Math.min(100, (marketCap / 10000000) * 100)}%` }}
+          style={{ width: `${Math.min(100, (marketCap / 10000) * 100)}%` }}
         ></div>
       )}
     </div>
