@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, ArrowUp, ArrowDown, Zap, RefreshCw } from 'lucide-react';
+import { ExternalLink, ArrowUp, ArrowDown, Zap, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface FuturisticTokenCardProps {
   token: any;
@@ -12,6 +14,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
   flipping
 }) => {
   const [isHovering, setIsHovering] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const isPositive = token.change24h >= 0;
   
   const getTokenSymbol = (token: any) => {
@@ -30,6 +33,27 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
     });
   };
   
+  const calculateMarketCap = (price: number) => {
+    // Assuming a standard supply of 1 billion for PumpFun tokens
+    const totalSupply = 1000000000;
+    return price * totalSupply;
+  };
+  
+  const copyToClipboard = () => {
+    if (token && token.id) {
+      navigator.clipboard.writeText(token.id)
+        .then(() => {
+          setIsCopied(true);
+          toast.success('Contract address copied to clipboard');
+          setTimeout(() => setIsCopied(false), 2000);
+        })
+        .catch(err => {
+          toast.error('Failed to copy address');
+          console.error('Could not copy text: ', err);
+        });
+    }
+  };
+  
   return (
     <Link to={`/token/${token.id}`} className="block">
       <div className={`glass-panel transform transition-all duration-500 w-[280px] p-5 h-[420px] flex flex-col justify-between ${flipping ? 'animate-flip' : ''} ${isHovering ? 'scale-105 z-50' : 'z-10'} cursor-pointer`} style={{
@@ -46,7 +70,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         </div>
         
         {/* Token Info */}
-        <div className="flex justify-between items-center mb-5">
+        <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
             {token.imageUrl ? <img src={token.imageUrl} alt={token.name} className="w-10 h-10 rounded-full object-cover" onError={e => {
             const imgElement = e.target as HTMLImageElement;
@@ -66,16 +90,34 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
           </div>
         </div>
         
-        {/* Price Display */}
+        {/* Contract Address */}
+        <div className="flex items-center mb-3 bg-black/30 rounded-lg p-2 text-xs">
+          <div className="truncate mr-2 text-white/70 flex-1">
+            {token.id || 'Unknown Address'}
+          </div>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              copyToClipboard();
+            }}
+            className="text-cyan-400 hover:text-cyan-300 transition-colors"
+          >
+            {isCopied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+          </button>
+        </div>
+        
+        {/* Market Cap Display */}
         <div className="relative h-[120px] mb-6 rounded-md overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" style={{
           backgroundSize: '200% 100%',
           animation: 'border-flow 15s linear infinite'
         }}></div>
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-xs text-white/50 mb-1">Market Cap</div>
             <div className="relative">
               <span className={`text-3xl font-bold ${isPositive ? 'text-green-300' : 'text-red-300'}`}>
-                ${formatPrice(token.currentPrice)}
+                {formatPrice(calculateMarketCap(token.currentPrice))} SOL
               </span>
               <div className="absolute -right-8 -top-4">
                 <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
