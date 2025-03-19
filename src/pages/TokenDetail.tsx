@@ -731,4 +731,103 @@ const TokenDetail = () => {
             <>
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
-                <span>Back to Tokens
+                <span>Back to Tokens</span>
+              </Link>
+              
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-display font-bold">Price Chart</h2>
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="interval" className="text-sm text-dream-foreground/70">Interval:</label>
+                    <select id="interval" value={timeInterval} onChange={e => setTimeInterval(e.target.value)} className="bg-black/20 border border-dream-accent2/20 rounded px-2 py-1 text-sm">
+                      <option value="1S">1 Second</option>
+                      <option value="1">1 Minute</option>
+                      <option value="5">5 Minutes</option>
+                      <option value="15">15 Minutes</option>
+                      <option value="60">1 Hour</option>
+                      <option value="240">4 Hours</option>
+                      <option value="720">12 Hours</option>
+                      <option value="1D">1 Day</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <a href={`https://dexscreener.com/solana/${tokenId}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm">
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      DexScreener
+                    </a>
+                    <button onClick={handleRefreshChart} className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm" disabled={loading}>
+                      <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="w-full h-[400px] bg-black/10 rounded-lg overflow-hidden relative">
+                <iframe src={chartUrl} className="w-full h-full border-0" title="GMGN Price Chart" loading="lazy"></iframe>
+              </div>
+              
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                <div 
+                  className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
+                  onClick={() => {
+                    // Create custom event with moon prediction details
+                    const moonPredictionEvent = new CustomEvent('predictionSelected', {
+                      detail: {
+                        prediction: 'moon',
+                        percentageChange: 80, // Minimum 80% for moon predictions
+                        defaultBetAmount: 10, // Default bet amount
+                        defaultDuration: 30 // Default duration in minutes
+                      }
+                    });
+                    window.dispatchEvent(moonPredictionEvent);
+                    
+                    refreshData('up');
+                    setShowCreateBet(true);
+                  }}
+                >
+                  <img 
+                    src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
+                    alt="MOON" 
+                    className="w-20 h-20 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]"
+                  />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-cyan-400/20 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+                  <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent">MOON</span>
+                </div>
+                
+                <div 
+                  className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
+                  onClick={() => {
+                    // Create custom event with dust prediction details
+                    const dustPredictionEvent = new CustomEvent('predictionSelected', {
+                      detail: {
+                        prediction: 'die',
+                        percentageChange: 50, // Minimum 50% for dust predictions
+                        defaultBetAmount: 10, // Default bet amount
+                        defaultDuration: 30 // Default duration in minutes
+                      }
+                    });
+                    window.dispatchEvent(dustPredictionEvent);
+                    
+                    refreshData('down');
+                    setShowCreateBet(true);
+                  }}
+                >
+                  <img 
+                    src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
+                    alt="DUST" 
+                    className="w-20 h-20 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]"
+                  />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-cyan-400/20 to-magenta-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+                  <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent">DUST</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </>
+  );
+};
+
+export default TokenDetail;
