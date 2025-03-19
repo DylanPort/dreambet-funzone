@@ -3,12 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { formatDistanceToNow } from 'date-fns';
 import { formatAddress } from '@/utils/betUtils';
-import { ExternalLink, Clock, Loader, Zap, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { ExternalLink, Clock, Loader, Zap, Filter, ChevronDown, ChevronUp, Copy, CheckCheck } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { toast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Define types for token data
 interface TokenData {
@@ -25,6 +32,7 @@ const OpenBetsList = () => {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'latest' | 'highValue'>('latest');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [copiedAddresses, setCopiedAddresses] = useState<Record<string, boolean>>({});
   const { rawTokens, getTokensAboveMarketCap } = usePumpPortal();
   const isMobile = useIsMobile();
   
@@ -36,6 +44,39 @@ const OpenBetsList = () => {
   
   // Only show the first 5 tokens when not expanded
   const visibleTokens = isExpanded ? displayTokens : displayTokens.slice(0, 5);
+  
+  const copyToClipboard = async (text: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      
+      // Set the copied state for this specific address
+      setCopiedAddresses(prev => ({
+        ...prev,
+        [index]: true
+      }));
+      
+      // Show toast notification
+      toast({
+        title: "Address copied",
+        description: "Token contract address copied to clipboard",
+      });
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedAddresses(prev => ({
+          ...prev,
+          [index]: false
+        }));
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy address to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
   
   if (!displayTokens || displayTokens.length === 0) {
     return (
@@ -86,14 +127,35 @@ const OpenBetsList = () => {
                       <div className="text-sm font-medium overflow-hidden text-ellipsis">
                         {formatAddress(token.mint)}
                       </div>
-                      <a 
-                        href={`https://solscan.io/token/${token.mint}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0 ml-1"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
+                      <div className="flex items-center gap-1">
+                        <a 
+                          href={`https://solscan.io/token/${token.mint}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => copyToClipboard(token.mint, index)}
+                                className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0"
+                              >
+                                {copiedAddresses[index] ? (
+                                  <CheckCheck className="h-3.5 w-3.5 text-green-400" />
+                                ) : (
+                                  <Copy className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Copy contract address</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
                   </div>
                   
