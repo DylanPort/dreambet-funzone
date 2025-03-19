@@ -19,9 +19,6 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
   
-  // Use PumpPortal hook to get SOL market cap data
-  const { tokenMetrics, subscribeToToken, fetchTokenMetrics } = usePumpPortal(tokenId);
-  
   // Reference to track if component is mounted
   const isMounted = useRef(true);
 
@@ -31,7 +28,6 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
     
     const intervalId = setInterval(() => {
       if (isMounted.current) {
-        fetchTokenMetrics(tokenId);
         setRefreshing(true);
         setTimeout(() => {
           if (isMounted.current) {
@@ -44,7 +40,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
     return () => {
       clearInterval(intervalId);
     };
-  }, [tokenId, fetchTokenMetrics]);
+  }, [tokenId]);
   
   useEffect(() => {
     // Set mounted flag
@@ -58,9 +54,6 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
 
   useEffect(() => {
     if (!tokenId) return;
-    
-    // Subscribe to token updates from PumpPortal
-    subscribeToToken(tokenId);
     
     // Immediately try to load from localStorage for instant display
     try {
@@ -78,19 +71,23 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       console.error("Error loading cached market cap:", e);
     }
     
-    // Still use DexScreener as fallback data source
+    // Use DexScreener as the primary data source
     const cleanupDexScreener = subscribeToMarketCap(tokenId, (newMarketCap) => {
-      // Convert USD market cap to estimated SOL value (simplified conversion)
-      // This is a fallback if PumpPortal doesn't provide data
-      const estimatedSolValue = newMarketCap / 150; // Rough USD/SOL conversion
-      
-      if (!tokenMetrics?.market_cap && isMounted.current) { // Only use if PumpPortal doesn't have data
+      if (isMounted.current) {
+        // Convert USD market cap to estimated SOL value
+        const estimatedSolValue = newMarketCap / 150; // Rough USD/SOL conversion
+        
         setMarketCap(estimatedSolValue);
         setLastUpdated(new Date());
         setLoading(false);
+        
         // Trigger pulse animation
         setPulseEffect(true);
-        setTimeout(() => setPulseEffect(false), 1000);
+        setTimeout(() => {
+          if (isMounted.current) {
+            setPulseEffect(false);
+          }
+        }, 1000);
         
         // Cache in localStorage
         try {
@@ -119,30 +116,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       cleanupDexScreener();
       clearTimeout(timeoutId);
     };
-  }, [tokenId, loading, toast, marketCap, subscribeToToken]);
-
-  // Update when PumpPortal data changes
-  useEffect(() => {
-    if (tokenMetrics && tokenMetrics.market_cap && isMounted.current) {
-      setMarketCap(tokenMetrics.market_cap);
-      setLastUpdated(new Date());
-      setLoading(false);
-      
-      // Trigger pulse animation on update
-      setPulseEffect(true);
-      setTimeout(() => setPulseEffect(false), 1000);
-      
-      // Cache in localStorage
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY + tokenId, JSON.stringify({
-          value: tokenMetrics.market_cap,
-          timestamp: Date.now()
-        }));
-      } catch (e) {
-        console.error("Error caching market cap:", e);
-      }
-    }
-  }, [tokenMetrics, tokenId]);
+  }, [tokenId, loading, toast, marketCap]);
 
   const formatLargeNumber = (num: number | null) => {
     if (num === null) return "Loading...";
@@ -208,11 +182,11 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
           </span>
         </div>
         <a 
-          href={`https://pumpfun.io/token/${tokenId}`} 
+          href={`https://dexscreener.com/solana/${tokenId}`} 
           target="_blank" 
           rel="noopener noreferrer"
           className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
-          aria-label="View on PumpFun"
+          aria-label="View on DexScreener"
         >
           <ExternalLink className="w-4 h-4" />
         </a>
