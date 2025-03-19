@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, HelpCircle, Rocket, Skull, Trophy, Zap, Check, Gift, Star, Hand, HandMetal, Sparkles } from 'lucide-react';
@@ -5,12 +6,14 @@ import Navbar from '@/components/Navbar';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import MigratingTokenList from '@/components/MigratingTokenList';
 import OpenBetsList from '@/components/OpenBetsList';
+import TrendingBetsList from '@/components/TrendingBetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 const BettingDashboard = () => {
   const {
     connected
@@ -29,8 +32,11 @@ const BettingDashboard = () => {
   const [isHovering, setIsHovering] = useState(false);
   const [pulseEffect, setPulseEffect] = useState(false);
   const [glowIntensity, setGlowIntensity] = useState(10);
+  
   console.log("BettingDashboard rendering, wallet connected:", connected);
+  
   const allStepsCompleted = Object.values(readSteps).every(step => step);
+  
   useEffect(() => {
     if (allStepsCompleted && !showGift) {
       setTimeout(() => {
@@ -43,6 +49,7 @@ const BettingDashboard = () => {
       }, 500);
     }
   }, [readSteps, showGift, toast]);
+  
   useEffect(() => {
     const interval = setInterval(() => {
       setPulseEffect(prev => !prev);
@@ -50,6 +57,7 @@ const BettingDashboard = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+  
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -57,11 +65,6 @@ const BettingDashboard = () => {
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
           <section className="mb-12 text-center py-0 my-0 mx-0 sm:mx-4 md:mx-8 lg:mx-[240px] px-1 sm:px-[11px]">
-            
-            
-            
-            
-            
             {!connected && <div className="mt-8 glass-panel inline-flex flex-col sm:flex-row items-center gap-3 p-4">
                 <Wallet className="text-dream-accent2" />
                 <span>Connect your Solana wallet to start betting</span>
@@ -72,6 +75,10 @@ const BettingDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">
             <MigratingTokenList />
             <OpenBetsList />
+          </div>
+          
+          <div className="mb-8">
+            <TrendingBetsList />
           </div>
         </div>
       </main>
@@ -90,4 +97,5 @@ const BettingDashboard = () => {
       </footer>
     </>;
 };
+
 export default BettingDashboard;
