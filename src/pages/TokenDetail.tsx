@@ -462,8 +462,7 @@ const TokenDetail = () => {
         setNewActiveBet(latestBet);
         toast({
           title: "New Active Bet!",
-          description: `A ${latestBet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`,
-          variant: "default"
+          description: `A ${latestBet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`
         });
       }
       setActiveBetsCount(activeBets.length);
@@ -515,8 +514,7 @@ const TokenDetail = () => {
       console.error("Error refreshing data:", error);
       toast({
         title: "Refresh failed",
-        description: "Could not refresh token data",
-        variant: "destructive"
+        description: "Could not refresh token data"
       });
     } finally {
       setLoading(false);
@@ -526,8 +524,7 @@ const TokenDetail = () => {
     if (!connected || !publicKey) {
       toast({
         title: "Wallet not connected",
-        description: "Please connect your wallet to accept a bet",
-        variant: "destructive"
+        description: "Please connect your wallet to accept a bet"
       });
       return;
     }
@@ -547,8 +544,7 @@ const TokenDetail = () => {
       console.error("Error accepting bet:", error);
       toast({
         title: "Failed to accept bet",
-        description: "There was an error processing the blockchain transaction",
-        variant: "destructive"
+        description: "There was an error processing the blockchain transaction"
       });
     }
   };
@@ -730,4 +726,5 @@ const TokenDetail = () => {
               <p className="text-dream-foreground/70 mb-4">
                 The token you're looking for could not be found or has been removed.
               </p>
-              <Link to="/" className="text
+              <Link to="/" className="text-dream-accent2 hover:underline inline-flex items-center">
+                <ChevronLeft className="w-4 h-4
