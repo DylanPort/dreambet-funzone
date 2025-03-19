@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -25,11 +26,13 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -70,10 +73,12 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -84,6 +89,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -137,8 +143,8 @@ const Index = () => {
           
           <div className="flex justify-center gap-4 mt-10 mb-16">
             <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
-              <Link to="/betting" className="transform transition-all duration-500 hover:scale-105 animate-float">
-                <div className="relative overflow-hidden group transition-all duration-500
+              <div className="flex flex-col items-center transform transition-all duration-500 hover:scale-105 animate-float">
+                <Link to="/betting" className="relative overflow-hidden group transition-all duration-500
                   transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
                   
                   <img src="/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png" alt="Start Betting" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(139,92,246,0.7)]
@@ -146,29 +152,27 @@ const Index = () => {
                   
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-blue-400/10 to-purple-500/10 
                     opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                  
-                  <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
-                    text-xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent
-                    drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
-                    Start Betting
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-                  </div>
+                </Link>
+                <div className="mt-4 text-xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent
+                  drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
+                  Start Betting
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                 </div>
-              </Link>
+              </div>
               
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="relative overflow-hidden group transition-all duration-500
-                    transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer animate-float-delayed">
-                    
-                    <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
-                      transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" />
-                    
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/10 to-dream-accent1/10 
-                      opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                    
-                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 
-                      text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
+                  <div className="flex flex-col items-center transform transition-all duration-500 hover:scale-105 animate-float-delayed">
+                    <div className="relative overflow-hidden group transition-all duration-500
+                      transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
+                      
+                      <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
+                        transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" />
+                      
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/10 to-dream-accent1/10 
+                        opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    </div>
+                    <div className="mt-4 text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
                       drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
                       {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
                       <Sparkles className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
@@ -229,4 +233,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
