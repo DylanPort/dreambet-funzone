@@ -56,7 +56,7 @@ const BetReel: React.FC = () => {
             <img 
               src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
               alt="Fire" 
-              className="h-4 w-4 text-dream-accent2 mr-1.5 animate-pulse" 
+              className="h-8 w-8 text-dream-accent2 mr-1.5 animate-pulse" 
             />
             <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING TOKENS</span>
           </div>
@@ -74,7 +74,7 @@ const BetReel: React.FC = () => {
             <img 
               src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
               alt="Fire" 
-              className="h-4 w-4 text-dream-accent2 mr-1.5 animate-pulse" 
+              className="h-8 w-8 text-dream-accent2 mr-1.5 animate-pulse" 
             />
             <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING TOKENS</span>
           </div>
@@ -98,7 +98,7 @@ const BetReel: React.FC = () => {
           <img 
             src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
             alt="Fire" 
-            className="h-4 w-4 text-dream-accent2 mr-1.5 animate-pulse" 
+            className="h-8 w-8 text-dream-accent2 mr-1.5 animate-pulse" 
           />
           <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING BETS</span>
         </div>
