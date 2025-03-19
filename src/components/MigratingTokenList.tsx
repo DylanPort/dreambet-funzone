@@ -220,7 +220,7 @@ const MigratingTokenList = () => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-medium text-dream-foreground/60">Total Value</h3>
-              <p className="text-2xl font-bold">{formatNumberWithCommas(totalValue)} SOL</p>
+              <p className="text-2xl font-bold">{formatNumberWithCommas(totalValue)} PXB</p>
             </div>
             <Coins className="h-8 w-8 text-dream-accent2/60" />
           </div>
@@ -324,7 +324,7 @@ const MigratingTokenList = () => {
                   <div className="flex justify-between items-center mb-3">
                     <div>
                       <div className="text-sm text-dream-foreground/60">Bet Amount</div>
-                      <div className="font-medium">{bet.amount} SOL</div>
+                      <div className="font-medium">{bet.amount} PXB</div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-dream-foreground/60">Status</div>
@@ -393,7 +393,7 @@ const MigratingTokenList = () => {
             <p className="text-dream-foreground/60">
               {viewMode === 'all' 
                 ? "No active bets found" 
-                : "No bets above 1 SOL found"}
+                : "No bets above 1 PXB found"}
             </p>
           </div>
         </div>
@@ -415,7 +415,7 @@ const MigratingTokenList = () => {
           <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'all' | 'highValue')} className="w-auto">
             <TabsList className="grid w-full grid-cols-2 h-9">
               <TabsTrigger value="all" className="text-xs">All Bets</TabsTrigger>
-              <TabsTrigger value="highValue" className="text-xs">1+ SOL</TabsTrigger>
+              <TabsTrigger value="highValue" className="text-xs">1+ PXB</TabsTrigger>
             </TabsList>
           </Tabs>
           
@@ -555,7 +555,7 @@ const MigratingTokenList = () => {
                       </div>
                     </TableCell>
                     <TableCell className="py-3 px-4 text-right font-medium">
-                      {bet.amount} SOL
+                      {bet.amount} PXB
                     </TableCell>
                     <TableCell className="py-3 px-4 text-center">
                       <Badge className={`${bgColor} ${color} border-none`}>
@@ -592,7 +592,7 @@ const MigratingTokenList = () => {
       {viewMode === 'highValue' && highValueBets.length > 0 && (
         <div className="mt-4 text-xs text-dream-foreground/60 flex items-center">
           <Flame className="h-3.5 w-3.5 mr-1.5 text-dream-accent1" />
-          <span>Showing {highValueBets.length} bets with 1+ SOL value</span>
+          <span>Showing {highValueBets.length} bets with 1+ PXB value</span>
         </div>
       )}
     </div>

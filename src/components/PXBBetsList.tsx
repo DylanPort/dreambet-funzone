@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
@@ -18,19 +17,15 @@ const PXBBetsList = () => {
     fetchUserBets();
   }, [fetchUserBets]);
 
-  // Fetch real market cap data
   useEffect(() => {
     const fetchMarketCapData = async () => {
       if (!bets || bets.length === 0) return;
 
-      // Process bets in small batches to avoid rate limits
       for (const bet of bets) {
         if (!bet.tokenMint) continue;
         
-        // Skip if we already have data for this token
         if (marketCapData[bet.id]?.currentMarketCap) continue;
         
-        // Mark as loading
         setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: true }));
         
         try {
@@ -51,14 +46,12 @@ const PXBBetsList = () => {
           setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: false }));
         }
         
-        // Small delay between requests to avoid rate limits
         await new Promise(resolve => setTimeout(resolve, 200));
       }
     };
 
     fetchMarketCapData();
     
-    // Set up polling for active bets
     const interval = setInterval(() => {
       const pendingBets = bets.filter(bet => bet.status === 'pending');
       if (pendingBets.length > 0) {
@@ -86,13 +79,11 @@ const PXBBetsList = () => {
     );
   }
 
-  // Calculate progress percentage for active bets
   const calculateProgress = (bet) => {
     if (bet.status !== 'pending') {
       return bet.status === 'won' ? 100 : 0;
     }
     
-    // Get current market cap from our fetched data or fallback to bet data
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
     
@@ -100,38 +91,29 @@ const PXBBetsList = () => {
       const actualChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
       const targetChange = bet.percentageChange;
       
-      // For "up" bets, progress is the percentage of target achieved
       if (bet.betType === 'up') {
-        if (actualChange < 0) return 0; // If price is going down, progress is 0
+        if (actualChange < 0) return 0;
         return Math.min(100, (actualChange / targetChange) * 100);
-      } 
-      // For "down" bets, progress is the percentage of target achieved (negative change)
-      else {
-        if (actualChange > 0) return 0; // If price is going up, progress is 0
+      } else {
+        if (actualChange > 0) return 0;
         return Math.min(100, (Math.abs(actualChange) / targetChange) * 100);
       }
     }
     
-    // Default to 0 if we don't have the data
     return 0;
   };
 
-  // Calculate the target market cap for a bet
   const calculateTargetMarketCap = (bet) => {
-    // Use our fetched initial market cap or fallback to bet data
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     if (!initialMarketCap) return null;
     
     if (bet.betType === 'up') {
-      // For UP bets, target is initial + percentage increase
       return initialMarketCap * (1 + bet.percentageChange / 100);
     } else {
-      // For DOWN bets, target is initial - percentage decrease
       return initialMarketCap * (1 - bet.percentageChange / 100);
     }
   };
 
-  // Format large numbers with appropriate units (K, M, B)
   const formatLargeNumber = (num) => {
     if (num === null || num === undefined) return "N/A";
     
@@ -146,7 +128,6 @@ const PXBBetsList = () => {
     }
   };
 
-  // Calculate market cap change percentage
   const calculateMarketCapChange = (bet) => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
@@ -184,16 +165,12 @@ const PXBBetsList = () => {
             statusClass = 'text-red-400';
           }
           
-          // Calculate progress percentage
           const progressPercentage = calculateProgress(bet);
           
-          // Calculate market cap change percentage if data is available
           const marketCapChangePercentage = calculateMarketCapChange(bet);
           
-          // Calculate target market cap
           const targetMarketCap = calculateTargetMarketCap(bet);
           
-          // Use fetched market cap data or fallback to bet data
           const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
           const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
           const isLoading = loadingMarketCaps[bet.id];
@@ -231,7 +208,6 @@ const PXBBetsList = () => {
                 </div>
               </div>
               
-              {/* Market Cap Details */}
               <div className="grid grid-cols-3 gap-2 mb-3 mt-2 text-xs">
                 <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
                   <div className="text-dream-foreground/50 mb-1">Start MCAP</div>
@@ -262,7 +238,6 @@ const PXBBetsList = () => {
                 </div>
               </div>
               
-              {/* Progress Indicator */}
               {isActive && (
                 <div className="mb-3 mt-3">
                   <div className="flex justify-between text-xs mb-1">
@@ -310,7 +285,6 @@ const PXBBetsList = () => {
                 )}
               </div>
               
-              {/* House betting explanation */}
               <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
                 {bet.status === 'pending' ? (
                   <p>Betting against the house: If you win, you'll earn {bet.betAmount} PXB from the supply.</p>
