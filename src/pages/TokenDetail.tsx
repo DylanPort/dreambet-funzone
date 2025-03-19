@@ -25,7 +25,8 @@ const TokenChart = ({
   tokenName,
   refreshData,
   loading,
-  onPriceUpdate
+  onPriceUpdate,
+  setShowCreateBet
 }) => {
   const [timeInterval, setTimeInterval] = useState('15');
   const [chartTheme, setChartTheme] = useState('dark');
@@ -755,12 +756,19 @@ const TokenDetail = () => {
                 </div>
               </div>
               
-              <TokenChart tokenId={token.id} tokenName={token.name} refreshData={refreshData} loading={loading} onPriceUpdate={handleChartPriceUpdate} />
+              <TokenChart 
+                tokenId={token?.id} 
+                tokenName={token?.name} 
+                refreshData={refreshData} 
+                loading={loading} 
+                onPriceUpdate={handleChartPriceUpdate}
+                setShowCreateBet={setShowCreateBet} 
+              />
               
               {showCreateBet && (
                 <div className="glass-panel p-6 mb-8">
                   <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
-                  <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol || ''} onBetCreated={async () => {
+                  <CreateBetForm tokenId={token?.id} tokenName={token?.name} tokenSymbol={token?.symbol || ''} onBetCreated={async () => {
                     setShowCreateBet(false);
                     await refreshData();
                   }} />
@@ -792,3 +800,4 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
+
