@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown, Clock, RefreshCw } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, RefreshCw, Info, TrendingUp, TrendingDown, Coin, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { BetPrediction } from '@/types/bet';
 import { Slider } from '@/components/ui/slider';
@@ -17,6 +17,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface CreateBetFormProps {
   tokenId: string;
@@ -54,11 +73,13 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [percentageChange, setPercentageChange] = useState<string>('10');
   const [isConfirmOpen, setIsConfirmOpen] = useState<boolean>(false);
   const [rewardMultiplier, setRewardMultiplier] = useState<number>(1);
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState<boolean>(false);
+  const [predictionImpact, setPredictionImpact] = useState<string>('');
+  const [showExplanations, setShowExplanations] = useState<boolean>(true);
 
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { userProfile, placeBet } = usePXBPoints();
 
-  // Get max PXB points available for betting
   const maxPointsAvailable = userProfile?.pxbPoints || 0;
 
   useEffect(() => {
@@ -75,7 +96,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }
   }, [token, tokenId, tokenName, tokenSymbol]);
 
-  // Listen for prediction selection events from the Moon/Dust buttons
   useEffect(() => {
     const handlePredictionSelected = (event: CustomEvent) => {
       if (event.detail) {
@@ -102,23 +122,20 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     };
   }, []);
 
-  // Calculate reward multiplier based on percentage change
   const calculateMultiplier = (percent: number) => {
     let multiplier = 1;
     
-    // For moon predictions (minimum 80%)
     if (percent >= 200) {
-      multiplier = 3; // 3x for 200% or more
+      multiplier = 3;
     } else if (percent >= 150) {
-      multiplier = 2; // 2x for 150-199%
+      multiplier = 2;
     } else if (percent >= 100) {
-      multiplier = 1.5; // 1.5x for 100-149%
+      multiplier = 1.5;
     }
     
     setRewardMultiplier(multiplier);
   };
 
-  // Update multiplier when percentage changes
   useEffect(() => {
     const percent = parseInt(percentageChange, 10);
     if (!isNaN(percent)) {
@@ -126,15 +143,12 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }
   }, [percentageChange]);
 
-  // Enforce minimum percentage values based on prediction type
   useEffect(() => {
-    if (prediction) {
-      const minPercent = prediction === 'moon' ? 80 : prediction === 'die' ? 50 : 0;
-      const currentPercent = parseInt(percentageChange, 10);
-      
-      if (isNaN(currentPercent) || currentPercent < minPercent) {
-        setPercentageChange(minPercent.toString());
-      }
+    const minPercent = prediction === 'moon' ? 80 : prediction === 'die' ? 50 : 0;
+    const currentPercent = parseInt(percentageChange, 10);
+    
+    if (isNaN(currentPercent) || currentPercent < minPercent) {
+      setPercentageChange(minPercent.toString());
     }
   }, [prediction, percentageChange]);
 
@@ -239,9 +253,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   }, [connected, publicKey, isWalletReady, verifyWalletConnection]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9]/g, ''); // Only allow numbers for PXB points
+    const value = e.target.value.replace(/[^0-9]/g, '');
     
-    // Ensure amount doesn't exceed user's available points
     const numValue = parseInt(value || '0', 10);
     if (numValue > maxPointsAvailable) {
       setAmount(maxPointsAvailable.toString());
@@ -251,9 +264,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   };
 
   const handlePercentageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9]/g, ''); // Only allow numbers
+    const value = e.target.value.replace(/[^0-9]/g, '');
     
-    // Enforce minimum percentage based on prediction type
     const numValue = parseInt(value || '0', 10);
     const minPercent = prediction === 'moon' ? 80 : prediction === 'die' ? 50 : 0;
     
@@ -362,7 +374,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       setTransactionStatus('Processing your bet...');
       
-      // Convert prediction to betType for API call
       const betType = prediction === 'moon' ? 'up' : 'down';
       
       await placeBet(
@@ -414,11 +425,131 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }
   };
 
+  const calculatePotentialReward = useCallback(() => {
+    const amountValue = parseInt(amount, 10);
+    if (!isNaN(amountValue) && rewardMultiplier) {
+      return amountValue * 2 * rewardMultiplier;
+    }
+    return 0;
+  }, [amount, rewardMultiplier]);
+
+  useEffect(() => {
+    if (prediction === 'moon') {
+      const percent = parseInt(percentageChange, 10);
+      if (percent >= 200) {
+        setPredictionImpact('Extremely ambitious prediction! High risk, high reward.');
+      } else if (percent >= 150) {
+        setPredictionImpact('Very ambitious prediction with good multiplier.');
+      } else if (percent >= 100) {
+        setPredictionImpact('Solid prediction with decent multiplier.');
+      } else {
+        setPredictionImpact('Standard moon prediction.');
+      }
+    } else if (prediction === 'die') {
+      const percent = parseInt(percentageChange, 10);
+      if (percent >= 80) {
+        setPredictionImpact('Extremely bearish prediction! High risk.');
+      } else if (percent >= 70) {
+        setPredictionImpact('Very bearish prediction.');
+      } else if (percent >= 60) {
+        setPredictionImpact('Significant drop prediction.');
+      } else {
+        setPredictionImpact('Standard die prediction.');
+      }
+    } else {
+      setPredictionImpact('');
+    }
+  }, [prediction, percentageChange]);
+
   const showExtraWalletReconnectOption = connected && publicKey && wallet && !isWalletReady && !walletCheckingInProgress;
 
   return (
     <div className="glass-panel p-6 space-y-4">
-      <h3 className="text-xl font-display font-semibold">Create a New Bet</h3>
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-display font-semibold">Create a New Bet</h3>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-dream-foreground/70 hover:bg-dream-foreground/10"
+                onClick={() => setShowExplanations(!showExplanations)}
+              >
+                {showExplanations ? <Info className="h-4 w-4" /> : <HelpCircle className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {showExplanations ? "Hide explanations" : "Show explanations"}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      
+      <Collapsible open={isHowItWorksOpen} onOpenChange={setIsHowItWorksOpen} className="mb-4">
+        <CollapsibleTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full flex justify-between bg-dream-surface/40 border-dream-foreground/20 text-dream-foreground/70"
+          >
+            <span className="flex items-center gap-2">
+              <HelpCircle className="h-4 w-4" />
+              How PXB Betting Works
+            </span>
+            <span className="text-xs">{isHowItWorksOpen ? "Hide" : "Show"}</span>
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2 space-y-2 animate-accordion-down">
+          <Card className="bg-dream-surface/40 border-dream-foreground/20">
+            <CardContent className="pt-4 pb-2 px-4">
+              <div className="space-y-3 text-sm">
+                <div className="flex gap-2 items-start">
+                  <div className="bg-dream-accent2/20 p-1 rounded-full">
+                    <Coin className="h-4 w-4 text-dream-accent2" />
+                  </div>
+                  <p><span className="font-semibold">Place Bets with PXB Points</span><br />
+                  Use your PXB Points to bet on whether tokens will moon (increase) or die (decrease).</p>
+                </div>
+                
+                <div className="flex gap-2 items-start">
+                  <div className="bg-dream-accent2/20 p-1 rounded-full">
+                    <TrendingUp className="h-4 w-4 text-green-400" />
+                  </div>
+                  <p><span className="font-semibold">MOON Predictions</span><br />
+                  Predict the token will increase by at least 80%. Higher percentage predictions earn higher multipliers.</p>
+                </div>
+                
+                <div className="flex gap-2 items-start">
+                  <div className="bg-dream-accent2/20 p-1 rounded-full">
+                    <TrendingDown className="h-4 w-4 text-red-400" />
+                  </div>
+                  <p><span className="font-semibold">DIE Predictions</span><br />
+                  Predict the token will decrease by at least 50%. Higher percentage predictions earn higher multipliers.</p>
+                </div>
+                
+                <div className="flex gap-2 items-start">
+                  <div className="bg-dream-accent2/20 p-1 rounded-full">
+                    <Clock className="h-4 w-4 text-dream-accent2" />
+                  </div>
+                  <p><span className="font-semibold">Time-based Bets</span><br />
+                  Set a duration between 10-60 minutes. Your prediction must come true within this timeframe to win.</p>
+                </div>
+
+                <div className="flex gap-2 items-start">
+                  <div className="bg-green-500/20 p-1 rounded-full">
+                    <ArrowUp className="h-4 w-4 text-green-400" />
+                  </div>
+                  <p><span className="font-semibold">Reward Multipliers</span><br />
+                  <span className="text-green-400">1.5x</span> for 100-149% changes<br />
+                  <span className="text-green-400">2x</span> for 150-199% changes<br />
+                  <span className="text-green-400">3x</span> for 200%+ changes</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
       
       {successMessage && (
         <div className="p-3 bg-green-500/20 border border-green-500/40 rounded-md animate-pulse-slow">
@@ -461,34 +592,59 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       )}
       
       <div>
-        <label className="block text-sm text-dream-foreground/70 mb-1">
-          Percentage Change Prediction {prediction === 'moon' ? '(min 80%)' : prediction === 'die' ? '(min 50%)' : ''}
-        </label>
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm text-dream-foreground/70">
+            Percentage Change Prediction {prediction === 'moon' ? '(min 80%)' : prediction === 'die' ? '(min 50%)' : ''}
+          </label>
+          {showExplanations && prediction && (
+            <span className={`text-xs animate-fade-in ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+              {prediction === 'moon' ? 'Price increases by' : 'Price decreases by'}
+            </span>
+          )}
+        </div>
         <div className="relative">
           <Input
             type="text"
             value={percentageChange}
             onChange={handlePercentageChange}
-            className="w-full p-3 bg-dream-surface border border-dream-foreground/20 rounded-md focus:outline-none focus:border-dream-accent2"
+            className={`w-full p-3 bg-dream-surface border ${prediction ? (prediction === 'moon' ? 'border-green-500/30' : 'border-red-500/30') : 'border-dream-foreground/20'} rounded-md focus:outline-none focus:border-dream-accent2`}
           />
           <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dream-foreground/50">
             %
           </span>
         </div>
-        <p className="text-xs text-dream-foreground/50 mt-1">
-          Predict how much the market cap will {prediction === 'moon' ? 'increase' : prediction === 'die' ? 'decrease' : 'change'} by
-          {rewardMultiplier > 1 && (
-            <span className="ml-1 text-dream-accent2">
-              (Reward multiplier: {rewardMultiplier}x)
-            </span>
-          )}
-        </p>
+        {showExplanations && (
+          <>
+            <div className="flex justify-between items-center mt-1">
+              <p className="text-xs text-dream-foreground/50">
+                Predict how much the market cap will {prediction === 'moon' ? 'increase' : prediction === 'die' ? 'decrease' : 'change'} by
+              </p>
+              {rewardMultiplier > 1 && (
+                <span className="text-xs bg-dream-accent2/20 text-dream-accent2 px-2 py-0.5 rounded-full animate-pulse-slow">
+                  {rewardMultiplier}x multiplier
+                </span>
+              )}
+            </div>
+            {predictionImpact && (
+              <p className="text-xs mt-1 animate-fade-in italic text-dream-foreground/70">
+                {predictionImpact}
+              </p>
+            )}
+          </>
+        )}
       </div>
       
       <div>
-        <label className="block text-sm text-dream-foreground/70 mb-1">
-          Bet Amount (PXB Points)
-        </label>
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm text-dream-foreground/70">
+            Bet Amount (PXB Points)
+          </label>
+          {showExplanations && (
+            <span className="text-xs text-dream-foreground/50">
+              Balance: {maxPointsAvailable} PXB
+            </span>
+          )}
+        </div>
         <div className="relative">
           <input
             type="text"
@@ -500,9 +656,18 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             PXB
           </span>
         </div>
-        <p className="text-xs text-dream-foreground/50 mt-1">
-          Min: 1 PXB | Max: {maxPointsAvailable} PXB Available
-        </p>
+        {showExplanations && (
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-xs text-dream-foreground/50">
+              Min: 1 PXB | Max: {maxPointsAvailable} PXB
+            </p>
+            {parseInt(amount, 10) > 0 && (
+              <p className="text-xs text-green-400">
+                Potential win: {calculatePotentialReward()} PXB
+              </p>
+            )}
+          </div>
+        )}
       </div>
       
       <div>
@@ -523,24 +688,40 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           <span>30m</span>
           <span>60m</span>
         </div>
+        {showExplanations && (
+          <p className="text-xs text-dream-foreground/50 mt-1 italic">
+            Your prediction must come true within this timeframe to win
+          </p>
+        )}
       </div>
       
       {prediction && (
-        <div className="p-3 bg-dream-surface/30 rounded-md">
-          <p className="text-sm text-dream-foreground/70">
-            You're betting that the market cap of {tokenData.symbol} will 
-            <span className={prediction === 'moon' ? ' text-green-400' : ' text-red-400'}>
-              {prediction === 'moon' ? ' increase' : ' decrease'} by {percentageChange}%
-            </span> within {duration} minutes.
-          </p>
-          {parseInt(amount, 10) > 0 && (
-            <p className="text-sm text-dream-foreground/70 mt-1">
-              If your prediction is correct, you'll win <span className="text-green-400">{parseInt(amount, 10) * 2 * rewardMultiplier} PXB Points</span> 
-              {rewardMultiplier > 1 && (
-                <span className="text-dream-accent2"> (including {rewardMultiplier}x multiplier for ambitious prediction)</span>
+        <div className={`p-3 ${prediction === 'moon' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'} rounded-md animate-fade-in`}>
+          <div className="flex items-start gap-2">
+            <div className={`mt-0.5 ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+              {prediction === 'moon' ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+            </div>
+            <div>
+              <p className="text-sm text-dream-foreground/90">
+                You're betting <span className="font-semibold">{amount} PXB Points</span> that {tokenData.symbol} will 
+                <span className={prediction === 'moon' ? ' text-green-400 font-medium' : ' text-red-400 font-medium'}>
+                  {prediction === 'moon' ? ' increase' : ' decrease'} by {percentageChange}%
+                </span> within <span className="font-medium">{duration} minutes</span>.
+              </p>
+              {parseInt(amount, 10) > 0 && (
+                <div className="flex items-center mt-2 gap-1">
+                  <Coin className="h-4 w-4 text-dream-accent2" />
+                  <p className="text-sm">
+                    <span className="text-dream-foreground/70">If correct, you'll win </span>
+                    <span className="text-green-400 font-semibold">{calculatePotentialReward()} PXB Points</span>
+                    {rewardMultiplier > 1 && (
+                      <span className="text-dream-accent2 text-xs ml-1">(with {rewardMultiplier}x multiplier)</span>
+                    )}
+                  </p>
+                </div>
               )}
-            </p>
-          )}
+            </div>
+          </div>
         </div>
       )}
       
@@ -557,7 +738,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         <Button
           onClick={handleOpenConfirmation}
           disabled={!isWalletReady || isSubmitting || !prediction || !amount || !percentageChange || walletCheckingInProgress || !!successMessage || !userProfile}
-          className="flex-1 bg-gradient-to-r from-dream-accent1 to-dream-accent3"
+          className={`flex-1 ${prediction === 'moon' ? 'bg-gradient-to-r from-green-500 to-dream-accent2' : prediction === 'die' ? 'bg-gradient-to-r from-red-500 to-dream-accent3' : 'bg-gradient-to-r from-dream-accent1 to-dream-accent3'}`}
         >
           {isSubmitting ? (
             <span className="flex items-center gap-2">
@@ -567,7 +748,19 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           ) : successMessage ? (
             "Bet Placed!"
           ) : (
-            "Place Bet"
+            <>
+              {prediction === 'moon' ? (
+                <span className="flex items-center">
+                  <TrendingUp className="w-4 h-4 mr-1" /> Place MOON Bet
+                </span>
+              ) : prediction === 'die' ? (
+                <span className="flex items-center">
+                  <TrendingDown className="w-4 h-4 mr-1" /> Place DIE Bet
+                </span>
+              ) : (
+                "Place Bet"
+              )}
+            </>
           )}
         </Button>
         
@@ -635,28 +828,51 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <AlertDialogContent className="bg-dream-background border border-dream-foreground/20">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-dream-foreground">Confirm Your Bet</AlertDialogTitle>
+            <AlertDialogTitle className="text-dream-foreground flex items-center gap-2">
+              {prediction === 'moon' ? (
+                <>
+                  <TrendingUp className="w-5 h-5 text-green-400" /> 
+                  <span>Confirm Your MOON Bet</span>
+                </>
+              ) : (
+                <>
+                  <TrendingDown className="w-5 h-5 text-red-400" /> 
+                  <span>Confirm Your DIE Bet</span>
+                </>
+              )}
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-dream-foreground/70">
               {`You are about to place a bet of ${amount} PXB Points that ${tokenData.symbol} will ${prediction} by ${percentageChange}% within ${duration} minutes.`}
-              <div className="mt-2 p-3 bg-dream-foreground/10 rounded-md">
-                <p className="text-dream-foreground/90 font-medium">
-                  Current PXB Balance: {maxPointsAvailable} PXB
-                </p>
-                <p className="text-dream-foreground/90 mt-1">
-                  After bet: {maxPointsAvailable - parseInt(amount, 10)} PXB
-                </p>
+              <div className="mt-4 p-3 bg-dream-foreground/10 rounded-md">
+                <div className="flex justify-between">
+                  <p className="text-dream-foreground/90">Current Balance:</p>
+                  <p className="text-dream-foreground/90 font-medium">{maxPointsAvailable} PXB</p>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <p className="text-dream-foreground/90">Amount to Bet:</p>
+                  <p className="text-red-400 font-medium">-{amount} PXB</p>
+                </div>
+                <div className="border-t border-dream-foreground/10 my-2"></div>
+                <div className="flex justify-between">
+                  <p className="text-dream-foreground/90">Remaining Balance:</p>
+                  <p className="text-dream-foreground/90 font-medium">{maxPointsAvailable - parseInt(amount, 10)} PXB</p>
+                </div>
+                <div className="flex justify-between mt-2 bg-dream-foreground/10 p-2 rounded">
+                  <p className="text-dream-foreground/90">Potential Reward:</p>
+                  <p className="text-green-400 font-medium">+{calculatePotentialReward()} PXB</p>
+                </div>
               </div>
-              <p className="mt-4 text-dream-foreground/70">
-                These points will be deducted from your profile if you confirm.
-              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex space-x-2">
             <AlertDialogCancel className="bg-dream-surface text-dream-foreground border-dream-foreground/20 hover:bg-dream-surface/80">
-              Decline
+              Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleCreateBet} className="bg-gradient-to-r from-dream-accent1 to-dream-accent3 text-white">
-              Accept & Place Bet
+            <AlertDialogAction 
+              onClick={handleCreateBet} 
+              className={`${prediction === 'moon' ? 'bg-gradient-to-r from-green-500 to-dream-accent2' : 'bg-gradient-to-r from-red-500 to-dream-accent3'} text-white`}
+            >
+              Confirm & Place Bet
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
