@@ -44,7 +44,7 @@ const Progress = React.forwardRef<
       {/* Dynamic pulsing glow effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/60 via-dream-accent2/60 to-dream-accent3/60 blur-md animate-pulse-glow"></div>
       
-      {/* Inner shimmering effect */}
+      {/* Inner shimmering effect - enhanced with faster animation */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-r from-white/30 via-transparent to-white/30 animate-shine" 
              style={{width: '150%', transform: 'skewX(-20deg)'}}></div>
@@ -56,6 +56,47 @@ const Progress = React.forwardRef<
       {/* Fluid wave effect */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-dream-accent1/20 via-dream-accent2/40 to-dream-accent3/20 animate-drift"></div>
+      </div>
+      
+      {/* Fast-moving particles based on progress value */}
+      <div className="absolute inset-0 overflow-hidden">
+        {Array.from({ length: 12 }).map((_, i) => {
+          // Calculate position based on progress value to distribute particles across filled area
+          const particlePosition = (value || 0) * (i / 12);
+          return (
+            <div 
+              key={`fast-particle-${i}`}
+              className="absolute h-0.5 w-0.5 rounded-full bg-white animate-fast-particle"
+              style={{ 
+                left: `${particlePosition}%`,
+                top: `${Math.random() * 100}%`,
+                opacity: 0.6 + Math.random() * 0.4,
+                animationDuration: `${0.8 + Math.random() * 1.5}s`,
+                animationDelay: `${i * 0.15}s`
+              }}
+            />
+          );
+        })}
+      </div>
+      
+      {/* Supply representation particles - more particles when more is minted */}
+      <div className="absolute inset-0 overflow-hidden">
+        {Array.from({ length: Math.max(3, Math.floor((value || 0) / 5)) }).map((_, i) => {
+          // Distribute particles based on minted percentage (value)
+          const particlePosition = Math.random() * (value || 0);
+          return (
+            <div 
+              key={`supply-particle-${i}`}
+              className="absolute h-1 w-1 rounded-full bg-white/70 animate-supply-particle"
+              style={{ 
+                left: `${particlePosition}%`,
+                top: `${Math.random() * 100}%`,
+                animationDuration: `${0.5 + Math.random()}s`,
+                animationDelay: `${i * 0.1}s`
+              }}
+            />
+          );
+        })}
       </div>
       
       {/* Edge highlight sparkles */}
