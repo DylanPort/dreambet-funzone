@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDistanceToNow } from 'date-fns';
@@ -34,7 +33,6 @@ const ActiveBetsList = () => {
   const [viewMode, setViewMode] = useState<'all' | 'highValue'>('all');
   const isMobile = useIsMobile();
 
-  // Fetch active bets from Supabase
   useEffect(() => {
     const fetchBets = async () => {
       try {
@@ -67,9 +65,7 @@ const ActiveBetsList = () => {
           return;
         }
         
-        // Transform to match our frontend Bet type
         const transformedBets: Bet[] = data.map(bet => {
-          // Map prediction values
           let predictionValue: any;
           if (bet.prediction_bettor1 === 'up') {
             predictionValue = 'migrate';
@@ -79,10 +75,9 @@ const ActiveBetsList = () => {
             predictionValue = bet.prediction_bettor1;
           }
           
-          // Ensure status is a valid BetStatus type
           const validStatus: BetStatus = ['open', 'matched', 'completed', 'expired', 'closed'].includes(bet.status as string) 
             ? (bet.status as BetStatus) 
-            : 'open'; // Default to 'open' if invalid status
+            : 'open';
           
           return {
             id: bet.bet_id,
@@ -96,7 +91,7 @@ const ActiveBetsList = () => {
             timestamp: new Date(bet.created_at).getTime(),
             expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
             status: validStatus,
-            duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
+            duration: Math.floor(bet.duration / 60),
             onChainBetId: '',
             transactionSignature: ''
           };
@@ -113,24 +108,19 @@ const ActiveBetsList = () => {
     
     fetchBets();
     
-    // Set up polling for real-time updates
-    const interval = setInterval(fetchBets, 60000); // Refresh every minute
+    const interval = setInterval(fetchBets, 60000);
     
     return () => clearInterval(interval);
   }, []);
 
-  // Get high value bets (above 1 SOL)
   const highValueBets = bets.filter(bet => bet.amount >= 1);
   
-  // Determine which bets to display based on view mode
   const displayBets = viewMode === 'all' ? bets : highValueBets;
   
-  // Format time ago
   const formatTimeAgo = (timestamp: number) => {
     return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   };
   
-  // Format time remaining
   const formatTimeRemaining = (expiresAt: number) => {
     const now = new Date().getTime();
     const timeRemaining = expiresAt - now;
@@ -149,7 +139,6 @@ const ActiveBetsList = () => {
     }
   };
   
-  // Get prediction color and text
   const getPredictionDetails = (prediction: string) => {
     switch (prediction) {
       case 'migrate':
@@ -254,7 +243,10 @@ const ActiveBetsList = () => {
                       <span className="truncate max-w-[150px]">{bet.tokenName || 'Unknown'}</span>
                       <ExternalLink className="w-3 h-3 text-dream-foreground/40 flex-shrink-0" />
                     </div>
-                    <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
+                    <div className="flex flex-col">
+                      <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
+                      <div className="text-xs text-dream-foreground/40 mt-0.5">{formatAddress(bet.tokenMint)}</div>
+                    </div>
                   </div>
                 </div>
                 
@@ -400,7 +392,10 @@ const ActiveBetsList = () => {
                           <span className="truncate max-w-[150px]">{bet.tokenName || 'Unknown'}</span>
                           <ExternalLink className="w-3 h-3 text-dream-foreground/40" />
                         </div>
-                        <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
+                        <div className="flex flex-col">
+                          <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
+                          <div className="text-xs text-dream-foreground/40 mt-0.5">{formatAddress(bet.tokenMint)}</div>
+                        </div>
                       </div>
                     </div>
                   </TableCell>

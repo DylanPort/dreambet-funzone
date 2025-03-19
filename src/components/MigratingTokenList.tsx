@@ -278,7 +278,10 @@ const MigratingTokenList = () => {
                         <span className="truncate max-w-[150px]">{bet.tokenName || 'Unknown'}</span>
                         <ExternalLink className="w-3 h-3 text-dream-foreground/40 flex-shrink-0" />
                       </div>
-                      <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
+                      <div className="flex flex-col">
+                        <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
+                        <div className="text-xs text-dream-foreground/40 mt-0.5">{formatAddress(bet.tokenMint)}</div>
+                      </div>
                     </div>
                     <Badge className={`${bgColor} ${color} border-none`}>
                       {text}
@@ -494,7 +497,10 @@ const MigratingTokenList = () => {
                               </div>
                             </HoverCardContent>
                           </HoverCard>
-                          <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
+                          <div className="flex flex-col">
+                            <div className="text-xs text-dream-foreground/60">{bet.tokenSymbol || '???'}</div>
+                            <div className="text-xs text-dream-foreground/40 mt-0.5">{formatAddress(bet.tokenMint)}</div>
+                          </div>
                         </div>
                       </div>
                     </TableCell>
