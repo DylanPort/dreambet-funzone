@@ -89,7 +89,13 @@ const TokenChart = ({
       </div>
       
       <div className="mt-8 grid grid-cols-2 gap-4">
-        <div className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30">
+        <div 
+          className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
+          onClick={() => {
+            refreshData('up');
+            setShowCreateBet(true);
+          }}
+        >
           <img 
             src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
             alt="MOON" 
@@ -99,7 +105,13 @@ const TokenChart = ({
           <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent">MOON</span>
         </div>
         
-        <div className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30">
+        <div 
+          className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
+          onClick={() => {
+            refreshData('down');
+            setShowCreateBet(true);
+          }}
+        >
           <img 
             src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
             alt="DUST" 
