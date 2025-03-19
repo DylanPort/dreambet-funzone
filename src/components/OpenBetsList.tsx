@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { formatDistanceToNow } from 'date-fns';
 import { formatAddress } from '@/utils/betUtils';
-import { ExternalLink, Clock, Loader, Zap, Filter } from 'lucide-react';
+import { ExternalLink, Clock, Loader, Zap, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 
 // Define types for token data
 interface TokenData {
@@ -23,6 +24,7 @@ interface TokenData {
 const OpenBetsList = () => {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'latest' | 'highValue'>('latest');
+  const [isExpanded, setIsExpanded] = useState(false);
   const { rawTokens, getTokensAboveMarketCap } = usePumpPortal();
   const isMobile = useIsMobile();
   
@@ -31,6 +33,9 @@ const OpenBetsList = () => {
   
   // Determine which tokens to display based on view mode
   const displayTokens = viewMode === 'latest' ? rawTokens : highValueTokens;
+  
+  // Only show the first 5 tokens when not expanded
+  const visibleTokens = isExpanded ? displayTokens : displayTokens.slice(0, 5);
   
   if (!displayTokens || displayTokens.length === 0) {
     return (
@@ -57,7 +62,7 @@ const OpenBetsList = () => {
       </div>
 
       <div className="space-y-4">
-        {displayTokens.map((token, index) => {
+        {visibleTokens.map((token, index) => {
           // Use the current date as creation date since RawTokenCreationEvent doesn't have created_time
           const creationDate = new Date();
           
@@ -151,10 +156,32 @@ const OpenBetsList = () => {
         })}
       </div>
       
+      {displayTokens.length > 5 && (
+        <div className="flex justify-center mt-4">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsExpanded(!isExpanded)} 
+            className="text-xs px-4 py-2 flex items-center gap-2 bg-dream-background/40 hover:bg-dream-accent1/10 transition-colors"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-4 w-4" />
+                <span>Show Less</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                <span>Show All ({displayTokens.length} Tokens)</span>
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+      
       {viewMode === 'highValue' && highValueTokens.length > 0 && (
         <div className="mt-4 text-xs text-dream-foreground/60 flex items-center">
           <Zap className="h-3.5 w-3.5 mr-1.5 text-dream-accent2" />
-          <span>Showing {highValueTokens.length} tokens with 45+ SOL initial market cap from the last hour</span>
+          <span>Showing {isExpanded ? highValueTokens.length : Math.min(5, highValueTokens.length)} of {highValueTokens.length} tokens with 45+ SOL initial market cap from the last hour</span>
         </div>
       )}
     </Card>

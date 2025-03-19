@@ -221,8 +221,7 @@ const MigratingTokenList = () => {
               <div className="flex-1">
                 <Progress 
                   value={upPercentage} 
-                  className="h-2 bg-dream-background/40" 
-                  progressClassName="bg-green-500"
+                  className="h-2 bg-dream-background/40"
                 />
               </div>
               <div className="flex items-center gap-1.5">
@@ -235,8 +234,7 @@ const MigratingTokenList = () => {
               <div className="flex-1">
                 <Progress 
                   value={downPercentage} 
-                  className="h-2 bg-dream-background/40" 
-                  progressClassName="bg-red-500"
+                  className="h-2 bg-dream-background/40"
                 />
               </div>
               <div className="flex items-center gap-1.5">
