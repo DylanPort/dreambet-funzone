@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { formatDistanceToNow } from 'date-fns';
 import { formatAddress } from '@/utils/betUtils';
-import { ExternalLink, Clock, Loader, Zap, Filter, ChevronDown, ChevronUp, Copy, CheckCheck } from 'lucide-react';
+import { ExternalLink, Clock, Loader, Zap, Filter, ChevronDown, ChevronUp, Copy, CheckCheck, ArrowUpDown } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -15,6 +15,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Define types for token data
 interface TokenData {
@@ -31,11 +37,12 @@ const OpenBetsList = () => {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [copiedAddresses, setCopiedAddresses] = useState<Record<string, boolean>>({});
+  const [sortBy, setSortBy] = useState('newest');
   const { rawTokens } = usePumpPortal();
   const isMobile = useIsMobile();
   
   // Only show the first 5 tokens when not expanded
-  const visibleTokens = isExpanded ? rawTokens : rawTokens.slice(0, 5);
+  const visibleTokens = isExpanded ? sortTokens(rawTokens) : sortTokens(rawTokens).slice(0, 5);
   
   const copyToClipboard = async (text: string, index: number) => {
     try {
@@ -70,6 +77,35 @@ const OpenBetsList = () => {
     }
   };
   
+  const sortTokens = (tokensToSort: TokenData[]) => {
+    const tokens = [...tokensToSort];
+    
+    switch(sortBy) {
+      case 'newest':
+        return tokens.sort((a, b) => {
+          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return dateB - dateA;
+        });
+      case 'oldest':
+        return tokens.sort((a, b) => {
+          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return dateA - dateB;
+        });
+      case 'market-cap-high':
+        return tokens.sort((a, b) => (b.marketCapSol || 0) - (a.marketCapSol || 0));
+      case 'market-cap-low':
+        return tokens.sort((a, b) => (a.marketCapSol || 0) - (b.marketCapSol || 0));
+      case 'supply-high':
+        return tokens.sort((a, b) => (b.supply || 0) - (a.supply || 0));
+      case 'supply-low':
+        return tokens.sort((a, b) => (a.supply || 0) - (b.supply || 0));
+      default:
+        return tokens;
+    }
+  };
+  
   if (!rawTokens || rawTokens.length === 0) {
     return (
       <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
@@ -84,12 +120,65 @@ const OpenBetsList = () => {
     <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
       <div className="flex items-center justify-between mb-4">
         <CardTitle className="text-xl text-dream-foreground">Recent Tokens</CardTitle>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-xs gap-1.5 h-9"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sort: {sortBy.replace('-', ' ')}</span>
+              <span className="sm:hidden">Sort</span>
+              <ChevronDown className="w-3.5 h-3.5 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-dream-background/95 backdrop-blur-md border border-dream-accent1/20 rounded-md">
+            <DropdownMenuItem 
+              className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'newest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+              onClick={() => setSortBy('newest')}
+            >
+              Newest First
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'oldest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+              onClick={() => setSortBy('oldest')}
+            >
+              Oldest First
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'market-cap-high' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+              onClick={() => setSortBy('market-cap-high')}
+            >
+              Market Cap: High to Low
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'market-cap-low' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+              onClick={() => setSortBy('market-cap-low')}
+            >
+              Market Cap: Low to High
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'supply-high' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+              onClick={() => setSortBy('supply-high')}
+            >
+              Supply: High to Low
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'supply-low' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+              onClick={() => setSortBy('supply-low')}
+            >
+              Supply: Low to High
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="space-y-4">
         {visibleTokens.map((token, index) => {
           // Use the current date as creation date since RawTokenCreationEvent doesn't have created_time
-          const creationDate = new Date();
+          const creationDate = token.timestamp ? new Date(token.timestamp) : new Date();
           
           // Format the time distance
           const timeAgo = formatDistanceToNow(creationDate, { addSuffix: true });

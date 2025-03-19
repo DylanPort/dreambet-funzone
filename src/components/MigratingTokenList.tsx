@@ -25,6 +25,12 @@ import {
   CarouselNext,
   CarouselPrevious
 } from "@/components/ui/carousel";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from '@/integrations/supabase/client';
 import { fetchOpenBets } from '@/services/supabaseService';
 import { toast } from "sonner";
@@ -51,7 +57,6 @@ const MigratingTokenList = () => {
   const [downVotes, setDownVotes] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
-  const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'all' | 'highValue'>('all');
   const isMobile = useIsMobile();
 
@@ -169,23 +174,6 @@ const MigratingTokenList = () => {
     }
   };
 
-  const toggleSortMenu = () => {
-    setSortMenuOpen(!sortMenuOpen);
-  };
-
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if (sortMenuOpen) {
-        setSortMenuOpen(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [sortMenuOpen]);
-  
   if (loading) {
     return (
       <div className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
@@ -420,41 +408,52 @@ const MigratingTokenList = () => {
           </Tabs>
           
           <div className="relative">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-xs gap-1.5 h-9"
-              onClick={toggleSortMenu}
-            >
-              <ArrowUpDown className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sort: {sortBy.replace('-', ' ')}</span>
-              <span className="sm:hidden">Sort</span>
-              <ChevronDown className="w-3.5 h-3.5 ml-1" />
-            </Button>
-            {sortMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-40 bg-dream-background/95 backdrop-blur-md border border-dream-accent1/20 rounded-md shadow-lg z-20 overflow-hidden">
-                <div className="py-1">
-                  {[
-                    {value: 'newest', label: 'Newest First'},
-                    {value: 'oldest', label: 'Oldest First'},
-                    {value: 'amount-high', label: 'Amount: High to Low'},
-                    {value: 'amount-low', label: 'Amount: Low to High'},
-                    {value: 'expiring-soon', label: 'Expiring Soon'},
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      className={`block w-full text-left px-4 py-2 text-xs hover:bg-dream-accent1/10 transition-colors ${sortBy === option.value ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
-                      onClick={() => {
-                        setSortBy(option.value);
-                        setSortMenuOpen(false);
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs gap-1.5 h-9"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Sort: {sortBy.replace('-', ' ')}</span>
+                  <span className="sm:hidden">Sort</span>
+                  <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40 bg-dream-background/95 backdrop-blur-md border border-dream-accent1/20 rounded-md">
+                <DropdownMenuItem 
+                  className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'newest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('newest')}
+                >
+                  Newest First
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'oldest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('oldest')}
+                >
+                  Oldest First
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'amount-high' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('amount-high')}
+                >
+                  Amount: High to Low
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'amount-low' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('amount-low')}
+                >
+                  Amount: Low to High
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'expiring-soon' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('expiring-soon')}
+                >
+                  Expiring Soon
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
