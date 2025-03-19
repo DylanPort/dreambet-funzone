@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -815,4 +816,67 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
                 Wallet not properly connected
                 {lastError && <span className="ml-1 opacity-70">({lastError})</span>}
               </p>
-              <div className="flex gap-2
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleRetryWalletConnection}
+                  className="text-xs"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Reconnect Wallet
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={handleCheckWalletAgain}
+                  className="text-xs"
+                >
+                  Check Again
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent className="bg-dream-surface border-dream-accent2/30 backdrop-blur-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-dream-foreground">Confirm Your Bet</AlertDialogTitle>
+            <AlertDialogDescription className="text-dream-foreground/70">
+              You are about to place a bet with {amount} PXB Points that {tokenData.symbol} will 
+              <span className={prediction === 'moon' ? ' text-green-400 font-medium' : ' text-red-400 font-medium'}>
+                {prediction === 'moon' ? ' increase' : ' decrease'} by {percentageChange}%
+              </span> within {duration} minutes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              className="border-dream-foreground/20 text-dream-foreground/70 hover:bg-dream-foreground/10"
+              onClick={() => setIsConfirmOpen(false)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              className={`${prediction === 'moon' ? 'bg-gradient-to-r from-green-500 to-dream-accent2' : 'bg-gradient-to-r from-red-500 to-dream-accent3'}`}
+              onClick={handleCreateBet}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-dream-foreground border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </span>
+              ) : (
+                "Confirm Bet"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default CreateBetForm;
