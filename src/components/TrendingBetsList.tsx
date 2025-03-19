@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatAddress } from '@/utils/betUtils';
@@ -194,7 +195,7 @@ const TrendingBetsList = () => {
                           <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
                             <div className="text-xs text-dream-foreground/60 mb-1">Total Bet Amount</div>
                             <div className="text-sm font-medium text-dream-accent2">
-                              {token.total_amount.toFixed(2)} SOL
+                              {token.total_amount.toFixed(2)} PXB
                             </div>
                           </div>
                         
