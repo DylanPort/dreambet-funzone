@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink, Flame, BarChart } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -113,7 +114,7 @@ const BetReel: React.FC = () => {
                     
                     <div className="flex items-center text-xs bg-dream-accent2/10 px-2 py-0.5 rounded-md">
                       <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
-                      <span className="font-semibold">{token.totalAmount.toFixed(2)} SOL</span>
+                      <span className="font-semibold">{token.totalAmount.toFixed(2)} PXB</span>
                     </div>
                   </div>
                 </div>
