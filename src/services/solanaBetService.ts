@@ -12,7 +12,7 @@ const getPredictionValue = (prediction: BetPrediction): number => {
     case 'migrate':
     case 'up':
       return 1;
-    case 'die':
+    case 'dust':
     case 'down':
       return 0;
     default:
@@ -544,3 +544,4 @@ export const getSolanaBetData = async (betId: number): Promise<Bet | null> => {
     return null;
   }
 };
+

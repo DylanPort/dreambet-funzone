@@ -139,7 +139,7 @@ export const fetchOpenBets = async () => {
       if (bet.prediction_bettor1 === 'up') {
         predictionValue = 'migrate';
       } else if (bet.prediction_bettor1 === 'down') {
-        predictionValue = 'die';
+        predictionValue = 'dust';
       } else {
         predictionValue = bet.prediction_bettor1 as BetPrediction;
       }
@@ -210,7 +210,7 @@ export const fetchUserBets = async (userWalletAddress: string) => {
       if (bet.prediction_bettor1 === 'up') {
         predictionValue = 'migrate';
       } else if (bet.prediction_bettor1 === 'down') {
-        predictionValue = 'die';
+        predictionValue = 'dust';
       } else {
         predictionValue = bet.prediction_bettor1 as BetPrediction;
       }
@@ -272,7 +272,7 @@ export const createSupabaseBet = async (
     // Map frontend prediction to database format
     let dbPrediction: string;
     if (prediction === 'migrate') dbPrediction = 'up';
-    else if (prediction === 'die') dbPrediction = 'down';
+    else if (prediction === 'dust') dbPrediction = 'down';
     else dbPrediction = prediction;
     
     // Insert the bet
@@ -411,7 +411,7 @@ export const acceptBet = async (betId: string) => {
   // Map prediction values from database to our frontend format
   let predictionValue: BetPrediction;
   if (betData.prediction_bettor1 === 'up') predictionValue = 'migrate';
-  else if (betData.prediction_bettor1 === 'down') predictionValue = 'die';
+  else if (betData.prediction_bettor1 === 'down') predictionValue = 'dust';
   else predictionValue = betData.prediction_bettor1 as BetPrediction;
   
   // Convert status string to BetStatus type

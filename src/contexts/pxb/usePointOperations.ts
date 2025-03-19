@@ -316,7 +316,7 @@ export const usePointOperations = (
         tokenMint: tokenId,
         initiator: initiator,
         amount: betAmount,
-        prediction: betType === 'up' ? 'migrate' : 'die',
+        prediction: betType === 'up' ? 'migrate' : 'dust',
         timestamp: Date.now(),
         expiresAt: Date.now() + (duration * 60 * 1000),
         status: 'open',

@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
 import { fetchTokenById } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
-import { Bet, BetStatus } from '@/types/bet';
+import { Bet, BetPrediction, BetStatus } from '@/types/bet';
 import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CreateBetForm from '@/components/CreateBetForm';
@@ -636,7 +636,7 @@ const TokenDetail = () => {
       tokenMint: lastCreatedBet.tokenMint,
       initiator: userProfile?.id || '',
       amount: lastCreatedBet.betAmount,
-      prediction: lastCreatedBet.betType === 'up' ? 'migrate' : 'die',
+      prediction: lastCreatedBet.betType === 'up' ? 'migrate' : 'dust',
       timestamp: new Date(lastCreatedBet.createdAt).getTime(),
       expiresAt: new Date(lastCreatedBet.expiresAt).getTime(),
       status: lastCreatedBet.status as BetStatus,
@@ -731,110 +731,4 @@ const TokenDetail = () => {
             <>
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
-                <span>Back to Tokens</span>
-              </Link>
-              
-              {renderActiveBetBanner()}
-              
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div className="flex items-center">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-3xl border border-white/10 mr-4">
-                    {token.symbol ? token.symbol.charAt(0) : '🪙'}
-                  </div>
-                  
-                  <div>
-                    <h1 className="text-3xl md:text-4xl font-display font-bold">{token.name}</h1>
-                    <div className="flex items-center gap-3">
-                      <span className="text-dream-foreground/70">{token.symbol}</span>
-                      <a href={`https://solscan.io/token/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline inline-flex items-center text-sm">
-                        <ExternalLink className="w-3 h-3 mr-1" />
-                        View on SolScan
-                      </a>
-                      <span className={`flex items-center gap-1 text-sm ${isLive ? 'text-green-400' : 'text-yellow-400'}`}>
-                        {isLive ? 'Live' : 'Static'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-end">
-                  <div className="text-3xl font-bold">
-                    ${formatPrice(token.currentPrice)}
-                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">LIVE</span>
-                  </div>
-                  <div className={`flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
-                    {Math.abs(token.change24h).toFixed(2)}%
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <TokenMarketCap tokenId={token.id} />
-                
-                <TokenVolume tokenId={token.id} />
-                
-                <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{
-              animationDelay: '0.2s'
-            }}>
-                  <div className="absolute inset-0 bg-gradient-to-r from-dream-accent3/10 to-dream-accent1/10 animate-gradient-move"></div>
-                  <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
-                    <Users size={20} className="mr-3 text-dream-accent3" />
-                    <span className="text-lg font-semibold">Active Bets</span>
-                  </div>
-                  <div className="text-3xl font-bold relative z-10">{bets.length}</div>
-                  <div className="absolute top-2 right-2 flex items-center">
-                    <button onClick={() => refreshData()} className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors" title="Refresh Data">
-                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    </button>
-                  </div>
-                  <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent3 to-dream-accent1 animate-pulse-glow" style={{
-                width: `${Math.min(100, bets.length / 10 * 100)}%`
-              }}></div>
-                </div>
-              </div>
-              
-              <TokenChart 
-                tokenId={token?.id} 
-                tokenName={token?.name} 
-                refreshData={refreshData} 
-                loading={loading} 
-                onPriceUpdate={handleChartPriceUpdate}
-                setShowCreateBet={setShowCreateBet} 
-              />
-              
-              {showCreateBet && (
-                <div className="glass-panel p-6 mb-8">
-                  <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
-                  <CreateBetForm tokenId={token?.id} tokenName={token?.name} tokenSymbol={token?.symbol || ''} onBetCreated={async () => {
-                    setShowCreateBet(false);
-                    await refreshData();
-                  }} />
-                </div>
-              )}
-              
-              <div className="glass-panel p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-display font-bold">Active Bets</h2>
-                  <div className="text-sm text-dream-foreground/70">{bets.length} bets</div>
-                </div>
-                
-                {bets.length === 0 ? (
-                  <div className="text-center py-8 text-dream-foreground/70">
-                    No active bets for this token yet. Be the first to place a bet!
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey ? publicKey.toString() : null} onAcceptBet={handleAcceptBet} />)}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </main>
-    </>
-  );
-};
-
-export default TokenDetail;
+                <span>Back to Tokens
