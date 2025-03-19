@@ -462,59 +462,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       
       <div>
         <label className="block text-sm text-dream-foreground/70 mb-1">
-          Your Prediction
-        </label>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setPrediction('moon');
-              // Set minimum percentage for moon
-              const currentPercent = parseInt(percentageChange, 10);
-              if (isNaN(currentPercent) || currentPercent < 80) {
-                setPercentageChange('80');
-              }
-              calculateMultiplier(Math.max(80, currentPercent));
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
-              prediction === 'moon'
-                ? 'bg-green-500/20 border-green-500 text-green-400'
-                : 'border-dream-foreground/20 hover:bg-green-500/10'
-            }`}
-          >
-            <img 
-              src="/lovable-uploads/8b54a80c-266a-4fcc-8f22-788cab6ce1b4.png" 
-              alt="Rocket" 
-              className="w-5 h-5" 
-            />
-            <span>MOON 🚀</span>
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => {
-              setPrediction('die');
-              // Set minimum percentage for die
-              const currentPercent = parseInt(percentageChange, 10);
-              if (isNaN(currentPercent) || currentPercent < 50) {
-                setPercentageChange('50');
-              }
-              calculateMultiplier(Math.max(50, currentPercent));
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
-              prediction === 'die'
-                ? 'bg-red-500/20 border-red-500 text-red-400'
-                : 'border-dream-foreground/20 hover:bg-red-500/10'
-            }`}
-          >
-            <ArrowDown size={18} />
-            <span>DIE 💀</span>
-          </button>
-        </div>
-      </div>
-      
-      <div>
-        <label className="block text-sm text-dream-foreground/70 mb-1">
           Percentage Change Prediction {prediction === 'moon' ? '(min 80%)' : prediction === 'die' ? '(min 50%)' : ''}
         </label>
         <div className="relative">
