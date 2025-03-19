@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -164,6 +163,7 @@ const TokenDetail = () => {
   const [showCreateBet, setShowCreateBet] = useState(false);
   const [newActiveBet, setNewActiveBet] = useState<Bet | null>(null);
   const [activeBetsCount, setActiveBetsCount] = useState(0);
+  const [selectedPrediction, setSelectedPrediction] = useState<BetPrediction | null>(null);
   const {
     toast
   } = useToast();
@@ -551,6 +551,21 @@ const TokenDetail = () => {
       });
     }
   };
+  const handlePredictionSelect = (prediction: BetPrediction) => {
+    setSelectedPrediction(prediction);
+    
+    // Dispatch prediction event for CreateBetForm to pick up
+    const eventData = {
+      prediction: prediction,
+      percentageChange: prediction === 'moon' ? 80 : 50,
+      defaultBetAmount: 10,
+      defaultDuration: 30
+    };
+    
+    window.dispatchEvent(
+      new CustomEvent('predictionSelected', { detail: eventData })
+    );
+  };
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -823,4 +838,3 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
-

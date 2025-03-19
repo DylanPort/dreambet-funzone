@@ -26,7 +26,7 @@ export interface Bet {
 
 export enum SolanaContractPrediction {
   Migrate = 0,
-  Die = 1,
+  Dust = 1, // Changed from "Die" to "Dust"
   Up = 2,
   Down = 3,
 }
