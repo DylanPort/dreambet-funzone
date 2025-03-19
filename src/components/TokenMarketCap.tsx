@@ -198,16 +198,21 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
         )}
       </div>
       <div className="absolute top-2 right-2 flex items-center gap-2">
-        <RefreshCcw 
-          className={`w-4 h-4 text-dream-accent2/70 ${refreshing ? 'animate-spin' : ''}`} 
-          title="Updates every second"
-        />
+        <div className="relative group">
+          <RefreshCcw 
+            className={`w-4 h-4 text-dream-accent2/70 ${refreshing ? 'animate-spin' : ''}`} 
+            aria-label="Updates every second"
+          />
+          <span className="absolute -top-8 right-0 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+            Updates every second
+          </span>
+        </div>
         <a 
           href={`https://pumpfun.io/token/${tokenId}`} 
           target="_blank" 
           rel="noopener noreferrer"
           className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
-          title="View on PumpFun"
+          aria-label="View on PumpFun"
         >
           <ExternalLink className="w-4 h-4" />
         </a>
