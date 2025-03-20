@@ -39,7 +39,7 @@ export const searchTokenFromSolanaTracker = async (query: string): Promise<{
     
     // Make request to Solana Tracker API
     // Note: In production, this API key should be kept secure on a backend server
-    const API_KEY = "YOUR_SOLANA_TRACKER_API_KEY"; // Replace with your actual API key
+    const API_KEY = "3f5cbb18-8d2f-4a87-ae09-8555c243c705";
     
     const response = await fetch(`https://data.solanatracker.io/search?query=${encodeURIComponent(query)}`, {
       method: 'GET',
