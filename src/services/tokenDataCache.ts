@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 export interface TokenMetrics {
@@ -125,22 +124,42 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
     if (!data.pairs || data.pairs.length === 0) {
       console.log("No pairs found for token:", tokenId);
       
-      // Create a fallback metrics object with estimated values
-      // This allows bets to still be placed even when DexScreener data isn't available
-      const fallbackMetrics: TokenMetrics = {
-        marketCap: 1000, // Default to a small market cap value
-        volume24h: 0,
-        priceUsd: 0.000001, // Default to a small price
-        priceChange24h: 0,
-        liquidity: 0,
+      // Create a null metrics object - keep metrics as null to maintain loading state
+      // This prevents showing fallback values until the user is notified
+      const nullMetrics: TokenMetrics = {
+        marketCap: null,
+        volume24h: null,
+        priceUsd: null,
+        priceChange24h: null,
+        liquidity: null,
         timestamp: Date.now()
       };
       
-      // Save fallback data to cache
-      setCachedTokenMetrics(tokenId, fallbackMetrics);
+      // Save null data to cache temporarily
+      setCachedTokenMetrics(tokenId, nullMetrics);
       
-      console.log(`Using fallback data for token ${tokenId}:`, fallbackMetrics);
-      return fallbackMetrics;
+      console.log(`No data available for token ${tokenId}, keeping null values to maintain loading state`);
+      
+      // Show a toast about estimated data after a small delay
+      setTimeout(() => {
+        // Now create fallback metrics with estimated values
+        const fallbackMetrics: TokenMetrics = {
+          marketCap: 1000, // Default to a small market cap value
+          volume24h: 0,
+          priceUsd: 0.000001, // Default to a small price
+          priceChange24h: 0,
+          liquidity: 0,
+          timestamp: Date.now()
+        };
+        
+        // Update cache with fallback data
+        setCachedTokenMetrics(tokenId, fallbackMetrics);
+        
+        toast.info("Using estimated token data for bet placement");
+        console.log(`Using fallback data for token ${tokenId}:`, fallbackMetrics);
+      }, 1500);
+      
+      return nullMetrics;
     }
     
     // Sort pairs by liquidity to get the most liquid one
@@ -164,23 +183,38 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
   } catch (error) {
     console.error("Error fetching token metrics:", error);
     
-    // Instead of showing an error toast and returning null, create fallback metrics
-    const fallbackMetrics: TokenMetrics = {
-      marketCap: 1000, // Default to a small market cap value
-      volume24h: 0,
-      priceUsd: 0.000001, // Default to a small price
-      priceChange24h: 0,
-      liquidity: 0,
+    // Create a null metrics object first - keep metrics as null to maintain loading state
+    const nullMetrics: TokenMetrics = {
+      marketCap: null,
+      volume24h: null,
+      priceUsd: null,
+      priceChange24h: null,
+      liquidity: null,
       timestamp: Date.now()
     };
     
-    // Save fallback data to cache
-    setCachedTokenMetrics(tokenId, fallbackMetrics);
+    // Save null data to cache temporarily
+    setCachedTokenMetrics(tokenId, nullMetrics);
     
-    console.log(`Using fallback data after error for token ${tokenId}:`, fallbackMetrics);
-    toast.info("Using estimated token data for bet placement");
+    // After a delay, apply the fallback values
+    setTimeout(() => {
+      const fallbackMetrics: TokenMetrics = {
+        marketCap: 1000, // Default to a small market cap value
+        volume24h: 0,
+        priceUsd: 0.000001, // Default to a small price
+        priceChange24h: 0,
+        liquidity: 0,
+        timestamp: Date.now()
+      };
+      
+      // Update cache with fallback data
+      setCachedTokenMetrics(tokenId, fallbackMetrics);
+      
+      toast.info("Using estimated token data for bet placement");
+      console.log(`Using fallback data after error for token ${tokenId}:`, fallbackMetrics);
+    }, 1500);
     
-    return fallbackMetrics;
+    return nullMetrics;
   }
 };
 
