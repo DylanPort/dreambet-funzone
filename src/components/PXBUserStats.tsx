@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, UserCheck, Activity, Sparkles } from 'lucide-react';
@@ -110,7 +111,7 @@ const PXBUserStats = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold flex items-center">
             <Activity className="mr-2 h-5 w-5 text-dream-accent2/80" />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2/90 via-dream-accent1/90 to-dream-accent3/90 font-bold">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500 font-bold">
               PXB User Activity
             </span>
           </h2>
