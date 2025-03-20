@@ -14,6 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { fetchUserBets } from '@/api/mockData';
 import { Bet } from '@/types/bet';
+import PXBBetsList from '@/components/PXBBetsList';
+import PXBUserStats from '@/components/PXBUserStats';
 
 const Profile = () => {
   const {
@@ -38,7 +40,8 @@ const Profile = () => {
     userProfile,
     isLoading: pxbLoading,
     mintPoints,
-    fetchUserProfile: fetchPXBUserProfile
+    fetchUserProfile: fetchPXBUserProfile,
+    fetchUserBets: fetchPXBUserBets
   } = usePXBPoints();
   const [betsFilter, setBetsFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [isMintingPoints, setIsMintingPoints] = useState(false);
@@ -76,46 +79,6 @@ const Profile = () => {
     };
     loadUserData();
   }, [connected, publicKey]);
-  
-  const loadDetailedBets = async () => {
-    try {
-      setIsActiveBetsLoading(true);
-      if (connected && publicKey) {
-        console.log('Fetching bets for user:', publicKey.toString());
-        
-        const userBets = await fetchUserBets(publicKey.toString());
-        
-        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
-        let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
-        
-        localBets = localBets.filter(bet => bet.initiator === publicKey.toString());
-        
-        const allBets = [...userBets];
-        for (const localBet of localBets) {
-          const exists = allBets.some(
-            existingBet => existingBet.id === localBet.id || 
-            (existingBet.onChainBetId && localBet.onChainBetId && existingBet.onChainBetId === localBet.onChainBetId)
-          );
-          
-          if (!exists) {
-            allBets.push(localBet);
-          }
-        }
-        
-        setApiActiveBets(allBets);
-        
-        const activeCount = allBets.filter(bet => 
-          bet.status === 'open' || bet.status === 'matched'
-        ).length;
-      } else {
-        setApiActiveBets([]);
-      }
-    } catch (error) {
-      console.error('Error loading bets:', error);
-    } finally {
-      setIsActiveBetsLoading(false);
-    }
-  };
   
   useEffect(() => {
     const loadActiveBets = async () => {
@@ -217,6 +180,7 @@ const Profile = () => {
   useEffect(() => {
     if (connected && publicKey) {
       fetchPXBUserProfile();
+      fetchPXBUserBets();
     }
     if (connected && publicKey) {
       const walletAddress = publicKey.toString();
@@ -478,213 +442,219 @@ const Profile = () => {
         </div>
         
         {activeTab === 'history' && (
-          <div className="glass-panel p-6">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-4">
-                <h2 className="text-xl font-display font-semibold">Betting History</h2>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setMyBetsView('standard')} 
-                    className={`px-3 py-1 text-sm rounded ${myBetsView === 'standard' ? 'bg-dream-accent1 text-white' : 'bg-dream-background/30 text-dream-foreground/60'}`}
-                  >
-                    Simple
-                  </button>
-                  <button 
-                    onClick={() => setMyBetsView('detailed')} 
-                    className={`px-3 py-1 text-sm rounded ${myBetsView === 'detailed' ? 'bg-dream-accent1 text-white' : 'bg-dream-background/30 text-dream-foreground/60'}`}
-                  >
-                    Detailed
+          <div className="space-y-6">
+            <PXBUserStats />
+            
+            <PXBBetsList />
+            
+            <div className="glass-panel p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-display font-semibold">Solana Bets History</h2>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setMyBetsView('standard')} 
+                      className={`px-3 py-1 text-sm rounded ${myBetsView === 'standard' ? 'bg-dream-accent1 text-white' : 'bg-dream-background/30 text-dream-foreground/60'}`}
+                    >
+                      Simple
+                    </button>
+                    <button 
+                      onClick={() => setMyBetsView('detailed')} 
+                      className={`px-3 py-1 text-sm rounded ${myBetsView === 'detailed' ? 'bg-dream-accent1 text-white' : 'bg-dream-background/30 text-dream-foreground/60'}`}
+                    >
+                      Detailed
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {myBetsView === 'standard' ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setBetsFilter('all')} className={`px-2.5 py-1 text-sm rounded-full transition-colors ${betsFilter === 'all' ? 'bg-dream-accent1/20 text-dream-accent1 border border-dream-accent1/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
+                        All
+                      </button>
+                      <button onClick={() => setBetsFilter('active')} className={`px-2.5 py-1 text-sm rounded-full transition-colors flex items-center ${betsFilter === 'active' ? 'bg-dream-accent2/20 text-dream-accent2 border border-dream-accent2/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
+                        <Activity className="w-3 h-3 mr-1" />
+                        Active
+                        {activeBets.length > 0 && (
+                          <span className="ml-1 bg-dream-accent2/30 text-dream-accent2 text-xs px-1.5 rounded-full">
+                            {activeBets.length}
+                          </span>
+                        )}
+                      </button>
+                      <button onClick={() => setBetsFilter('completed')} className={`px-2.5 py-1 text-sm rounded-full transition-colors ${betsFilter === 'completed' ? 'bg-green-500/20 text-green-400 border border-green-400/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
+                        Completed
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex overflow-x-auto p-1 gap-2">
+                      {['all', 'active', 'open', 'matched', 'completed', 'expired'].map(filter => (
+                        <motion.button
+                          key={filter}
+                          whileTap={{ scale: 0.97 }}
+                          whileHover={{ scale: 1.03 }}
+                          onClick={() => setActiveDetailFilter(filter)}
+                          className={`px-4 py-2 rounded-md whitespace-nowrap transition-all ${
+                            activeDetailFilter === filter
+                            ? 'bg-gradient-to-r from-dream-accent1 to-dream-accent2 text-white shadow-lg shadow-dream-accent1/20'
+                            : 'bg-dream-surface/50 text-dream-foreground/70 hover:bg-dream-surface'
+                          }`}
+                        >
+                          {filter === 'active' && <Activity className="w-3.5 h-3.5 inline mr-1" />}
+                          {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                        </motion.button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <button onClick={handleRefresh} className="p-1.5 rounded-full bg-dream-background/30 text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-background/50 transition-colors" title="Refresh bets">
+                    <RefreshCw className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                {myBetsView === 'standard' ? (
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => setBetsFilter('all')} className={`px-2.5 py-1 text-sm rounded-full transition-colors ${betsFilter === 'all' ? 'bg-dream-accent1/20 text-dream-accent1 border border-dream-accent1/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
-                      All
-                    </button>
-                    <button onClick={() => setBetsFilter('active')} className={`px-2.5 py-1 text-sm rounded-full transition-colors flex items-center ${betsFilter === 'active' ? 'bg-dream-accent2/20 text-dream-accent2 border border-dream-accent2/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
-                      <Activity className="w-3 h-3 mr-1" />
-                      Active
-                      {activeBets.length > 0 && (
-                        <span className="ml-1 bg-dream-accent2/30 text-dream-accent2 text-xs px-1.5 rounded-full">
-                          {activeBets.length}
-                        </span>
-                      )}
-                    </button>
-                    <button onClick={() => setBetsFilter('completed')} className={`px-2.5 py-1 text-sm rounded-full transition-colors ${betsFilter === 'completed' ? 'bg-green-500/20 text-green-400 border border-green-400/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
-                      Completed
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex overflow-x-auto p-1 gap-2">
-                    {['all', 'active', 'open', 'matched', 'completed', 'expired'].map(filter => (
-                      <motion.button
-                        key={filter}
-                        whileTap={{ scale: 0.97 }}
-                        whileHover={{ scale: 1.03 }}
-                        onClick={() => setActiveDetailFilter(filter)}
-                        className={`px-4 py-2 rounded-md whitespace-nowrap transition-all ${
-                          activeDetailFilter === filter
-                          ? 'bg-gradient-to-r from-dream-accent1 to-dream-accent2 text-white shadow-lg shadow-dream-accent1/20'
-                          : 'bg-dream-surface/50 text-dream-foreground/70 hover:bg-dream-surface'
-                        }`}
-                      >
-                        {filter === 'active' && <Activity className="w-3.5 h-3.5 inline mr-1" />}
-                        {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                      </motion.button>
-                    ))}
-                  </div>
-                )}
-                
-                <button onClick={handleRefresh} className="p-1.5 rounded-full bg-dream-background/30 text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-background/50 transition-colors" title="Refresh bets">
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            
-            {myBetsView === 'standard' ? (
-              <>
-                {betsFilter === 'active' && isActiveBetsLoading || betsFilter !== 'active' && isLoading ? (
-                  <div className="flex justify-center py-6">
-                    <div className="flex flex-col items-center">
-                      <div className="w-6 h-6 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin mb-3"></div>
-                      <p className="text-dream-foreground/70 text-sm">Loading bets...</p>
+              {myBetsView === 'standard' ? (
+                <>
+                  {betsFilter === 'active' && isActiveBetsLoading || betsFilter !== 'active' && isLoading ? (
+                    <div className="flex justify-center py-6">
+                      <div className="flex flex-col items-center">
+                        <div className="w-6 h-6 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin mb-3"></div>
+                        <p className="text-dream-foreground/70 text-sm">Loading bets...</p>
+                      </div>
                     </div>
-                  </div>
-                ) : filteredBets.length === 0 ? (
-                  <div className="text-center py-10 text-dream-foreground/60">
-                    <p>No {betsFilter === 'all' ? '' : betsFilter} bets found.</p>
-                    <Link to="/betting" className="mt-4 inline-block">
-                      <Button className="bg-dream-accent1 hover:bg-dream-accent1/80">
-                        Place Your First Bet
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-white/10">
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Token</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Date</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Prediction</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Amount</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Status</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Remaining</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Result</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredBets.map(bet => (
-                          <motion.tr 
-                            key={bet.id} 
-                            className={`border-b border-white/5 hover:bg-white/5 ${bet.isActive ? 'relative' : ''}`} 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            {bet.isActive && <div className="absolute left-0 top-0 h-full w-1 bg-dream-accent2/50"></div>}
-                            <td className="px-4 py-4">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
-                                  <span className="font-display font-bold text-sm">{bet.tokenSymbol.charAt(0)}</span>
+                  ) : filteredBets.length === 0 ? (
+                    <div className="text-center py-10 text-dream-foreground/60">
+                      <p>No {betsFilter === 'all' ? '' : betsFilter} Solana bets found.</p>
+                      <Link to="/betting" className="mt-4 inline-block">
+                        <Button className="bg-dream-accent1 hover:bg-dream-accent1/80">
+                          Place Your First Bet
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-white/10">
+                            <th className="px-4 py-3 text-left text-dream-foreground/60">Token</th>
+                            <th className="px-4 py-3 text-left text-dream-foreground/60">Date</th>
+                            <th className="px-4 py-3 text-left text-dream-foreground/60">Prediction</th>
+                            <th className="px-4 py-3 text-left text-dream-foreground/60">Amount</th>
+                            <th className="px-4 py-3 text-left text-dream-foreground/60">Status</th>
+                            <th className="px-4 py-3 text-left text-dream-foreground/60">Remaining</th>
+                            <th className="px-4 py-3 text-left text-dream-foreground/60">Result</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredBets.map(bet => (
+                            <motion.tr 
+                              key={bet.id} 
+                              className={`border-b border-white/5 hover:bg-white/5 ${bet.isActive ? 'relative' : ''}`} 
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              {bet.isActive && <div className="absolute left-0 top-0 h-full w-1 bg-dream-accent2/50"></div>}
+                              <td className="px-4 py-4">
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
+                                    <span className="font-display font-bold text-sm">{bet.tokenSymbol.charAt(0)}</span>
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">{bet.tokenName}</p>
+                                    <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-medium">{bet.tokenName}</p>
-                                  <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 text-dream-foreground/80">{formatDate(bet.date)}</td>
-                            <td className="px-4 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.prediction === 'moon' ? 'bg-dream-accent1/20 text-dream-accent1' : 'bg-dream-accent2/20 text-dream-accent2'}`}>
-                                {bet.prediction === 'moon' ? (
-                                  <>
-                                    <TrendingUp className="w-3 h-3 mr-1" />
-                                    Moon
-                                  </>
-                                ) : (
-                                  <>
-                                    <TrendingDown className="w-3 h-3 mr-1" />
-                                    Die
-                                  </>
-                                )}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-dream-foreground/80">{bet.amount} SOL</td>
-                            <td className="px-4 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.isActive ? 'bg-dream-accent2/20 text-dream-accent2' : bet.result === 'win' ? 'bg-green-500/20 text-green-500' : bet.result === 'loss' ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                                {bet.isActive ? 'Active' : bet.result === 'win' ? 'Win' : bet.result === 'loss' ? 'Loss' : 'Pending'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-dream-foreground/80">
-                              {bet.isActive && bet.expiresAt ? (
-                                <span className="text-sm text-dream-accent2/80">
-                                  {formatTimeRemaining(bet.expiresAt)}
+                              </td>
+                              <td className="px-4 py-4 text-dream-foreground/80">{formatDate(bet.date)}</td>
+                              <td className="px-4 py-4">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.prediction === 'moon' ? 'bg-dream-accent1/20 text-dream-accent1' : 'bg-dream-accent2/20 text-dream-accent2'}`}>
+                                  {bet.prediction === 'moon' ? (
+                                    <>
+                                      <TrendingUp className="w-3 h-3 mr-1" />
+                                      Moon
+                                    </>
+                                  ) : (
+                                    <>
+                                      <TrendingDown className="w-3 h-3 mr-1" />
+                                      Die
+                                    </>
+                                  )}
                                 </span>
+                              </td>
+                              <td className="px-4 py-4 text-dream-foreground/80">{bet.amount} SOL</td>
+                              <td className="px-4 py-4">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.isActive ? 'bg-dream-accent2/20 text-dream-accent2' : bet.result === 'win' ? 'bg-green-500/20 text-green-500' : bet.result === 'loss' ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                                  {bet.isActive ? 'Active' : bet.result === 'win' ? 'Win' : bet.result === 'loss' ? 'Loss' : 'Pending'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 text-dream-foreground/80">
+                                {bet.isActive && bet.expiresAt ? (
+                                  <span className="text-sm text-dream-accent2/80">
+                                    {formatTimeRemaining(bet.expiresAt)}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-dream-foreground/40">—</span>
+                                )}
+                              </td>
+                              <td className={`px-4 py-4 font-medium ${bet.profit > 0 ? 'text-green-400' : bet.profit < 0 ? 'text-red-400' : 'text-dream-foreground/40'}`}>
+                                {bet.profit > 0 ? `+${bet.profit.toFixed(2)} SOL` : bet.profit < 0 ? `${bet.profit.toFixed(2)} SOL` : '—'}
+                              </td>
+                            </motion.tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <AnimatePresence mode="wait">
+                  {filteredDetailedBets.length === 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="text-center py-10 text-dream-foreground/60"
+                    >
+                      <p>No {activeDetailFilter === 'all' ? '' : activeDetailFilter} bets found.</p>
+                      <Link to="/betting" className="mt-4 inline-block">
+                        <Button className="bg-dream-accent1 hover:bg-dream-accent1/80">
+                          Place Your First Bet
+                        </Button>
+                      </Link>
+                    </motion.div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {filteredDetailedBets.map((bet) => (
+                        <motion.div 
+                          key={bet.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`p-4 rounded-lg bg-gradient-to-r ${getBetStatusColor(bet.status)} border`}
+                        >
+                          <div className="flex justify-between mb-2">
+                            <span className="font-medium">{bet.tokenName || 'Unknown Token'}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-black/20">
+                              {bet.status}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm">Amount: {bet.amount || 0} SOL</span>
+                            <span className="text-sm">
+                              {bet.prediction === 'up' ? (
+                                <span className="flex items-center text-green-400"><ArrowUp className="w-3 h-3 mr-1" /> Up</span>
                               ) : (
-                                <span className="text-sm text-dream-foreground/40">—</span>
+                                <span className="flex items-center text-red-400"><ArrowDown className="w-3 h-3 mr-1" /> Down</span>
                               )}
-                            </td>
-                            <td className={`px-4 py-4 font-medium ${bet.profit > 0 ? 'text-green-400' : bet.profit < 0 ? 'text-red-400' : 'text-dream-foreground/40'}`}>
-                              {bet.profit > 0 ? `+${bet.profit.toFixed(2)} SOL` : bet.profit < 0 ? `${bet.profit.toFixed(2)} SOL` : '—'}
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            ) : (
-              <AnimatePresence mode="wait">
-                {filteredDetailedBets.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-10 text-dream-foreground/60"
-                  >
-                    <p>No {activeDetailFilter === 'all' ? '' : activeDetailFilter} bets found.</p>
-                    <Link to="/betting" className="mt-4 inline-block">
-                      <Button className="bg-dream-accent1 hover:bg-dream-accent1/80">
-                        Place Your First Bet
-                      </Button>
-                    </Link>
-                  </motion.div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filteredDetailedBets.map((bet) => (
-                      <motion.div 
-                        key={bet.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`p-4 rounded-lg bg-gradient-to-r ${getBetStatusColor(bet.status)} border`}
-                      >
-                        <div className="flex justify-between mb-2">
-                          <span className="font-medium">{bet.tokenName || 'Unknown Token'}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-black/20">
-                            {bet.status}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm">Amount: {bet.amount || 0} SOL</span>
-                          <span className="text-sm">
-                            {bet.prediction === 'up' ? (
-                              <span className="flex items-center text-green-400"><ArrowUp className="w-3 h-3 mr-1" /> Up</span>
-                            ) : (
-                              <span className="flex items-center text-red-400"><ArrowDown className="w-3 h-3 mr-1" /> Down</span>
-                            )}
-                          </span>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </AnimatePresence>
-            )}
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </AnimatePresence>
+              )}
+            </div>
           </div>
         )}
         
@@ -700,7 +670,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
-
-
-
