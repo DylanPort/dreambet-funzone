@@ -1,5 +1,6 @@
 
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SolanaTrackerTokenResponse {
   results?: {
@@ -14,7 +15,7 @@ interface SolanaTrackerTokenResponse {
 }
 
 /**
- * Fetch token data from Solana Tracker API
+ * Fetch token data from Solana Tracker API through a secure edge function
  */
 export const searchTokenFromSolanaTracker = async (query: string): Promise<{
   symbol: string;
@@ -37,52 +38,46 @@ export const searchTokenFromSolanaTracker = async (query: string): Promise<{
     
     console.log(`Searching for token on Solana Tracker: ${query}`);
     
-    // Make request to Solana Tracker API
-    // Note: In production, this API key should be kept secure on a backend server
-    const API_KEY = "3f5cbb18-8d2f-4a87-ae09-8555c243c705";
-    
-    const response = await fetch(`https://data.solanatracker.io/search?query=${encodeURIComponent(query)}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'x-api-key': API_KEY
-      },
+    // Call the edge function instead of directly calling the Solana Tracker API
+    const { data, error } = await supabase.functions.invoke("solana-tracker", {
+      body: { query: query.trim() }
     });
     
     // Clear loading toast
     toast.dismiss(loadingToastId);
     
-    // Handle different response status codes
-    if (response.status === 404) {
-      console.log(`Token not found on Solana Tracker: ${query}`);
-      toast.error("Token not found. Please try a different name or symbol.");
+    // Handle errors from the edge function
+    if (error) {
+      console.error("Edge function error:", error);
+      toast.error("Failed to search for token. Please try again later.");
       return null;
     }
     
-    if (response.status === 401 || response.status === 403) {
-      console.error("API key unauthorized or invalid");
-      toast.error("API authorization error. Please check your API key.");
+    // Handle error response from the edge function
+    if (data.error) {
+      console.error("Token search error:", data.error);
+      
+      if (data.error === "Token not found") {
+        toast.error("Token not found. Please try a different name or symbol.");
+      } else {
+        toast.error(`Error: ${data.error}`);
+      }
+      
       return null;
     }
     
-    if (!response.ok) {
-      console.error(`Solana Tracker API error: ${response.status} - ${response.statusText}`);
-      toast.error(`API error: ${response.status} - ${response.statusText}`);
-      return null;
-    }
-    
-    // Parse response
-    const data: SolanaTrackerTokenResponse = await response.json();
+    // Process the response data
+    const responseData = data as SolanaTrackerTokenResponse;
     
     // Validate response data
-    if (!data.results || data.results.length === 0) {
-      console.error("No tokens found:", data);
+    if (!responseData.results || responseData.results.length === 0) {
+      console.error("No tokens found:", responseData);
       toast.error("No tokens found matching your search.");
       return null;
     }
     
     // Use the first token result
-    const token = data.results[0];
+    const token = responseData.results[0];
     
     // Success! Token found
     console.log("Token found on Solana Tracker:", token);
