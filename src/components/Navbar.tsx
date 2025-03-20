@@ -92,12 +92,7 @@ const Navbar = () => {
                 <span>0 PXB</span>
               </div>}
             
-            {balance !== null && <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-green-400/70">
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img src="/lovable-uploads/c84c898e-0b87-4eae-9d58-bc815b9da555.png" alt="Wallet" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
-              </div>
-              <span>{balance.toFixed(2)} SOL</span>
-            </div>}
+            {balance !== null}
             
             <WalletConnectButton />
           </nav>
