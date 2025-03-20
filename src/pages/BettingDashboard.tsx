@@ -71,7 +71,7 @@ const BettingDashboard = () => {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] bg-dream-accent2/10 rounded-full blur-3xl"></div>
             
             <div className="relative z-10 text-center mb-8">
-              <h2 className="text-2xl sm:text-3xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3">
+              <h2 className="text-2xl sm:text-3xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-[#00ffe0] to-[#4b8ef3]">
                 Find Any Solana Token
               </h2>
               <p className="text-dream-foreground/60 mt-2 max-w-xl mx-auto">
