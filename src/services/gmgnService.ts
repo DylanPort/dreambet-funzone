@@ -1,144 +1,95 @@
 
-import { toast } from '@/hooks/use-toast';
+/**
+ * Service for interacting with the GMGN.cc API
+ */
 
-interface GMGNTokenData {
-  marketCap?: number;
-  volume24h?: number;
-  price?: number;
-  change24h?: number;
-}
+// Cache for chart URLs to avoid redundant calculations
+const chartUrlCache = new Map<string, { url: string, timestamp: number }>();
 
-interface GMGNChartResponse {
-  data: {
-    market_cap?: number;
-    volume_24h?: number;
-    price?: number;
-    price_change_24h?: number;
-    last_price?: number;
-  };
-}
-
-// Shorter cache expiry for more real-time data
-const CACHE_EXPIRY = 30 * 1000; // 30 seconds
-const tokenCache: Record<string, { data: GMGNTokenData; timestamp: number }> = {};
-
-export const fetchGMGNTokenData = async (tokenId: string): Promise<GMGNTokenData> => {
-  // Check cache first
-  if (tokenCache[tokenId] && Date.now() - tokenCache[tokenId].timestamp < CACHE_EXPIRY) {
-    return tokenCache[tokenId].data;
+/**
+ * Fetch a GMGN chart URL for a token
+ * @param tokenId The token mint address
+ * @param theme Chart theme (light or dark)
+ * @param interval Chart interval
+ * @returns The configured chart URL
+ */
+export const fetchGMGNChartUrl = (
+  tokenId: string,
+  theme: string = 'dark',
+  interval: string = '15'
+): string => {
+  const cacheKey = `${tokenId}-${theme}-${interval}`;
+  
+  // Check if we have a cached URL that's less than 5 minutes old
+  const cached = chartUrlCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+    return cached.url;
   }
+  
+  // Build a new URL
+  const url = `https://www.gmgn.cc/kline/sol/${tokenId}?theme=${theme}&interval=${interval}&send_price=true`;
+  
+  // Cache the URL
+  chartUrlCache.set(cacheKey, {
+    url,
+    timestamp: Date.now()
+  });
+  
+  return url;
+};
 
+/**
+ * Get the current price for a token from GMGN
+ * @param tokenId The token mint address
+ * @returns Promise resolving to the current price or null if not available
+ */
+export const fetchGMGNPrice = async (tokenId: string): Promise<number | null> => {
   try {
-    // Try using cors proxy for the GMGN chart data API
-    const corsProxyUrl = 'https://corsproxy.io/?';
-    const apiUrl = `https://www.gmgn.cc/api/token/sol/${tokenId}`;
-    const encodedApiUrl = encodeURIComponent(apiUrl);
-    
-    console.log(`Fetching GMGN data via CORS proxy: ${corsProxyUrl}${encodedApiUrl}`);
-    
-    const response = await fetch(`${corsProxyUrl}${encodedApiUrl}`);
+    const response = await fetch(`https://www.gmgn.cc/api/price/${tokenId}`);
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch token data: ${response.status}`);
+      throw new Error(`GMGN price fetch failed with status: ${response.status}`);
     }
     
-    const chartData = await response.json() as GMGNChartResponse;
-    console.log("Successfully fetched GMGN chart data:", chartData);
+    const data = await response.json();
+    if (data && data.price) {
+      return parseFloat(data.price);
+    }
     
-    // Extract relevant data
-    const tokenData: GMGNTokenData = {
-      marketCap: chartData.data?.market_cap,
-      volume24h: chartData.data?.volume_24h,
-      price: chartData.data?.price || chartData.data?.last_price,
-      change24h: chartData.data?.price_change_24h
-    };
-    
-    // Cache the result
-    tokenCache[tokenId] = {
-      data: tokenData,
-      timestamp: Date.now()
-    };
-    
-    return tokenData;
+    return null;
   } catch (error) {
-    console.error('Error fetching GMGN chart data:', error);
-    
-    // Try the original API as fallback with CORS proxy
-    try {
-      const corsProxyUrl = 'https://corsproxy.io/?';
-      const fallbackApiUrl = `https://api.gmgn.cc/v1/tokens/sol/${tokenId}`;
-      const encodedFallbackUrl = encodeURIComponent(fallbackApiUrl);
-      
-      console.log(`Attempting fallback GMGN API via CORS proxy: ${corsProxyUrl}${encodedFallbackUrl}`);
-      
-      const fallbackResponse = await fetch(`${corsProxyUrl}${encodedFallbackUrl}`);
-      
-      if (!fallbackResponse.ok) {
-        throw new Error(`Failed to fetch fallback token data: ${fallbackResponse.status}`);
-      }
-      
-      const data = await fallbackResponse.json();
-      console.log("Successfully fetched fallback GMGN data:", data);
-      
-      // Extract relevant data
-      const tokenData: GMGNTokenData = {
-        marketCap: data.marketCap || data.market_cap,
-        volume24h: data.volume24h || data.volume || data.volume_24h,
-        price: data.price || data.lastPrice || data.last_price,
-        change24h: data.priceChange24h || data.price_change_24h
-      };
-      
-      // Cache the result
-      tokenCache[tokenId] = {
-        data: tokenData,
-        timestamp: Date.now()
-      };
-      
-      return tokenData;
-    } catch (fallbackError) {
-      console.error('Error fetching fallback GMGN token data:', fallbackError);
-      
-      // Last resort - check if we have data from DexScreener in TokenDetail
-      // This is a temporary fallback, the data will be available in the next refresh
-      return {};
-    }
+    console.error('Error fetching GMGN price:', error);
+    return null;
   }
 };
 
-// Update token data in the background and trigger callback when done
-export const subscribeToGMGNTokenData = (
-  tokenId: string, 
-  callback: (data: GMGNTokenData) => void
-): (() => void) => {
-  let isActive = true;
-  let timeoutId: number | null = null;
-  
-  const fetchData = async () => {
-    if (!isActive) return;
-    
+/**
+ * Subscribe to price updates for a token
+ * @param tokenId The token mint address
+ * @param callback Function to call when a price update is received
+ * @returns Function to unsubscribe
+ */
+export const subscribeToGMGNPriceUpdates = (
+  tokenId: string,
+  callback: (price: number, change24h: number) => void
+): () => void => {
+  // Create event handler for receiving messages from the chart iframe
+  const handleMessage = (event: MessageEvent) => {
     try {
-      const data = await fetchGMGNTokenData(tokenId);
-      if (isActive && data) {
-        callback(data);
+      if (event.data && typeof event.data === 'string') {
+        const data = JSON.parse(event.data);
+        if (data.type === 'price_update' && data.price) {
+          callback(data.price, data.change || 0);
+        }
       }
     } catch (error) {
-      console.error('Error in GMGN subscription:', error);
-    }
-    
-    if (isActive) {
-      // More frequent polling for real-time updates
-      timeoutId = window.setTimeout(fetchData, 5000); // Poll every 5 seconds
+      console.error("Error handling GMGN price update:", error);
     }
   };
   
-  // Start fetching immediately
-  fetchData();
+  // Add event listener
+  window.addEventListener('message', handleMessage);
   
   // Return cleanup function
-  return () => {
-    isActive = false;
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId);
-    }
-  };
+  return () => window.removeEventListener('message', handleMessage);
 };
