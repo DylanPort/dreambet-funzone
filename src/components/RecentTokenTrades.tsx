@@ -193,7 +193,7 @@ const RecentTokenTrades: React.FC = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <div className="font-medium text-dream-foreground flex items-center gap-1">
-                      <span className="text-dream-accent2">{bet.tokenName}</span>
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">{bet.tokenName}</span>
                       <span className="text-xs text-dream-foreground/60">{bet.tokenSymbol}</span>
                     </div>
                     <div className="text-xs text-dream-foreground/60 flex items-center gap-2 mt-1">
