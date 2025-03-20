@@ -66,555 +66,1029 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   onSuccess,
   onCancel
 }) => {
-  const [selectedPrediction, setSelectedPrediction] = useState<BetPrediction>('moon');
-  const [percentageChange, setPercentageChange] = useState<number>(50);
-  const [betAmount, setBetAmount] = useState<number>(10);
-  const [duration, setDuration] = useState<number>(30);
+  const [amount, setAmount] = useState<string>('10');
+  const [prediction, setPrediction] = useState<BetPrediction | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showInfoDialog, setShowInfoDialog] = useState(false);
-  const [showCustomization, setShowCustomization] = useState(false);
-  const { connected } = useWallet();
-  const { placeBet, userProfile } = usePXBPoints();
-  const [marketCap, setMarketCap] = useState<number | null>(null);
-  const [isLoadingMarketCap, setIsLoadingMarketCap] = useState(true);
+  const [duration, setDuration] = useState<number>(30); // Default to 30 minutes
+  const [transactionStatus, setTransactionStatus] = useState<string>('');
+  const [isWalletReady, setIsWalletReady] = useState(false);
+  const [walletCheckingInProgress, setWalletCheckingInProgress] = useState(false);
+  const [checkAttempts, setCheckAttempts] = useState(0);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [tokenData, setTokenData] = useState<any>({
+    name: tokenName || "Unknown Token",
+    symbol: tokenSymbol || "UNKNOWN"
+  });
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [percentageChange, setPercentageChange] = useState<string>('10');
+  const [isConfirmOpen, setIsConfirmOpen] = useState<boolean>(false);
+  const [rewardMultiplier, setRewardMultiplier] = useState<number>(1);
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState<boolean>(false);
+  const [predictionImpact, setPredictionImpact] = useState<string>('');
+  const [showExplanations, setShowExplanations] = useState<boolean>(true);
+  const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(null);
+  const [isLoadingMarketCap, setIsLoadingMarketCap] = useState<boolean>(true);
   const [targetMarketCap, setTargetMarketCap] = useState<number | null>(null);
-  const [meetsMcapRequirements, setMeetsMcapRequirements] = useState(false);
+  const [meetsRequirements, setMeetsRequirements] = useState<boolean>(false);
 
-  // Listen for prediction selection from parent components (like TokenCard)
+  const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
+  const { userProfile, placeBet } = usePXBPoints();
+
+  const maxPointsAvailable = userProfile?.pxbPoints || 0;
+
   useEffect(() => {
-    const handlePredictionSelected = (event: CustomEvent) => {
-      if (event.detail) {
-        const { prediction, percentageChange, defaultBetAmount, defaultDuration } = event.detail;
-        setSelectedPrediction(prediction);
-        if (percentageChange) setPercentageChange(percentageChange);
-        if (defaultBetAmount) setBetAmount(defaultBetAmount);
-        if (defaultDuration) setDuration(defaultDuration);
-      }
-    };
+    if (token) {
+      setTokenData({
+        name: token.name || tokenName,
+        symbol: token.symbol || tokenSymbol
+      });
+    } else if (tokenId) {
+      setTokenData({
+        name: tokenName || "Unknown Token",
+        symbol: tokenSymbol || "UNKNOWN"
+      });
+    }
+  }, [token, tokenId, tokenName, tokenSymbol]);
 
-    window.addEventListener('predictionSelected', handlePredictionSelected as EventListener);
+  // Fetch the token's market cap from DexScreener
+  useEffect(() => {
+    setIsLoadingMarketCap(true);
     
-    return () => {
-      window.removeEventListener('predictionSelected', handlePredictionSelected as EventListener);
-    };
-  }, []);
-
-  // Subscribe to market cap updates
-  useEffect(() => {
-    const unsubscribe = subscribeToTokenMetric(tokenId, 'marketCap', (value) => {
-      if (value !== null) {
-        setMarketCap(value);
+    // Setup subscription to market cap updates
+    const unsubscribe = subscribeToTokenMetric(
+      tokenId,
+      'marketCap',
+      (value) => {
+        setCurrentMarketCap(value);
         setIsLoadingMarketCap(false);
         
-        // Check if token meets market cap requirements
-        const tokenMetrics: TokenMetrics = {
-          marketCap: value,
-          volume24h: null,
-          priceUsd: null,
-          priceChange24h: null,
-          liquidity: null,
-          timestamp: Date.now()
-        };
-        
-        const meetsRequirements = meetsMarketCapRequirements(tokenMetrics, selectedPrediction);
-        setMeetsMcapRequirements(meetsRequirements);
-        
-        // Calculate target market cap if requirements are met
-        if (meetsRequirements && value) {
-          const target = calculateTargetMarketCap(value, selectedPrediction, percentageChange);
-          setTargetMarketCap(target);
+        // Check if token meets requirements for the current prediction
+        if (prediction && value) {
+          const meets = meetsMarketCapRequirements(
+            { marketCap: value, volume24h: null, priceUsd: null, priceChange24h: null, liquidity: null, timestamp: Date.now() },
+            prediction === 'moon' ? 'moon' : 'die'
+          );
+          setMeetsRequirements(meets);
         }
+      }
+    );
+    
+    // Initial fetch to get immediate data
+    fetchTokenMetrics(tokenId).then(metrics => {
+      if (metrics) {
+        setCurrentMarketCap(metrics.marketCap);
+        setIsLoadingMarketCap(false);
       }
     });
     
     return () => {
       unsubscribe();
     };
-  }, [tokenId, selectedPrediction, percentageChange]);
-
-  // Recalculate target market cap when inputs change
+  }, [tokenId]);
+  
+  // Update requirements check when prediction changes
   useEffect(() => {
-    if (marketCap && meetsMcapRequirements) {
-      const target = calculateTargetMarketCap(marketCap, selectedPrediction, percentageChange);
-      setTargetMarketCap(target);
+    if (prediction && currentMarketCap) {
+      const meets = meetsMarketCapRequirements(
+        { marketCap: currentMarketCap, volume24h: null, priceUsd: null, priceChange24h: null, liquidity: null, timestamp: Date.now() },
+        prediction === 'moon' ? 'moon' : 'die'
+      );
+      setMeetsRequirements(meets);
+    } else {
+      setMeetsRequirements(false);
     }
-  }, [marketCap, selectedPrediction, percentageChange, meetsMcapRequirements]);
+  }, [prediction, currentMarketCap]);
 
-  // Initialize market cap on mount
+  // Calculate target market cap for bet
   useEffect(() => {
-    const initMarketCap = async () => {
-      setIsLoadingMarketCap(true);
-      try {
-        const metrics = await fetchTokenMetrics(tokenId);
-        if (metrics && metrics.marketCap !== null) {
-          setMarketCap(metrics.marketCap);
-          
-          // Check if token meets market cap requirements
-          const meetsRequirements = meetsMarketCapRequirements(metrics, selectedPrediction);
-          setMeetsMcapRequirements(meetsRequirements);
-          
-          // Calculate target market cap if requirements are met
-          if (meetsRequirements && metrics.marketCap) {
-            const target = calculateTargetMarketCap(metrics.marketCap, selectedPrediction, percentageChange);
-            setTargetMarketCap(target);
-          }
+    if (prediction && currentMarketCap && percentageChange) {
+      const percent = parseInt(percentageChange, 10);
+      if (!isNaN(percent) && percent > 0) {
+        const target = calculateTargetMarketCap(
+          currentMarketCap,
+          prediction === 'moon' ? 'moon' : 'die',
+          percent
+        );
+        setTargetMarketCap(target);
+      } else {
+        setTargetMarketCap(null);
+      }
+    } else {
+      setTargetMarketCap(null);
+    }
+  }, [prediction, currentMarketCap, percentageChange]);
+
+  useEffect(() => {
+    const handlePredictionSelected = (event: CustomEvent) => {
+      if (event.detail) {
+        const { prediction: predictionType, percentageChange: percent, defaultBetAmount, defaultDuration } = event.detail;
+        
+        setPrediction(predictionType as BetPrediction);
+        setPercentageChange(percent.toString());
+        
+        if (defaultBetAmount) {
+          setAmount(defaultBetAmount.toString());
         }
-      } catch (error) {
-        console.error("Error fetching initial market cap:", error);
-        toast.error("Couldn't fetch token market cap data");
-      } finally {
-        setIsLoadingMarketCap(false);
+        
+        if (defaultDuration) {
+          setDuration(defaultDuration);
+        }
+        
+        calculateMultiplier(percent);
       }
     };
-    
-    initMarketCap();
-  }, [tokenId, selectedPrediction]);
 
-  const handlePredictionChange = (prediction: BetPrediction) => {
-    setSelectedPrediction(prediction);
+    window.addEventListener('predictionSelected', handlePredictionSelected as EventListener);
+    return () => {
+      window.removeEventListener('predictionSelected', handlePredictionSelected as EventListener);
+    };
+  }, []);
+
+  const calculateMultiplier = (percent: number) => {
+    let multiplier = 1;
     
-    // Set default percentage based on prediction type
-    if (prediction === 'moon') {
-      setPercentageChange(80); // 80% increase for moon
-    } else {
-      setPercentageChange(50); // 50% decrease for die
+    if (percent >= 200) {
+      multiplier = 3;
+    } else if (percent >= 150) {
+      multiplier = 2;
+    } else if (percent >= 100) {
+      multiplier = 1.5;
     }
     
-    // Check if token meets requirements for the new prediction type
-    if (marketCap !== null) {
-      const tokenMetrics: TokenMetrics = {
-        marketCap,
-        volume24h: null,
-        priceUsd: null,
-        priceChange24h: null,
-        liquidity: null,
-        timestamp: Date.now()
-      };
-      
-      const meetsRequirements = meetsMarketCapRequirements(tokenMetrics, prediction);
-      setMeetsMcapRequirements(meetsRequirements);
-      
-      // Recalculate target market cap
-      if (meetsRequirements) {
-        const target = calculateTargetMarketCap(marketCap, prediction, prediction === 'moon' ? 80 : 50);
-        setTargetMarketCap(target);
+    setRewardMultiplier(multiplier);
+  };
+
+  useEffect(() => {
+    const percent = parseInt(percentageChange, 10);
+    if (!isNaN(percent)) {
+      calculateMultiplier(percent);
+    }
+  }, [percentageChange]);
+
+  useEffect(() => {
+    const minPercent = prediction === 'moon' ? 80 : prediction === 'die' ? 50 : 0;
+    const currentPercent = parseInt(percentageChange, 10);
+    
+    if (isNaN(currentPercent) || currentPercent < minPercent) {
+      setPercentageChange(minPercent.toString());
+    }
+  }, [prediction, percentageChange]);
+
+  useEffect(() => {
+    const handleWalletReady = (event: CustomEvent) => {
+      console.log("Received walletReady event", event.detail);
+      if (event.detail?.publicKey && publicKey?.toString() === event.detail.publicKey) {
+        console.log("✅ Setting wallet as ready from external event");
+        setIsWalletReady(true);
       }
-    }
-  };
+    };
 
-  const handlePercentageChange = (values: number[]) => {
-    const newPercentage = values[0];
-    setPercentageChange(newPercentage);
-    
-    // Recalculate target market cap
-    if (marketCap !== null && meetsMcapRequirements) {
-      const target = calculateTargetMarketCap(marketCap, selectedPrediction, newPercentage);
-      setTargetMarketCap(target);
-    }
-  };
+    window.addEventListener('walletReady', handleWalletReady as EventListener);
+    return () => {
+      window.removeEventListener('walletReady', handleWalletReady as EventListener);
+    };
+  }, [publicKey]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!connected) {
-      toast.error("Please connect your wallet to place a bet");
-      return;
-    }
-    
-    if (!userProfile) {
-      toast.error("Please sign in to place a bet");
-      return;
-    }
-    
-    if (userProfile.pxbPoints < betAmount) {
-      toast.error(`Insufficient PXB points. You need ${betAmount} points.`);
-      return;
-    }
-    
-    if (!meetsMcapRequirements) {
-      const minRequirement = selectedPrediction === 'moon' 
-        ? `$${MIN_MARKET_CAP_MOON.toLocaleString()}`
-        : `$${MIN_MARKET_CAP_DUST.toLocaleString()}`;
+  const verifyWalletConnection = useCallback(async () => {
+    if (connected && publicKey && wallet) {
+      try {
+        setWalletCheckingInProgress(true);
+        setLastError(null);
+        console.log("Verifying wallet connection in CreateBetForm...");
         
-      toast.error(`Token doesn't meet minimum market cap requirement of ${minRequirement}`);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const adapterState = {
+          connected: wallet?.adapter?.connected,
+          publicKey: wallet?.adapter?.publicKey?.toString(), 
+          name: wallet?.adapter?.name
+        };
+        
+        console.log("Wallet state:", {
+          connected,
+          publicKey: publicKey?.toString(),
+          walletAdapter: wallet?.adapter?.name,
+          adapterPublicKey: wallet?.adapter?.publicKey?.toString(),
+          adapterConnected: wallet?.adapter?.connected
+        });
+        
+        if (wallet.adapter.publicKey && 
+            wallet.adapter.publicKey.toString() === publicKey.toString() &&
+            wallet.adapter.connected) {
+            
+          console.log("✅ Wallet successfully verified - Ready for transactions");
+          setIsWalletReady(true);
+          return true;
+        } else {
+          console.warn("⚠️ Wallet not fully ready");
+          setLastError("Wallet missing public key");
+          setIsWalletReady(false);
+          return false;
+        }
+      } catch (error) {
+        console.error("Error verifying wallet:", error);
+        setIsWalletReady(false);
+        setLastError("Error checking wallet status");
+        return false;
+      } finally {
+        setWalletCheckingInProgress(false);
+      }
+    } else {
+      console.log("Wallet not ready, missing basics:", {
+        connected,
+        hasPublicKey: !!publicKey,
+        hasWallet: !!wallet
+      });
+      setIsWalletReady(false);
+      setLastError(connected ? "Wallet missing required properties" : "Wallet not connected");
+      return false;
+    }
+  }, [connected, publicKey, wallet]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      verifyWalletConnection();
+    }, 1000);
+    
+    return () => clearTimeout(timeoutId);
+  }, [verifyWalletConnection, connected, publicKey, wallet, checkAttempts]);
+
+  useEffect(() => {
+    const initialCheckTimeout = setTimeout(() => {
+      if (connected && publicKey && !isWalletReady) {
+        console.log("Performing initial wallet verification check on page load");
+        verifyWalletConnection();
+      }
+    }, 2000);
+    
+    const secondaryCheckTimeout = setTimeout(() => {
+      if (connected && publicKey && !isWalletReady) {
+        console.log("Performing secondary wallet verification check with longer delay");
+        verifyWalletConnection();
+      }
+    }, 5000);
+    
+    return () => {
+      clearTimeout(initialCheckTimeout);
+      clearTimeout(secondaryCheckTimeout);
+    };
+  }, [connected, publicKey, isWalletReady, verifyWalletConnection]);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, '');
+    
+    const numValue = parseInt(value || '0', 10);
+    if (numValue > maxPointsAvailable) {
+      setAmount(maxPointsAvailable.toString());
+    } else {
+      setAmount(value);
+    }
+  };
+
+  const handlePercentageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, '');
+    
+    const numValue = parseInt(value || '0', 10);
+    const minPercent = prediction === 'moon' ? 80 : prediction === 'die' ? 50 : 0;
+    
+    if (numValue < minPercent && numValue !== 0) {
+      setPercentageChange(minPercent.toString());
+    } else if (numValue > 1000) {
+      setPercentageChange('1000');
+    } else {
+      setPercentageChange(value);
+      calculateMultiplier(numValue);
+    }
+  };
+
+  const handleDurationChange = (value: number[]) => {
+    setDuration(value[0]);
+  };
+
+  const handleRetryWalletConnection = async () => {
+    try {
+      console.log("Forcing wallet disconnect/reconnect");
+      if (disconnect) {
+        await disconnect();
+        toast("Reconnect wallet", {
+          description: "Please reconnect your wallet to continue",
+        });
+      }
+    } catch (error) {
+      console.error("Error disconnecting wallet:", error);
+    }
+  };
+
+  const handleCheckWalletAgain = () => {
+    setCheckAttempts(prev => prev + 1);
+    toast("Checking wallet connection", {
+      description: "Verifying your wallet connection status...",
+    });
+    
+    setTimeout(() => {
+      const forcedCheck = async () => {
+        if (wallet && wallet.adapter) {
+          try {
+            await wallet.adapter.connect();
+            console.log("Forced wallet adapter reconnect");
+          } catch (err) {
+            console.warn("Failed to force reconnect, continuing with verification", err);
+          }
+        }
+        verifyWalletConnection();
+      };
+      forcedCheck();
+    }, 300);
+  };
+
+  const handleOpenConfirmation = async () => {
+    if (!userProfile) {
+      toast.error('Please connect your wallet and mint PXB Points first');
+      return;
+    }
+
+    const isWalletVerified = await verifyWalletConnection();
+    
+    if (!isWalletVerified) {
+      toast.error(lastError || "Please ensure your wallet is fully connected and try again");
+      return;
+    }
+
+    if (!prediction) {
+      toast.error("Please choose whether the token will MOON or DIE");
+      return;
+    }
+
+    if (!percentageChange || parseInt(percentageChange, 10) <= 0) {
+      toast.error("Please enter a valid percentage change prediction");
+      return;
+    }
+
+    const amountValue = parseInt(amount, 10);
+    if (isNaN(amountValue) || amountValue <= 0) {
+      toast.error("Please enter a valid bet amount");
+      return;
+    }
+
+    if (amountValue > maxPointsAvailable) {
+      toast.error(`You only have ${maxPointsAvailable} PXB Points available to bet`);
       return;
     }
     
+    // Check if token meets minimum market cap requirements
+    if (!meetsRequirements) {
+      const minRequirement = prediction === 'moon' ? MIN_MARKET_CAP_MOON : MIN_MARKET_CAP_DUST;
+      toast.error(`Token must have minimum market cap of $${minRequirement.toLocaleString()} for ${prediction === 'moon' ? 'MOON' : 'DUST'} bets`);
+      return;
+    }
+
+    setIsConfirmOpen(true);
+  };
+
+  const handleCreateBet = async () => {
     try {
       setIsSubmitting(true);
+      setTransactionStatus('Preparing bet...');
+      
+      const amountValue = parseInt(amount, 10);
+      
+      console.log(`Creating bet with: 
+        token: ${tokenId} (${tokenData.name})
+        wallet: ${publicKey?.toString()}
+        amount: ${amountValue} PXB Points
+        prediction: ${prediction}
+        percentage: ${percentageChange}%
+        duration: ${duration} minutes
+        current market cap: $${currentMarketCap}
+        target market cap: $${targetMarketCap}
+      `);
+      
+      setTransactionStatus('Processing your bet...');
+      
+      const betType = prediction === 'moon' ? 'up' : 'down';
       
       await placeBet(
         tokenId,
-        tokenName,
-        tokenSymbol,
-        betAmount,
-        selectedPrediction,
-        percentageChange,
+        tokenData.name,
+        tokenData.symbol,
+        amountValue,
+        betType,
+        parseInt(percentageChange, 10),
         duration
       );
       
-      toast.success("Bet placed successfully!");
-      onBetCreated();
+      setTransactionStatus('Bet placed successfully!');
+      setSuccessMessage(`Your ${amountValue} PXB Points bet that ${tokenData.symbol} will ${prediction} by ${percentageChange}% is now live!`);
       
-      if (onSuccess) {
-        onSuccess();
+      toast.success(`Bet created successfully! ${amountValue} PXB Points that ${tokenData.symbol} will ${prediction} by ${percentageChange}%`);
+      
+      setTimeout(() => {
+        setAmount('10');
+        setPrediction(null);
+        setPercentageChange('10');
+        setDuration(30);
+        setTransactionStatus('');
+        setSuccessMessage(null);
+        
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          onBetCreated();
+        }
+      }, 3000);
+      
+    } catch (error: any) {
+      console.error('Error creating bet:', error);
+      setTransactionStatus('');
+      setSuccessMessage(null);
+      
+      let errorMessage = "Something went wrong with placing your bet.";
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       }
-    } catch (error) {
-      console.error("Error placing bet:", error);
-      toast.error("Failed to place bet. Please try again.");
+      
+      toast.error(`Failed to create bet: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
+      setIsConfirmOpen(false);
     }
   };
 
-  const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
+  const calculatePotentialReward = useCallback(() => {
+    const amountValue = parseInt(amount, 10);
+    if (!isNaN(amountValue) && rewardMultiplier) {
+      return amountValue * 2 * rewardMultiplier;
     }
-  };
+    return 0;
+  }, [amount, rewardMultiplier]);
 
-  const formatLargeNumber = (num: number) => {
-    if (num >= 1000000000) {
-      return `$${(num / 1000000000).toFixed(2)}B`;
-    }
-    if (num >= 1000000) {
-      return `$${(num / 1000000).toFixed(2)}M`;
-    }
-    if (num >= 1000) {
-      return `$${(num / 1000).toFixed(2)}K`;
-    }
-    return `$${num.toLocaleString()}`;
-  };
-
-  const refreshMarketCap = async () => {
-    setIsLoadingMarketCap(true);
-    try {
-      const metrics = await fetchTokenMetrics(tokenId);
-      if (metrics && metrics.marketCap !== null) {
-        setMarketCap(metrics.marketCap);
-        
-        // Check if token meets market cap requirements
-        const meetsRequirements = meetsMarketCapRequirements(metrics, selectedPrediction);
-        setMeetsMcapRequirements(meetsRequirements);
-        
-        // Recalculate target market cap
-        if (meetsRequirements && metrics.marketCap) {
-          const target = calculateTargetMarketCap(metrics.marketCap, selectedPrediction, percentageChange);
-          setTargetMarketCap(target);
-        }
-        
-        toast.success("Market cap data refreshed");
+  useEffect(() => {
+    if (prediction === 'moon') {
+      const percent = parseInt(percentageChange, 10);
+      if (percent >= 200) {
+        setPredictionImpact('Extremely ambitious prediction! High risk, high reward.');
+      } else if (percent >= 150) {
+        setPredictionImpact('Very ambitious prediction with good multiplier.');
+      } else if (percent >= 100) {
+        setPredictionImpact('Solid prediction with decent multiplier.');
+      } else {
+        setPredictionImpact('Standard moon prediction.');
       }
-    } catch (error) {
-      console.error("Error refreshing market cap:", error);
-      toast.error("Failed to refresh market cap data");
-    } finally {
-      setIsLoadingMarketCap(false);
+    } else if (prediction === 'die') {
+      const percent = parseInt(percentageChange, 10);
+      if (percent >= 80) {
+        setPredictionImpact('Extremely bearish prediction! High risk.');
+      } else if (percent >= 70) {
+        setPredictionImpact('Very bearish prediction.');
+      } else if (percent >= 60) {
+        setPredictionImpact('Significant drop prediction.');
+      } else {
+        setPredictionImpact('Standard die prediction.');
+      }
+    } else {
+      setPredictionImpact('');
+    }
+  }, [prediction, percentageChange]);
+
+  const showExtraWalletReconnectOption = connected && publicKey && wallet && !isWalletReady && !walletCheckingInProgress;
+
+  // Format market cap for display
+  const formatMarketCap = (value: number | null): string => {
+    if (value === null) return "Loading...";
+    
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(2)}M`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(2)}K`;
+    } else {
+      return `$${value.toFixed(2)}`;
     }
   };
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-display font-semibold flex items-center">
-            Place Bet on {tokenSymbol}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => setShowInfoDialog(true)} 
-                    className="ml-2 text-dream-foreground/50 hover:text-dream-foreground"
-                  >
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="w-64">Get more info about betting</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </h3>
-          <p className="text-sm text-dream-foreground/60">
-            Bet against the house and win up to 2x your points
-          </p>
-        </div>
-
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={refreshMarketCap}
-          disabled={isLoadingMarketCap}
-        >
-          <RefreshCw size={16} className={isLoadingMarketCap ? 'animate-spin' : ''} />
-        </Button>
+    <div className="glass-panel p-6 space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-display font-semibold">Create a New Bet</h3>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-dream-foreground/70 hover:bg-dream-foreground/10"
+                onClick={() => setShowExplanations(!showExplanations)}
+              >
+                {showExplanations ? <Info className="h-4 w-4" /> : <HelpCircle className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {showExplanations ? "Hide explanations" : "Show explanations"}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
-
+      
       {/* Market Cap Display */}
-      <div className="flex justify-between items-center p-3 border border-dream-foreground/10 rounded-md bg-dream-foreground/5">
-        <div>
-          <div className="text-sm text-dream-foreground/70">Current Market Cap</div>
-          <div className="text-lg font-semibold">
-            {isLoadingMarketCap ? (
-              <div className="animate-pulse">Loading...</div>
-            ) : marketCap !== null ? (
-              formatLargeNumber(marketCap)
-            ) : (
-              "Not available"
-            )}
-          </div>
+      <div className="mb-2 p-3 bg-dream-background/60 rounded-md border border-dream-foreground/10">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-dream-foreground/70">Current Market Cap:</span>
+          <span className={`font-semibold ${isLoadingMarketCap ? 'text-dream-foreground/50 animate-pulse' : 'text-dream-accent2'}`}>
+            {isLoadingMarketCap ? "Loading..." : formatMarketCap(currentMarketCap)}
+          </span>
         </div>
         
-        {targetMarketCap !== null && meetsMcapRequirements && (
-          <div>
-            <div className="text-sm text-dream-foreground/70">
-              Target for {selectedPrediction === 'moon' ? 'Win' : 'Dust'}
-            </div>
-            <div className={`text-lg font-semibold ${selectedPrediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
-              {formatLargeNumber(targetMarketCap)}
-            </div>
+        {targetMarketCap !== null && prediction && (
+          <div className="flex justify-between items-center mt-1">
+            <span className="text-sm text-dream-foreground/70">Target Market Cap:</span>
+            <span className={`font-semibold ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+              {formatMarketCap(targetMarketCap)}
+            </span>
+          </div>
+        )}
+        
+        {prediction && !meetsRequirements && currentMarketCap !== null && (
+          <div className="mt-2 p-2 bg-red-500/20 rounded text-xs text-red-400">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+              Market cap too low for {prediction === 'moon' ? 'MOON' : 'DUST'} bet. 
+              Need minimum ${prediction === 'moon' ? MIN_MARKET_CAP_MOON.toLocaleString() : MIN_MARKET_CAP_DUST.toLocaleString()}
+            </span>
           </div>
         )}
       </div>
+      
+      <div className="flex justify-around py-2">
+        <div 
+          className={`relative group cursor-pointer transition-all duration-300 ${prediction === 'moon' ? 'scale-110' : 'hover:scale-105'}`}
+          onClick={() => {
+            setPrediction('moon');
+            setPercentageChange('80');
+            calculateMultiplier(80);
+          }}
+        >
+          <div className={`absolute inset-0 rounded-full ${prediction === 'moon' ? 'bg-gradient-to-r from-purple-500/20 via-cyan-400/30 to-pink-500/40 animate-pulse-slow' : 'bg-transparent'}`}></div>
+          <img 
+            src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
+            alt="MOON" 
+            className={`w-16 h-16 transition-transform duration-300 filter ${prediction === 'moon' ? 'drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]' : ''}`}
+          />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/0 via-cyan-400/20 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold ${prediction === 'moon' ? 'text-cyan-400' : 'bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent'}`}>MOON</span>
+        </div>
+        
+        <div 
+          className={`relative group cursor-pointer transition-all duration-300 ${prediction === 'die' ? 'scale-110' : 'hover:scale-105'}`}
+          onClick={() => {
+            setPrediction('die');
+            setPercentageChange('50');
+            calculateMultiplier(50);
+          }}
+        >
+          <div className={`absolute inset-0 rounded-full ${prediction === 'die' ? 'bg-gradient-to-r from-blue-500/20 via-cyan-400/30 to-magenta-500/40 animate-pulse-slow' : 'bg-transparent'}`}></div>
+          <img 
+            src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
+            alt="DUST" 
+            className={`w-16 h-16 transition-transform duration-300 filter ${prediction === 'die' ? 'drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]' : ''}`}
+          />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/0 via-cyan-400/20 to-magenta-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold ${prediction === 'die' ? 'text-cyan-400' : 'bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent'}`}>DUST</span>
+        </div>
+      </div>
+      
+      <Collapsible open={isHowItWorksOpen} onOpenChange={setIsHowItWorksOpen} className="mb-4">
+        <CollapsibleTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full flex justify-between bg-dream-surface/40 border-dream-foreground/20 text-dream-foreground/70"
+          >
+            <span className="flex items-center gap-2">
+              <HelpCircle className="h-4 w-4" />
+              How PXB Betting Works
+            </span>
+            <span className="text-xs">{isHowItWorksOpen ? "Hide" : "Show"}</span>
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2 space-y-2 animate-accordion-down">
+          <Card className="bg-dream-surface/40 border-dream-foreground/20">
+            <CardContent className="pt-4 pb-2 px-4">
+              <div className="space-y-3 text-sm">
+                <div className="flex gap-2 items-start">
+                  <div className="bg-dream-accent2/20 p-1 rounded-full">
+                    <Coins className="h-4 w-4 text-dream-accent2" />
+                  </div>
+                  <p><span className="font-semibold">Place Bets with PXB Points</span><br />
+                  Use your PXB Points to bet on whether tokens will moon (increase) or die (decrease).</p>
+                </div>
+                
+                <div className="flex gap-2 items-start">
+                  <div className="bg-dream-accent2/20 p-1 rounded-full">
+                    <TrendingUp className="h-4 w-4 text-green-400" />
+                  </div>
+                  <p><span className="font-semibold">MOON Predictions</span><br />
+                  Predict the token will increase by at least 80%. Higher percentage predictions earn higher multipliers.<br />
+                  <span className="text-xs text-dream-accent2">Minimum market cap: ${MIN_MARKET_CAP_MOON.toLocaleString()}</span></p>
+                </div>
+                
+                <div className="flex gap-2 items-start">
+                  <div className="bg-dream-accent2/20 p-1 rounded-full">
+                    <TrendingDown className="h-4 w-4 text-red-400" />
+                  </div>
+                  <p><span className="font-semibold">DIE Predictions</span><br />
+                  Predict the token will decrease by at least 50%. Higher percentage predictions earn higher multipliers.<br />
+                  <span className="text-xs text-dream-accent2">Minimum market cap: ${MIN_MARKET_CAP_DUST.toLocaleString()}</span></p>
+                </div>
+                
+                <div className="flex gap-2 items-start">
+                  <div className="bg-dream-accent2/20 p-1 rounded-full">
+                    <Clock className="h-4 w-4 text-dream-accent2" />
+                  </div>
+                  <p><span className="font-semibold">Time-based Bets</span><br />
+                  Set a duration between 10-60 minutes. Your prediction must come true within this timeframe to win.</p>
+                </div>
 
-      {/* Market Cap Requirements Warning */}
-      {!meetsMcapRequirements && marketCap !== null && (
-        <div className="p-3 border border-red-500/30 rounded-md bg-red-500/10 text-red-300 text-sm">
-          <p className="flex items-center">
-            <HelpCircle size={16} className="mr-2" />
-            This token doesn't meet minimum market cap requirements:
-          </p>
-          <ul className="list-disc ml-6 mt-1">
-            <li>Moon bets: Minimum ${MIN_MARKET_CAP_MOON.toLocaleString()} market cap</li>
-            <li>Die bets: Minimum ${MIN_MARKET_CAP_DUST.toLocaleString()} market cap</li>
-          </ul>
+                <div className="flex gap-2 items-start">
+                  <div className="bg-green-500/20 p-1 rounded-full">
+                    <ArrowUp className="h-4 w-4 text-green-400" />
+                  </div>
+                  <p><span className="font-semibold">Reward Multipliers</span><br />
+                  <span className="text-green-400">1.5x</span> for 100-149% changes<br />
+                  <span className="text-green-400">2x</span> for 150-199% changes<br />
+                  <span className="text-green-400">3x</span> for 200%+ changes</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
+      
+      {successMessage && (
+        <div className="p-3 bg-green-500/20 border border-green-500/40 rounded-md animate-pulse-slow">
+          <div className="flex items-center text-green-400">
+            <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+            <p>{successMessage}</p>
+          </div>
         </div>
       )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Moon/Die selection */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <button 
-            type="button"
-            className={`btn-moon ${selectedPrediction === 'moon' ? 'ring-2 ring-green-400 animate-pulse-slow text-white' : 'text-white/80'} py-6 flex items-center justify-center gap-2 relative overflow-hidden`}
-            onClick={() => handlePredictionChange('moon')}
-          >
-            {selectedPrediction === 'moon' && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-400/20 to-transparent animate-scan-line"></div>
-            )}
-            <div className="flex flex-col items-center justify-center relative z-10">
-              <Sparkles className="w-8 h-8 mb-2" />
-              <span className="text-lg font-semibold">Moon</span>
-              <span className="text-xs text-dream-foreground/70 mt-1">Token goes up 📈</span>
-            </div>
-          </button>
-          
-          <button 
-            type="button"
-            className={`btn-die ${selectedPrediction === 'die' ? 'ring-2 ring-red-400 animate-pulse-slow text-white' : 'text-white/80'} py-6 flex items-center justify-center gap-2 relative overflow-hidden`}
-            onClick={() => handlePredictionChange('die')}
-          >
-            {selectedPrediction === 'die' && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/20 to-transparent animate-scan-line"></div>
-            )}
-            <div className="flex flex-col items-center justify-center relative z-10">
-              <Moon className="w-8 h-8 mb-2" />
-              <span className="text-lg font-semibold">Die</span>
-              <span className="text-xs text-dream-foreground/70 mt-1">Token goes down 📉</span>
-            </div>
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <Collapsible
-            open={showCustomization}
-            onOpenChange={setShowCustomization}
-            className="space-y-2"
-          >
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="outline"
-                className="flex justify-between w-full"
+      
+      {showExtraWalletReconnectOption && (
+        <div className="p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-md">
+          <div className="flex flex-col items-center text-sm">
+            <p className="text-yellow-400 flex items-center mb-2">
+              <span className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
+              Wallet appears connected but not ready for transactions
+              {lastError && <span className="ml-1 opacity-70">({lastError})</span>}
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleRetryWalletConnection}
+                className="text-xs"
               >
-                <span>Customize Bet</span>
-                <span className="text-dream-accent2">{showCustomization ? '▲ Less' : '▼ More'}</span>
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Reconnect Wallet
               </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4">
-              {/* Percentage change slider */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="percentageChange" className="text-sm text-dream-foreground/70">
-                    {selectedPrediction === 'moon' ? 'Price Increase Target' : 'Price Decrease Target'}
-                  </label>
-                  <span className="text-sm font-medium">{percentageChange}%</span>
-                </div>
-                <Slider
-                  id="percentageChange"
-                  min={selectedPrediction === 'moon' ? 20 : 20}
-                  max={selectedPrediction === 'moon' ? 200 : 90}
-                  step={5}
-                  value={[percentageChange]}
-                  onValueChange={handlePercentageChange}
-                  className={`${selectedPrediction === 'moon' ? 'moon-slider' : 'die-slider'}`}
-                  disabled={!meetsMcapRequirements}
-                />
-                <div className="flex justify-between text-xs text-dream-foreground/50">
-                  <span>{selectedPrediction === 'moon' ? '20%' : '20%'}</span>
-                  <span>{selectedPrediction === 'moon' ? '200%' : '90%'}</span>
-                </div>
-              </div>
-
-              {/* Duration selection */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="duration" className="text-sm text-dream-foreground/70">
-                    Time to Achieve Target
-                  </label>
-                  <span className="text-sm font-medium">{duration} days</span>
-                </div>
-                <Slider
-                  id="duration"
-                  min={1}
-                  max={60}
-                  step={1}
-                  value={[duration]}
-                  onValueChange={(values) => setDuration(values[0])}
-                  className="timeline-slider"
-                  disabled={!meetsMcapRequirements}
-                />
-                <div className="flex justify-between text-xs text-dream-foreground/50">
-                  <span>1 day</span>
-                  <span>60 days</span>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Bet amount */}
-          <div className="space-y-2">
-            <label htmlFor="betAmount" className="text-sm text-dream-foreground/70 flex items-center">
-              <Coins size={14} className="mr-1" />
-              Bet Amount
-            </label>
-            <div className="relative">
-              <Input
-                id="betAmount"
-                type="number"
-                min="10"
-                max={userProfile?.pxbPoints || 1000}
-                value={betAmount}
-                onChange={(e) => setBetAmount(parseInt(e.target.value))}
-                className="pr-16"
-                disabled={!meetsMcapRequirements}
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center px-3 text-sm text-dream-foreground/70">
-                PXB
-              </div>
-            </div>
-            <div className="text-xs text-dream-foreground/50 flex justify-between">
-              <span>Min: 10 PXB</span>
-              <span>Available: {userProfile?.pxbPoints || 0} PXB</span>
+              <Button 
+                size="sm" 
+                variant="secondary" 
+                onClick={handleCheckWalletAgain}
+                className="text-xs"
+              >
+                Check Again
+              </Button>
             </div>
           </div>
-
-          {/* Win amount calculation */}
-          <div className="p-3 border border-dream-foreground/10 rounded-md bg-dream-foreground/5 flex justify-between">
-            <span className="text-sm text-dream-foreground/70">Potential Win</span>
-            <span className="font-medium text-dream-accent2">
-              {(betAmount * 2).toLocaleString()} PXB
+        </div>
+      )}
+      
+      <div>
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm text-dream-foreground/70">
+            Percentage Change Prediction {prediction === 'moon' ? '(min 80%)' : prediction === 'die' ? '(min 50%)' : ''}
+          </label>
+          {showExplanations && prediction && (
+            <span className={`text-xs animate-fade-in ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+              {prediction === 'moon' ? 'Price increases by' : 'Price decreases by'}
             </span>
+          )}
+        </div>
+        <div className="relative group">
+          <Input
+            type="text"
+            value={percentageChange}
+            onChange={handlePercentageChange}
+            className={`w-full p-3 bg-black/30 border ${
+              prediction 
+                ? (prediction === 'moon' 
+                  ? 'border-green-500/30 focus-visible:border-green-500/60 focus-visible:ring-green-500/30' 
+                  : 'border-red-500/30 focus-visible:border-red-500/60 focus-visible:ring-red-500/30') 
+                : 'border-dream-foreground/20'
+            } rounded-md focus:outline-none focus-visible:border-dream-accent2/50 backdrop-blur-lg`}
+          />
+          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dream-foreground/50">
+            %
+          </span>
+          <div className={`absolute inset-0 -z-10 opacity-0 group-hover:opacity-30 transition-opacity duration-300 pointer-events-none ${
+            prediction === 'moon' 
+              ? 'bg-gradient-to-r from-green-500/10 to-dream-accent2/10' 
+              : prediction === 'die' 
+                ? 'bg-gradient-to-r from-red-500/10 to-dream-accent3/10' 
+                : 'bg-gradient-to-r from-dream-accent1/10 to-dream-accent3/10'
+          } rounded-md filter blur-sm`}></div>
+        </div>
+        {showExplanations && (
+          <>
+            <div className="flex justify-between items-center mt-1">
+              <p className="text-xs text-dream-foreground/50">
+                Predict how much the market cap will {prediction === 'moon' ? 'increase' : prediction === 'die' ? 'decrease' : 'change'} by
+              </p>
+              {rewardMultiplier > 1 && (
+                <span className="text-xs bg-dream-accent2/20 text-dream-accent2 px-2 py-0.5 rounded-full animate-pulse-slow">
+                  {rewardMultiplier}x multiplier
+                </span>
+              )}
+            </div>
+            {predictionImpact && (
+              <p className="text-xs mt-1 animate-fade-in italic text-dream-foreground/70">
+                {predictionImpact}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+      
+      <div>
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm text-dream-foreground/70">
+            Bet Amount (PXB Points)
+          </label>
+          {showExplanations && (
+            <span className="text-xs text-dream-foreground/50">
+              Balance: {maxPointsAvailable} PXB
+            </span>
+          )}
+        </div>
+        <div className="relative group">
+          <Input
+            type="text"
+            value={amount}
+            onChange={handleAmountChange}
+            className="w-full p-3 bg-black/30 border border-dream-foreground/20 rounded-md focus:outline-none backdrop-blur-lg"
+          />
+          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dream-foreground/50">
+            PXB
+          </span>
+          <div className="absolute inset-0 -z-10 opacity-0 group-hover:opacity-30 transition-opacity duration-300 pointer-events-none bg-gradient-to-r from-dream-accent2/10 to-dream-accent1/10 rounded-md filter blur-sm"></div>
+        </div>
+        {showExplanations && (
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-xs text-dream-foreground/50">
+              Min: 1 PXB | Max: {maxPointsAvailable} PXB
+            </p>
+            {parseInt(amount, 10) > 0 && (
+              <p className="text-xs text-green-400">
+                Potential win: {calculatePotentialReward()} PXB
+              </p>
+            )}
           </div>
-
-          {/* Submit and Cancel buttons */}
-          <div className="flex space-x-2">
-            <Button
-              type="submit"
-              className="flex-1 text-black font-semibold bg-dream-accent2 hover:bg-dream-accent2/80 disabled:bg-dream-accent2/50"
-              disabled={isSubmitting || !connected || !meetsMcapRequirements}
-            >
-              {isSubmitting ? (
+        )}
+      </div>
+      
+      <div>
+        <label className="flex items-center text-sm text-dream-foreground/70 mb-2">
+          <Clock className="w-4 h-4 mr-1" />
+          Bet Duration: <span className="ml-2 font-semibold">{duration} minutes</span>
+        </label>
+        <Slider
+          value={[duration]}
+          min={10}
+          max={60}
+          step={5}
+          onValueChange={(val) => setDuration(val[0])}
+          className="py-4"
+        />
+        <div className="flex justify-between text-xs text-dream-foreground/50 mt-1">
+          <span>10m</span>
+          <span>30m</span>
+          <span>60m</span>
+        </div>
+        {showExplanations && (
+          <p className="text-xs text-dream-foreground/50 mt-1 italic">
+            Your prediction must come true within this timeframe to win
+          </p>
+        )}
+      </div>
+      
+      {prediction && (
+        <div className={`p-3 ${prediction === 'moon' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'} rounded-md animate-fade-in`}>
+          <div className="flex items-start gap-2">
+            <div className={`mt-0.5 ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+              {prediction === 'moon' ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+            </div>
+            <div>
+              <p className="text-sm text-dream-foreground/90">
+                You're betting <span className="font-semibold">{amount} PXB Points</span> that {tokenData.symbol} will 
+                <span className={prediction === 'moon' ? ' text-green-400 font-medium' : ' text-red-400 font-medium'}>
+                  {prediction === 'moon' ? ' increase' : ' decrease'} by {percentageChange}%
+                </span> within <span className="font-medium">{duration} minutes</span>.
+              </p>
+              {parseInt(amount, 10) > 0 && (
+                <div className="flex items-center mt-2 gap-1">
+                  <Coins className="h-4 w-4 text-dream-accent2" />
+                  <p className="text-sm">
+                    <span className="text-dream-foreground/70">If correct, you'll win </span>
+                    <span className="text-green-400 font-semibold">{calculatePotentialReward()} PXB Points</span>
+                    {rewardMultiplier > 1 && (
+                      <span className="text-dream-accent2 text-xs ml-1">(with {rewardMultiplier}x multiplier)</span>
+                    )}
+                  </p>
+                </div>
+              )}
+              
+              {targetMarketCap !== null && (
+                <div className="flex items-center mt-2 gap-1 bg-dream-foreground/10 p-2 rounded">
+                  <p className="text-xs">
+                    <span className="text-dream-foreground/70">You win when market cap reaches </span>
+                    <span className={`font-semibold ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatMarketCap(targetMarketCap)}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {transactionStatus && (
+        <div className="bg-dream-accent2/10 p-3 rounded-md">
+          <p className="flex items-center text-sm text-dream-accent2">
+            <div className="w-4 h-4 border-2 border-dream-accent2 border-t-transparent rounded-full animate-spin mr-2"></div>
+            {transactionStatus}
+          </p>
+        </div>
+      )}
+      
+      <div className="flex gap-3">
+        <Button
+          onClick={handleOpenConfirmation}
+          disabled={!isWalletReady || isSubmitting || !prediction || !amount || !percentageChange || walletCheckingInProgress || !!successMessage || !userProfile || !meetsRequirements}
+          className={`flex-1 ${prediction === 'moon' ? 'bg-gradient-to-r from-green-500 to-dream-accent2' : prediction === 'die' ? 'bg-gradient-to-r from-red-500 to-dream-accent3' : 'bg-gradient-to-r from-dream-accent1 to-dream-accent3'}`}
+        >
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-dream-foreground border-t-transparent rounded-full animate-spin"></div>
+              Placing Bet...
+            </span>
+          ) : successMessage ? (
+            "Bet Placed!"
+          ) : (
+            <>
+              {prediction === 'moon' ? (
+                <span className="flex items-center">
+                  <Sparkles className="w-4 h-4 mr-1" /> Place MOON Bet
+                </span>
+              ) : prediction === 'die' ? (
+                <span className="flex items-center">
+                  <Moon className="w-4 h-4 mr-1" /> Place DUST Bet
+                </span>
+              ) : (
+                "Place Bet"
+              )}
+            </>
+          )}
+        </Button>
+        
+        {onCancel && (
+          <Button 
+            variant="outline" 
+            onClick={onCancel}
+            className="flex-1"
+            disabled={isSubmitting || !!successMessage}
+          >
+            Cancel
+          </Button>
+        )}
+      </div>
+      
+      {!userProfile ? (
+        <div className="flex flex-col items-center text-sm p-3 bg-dream-surface/30 rounded-md">
+          <p className="text-dream-foreground/70">Connect your wallet and mint PXB Points to place bets</p>
+        </div>
+      ) : !isWalletReady && (
+        <div className="flex flex-col items-center text-sm p-3 bg-dream-surface/30 rounded-md">
+          {connecting ? (
+            <p className="text-yellow-400 flex items-center">
+              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse mr-2"></span>
+              Connecting wallet...
+            </p>
+          ) : !connected ? (
+            <p className="text-dream-foreground/70">Connect your wallet to create bets</p>
+          ) : walletCheckingInProgress ? (
+            <p className="text-yellow-400 flex items-center">
+              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse mr-2"></span>
+              Verifying wallet connection...
+            </p>
+          ) : (
+            <>
+              <p className="text-red-400 flex items-center mb-2">
+                <span className="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
+                Wallet not properly connected
+                {lastError && <span className="ml-1 opacity-70">({lastError})</span>}
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleRetryWalletConnection}
+                  className="text-xs"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Reconnect Wallet
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={handleCheckWalletAgain}
+                  className="text-xs"
+                >
+                  Check Again
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent className="bg-dream-background border border-dream-foreground/20">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-dream-foreground flex items-center gap-2">
+              {prediction === 'moon' ? (
                 <>
-                  <RefreshCw size={16} className="mr-2 animate-spin" />
-                  Placing Bet...
+                  <Sparkles className="w-5 h-5 text-green-400" /> 
+                  <span>Confirm Your MOON Bet</span>
                 </>
               ) : (
                 <>
-                  {selectedPrediction === 'moon' ? 'Bet on Moon' : 'Bet on Die'}
+                  <Moon className="w-5 h-5 text-red-400" /> 
+                  <span>Confirm Your DUST Bet</span>
                 </>
               )}
-            </Button>
-            
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-              >
-                Cancel
-              </Button>
-            )}
-          </div>
-        </div>
-      </form>
-
-      {/* Info Dialog */}
-      <AlertDialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-display">
-              How Betting Works
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <p>
-                Betting lets you wager PXB Points on whether a token's price will 
-                increase (Moon) or decrease (Die) by a certain percentage within a specified timeframe.
-              </p>
+            <AlertDialogDescription className="text-dream-foreground/70">
+              {`You are about to place a bet of ${amount} PXB Points that ${tokenData.symbol} will ${prediction} by ${percentageChange}% within ${duration} minutes.`}
               
-              <div className="space-y-2">
-                <h4 className="font-semibold text-dream-foreground">Bet Types:</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="bg-dream-foreground/5 p-2 rounded-md border border-green-500/20">
-                    <div className="flex items-center text-green-400 mb-1">
-                      <TrendingUp size={14} className="mr-1" />
-                      <strong>Moon Bet</strong>
-                    </div>
-                    <p className="text-dream-foreground/70">
-                      Wager that the token's market cap will increase by your specified percentage
-                    </p>
-                  </div>
-                  <div className="bg-dream-foreground/5 p-2 rounded-md border border-red-500/20">
-                    <div className="flex items-center text-red-400 mb-1">
-                      <TrendingDown size={14} className="mr-1" />
-                      <strong>Die Bet</strong>
-                    </div>
-                    <p className="text-dream-foreground/70">
-                      Wager that the token's market cap will decrease by your specified percentage
-                    </p>
-                  </div>
+              <div className="mt-4 p-3 bg-dream-foreground/10 rounded-md space-y-2">
+                <div className="flex justify-between">
+                  <p className="text-dream-foreground/90">Current Balance:</p>
+                  <p className="text-dream-foreground/90 font-medium">{maxPointsAvailable} PXB</p>
                 </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h4 className="font-semibold text-dream-foreground">Rewards:</h4>
-                <p className="text-dream-foreground/70 text-sm">
-                  If your prediction comes true within the specified timeframe, you win 
-                  2x your bet amount in PXB Points. If not, you lose your wagered points.
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <h4 className="font-semibold text-dream-foreground">Requirements:</h4>
-                <ul className="list-disc pl-5 text-sm text-dream-foreground/70 space-y-1">
-                  <li>Moon bets: Token must have at least ${MIN_MARKET_CAP_MOON.toLocaleString()} market cap</li>
-                  <li>Die bets: Token must have at least ${MIN_MARKET_CAP_DUST.toLocaleString()} market cap</li>
-                  <li>Minimum bet: 10 PXB Points</li>
-                </ul>
+                <div className="flex justify-between">
+                  <p className="text-dream-foreground/90">Amount to Bet:</p>
+                  <p className="text-red-400 font-medium">-{amount} PXB</p>
+                </div>
+                <div className="border-t border-dream-foreground/10 my-2"></div>
+                <div className="flex justify-between">
+                  <p className="text-dream-foreground/90">Remaining Balance:</p>
+                  <p className="text-dream-foreground/90 font-medium">{maxPointsAvailable - parseInt(amount, 10)} PXB</p>
+                </div>
+                <div className="flex justify-between mt-2 bg-dream-foreground/10 p-2 rounded">
+                  <p className="text-dream-foreground/90">Potential Reward:</p>
+                  <p className="text-green-400 font-medium">+{calculatePotentialReward()} PXB</p>
+                </div>
+                
+                {/* Market cap information in confirmation dialog */}
+                {currentMarketCap !== null && targetMarketCap !== null && (
+                  <div className="space-y-1 mt-3 pt-3 border-t border-dream-foreground/10">
+                    <div className="flex justify-between">
+                      <p className="text-dream-foreground/90">Current Market Cap:</p>
+                      <p className="text-dream-foreground/90 font-medium">{formatMarketCap(currentMarketCap)}</p>
+                    </div>
+                    <div className="flex justify-between">
+                      <p className="text-dream-foreground/90">Target Market Cap:</p>
+                      <p className={`font-medium ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+                        {formatMarketCap(targetMarketCap)}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction>Got it</AlertDialogAction>
+          <AlertDialogFooter className="flex space-x-2">
+            <AlertDialogCancel className="bg-dream-surface text-dream-foreground border-dream-foreground/20 hover:bg-dream-surface/80">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCreateBet} 
+              className={`${prediction === 'moon' ? 'bg-gradient-to-r from-green-500 to-dream-accent2' : 'bg-gradient-to-r from-red-500 to-dream-accent3'} text-white`}
+            >
+              Confirm & Place Bet
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
