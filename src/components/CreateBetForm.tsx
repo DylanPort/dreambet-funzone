@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown, Clock, RefreshCw, Info, TrendingUp, TrendingDown, Coins, HelpCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, RefreshCw, Info, TrendingUp, TrendingDown, Coins, HelpCircle, Sparkles, Moon } from 'lucide-react';
 import { toast } from 'sonner';
 import { BetPrediction } from '@/types/bet';
 import { Slider } from '@/components/ui/slider';
@@ -486,6 +486,44 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         </TooltipProvider>
       </div>
       
+      <div className="flex justify-around py-2">
+        <div 
+          className={`relative group cursor-pointer transition-all duration-300 ${prediction === 'moon' ? 'scale-110' : 'hover:scale-105'}`}
+          onClick={() => {
+            setPrediction('moon');
+            setPercentageChange('80');
+            calculateMultiplier(80);
+          }}
+        >
+          <div className={`absolute inset-0 rounded-full ${prediction === 'moon' ? 'bg-gradient-to-r from-purple-500/20 via-cyan-400/30 to-pink-500/40 animate-pulse-slow' : 'bg-transparent'}`}></div>
+          <img 
+            src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
+            alt="MOON" 
+            className={`w-16 h-16 transition-transform duration-300 filter ${prediction === 'moon' ? 'drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]' : ''}`}
+          />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/0 via-cyan-400/20 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold ${prediction === 'moon' ? 'text-cyan-400' : 'bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent'}`}>MOON</span>
+        </div>
+        
+        <div 
+          className={`relative group cursor-pointer transition-all duration-300 ${prediction === 'die' ? 'scale-110' : 'hover:scale-105'}`}
+          onClick={() => {
+            setPrediction('die');
+            setPercentageChange('50');
+            calculateMultiplier(50);
+          }}
+        >
+          <div className={`absolute inset-0 rounded-full ${prediction === 'die' ? 'bg-gradient-to-r from-blue-500/20 via-cyan-400/30 to-magenta-500/40 animate-pulse-slow' : 'bg-transparent'}`}></div>
+          <img 
+            src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
+            alt="DUST" 
+            className={`w-16 h-16 transition-transform duration-300 filter ${prediction === 'die' ? 'drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]' : ''}`}
+          />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/0 via-cyan-400/20 to-magenta-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold ${prediction === 'die' ? 'text-cyan-400' : 'bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent'}`}>DUST</span>
+        </div>
+      </div>
+      
       <Collapsible open={isHowItWorksOpen} onOpenChange={setIsHowItWorksOpen} className="mb-4">
         <CollapsibleTrigger asChild>
           <Button 
@@ -765,11 +803,11 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             <>
               {prediction === 'moon' ? (
                 <span className="flex items-center">
-                  <TrendingUp className="w-4 h-4 mr-1" /> Place MOON Bet
+                  <Sparkles className="w-4 h-4 mr-1" /> Place MOON Bet
                 </span>
               ) : prediction === 'die' ? (
                 <span className="flex items-center">
-                  <TrendingDown className="w-4 h-4 mr-1" /> Place DIE Bet
+                  <Moon className="w-4 h-4 mr-1" /> Place DUST Bet
                 </span>
               ) : (
                 "Place Bet"
@@ -845,13 +883,13 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             <AlertDialogTitle className="text-dream-foreground flex items-center gap-2">
               {prediction === 'moon' ? (
                 <>
-                  <TrendingUp className="w-5 h-5 text-green-400" /> 
+                  <Sparkles className="w-5 h-5 text-green-400" /> 
                   <span>Confirm Your MOON Bet</span>
                 </>
               ) : (
                 <>
-                  <TrendingDown className="w-5 h-5 text-red-400" /> 
-                  <span>Confirm Your DIE Bet</span>
+                  <Moon className="w-5 h-5 text-red-400" /> 
+                  <span>Confirm Your DUST Bet</span>
                 </>
               )}
             </AlertDialogTitle>
