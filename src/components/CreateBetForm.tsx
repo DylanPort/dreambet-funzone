@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -120,7 +119,11 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       'marketCap',
       (value) => {
         setCurrentMarketCap(value);
-        setIsLoadingMarketCap(false);
+        // Keep loading state for a short time even after data is fetched
+        // to ensure user sees the loading state
+        setTimeout(() => {
+          setIsLoadingMarketCap(false);
+        }, 500);
         
         // Check if token meets requirements for the current prediction
         if (prediction && value) {
@@ -137,7 +140,10 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     fetchTokenMetrics(tokenId).then(metrics => {
       if (metrics) {
         setCurrentMarketCap(metrics.marketCap);
-        setIsLoadingMarketCap(false);
+        // Still keep loading state for a short time
+        setTimeout(() => {
+          setIsLoadingMarketCap(false);
+        }, 500);
       }
     });
     
@@ -590,7 +596,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         </TooltipProvider>
       </div>
       
-      {/* Market Cap Display */}
+      {/* Market Cap Display - Always show loading animation until data is ready */}
       <div className="mb-2 p-3 bg-dream-background/60 rounded-md border border-dream-foreground/10">
         <div className="flex justify-between items-center">
           <span className="text-sm text-dream-foreground/70">Current Market Cap:</span>
@@ -603,12 +609,12 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
           <div className="flex justify-between items-center mt-1">
             <span className="text-sm text-dream-foreground/70">Target Market Cap:</span>
             <span className={`font-semibold ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
-              {formatMarketCap(targetMarketCap)}
+              {isLoadingMarketCap ? "Loading..." : formatMarketCap(targetMarketCap)}
             </span>
           </div>
         )}
         
-        {prediction && !meetsRequirements && currentMarketCap !== null && (
+        {prediction && !meetsRequirements && currentMarketCap !== null && !isLoadingMarketCap && (
           <div className="mt-2 p-2 bg-red-500/20 rounded text-xs text-red-400">
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-red-500 rounded-full"></span>
