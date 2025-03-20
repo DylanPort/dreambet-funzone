@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { formatDistanceToNow } from 'date-fns';
@@ -189,7 +188,7 @@ const OpenBetsList = () => {
             >
               <div className="flex flex-col space-y-2 w-full">
                 <div className="flex items-center justify-between">
-                  <div className="text-xl font-semibold text-dream-accent2">{token.symbol || 'Unknown'}</div>
+                  <div className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">{token.symbol || 'Unknown'}</div>
                   <div className="text-sm text-dream-foreground/60">
                     {token.name || 'Unknown Token'}
                   </div>
