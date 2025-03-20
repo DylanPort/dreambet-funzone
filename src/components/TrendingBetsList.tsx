@@ -168,8 +168,8 @@ const TrendingBetsList = () => {
       <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
         <div className="flex items-center justify-between mb-4">
           <CardTitle className="text-xl text-dream-foreground flex items-center gap-2">
-            <img src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" alt="Fire" className="h-10 w-10" />
-            <span>Trending Bets</span>
+            
+            <span>TRENDING BETS</span>
           </CardTitle>
           
           <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="text-xs bg-dream-background/40 border-dream-accent1/20 hover:bg-dream-background/60 hover:border-dream-accent1/40">
