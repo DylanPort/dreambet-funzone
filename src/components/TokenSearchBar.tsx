@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Loader2, ExternalLink, Sparkle, AlertCircle } from 'lucide-react';
@@ -24,13 +23,11 @@ const TokenSearchBar: React.FC = () => {
   
   // Function to validate Solana address format
   const isValidSolanaAddress = (address: string): boolean => {
-    // Basic validation - Solana addresses are usually 32-44 characters
-    return /^[A-HJ-NP-Za-km-z1-9]{32,44}$/.test(address.trim());
+    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address.trim());
   };
   
   // Handle search query
   const handleSearch = async () => {
-    // Clear previous results
     setToken(null);
     setError(null);
     
@@ -51,8 +48,7 @@ const TokenSearchBar: React.FC = () => {
     if (tokenData) {
       setToken(tokenData);
     } else {
-      // The error toast is handled in the service
-      setError("Token not found or error occurred");
+      setError("Token not found or error occurred. Please try a different address.");
     }
   };
   
@@ -87,7 +83,6 @@ const TokenSearchBar: React.FC = () => {
   // Effect to handle keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+K or Cmd+K to focus search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         if (inputRef.current) {
@@ -96,7 +91,6 @@ const TokenSearchBar: React.FC = () => {
         }
       }
       
-      // Escape to clear and blur
       if (e.key === 'Escape') {
         setIsFocused(false);
         clearSearch();
@@ -118,7 +112,6 @@ const TokenSearchBar: React.FC = () => {
           isFocused ? "shadow-[0_0_15px_rgba(116,66,255,0.4)]" : "shadow-none"
         )}
       >
-        {/* Animated background glow effect */}
         <div className={cn(
           "absolute inset-0 rounded-xl overflow-hidden transition-opacity duration-300",
           isFocused ? "opacity-100" : "opacity-0"
@@ -128,7 +121,6 @@ const TokenSearchBar: React.FC = () => {
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dream-accent1/50 to-transparent"></div>
         </div>
         
-        {/* Main input */}
         <div className="flex-1 relative flex items-center glass-panel border border-white/10 rounded-xl overflow-hidden">
           <Search className={cn(
             "absolute left-3 w-5 h-5 transition-all duration-300",
@@ -185,7 +177,6 @@ const TokenSearchBar: React.FC = () => {
         </motion.button>
       </div>
       
-      {/* Error message */}
       <AnimatePresence>
         {error && !token && (
           <motion.div
@@ -200,12 +191,10 @@ const TokenSearchBar: React.FC = () => {
         )}
       </AnimatePresence>
       
-      {/* Search keyboard shortcut indicator */}
       <div className="absolute right-24 top-4 text-xs text-dream-foreground/30">
         Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded-md">Ctrl</kbd>+<kbd className="px-1.5 py-0.5 bg-white/10 rounded-md">K</kbd>
       </div>
       
-      {/* Search results */}
       <AnimatePresence>
         {token && (
           <motion.div
