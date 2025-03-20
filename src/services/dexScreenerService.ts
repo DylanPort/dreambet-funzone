@@ -71,6 +71,9 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
   liquidity: number;
   priceUsd: number;
   priceChange24h: number;
+  // Note: We're not adding name and symbol to the return type
+  // as they should be accessed through baseToken in the response,
+  // not directly in the return object
 } | null> => {
   try {
     // Check cache first
@@ -104,7 +107,9 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
       volume24h: pair.volume?.h24 || 0,
       liquidity: pair.liquidity || 0,
       priceUsd: parseFloat(pair.priceUsd || '0'),
-      priceChange24h: pair.priceChange?.h24 || 0
+      priceChange24h: pair.priceChange?.h24 || 0,
+      // Store baseToken info in the cache but don't include in the typed return value
+      baseToken: pair.baseToken
     };
     
     // Save to cache

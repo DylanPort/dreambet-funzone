@@ -94,13 +94,12 @@ const TokenChart = ({
         <div 
           className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
           onClick={() => {
-            // Create custom event with moon prediction details
             const moonPredictionEvent = new CustomEvent('predictionSelected', {
               detail: {
                 prediction: 'moon',
-                percentageChange: 80, // Minimum 80% for moon predictions
-                defaultBetAmount: 10, // Default bet amount
-                defaultDuration: 30 // Default duration in minutes
+                percentageChange: 80,
+                defaultBetAmount: 10,
+                defaultDuration: 30
               }
             });
             window.dispatchEvent(moonPredictionEvent);
@@ -121,13 +120,12 @@ const TokenChart = ({
         <div 
           className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
           onClick={() => {
-            // Create custom event with dust prediction details
             const dustPredictionEvent = new CustomEvent('predictionSelected', {
               detail: {
                 prediction: 'die',
-                percentageChange: 50, // Minimum 50% for dust predictions
-                defaultBetAmount: 10, // Default bet amount
-                defaultDuration: 30 // Default duration in minutes
+                percentageChange: 50,
+                defaultBetAmount: 10,
+                defaultDuration: 30
               }
             });
             window.dispatchEvent(dustPredictionEvent);
@@ -330,21 +328,37 @@ const TokenDetail = () => {
         } 
         else if (id) {
           console.log("Creating placeholder for new token with ID:", id);
+          
+          let tokenName = "New Token";
+          let tokenSymbol = "";
+          
+          const dexScreenerData = await fetchDexScreenerData(id);
+          
+          if (dexScreenerData) {
+            console.log("Got DexScreener data for new token:", dexScreenerData);
+            
+            const baseTokenInfo = (dexScreenerData as any).baseToken;
+            if (baseTokenInfo) {
+              tokenName = baseTokenInfo.name || tokenName;
+              tokenSymbol = baseTokenInfo.symbol || tokenSymbol;
+            }
+            
+            setTokenMetrics({
+              marketCap: dexScreenerData.marketCap,
+              volume24h: dexScreenerData.volume24h,
+              liquidity: dexScreenerData.liquidity,
+              holders: 0
+            });
+          }
+          
           setToken({
             id: id,
-            name: "New Token",
-            symbol: "",
+            name: tokenName,
+            symbol: tokenSymbol,
             logo: '🪙',
-            currentPrice: 0,
-            change24h: 0,
+            currentPrice: dexScreenerData?.priceUsd || 0,
+            change24h: dexScreenerData?.priceChange24h || 0,
             migrationTime: new Date().getTime()
-          });
-          
-          setTokenMetrics({
-            marketCap: null,
-            volume24h: null,
-            liquidity: null,
-            holders: 0
           });
           
           if (pumpPortal.connected) {
@@ -358,7 +372,7 @@ const TokenDetail = () => {
             time.setMinutes(time.getMinutes() + i);
             initialData.push({
               time: time.toISOString(),
-              price: 0
+              price: dexScreenerData?.priceUsd || 0
             });
           }
           setPriceData(initialData);
@@ -517,8 +531,6 @@ const TokenDetail = () => {
         if (token && (!token.name || token.name === "New Token")) {
           setToken(current => ({
             ...current,
-            name: dexScreenerData.name || current?.name || "New Token",
-            symbol: dexScreenerData.symbol || current?.symbol || "",
             currentPrice: dexScreenerData.priceUsd || current?.currentPrice || 0,
             change24h: dexScreenerData.priceChange24h || current?.change24h || 0
           }));
