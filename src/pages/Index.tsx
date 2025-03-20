@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper } from 'lucide-react';
+import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
@@ -191,11 +191,13 @@ const Index = () => {
           </div>
           
           <div className="max-w-7xl mx-auto px-4 py-10">
-            <h2 className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-dream-accent1 to-dream-accent2 bg-clip-text text-transparent 
-                flex items-center justify-center gap-2 text-shadow-sm filter drop-shadow-[0_0_8px_rgba(255,61,252,0.3)]">
+            <h2 className="text-2xl font-bold text-center mb-8 
+                bg-gradient-to-r from-white via-green-300 to-blue-400 bg-clip-text text-transparent 
+                flex items-center justify-center gap-2 text-shadow-sm filter drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">
               <img src="/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png" alt="Crown" className="h-16 w-16" />
+              <Trophy className="h-6 w-6 text-green-300" />
               PXB Leaderboard & Statistics
-              
+              <BarChart3 className="h-6 w-6 text-blue-400" />
             </h2>
             
             <div className="glass-panel p-6 rounded-lg mb-8 py-[16px] my-[80px]">
