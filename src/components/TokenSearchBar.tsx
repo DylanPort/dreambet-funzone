@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Loader2, ExternalLink, Sparkle, AlertCircle } from 'lucide-react';
@@ -110,15 +111,15 @@ const TokenSearchBar: React.FC = () => {
           "absolute inset-0 rounded-xl overflow-hidden transition-opacity duration-300",
           isFocused ? "opacity-100" : "opacity-0"
         )}>
-          <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/10 via-dream-accent2/15 to-dream-accent3/10"></div>
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dream-accent2/50 to-transparent"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dream-accent1/50 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#FFFFFF]/10 via-[#33C3F0]/15 to-[#1EAEDB]/10"></div>
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#33C3F0]/50 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#1EAEDB]/50 to-transparent"></div>
         </div>
         
         <div className="flex-1 relative flex items-center glass-panel border border-white/10 rounded-xl overflow-hidden">
           <Search className={cn(
             "absolute left-3 w-5 h-5 transition-all duration-300",
-            isFocused ? "text-dream-accent2" : "text-dream-foreground/40"
+            isFocused ? "text-[#33C3F0]" : "text-dream-foreground/40"
           )} />
           
           <Input
@@ -150,24 +151,28 @@ const TokenSearchBar: React.FC = () => {
         
         <motion.button
           className={cn(
-            "ml-2 h-14 px-4 rounded-xl flex items-center justify-center gap-2 text-white transition-all",
+            "ml-2 h-14 px-4 rounded-xl flex items-center justify-center gap-2 text-white transition-all relative overflow-hidden",
             isSearching 
-              ? "bg-dream-accent2/50 cursor-not-allowed" 
-              : "bg-dream-accent2 hover:bg-dream-accent2/80"
+              ? "cursor-not-allowed" 
+              : "hover:shadow-[0_0_15px_rgba(30,174,219,0.4)]"
           )}
           onClick={handleSearch}
           disabled={isSearching}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
         >
-          {isSearching ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <>
-              <Sparkle className="w-5 h-5" />
-              <span>Find</span>
-            </>
-          )}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1EAEDB] via-[#33C3F0] to-[#F2FCE2] animate-gradient-move"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50"></div>
+          <div className="relative z-10 flex items-center justify-center gap-2">
+            {isSearching ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <Sparkle className="w-5 h-5" />
+                <span className="font-medium">Find</span>
+              </>
+            )}
+          </div>
         </motion.button>
       </div>
       
