@@ -159,8 +159,8 @@ const TrendingBetsList = () => {
         <div className="flex items-center gap-2 px-2">
           <div className="flex-shrink-0 px-3 py-1.5 bg-dream-accent3/40 rounded-lg flex items-center">
             <img 
-              src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
-              alt="Fire" 
+              src="/lovable-uploads/c123a80a-befd-4b55-b1b3-f3b1bdd6be5f.png" 
+              alt="Trending Star" 
               className="h-16 w-16 mr-1.5 animate-pulse" 
             />
             <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">TRENDING</span>
@@ -188,8 +188,8 @@ const TrendingBetsList = () => {
         <div className="flex items-center justify-between mb-4">
           <CardTitle className="text-xl text-dream-foreground flex items-center gap-2">
             <img 
-              src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
-              alt="Fire" 
+              src="/lovable-uploads/c123a80a-befd-4b55-b1b3-f3b1bdd6be5f.png" 
+              alt="Trending Star" 
               className="h-10 w-10" 
             />
             <span>Trending Tokens</span>
