@@ -1,8 +1,9 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Loader2, ExternalLink, Sparkle, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchTokenDataFromSolscan } from '@/services/solscanService';
+import { searchTokenFromSolanaTracker } from '@/services/solanaTrackerService';
 import { toast } from "sonner";
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -17,14 +18,11 @@ const TokenSearchBar: React.FC = () => {
     name: string;
     address: string;
     icon?: string;
+    liquidity?: number;
+    marketCap?: number;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
-  
-  // Function to validate Solana address format
-  const isValidSolanaAddress = (address: string): boolean => {
-    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address.trim());
-  };
   
   // Handle search query
   const handleSearch = async () => {
@@ -32,23 +30,18 @@ const TokenSearchBar: React.FC = () => {
     setError(null);
     
     if (!query.trim()) {
-      setError("Please enter a token address");
-      return;
-    }
-    
-    if (!isValidSolanaAddress(query.trim())) {
-      setError("Invalid Solana token address format");
+      setError("Please enter a token name or symbol");
       return;
     }
     
     setIsSearching(true);
-    const tokenData = await fetchTokenDataFromSolscan(query.trim());
+    const tokenData = await searchTokenFromSolanaTracker(query.trim());
     setIsSearching(false);
     
     if (tokenData) {
       setToken(tokenData);
     } else {
-      setError("Token not found or error occurred. Please try a different address.");
+      setError("Token not found or error occurred. Please try a different search term.");
     }
   };
   
@@ -133,7 +126,7 @@ const TokenSearchBar: React.FC = () => {
               "pl-10 pr-10 py-6 h-14 bg-transparent border-none focus-visible:ring-0 text-dream-foreground placeholder:text-dream-foreground/30",
               error ? "text-red-400" : ""
             )}
-            placeholder="Search any Solana token address..."
+            placeholder="Search for any Solana token by name or symbol..."
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -215,8 +208,18 @@ const TokenSearchBar: React.FC = () => {
                 )}
                 <div>
                   <h3 className="font-medium text-dream-foreground">{token.name || 'Unknown Token'}</h3>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                     <span className="text-sm text-dream-foreground/60">{token.symbol || '???'}</span>
+                    {token.marketCap && (
+                      <span className="text-xs text-dream-foreground/50">
+                        Market Cap: ${(token.marketCap / 1000000).toFixed(2)}M
+                      </span>
+                    )}
+                    {token.liquidity && (
+                      <span className="text-xs text-dream-foreground/50">
+                        Liquidity: ${(token.liquidity / 1000).toFixed(2)}K
+                      </span>
+                    )}
                     <a 
                       href={`https://solscan.io/token/${token.address}`} 
                       target="_blank" 
