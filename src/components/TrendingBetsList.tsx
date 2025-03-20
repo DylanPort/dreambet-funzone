@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -301,26 +300,23 @@ const TrendingBetsList = () => {
           <div className="relative">
             <button 
               onClick={scrollLeft} 
-              className="scroll-button scroll-button-left z-10"
+              className="scroll-button scroll-button-left z-10 absolute top-1/2 -translate-y-1/2 left-0 h-8 w-8 flex items-center justify-center bg-dream-background/50 hover:bg-dream-background/70 border border-dream-accent1/20 rounded-full"
               aria-label="Scroll left"
               type="button"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 text-dream-accent2" />
             </button>
             <button 
               onClick={scrollRight} 
-              className="scroll-button scroll-button-right z-10"
+              className="scroll-button scroll-button-right z-10 absolute top-1/2 -translate-y-1/2 right-0 h-8 w-8 flex items-center justify-center bg-dream-background/50 hover:bg-dream-background/70 border border-dream-accent1/20 rounded-full"
               aria-label="Scroll right"
               type="button"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 text-dream-accent2" />
             </button>
             
-            <ScrollArea className="w-full pb-4">
-              <div 
-                ref={scrollRef}
-                className="flex space-x-4 pb-2 px-1"
-              >
+            <div className="overflow-x-auto px-2 pb-4 scrollbar-hide" ref={scrollRef}>
+              <div className="flex space-x-4 pb-2">
                 {visibleTokens.map((token, index) => (
                   <Link 
                     key={`${token.token_mint}-${index}`} 
@@ -401,11 +397,11 @@ const TrendingBetsList = () => {
                   </Link>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         )}
         
-        {isMobile && (
+        {isMobile && trendingTokens.length > 5 && (
           <div className="flex justify-center mt-4">
             <Button 
               variant="outline" 
