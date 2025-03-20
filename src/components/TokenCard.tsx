@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame, Sparkles, Moon } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -52,6 +52,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
   const isPositive1h = priceChange1h ? priceChange1h >= 0 : true;
   const isPositive6h = priceChange6h ? priceChange6h >= 0 : true;
   const [selectedPrediction, setSelectedPrediction] = useState<'moon' | 'die' | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Format price with appropriate decimals
   const formatPrice = (price: number) => {
@@ -102,11 +103,16 @@ const TokenCard: React.FC<TokenCardProps> = ({
     window.dispatchEvent(
       new CustomEvent('predictionSelected', { detail: eventData })
     );
+    
+    // Automatically open dialog with the form
+    setDialogOpen(true);
   };
 
   // Handle dialog close
   const handleDialogClose = () => {
-    setSelectedPrediction(null);
+    setDialogOpen(false);
+    // Don't reset the selection when dialog closes
+    // so the visual indication stays
   };
 
   // Generate a more unique key by combining id with index if provided
@@ -138,6 +144,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="text-dream-foreground/40"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />
                 </a>
@@ -204,14 +211,21 @@ const TokenCard: React.FC<TokenCardProps> = ({
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Dialog>
+          <Dialog open={dialogOpen && selectedPrediction === 'moon'} onOpenChange={(open) => !open && handleDialogClose()}>
             <DialogTrigger onClick={(e) => {
               e.preventDefault(); // Prevent navigation
               handleBetSelection('moon');
             }} asChild>
-              <button className="btn-moon py-1.5 flex items-center justify-center gap-1">
-                <ArrowUp className="w-3.5 h-3.5" />
-                <span>Moon</span>
+              <button 
+                className={`btn-moon py-1.5 flex items-center justify-center gap-1 relative overflow-hidden ${selectedPrediction === 'moon' ? 'ring-2 ring-green-400 animate-pulse-slow' : ''}`}
+              >
+                {selectedPrediction === 'moon' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-400/20 to-transparent animate-scan-line"></div>
+                )}
+                <div className="flex items-center justify-center gap-1 relative z-10">
+                  {selectedPrediction === 'moon' ? <Sparkles className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />}
+                  <span>Moon</span>
+                </div>
               </button>
             </DialogTrigger>
             <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-3xl">
@@ -249,14 +263,21 @@ const TokenCard: React.FC<TokenCardProps> = ({
             </DialogContent>
           </Dialog>
 
-          <Dialog>
+          <Dialog open={dialogOpen && selectedPrediction === 'die'} onOpenChange={(open) => !open && handleDialogClose()}>
             <DialogTrigger onClick={(e) => {
               e.preventDefault(); // Prevent navigation
               handleBetSelection('die');
             }} asChild>
-              <button className="btn-die py-1.5 flex items-center justify-center gap-1">
-                <ArrowDown className="w-3.5 h-3.5" />
-                <span>Die</span>
+              <button 
+                className={`btn-die py-1.5 flex items-center justify-center gap-1 relative overflow-hidden ${selectedPrediction === 'die' ? 'ring-2 ring-red-400 animate-pulse-slow' : ''}`}
+              >
+                {selectedPrediction === 'die' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/20 to-transparent animate-scan-line"></div>
+                )}
+                <div className="flex items-center justify-center gap-1 relative z-10">
+                  {selectedPrediction === 'die' ? <Moon className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+                  <span>Die</span>
+                </div>
               </button>
             </DialogTrigger>
             <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-3xl">
@@ -300,4 +321,3 @@ const TokenCard: React.FC<TokenCardProps> = ({
 };
 
 export default TokenCard;
-
