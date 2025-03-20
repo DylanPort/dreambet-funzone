@@ -301,15 +301,17 @@ const TrendingBetsList = () => {
           <div className="relative">
             <button 
               onClick={scrollLeft} 
-              className="scroll-button scroll-button-left"
+              className="scroll-button scroll-button-left z-10"
               aria-label="Scroll left"
+              type="button"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button 
               onClick={scrollRight} 
-              className="scroll-button scroll-button-right"
+              className="scroll-button scroll-button-right z-10"
               aria-label="Scroll right"
+              type="button"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
