@@ -91,7 +91,7 @@ export const usePumpPortal = (tokenId?: string) => {
       };
     }
     
-    // Check raw tokens - Fix: Use 'mint' property instead of 'token_mint'
+    // Check raw tokens - Use 'mint' property instead of 'token_mint'
     const rawToken = pumpPortal.rawTokens?.find(t => t.mint === tokenId);
     if (rawToken) {
       return {
