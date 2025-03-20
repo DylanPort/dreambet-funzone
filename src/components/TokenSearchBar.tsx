@@ -234,13 +234,17 @@ const TokenSearchBar: React.FC = () => {
               </div>
               
               <motion.button
-                className="bg-dream-accent2 hover:bg-dream-accent2/80 px-4 py-2 rounded-lg text-white font-medium flex items-center gap-2"
+                className="relative overflow-hidden group/btn rounded-lg px-4 py-2 font-medium text-black shadow-lg border border-[#00ffe0]/30 before:absolute before:inset-0 before:bg-gradient-to-br before:from-[#00ffe0] before:to-[#00ffe0]/70 before:z-0 after:absolute after:inset-0 after:bg-[#00ffe0]/20 after:z-10 after:opacity-0 after:transition-opacity hover:after:opacity-100 shadow-[0_0_15px_rgba(0,255,224,0.5)] transform transition-all duration-300 hover:translate-y-[-2px] hover:shadow-[0_0_20px_rgba(0,255,224,0.7)]"
                 onClick={navigateToToken}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <span>Bet on this token</span>
-                <ExternalLink className="w-4 h-4" />
+                <span className="relative z-20 drop-shadow-sm flex items-center gap-2 font-bold">
+                  <span>Explore Token</span>
+                  <ExternalLink className="w-4 h-4" />
+                </span>
+                <div className="absolute inset-0 z-[5] bg-gradient-to-tr from-transparent via-white/10 to-white/30 opacity-50"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#00ffe0] opacity-70 z-30"></div>
               </motion.button>
             </div>
           </motion.div>
