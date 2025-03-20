@@ -76,11 +76,37 @@ serve(async (req) => {
       );
     }
     
-    // Return the response from Solana Tracker API
+    // Parse the response from Solana Tracker API
     const data = await response.json();
     
+    // Log the response for debugging
+    console.log("Solana Tracker API response:", JSON.stringify(data));
+    
+    // Normalize the response format to ensure consistent data structure
+    let normalizedData;
+    
+    if (data.results && Array.isArray(data.results)) {
+      // Already in the expected format
+      normalizedData = data;
+    } else if (data.data && Array.isArray(data.data)) {
+      // Convert to expected format
+      normalizedData = {
+        results: data.data.map(token => ({
+          name: token.name,
+          symbol: token.symbol,
+          mint: token.mint || token.address,
+          liquidity: token.liquidity,
+          marketCap: token.marketCap,
+          logo: token.logo
+        }))
+      };
+    } else {
+      // Unexpected format, return original
+      normalizedData = data;
+    }
+    
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(normalizedData),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

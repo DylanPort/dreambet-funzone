@@ -12,6 +12,16 @@ interface SolanaTrackerTokenResponse {
     logo?: string;
   }[];
   error?: string;
+  status?: string;
+  data?: {
+    name: string;
+    symbol: string;
+    mint: string;
+    liquidity?: number;
+    marketCap?: number;
+    logo?: string;
+  }[];
+  total?: number;
 }
 
 /**
@@ -66,18 +76,27 @@ export const searchTokenFromSolanaTracker = async (query: string): Promise<{
       return null;
     }
     
-    // Process the response data
+    // Process the response data - handle both formats
     const responseData = data as SolanaTrackerTokenResponse;
     
+    // Check if we have results in the expected format or in the data array
+    let tokenResults = responseData.results;
+    
+    // Handle alternative response format with data array
+    if (!tokenResults && responseData.data && responseData.data.length > 0) {
+      tokenResults = responseData.data;
+      console.log("Using data array for token results:", tokenResults);
+    }
+    
     // Validate response data
-    if (!responseData.results || responseData.results.length === 0) {
+    if (!tokenResults || tokenResults.length === 0) {
       console.error("No tokens found:", responseData);
       toast.error("No tokens found matching your search.");
       return null;
     }
     
     // Use the first token result
-    const token = responseData.results[0];
+    const token = tokenResults[0];
     
     // Success! Token found
     console.log("Token found on Solana Tracker:", token);
