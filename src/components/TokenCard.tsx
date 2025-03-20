@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame } from 'lucide-react';
@@ -50,7 +51,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
   const isPositive = priceChange >= 0;
   const isPositive1h = priceChange1h ? priceChange1h >= 0 : true;
   const isPositive6h = priceChange6h ? priceChange6h >= 0 : true;
-  const [selectedPrediction, setSelectedPrediction] = useState<'moon' | 'dust' | null>(null);
+  const [selectedPrediction, setSelectedPrediction] = useState<'moon' | 'die' | null>(null);
 
   // Format price with appropriate decimals
   const formatPrice = (price: number) => {
@@ -87,7 +88,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
   };
 
   // Custom bet dialog handler
-  const handleBetSelection = (type: 'moon' | 'dust') => {
+  const handleBetSelection = (type: 'moon' | 'die') => {
     setSelectedPrediction(type);
     
     // Dispatch prediction event for CreateBetForm to pick up
@@ -251,11 +252,11 @@ const TokenCard: React.FC<TokenCardProps> = ({
           <Dialog>
             <DialogTrigger onClick={(e) => {
               e.preventDefault(); // Prevent navigation
-              handleBetSelection('dust');
+              handleBetSelection('die');
             }} asChild>
               <button className="btn-die py-1.5 flex items-center justify-center gap-1">
                 <ArrowDown className="w-3.5 h-3.5" />
-                <span>Dust</span>
+                <span>Die</span>
               </button>
             </DialogTrigger>
             <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-3xl">
@@ -299,3 +300,4 @@ const TokenCard: React.FC<TokenCardProps> = ({
 };
 
 export default TokenCard;
+
