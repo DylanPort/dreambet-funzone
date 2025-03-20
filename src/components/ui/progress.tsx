@@ -19,20 +19,38 @@ const Progress = React.forwardRef<
     {/* Dynamic background shimmer effect */}
     <div className="absolute inset-0 bg-gradient-to-r from-black/5 via-white/5 to-black/5 animate-gradient-move"></div>
     
-    {/* Floating particles */}
+    {/* Floating particles - enhanced with more colors */}
     <div className="absolute inset-0 overflow-hidden">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div 
-          key={i}
-          className="absolute w-1 h-1 rounded-full bg-white/40 animate-float"
-          style={{ 
-            left: `${Math.random() * 100}%`, 
-            top: `${Math.random() * 100}%`,
-            animationDelay: `${i * 0.7}s`,
-            opacity: 0.2 + Math.random() * 0.4
-          }}
-        />
-      ))}
+      {Array.from({ length: 8 }).map((_, i) => {
+        // Array of vibrant colors for particles
+        const colors = [
+          "bg-[#00ff9d]/40", // Green
+          "bg-[#ff8a00]/40", // Orange
+          "bg-[#00ffe0]/40", // Cyan
+          "bg-[#ff3dfc]/40", // Pink
+          "bg-[#7b61ff]/40", // Purple
+          "bg-[#fffc00]/40", // Yellow
+          "bg-[#ff0055]/40", // Red
+          "bg-white/40",     // White
+        ];
+        
+        return (
+          <div 
+            key={i}
+            className={`absolute w-1 h-1 rounded-full ${colors[i % colors.length]} animate-float`}
+            style={{ 
+              left: `${Math.random() * 100}%`, 
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${i * 0.7}s`,
+              opacity: 0.2 + Math.random() * 0.5,
+              width: i % 3 === 0 ? '1.5px' : '1px',
+              height: i % 3 === 0 ? '1.5px' : '1px',
+              filter: `blur(${i % 2 === 0 ? '0.5px' : '0px'})`,
+              animationDuration: `${3 + Math.random() * 2}s`,
+            }}
+          />
+        );
+      })}
     </div>
     
     <ProgressPrimitive.Indicator
