@@ -223,7 +223,7 @@ const TrendingBetsList = () => {
                               <span className="text-sm font-bold text-white">{token.token_symbol.charAt(0)}</span>
                             </div>
                             <div>
-                              <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">
+                              <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">
                                 {token.token_symbol}
                               </div>
                               <div className="text-xs text-dream-foreground/60">{token.token_name}</div>
@@ -331,7 +331,7 @@ const TrendingBetsList = () => {
                             <span className="text-sm font-bold text-white">{token.token_symbol.charAt(0)}</span>
                           </div>
                           <div>
-                            <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">
+                            <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">
                               {token.token_symbol}
                             </div>
                             <div className="text-xs text-dream-foreground/60">{token.token_name}</div>
