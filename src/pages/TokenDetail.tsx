@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -56,7 +55,8 @@ const TokenChart = ({
   
   const chartUrl = `https://www.gmgn.cc/kline/sol/${tokenId}?theme=${chartTheme}&interval=${timeInterval}&send_price=true`;
   
-  return <div className="glass-panel p-6 mb-8">
+  return (
+    <div className="glass-panel p-6 mb-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-display font-bold">Price Chart</h2>
         <div className="flex gap-4">
@@ -145,7 +145,8 @@ const TokenChart = ({
           <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent">DUST</span>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 const TokenDetail = () => {
@@ -235,11 +236,7 @@ const TokenDetail = () => {
         try {
           const cachedPrice = localStorage.getItem(`token_price_${id}`);
           if (cachedPrice) {
-            const {
-              price,
-              change24h,
-              timestamp
-            } = JSON.parse(cachedPrice);
+            const { price, change24h, timestamp } = JSON.parse(cachedPrice);
             if (Date.now() - timestamp < 5 * 60 * 1000) {
               setToken(current => {
                 if (!current) return null;
@@ -254,10 +251,13 @@ const TokenDetail = () => {
         } catch (e) {
           console.error("Error loading cached price:", e);
         }
+        
         let tokenData = null;
         let isWebSocketToken = false;
+        
         const recentTokens = pumpPortal.recentTokens || [];
         const webSocketToken = recentTokens.find(t => t.token_mint === id);
+        
         if (webSocketToken) {
           console.log("Found token in WebSocket data:", webSocketToken);
           isWebSocketToken = true;
@@ -269,6 +269,7 @@ const TokenDetail = () => {
             last_updated_time: webSocketToken.created_time
           };
         }
+        
         if (!tokenData) {
           console.log("Checking Supabase for token");
           const supabaseTokenData = await fetchTokenById(id);
@@ -277,6 +278,7 @@ const TokenDetail = () => {
             tokenData = supabaseTokenData;
           }
         }
+        
         if (tokenData) {
           console.log("Setting token data:", tokenData);
           setToken({
@@ -288,12 +290,14 @@ const TokenDetail = () => {
             change24h: 0,
             migrationTime: new Date(tokenData.last_updated_time).getTime()
           });
+          
           setTokenMetrics({
             marketCap: null,
             volume24h: null,
             liquidity: null,
             holders: 0
           });
+          
           const dexScreenerData = await fetchDexScreenerData(tokenData.token_mint);
           if (dexScreenerData) {
             console.log("Got DexScreener data:", dexScreenerData);
@@ -304,9 +308,11 @@ const TokenDetail = () => {
               holders: tokenMetrics.holders
             });
           }
+          
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(id);
           }
+          
           const now = new Date();
           const initialData = [];
           for (let i = -30; i <= 0; i++) {
@@ -318,9 +324,11 @@ const TokenDetail = () => {
             });
           }
           setPriceData(initialData);
+          
           const tokenBets = await fetchBetsByToken(id);
           setBets(tokenBets);
-        } else if (id) {
+        } 
+        else if (id) {
           console.log("Creating placeholder for new token with ID:", id);
           setToken({
             id: id,
@@ -331,15 +339,18 @@ const TokenDetail = () => {
             change24h: 0,
             migrationTime: new Date().getTime()
           });
+          
           setTokenMetrics({
             marketCap: null,
             volume24h: null,
             liquidity: null,
             holders: 0
           });
+          
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(id);
           }
+          
           const now = new Date();
           const initialData = [];
           for (let i = -30; i <= 0; i++) {
@@ -351,6 +362,7 @@ const TokenDetail = () => {
             });
           }
           setPriceData(initialData);
+          
           const tokenBets = await fetchBetsByToken(id);
           setBets(tokenBets);
           toast({
@@ -470,10 +482,13 @@ const TokenDetail = () => {
   }, [bets, activeBetsCount, toast, token]);
   const refreshData = useCallback(async (betType = null) => {
     if (!id) return;
+    
     try {
       setLoading(true);
+      
       const recentTokens = pumpPortal.recentTokens || [];
       const webSocketToken = recentTokens.find(t => t.token_mint === id);
+      
       if (webSocketToken) {
         setToken(current => ({
           ...current,
@@ -494,9 +509,21 @@ const TokenDetail = () => {
           });
         }
       }
+      
       const dexScreenerData = await fetchDexScreenerData(id);
       if (dexScreenerData) {
         console.log("Refreshed DexScreener data:", dexScreenerData);
+        
+        if (token && (!token.name || token.name === "New Token")) {
+          setToken(current => ({
+            ...current,
+            name: dexScreenerData.name || current?.name || "New Token",
+            symbol: dexScreenerData.symbol || current?.symbol || "",
+            currentPrice: dexScreenerData.priceUsd || current?.currentPrice || 0,
+            change24h: dexScreenerData.priceChange24h || current?.change24h || 0
+          }));
+        }
+        
         updateTokenMetrics({
           marketCap: dexScreenerData.marketCap,
           volume24h: dexScreenerData.volume24h,
@@ -505,8 +532,10 @@ const TokenDetail = () => {
       } else if (pumpPortal.connected) {
         pumpPortal.fetchTokenMetrics(id);
       }
+      
       const tokenBets = await fetchBetsByToken(id);
       setBets(tokenBets);
+      
       if (betType) {
         setShowCreateBet(true);
       }
@@ -520,7 +549,7 @@ const TokenDetail = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, pumpPortal, toast, updateTokenMetrics]);
+  }, [id, pumpPortal, toast, updateTokenMetrics, token]);
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
       toast({
@@ -756,12 +785,11 @@ const TokenDetail = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <TokenMarketCap tokenId={token.id} />
-                
                 <TokenVolume tokenId={token.id} />
                 
                 <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{
-              animationDelay: '0.2s'
-            }}>
+                animationDelay: '0.2s'
+              }}>
                   <div className="absolute inset-0 bg-gradient-to-r from-dream-accent3/10 to-dream-accent1/10 animate-gradient-move"></div>
                   <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
                     <Users size={20} className="mr-3 text-dream-accent3" />
@@ -774,8 +802,8 @@ const TokenDetail = () => {
                     </button>
                   </div>
                   <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent3 to-dream-accent1 animate-pulse-glow" style={{
-                width: `${Math.min(100, bets.length / 10 * 100)}%`
-              }}></div>
+                  width: `${Math.min(100, bets.length / 10 * 100)}%`
+                }}></div>
                 </div>
               </div>
               
@@ -823,4 +851,3 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
-
