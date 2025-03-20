@@ -281,4 +281,17 @@
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out forwards;
   }
+
+  /* Scroll button styles */
+  .scroll-button {
+    @apply absolute top-1/2 -translate-y-1/2 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-dream-background/80 border border-dream-accent1/30 text-dream-accent2 hover:bg-dream-background/95 hover:text-dream-accent1 transition-colors;
+  }
+  
+  .scroll-button-left {
+    @apply left-0 -ml-4 focus:outline-none focus:ring-1 focus:ring-dream-accent1;
+  }
+  
+  .scroll-button-right {
+    @apply right-0 -mr-4 focus:outline-none focus:ring-1 focus:ring-dream-accent1;
+  }
 }

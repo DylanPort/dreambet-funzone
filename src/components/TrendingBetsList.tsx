@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatAddress } from '@/utils/betUtils';
-import { ExternalLink, BarChart, ChevronDown, ChevronUp, Zap, ArrowUp, ArrowDown } from 'lucide-react';
+import { ExternalLink, BarChart, ChevronDown, ChevronUp, Zap, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from './ui/scroll-area';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
@@ -26,6 +26,20 @@ const TrendingBetsList = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const isMobile = useIsMobile();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  };
+
   useEffect(() => {
     const fetchTrendingTokens = async () => {
       setIsLoading(true);
@@ -106,6 +120,7 @@ const TrendingBetsList = () => {
   }, []);
 
   const visibleTokens = isExpanded ? trendingTokens : trendingTokens.slice(0, 5);
+  
   if (isLoading) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <div className="flex justify-center items-center py-8">
@@ -116,6 +131,7 @@ const TrendingBetsList = () => {
         </div>
       </Card>;
   }
+  
   if (trendingTokens.length === 0) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <p className="text-center text-dream-foreground/60">
@@ -261,75 +277,32 @@ const TrendingBetsList = () => {
           </Carousel>}
 
         {isMobile && (
-          <ScrollArea className="w-full pb-4">
-            <div className="flex space-x-4 pb-2 px-1">
-              {visibleTokens.map((token, index) => (
-                <Link 
-                  key={`${token.token_mint}-${index}`} 
-                  to={`/token/${token.token_mint}`} 
-                  className="flex-shrink-0 w-[280px]"
-                >
-                  <div className="flex items-center justify-between gap-4 relative z-10 p-4 bg-dream-background/40 rounded-lg border border-dream-accent1/10 hover:border-dream-accent1/30 transition-all duration-300 h-full">
-                    <div className="flex flex-col space-y-2 w-full">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xl font-semibold text-dream-accent2 flex items-center gap-2">
-                          <div className={`flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r ${getHeatColor(token.bet_count)}`}>
-                            <span className="text-xs font-bold text-white">{index + 1}</span>
-                          </div>
-                          {token.token_symbol || 'Unknown'}
-                        </div>
-                        <div className="text-sm text-dream-foreground/60">
-                          {token.token_name || 'Unknown Token'}
-                        </div>
-                      </div>
-                      
-                      <div className="bg-dream-foreground/10 p-3 rounded-lg">
-                        <div className="text-xs text-dream-foreground/60 mb-1">Token Contract</div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-medium overflow-hidden text-ellipsis">
-                            {formatAddress(token.token_mint)}
-                          </div>
-                          <a href={`https://solscan.io/token/${token.token_mint}`} target="_blank" rel="noopener noreferrer" className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0 ml-1">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-                        <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
-                          <span className="text-dream-foreground/60">Volume</span>
-                          <span className="font-medium text-dream-accent2">{token.total_amount.toFixed(2)} PXB</span>
-                        </div>
-                        <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
-                          <div className="flex items-center gap-1">
-                            <ArrowUp className="h-3 w-3 text-green-400" />
-                            <span className="text-dream-foreground/60">Moon</span>
-                          </div>
-                          <span className="font-medium text-green-400">{token.moon_bets}</span>
-                        </div>
-                        <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
-                          <div className="flex items-center gap-1">
-                            <ArrowDown className="h-3 w-3 text-red-400" />
-                            <span className="text-dream-foreground/60">Die</span>
-                          </div>
-                          <span className="font-medium text-red-400">{token.die_bets}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
-        
-        {trendingTokens.length > 5 && <div className="flex justify-center mt-4">
-            <Button variant="outline" onClick={() => setIsExpanded(!isExpanded)}>
-              {isExpanded ? 'Show Less' : 'Show More'}
-            </Button>
-          </div>}
-      </Card>
-    </>;
-};
+          <div className="relative">
+            <button 
+              onClick={scrollLeft} 
+              className="scroll-button scroll-button-left"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button 
+              onClick={scrollRight} 
+              className="scroll-button scroll-button-right"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            
+            <ScrollArea className="w-full pb-4">
+              <div 
+                ref={scrollRef}
+                className="flex space-x-4 pb-2 px-1"
+              >
+                {visibleTokens.map((token, index) => (
+                  <Link 
+                    key={`${token.token_mint}-${index}`} 
+                    to={`/token/${token.token_mint}`} 
+                    className="flex-shrink-0 w-[280px]"
+                  >
+                    <
 
-export default TrendingBetsList;
