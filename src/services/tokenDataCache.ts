@@ -112,6 +112,19 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
       return cached;
     }
     
+    // Create a null metrics object first - keep metrics as null to maintain loading state
+    const nullMetrics: TokenMetrics = {
+      marketCap: null,
+      volume24h: null,
+      priceUsd: null,
+      priceChange24h: null,
+      liquidity: null,
+      timestamp: Date.now()
+    };
+    
+    // Save null data to cache temporarily to indicate loading
+    setCachedTokenMetrics(tokenId, nullMetrics);
+    
     // If not in cache or expired, fetch from API
     const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${tokenId}`);
     
@@ -123,17 +136,6 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
     
     if (!data.pairs || data.pairs.length === 0) {
       console.log("No pairs found for token:", tokenId);
-      
-      // Create a null metrics object - keep metrics as null to maintain loading state
-      // This prevents showing fallback values until the user is notified
-      const nullMetrics: TokenMetrics = {
-        marketCap: null,
-        volume24h: null,
-        priceUsd: null,
-        priceChange24h: null,
-        liquidity: null,
-        timestamp: Date.now()
-      };
       
       // Save null data to cache temporarily
       setCachedTokenMetrics(tokenId, nullMetrics);
@@ -277,4 +279,28 @@ export const subscribeToTokenMetric = (
   return () => {
     clearInterval(intervalId);
   };
+};
+
+// Add support for custom token search results
+export const addCustomTokenToCache = (tokenAddress: string, tokenData: any) => {
+  // Create estimated metrics for the token
+  const estimatedMetrics: TokenMetrics = {
+    marketCap: 1000, // Default to a small market cap value
+    volume24h: 0,
+    priceUsd: 0.000001, // Default to a small price
+    priceChange24h: 0,
+    liquidity: 0,
+    timestamp: Date.now()
+  };
+  
+  // Add to cache
+  setCachedTokenMetrics(tokenAddress, estimatedMetrics);
+  
+  // Let the user know we're using estimated data
+  toast.info("Using estimated data for this token");
+  
+  // Trigger DexScreener fetch to get real data if available
+  fetchTokenMetrics(tokenAddress);
+  
+  return estimatedMetrics;
 };

@@ -8,6 +8,7 @@ import MigratingTokenList from '@/components/MigratingTokenList';
 import OpenBetsList from '@/components/OpenBetsList';
 import TrendingBetsList from '@/components/TrendingBetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
+import TokenSearchBar from '@/components/TokenSearchBar';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -64,6 +65,23 @@ const BettingDashboard = () => {
 
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
+          {/* Add search bar section */}
+          <section className="mb-8 relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/5 via-transparent to-dream-accent3/5 blur-xl"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] bg-dream-accent2/10 rounded-full blur-3xl"></div>
+            
+            <div className="relative z-10 text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3">
+                Find Any Solana Token
+              </h2>
+              <p className="text-dream-foreground/60 mt-2 max-w-xl mx-auto">
+                Enter a token contract address to instantly start betting on any token on Solana
+              </p>
+            </div>
+            
+            <TokenSearchBar />
+          </section>
+        
           <section className="mb-6 text-center py-0 my-0 mx-0 sm:mx-4 md:mx-8 lg:mx-[240px] px-1 sm:px-[11px]">
             {!connected && <div className="mt-8 glass-panel inline-flex flex-col sm:flex-row items-center gap-3 p-4">
                 <Wallet className="text-dream-accent2" />
