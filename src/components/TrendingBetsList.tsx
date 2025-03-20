@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -162,7 +163,7 @@ const TrendingBetsList = () => {
               alt="Fire" 
               className="h-16 w-16 mr-1.5 animate-pulse" 
             />
-            <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">TRENDING</span>
+            <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">TRENDING</span>
           </div>
           
           <div className="overflow-hidden flex-1">
