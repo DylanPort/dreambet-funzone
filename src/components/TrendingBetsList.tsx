@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -152,7 +153,8 @@ const TrendingBetsList = () => {
     return "Warming Up";
   };
 
-  return <>
+  return (
+    <>
       <div className="mb-4 overflow-hidden bg-gradient-to-r from-dream-accent3/20 to-dream-accent1/20 rounded-xl border border-dream-accent1/30 backdrop-blur-lg p-1">
         <div className="flex items-center gap-2 px-2">
           <div className="flex-shrink-0 px-3 py-1.5 bg-dream-accent3/40 rounded-lg flex items-center">
@@ -166,7 +168,8 @@ const TrendingBetsList = () => {
           
           <div className="overflow-hidden flex-1">
             <div className="flex animate-scroll items-center gap-3">
-              {trendingTokens.map((token, index) => <div key={`${token.token_mint}-${index}`} className="flex-shrink-0 py-1.5 px-3 bg-dream-background/40 rounded-lg border border-dream-accent1/20 flex items-center gap-2 hover:bg-dream-background/60 transition-all duration-300">
+              {trendingTokens.map((token, index) => (
+                <div key={`${token.token_mint}-${index}`} className="flex-shrink-0 py-1.5 px-3 bg-dream-background/40 rounded-lg border border-dream-accent1/20 flex items-center gap-2 hover:bg-dream-background/60 transition-all duration-300">
                   <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${getHeatColor(token.bet_count)} flex items-center justify-center`}>
                     <span className="text-xs font-bold text-white">{token.token_symbol.charAt(0)}</span>
                   </div>
@@ -174,7 +177,8 @@ const TrendingBetsList = () => {
                     <span className="text-xs font-semibold">{token.token_symbol}</span>
                     <span className="text-[10px] text-dream-foreground/60">{token.bet_count} bets</span>
                   </div>
-                </div>)}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -190,11 +194,26 @@ const TrendingBetsList = () => {
             />
             <span>Trending Tokens</span>
           </CardTitle>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-xs bg-dream-background/40 border-dream-accent1/20 hover:bg-dream-background/60 hover:border-dream-accent1/40"
+          >
+            {isExpanded ? (
+              <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Show Less</>
+            ) : (
+              <><ChevronDown className="h-3.5 w-3.5 mr-1" /> Show All</>
+            )}
+          </Button>
         </div>
 
-        {!isMobile && <Carousel className="mx-auto max-w-5xl">
+        {!isMobile && (
+          <Carousel className="mx-auto max-w-5xl">
             <CarouselContent>
-              {visibleTokens.map((token, index) => <CarouselItem key={`${token.token_mint}-${index}`} className="md:basis-1/2 lg:basis-1/3">
+              {visibleTokens.map((token, index) => (
+                <CarouselItem key={`${token.token_mint}-${index}`} className="md:basis-1/2 lg:basis-1/3">
                   <div className="p-1">
                     <Link to={`/token/${token.token_mint}`} className="block">
                       <div className="rounded-xl overflow-hidden bg-gradient-to-br from-dream-background/70 to-dream-background/40 border border-dream-accent1/10 p-4 h-full backdrop-blur-md hover:border-dream-accent1/30 transition-all duration-300">
@@ -270,11 +289,13 @@ const TrendingBetsList = () => {
                       </div>
                     </Link>
                   </div>
-                </CarouselItem>)}
+                </CarouselItem>
+              ))}
             </CarouselContent>
             <CarouselPrevious className="left-0 bg-dream-background/50 hover:bg-dream-background/80 border-dream-accent1/30 text-dream-accent2" />
             <CarouselNext className="right-0 bg-dream-background/50 hover:bg-dream-background/80 border-dream-accent1/30 text-dream-accent2" />
-          </Carousel>}
+          </Carousel>
+        )}
 
         {isMobile && (
           <div className="relative">
@@ -304,5 +325,103 @@ const TrendingBetsList = () => {
                     to={`/token/${token.token_mint}`} 
                     className="flex-shrink-0 w-[280px]"
                   >
-                    <
+                    <div className="rounded-xl overflow-hidden bg-gradient-to-br from-dream-background/70 to-dream-background/40 border border-dream-accent1/10 p-4 h-full backdrop-blur-md hover:border-dream-accent1/30 transition-all duration-300">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getHeatColor(token.bet_count)} flex items-center justify-center`}>
+                            <span className="text-sm font-bold text-white">{token.token_symbol.charAt(0)}</span>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-dream-accent2 to-dream-accent1">
+                              {token.token_symbol}
+                            </div>
+                            <div className="text-xs text-dream-foreground/60">{token.token_name}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs bg-dream-accent3/20 px-2 py-1 rounded-full">
+                          <BarChart className="h-3 w-3 text-dream-accent3" />
+                          <span>{token.bet_count} bets</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 mt-3">
+                        <div className="bg-dream-background/30 p-3 rounded-lg">
+                          <div className="text-xs text-dream-foreground/60 mb-1">Token Contract</div>
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-medium overflow-hidden text-ellipsis">
+                              {formatAddress(token.token_mint)}
+                            </div>
+                            <a href={`https://solscan.io/token/${token.token_mint}`} target="_blank" rel="noopener noreferrer" className="text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors flex-shrink-0 ml-1">
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                          
+                          <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                            <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                              <span className="text-dream-foreground/60">Total Volume</span>
+                              <span className="font-medium text-dream-accent2">{token.total_amount.toFixed(2)} PXB</span>
+                            </div>
+                            <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <ArrowUp className="h-3 w-3 text-green-400" />
+                                <span className="text-dream-foreground/60">Moon</span>
+                              </div>
+                              <span className="font-medium text-green-400">{token.moon_bets}</span>
+                            </div>
+                            <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <ArrowDown className="h-3 w-3 text-red-400" />
+                                <span className="text-dream-foreground/60">Die</span>
+                              </div>
+                              <span className="font-medium text-red-400">{token.die_bets}</span>
+                            </div>
+                          </div>
+                        </div>
+                      
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
+                            <div className="text-xs text-dream-foreground/60 mb-1">Total Bet Amount</div>
+                            <div className="text-sm font-medium text-dream-accent2">
+                              {token.total_amount.toFixed(2)} PXB
+                            </div>
+                          </div>
+                      
+                          <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
+                            <div className="text-xs text-dream-foreground/60 mb-1">Heat Level</div>
+                            <div className="flex items-center gap-1.5">
+                              <div className={`flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-r ${getHeatColor(token.bet_count)}`}></div>
+                              <span className="text-sm font-medium">{getHeatText(token.bet_count)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+        
+        {isMobile && (
+          <div className="flex justify-center mt-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-xs bg-dream-background/40 border-dream-accent1/20 hover:bg-dream-background/60 hover:border-dream-accent1/40"
+            >
+              {isExpanded ? (
+                <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Show Less</>
+              ) : (
+                <><ChevronDown className="h-3.5 w-3.5 mr-1" /> Show All</>
+              )}
+            </Button>
+          </div>
+        )}
+      </Card>
+    </>
+  );
+};
 
+export default TrendingBetsList;
