@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { 
+  fetchTokenMetrics, 
+  subscribeToTokenMetric, 
+  meetsMarketCapRequirements, 
+  calculateTargetMarketCap,
+  MIN_MARKET_CAP_MOON,
+  MIN_MARKET_CAP_DUST,
+  TokenMetrics
+} from '@/services/tokenDataCache';
 
 interface CreateBetFormProps {
   tokenId: string;
@@ -76,6 +86,10 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState<boolean>(false);
   const [predictionImpact, setPredictionImpact] = useState<string>('');
   const [showExplanations, setShowExplanations] = useState<boolean>(true);
+  const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(null);
+  const [isLoadingMarketCap, setIsLoadingMarketCap] = useState<boolean>(true);
+  const [targetMarketCap, setTargetMarketCap] = useState<number | null>(null);
+  const [meetsRequirements, setMeetsRequirements] = useState<boolean>(false);
 
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const { userProfile, placeBet } = usePXBPoints();
@@ -95,6 +109,74 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       });
     }
   }, [token, tokenId, tokenName, tokenSymbol]);
+
+  // Fetch the token's market cap from DexScreener
+  useEffect(() => {
+    setIsLoadingMarketCap(true);
+    
+    // Setup subscription to market cap updates
+    const unsubscribe = subscribeToTokenMetric(
+      tokenId,
+      'marketCap',
+      (value) => {
+        setCurrentMarketCap(value);
+        setIsLoadingMarketCap(false);
+        
+        // Check if token meets requirements for the current prediction
+        if (prediction && value) {
+          const meets = meetsMarketCapRequirements(
+            { marketCap: value, volume24h: null, priceUsd: null, priceChange24h: null, liquidity: null, timestamp: Date.now() },
+            prediction === 'moon' ? 'moon' : 'die'
+          );
+          setMeetsRequirements(meets);
+        }
+      }
+    );
+    
+    // Initial fetch to get immediate data
+    fetchTokenMetrics(tokenId).then(metrics => {
+      if (metrics) {
+        setCurrentMarketCap(metrics.marketCap);
+        setIsLoadingMarketCap(false);
+      }
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [tokenId]);
+  
+  // Update requirements check when prediction changes
+  useEffect(() => {
+    if (prediction && currentMarketCap) {
+      const meets = meetsMarketCapRequirements(
+        { marketCap: currentMarketCap, volume24h: null, priceUsd: null, priceChange24h: null, liquidity: null, timestamp: Date.now() },
+        prediction === 'moon' ? 'moon' : 'die'
+      );
+      setMeetsRequirements(meets);
+    } else {
+      setMeetsRequirements(false);
+    }
+  }, [prediction, currentMarketCap]);
+
+  // Calculate target market cap for bet
+  useEffect(() => {
+    if (prediction && currentMarketCap && percentageChange) {
+      const percent = parseInt(percentageChange, 10);
+      if (!isNaN(percent) && percent > 0) {
+        const target = calculateTargetMarketCap(
+          currentMarketCap,
+          prediction === 'moon' ? 'moon' : 'die',
+          percent
+        );
+        setTargetMarketCap(target);
+      } else {
+        setTargetMarketCap(null);
+      }
+    } else {
+      setTargetMarketCap(null);
+    }
+  }, [prediction, currentMarketCap, percentageChange]);
 
   useEffect(() => {
     const handlePredictionSelected = (event: CustomEvent) => {
@@ -352,6 +434,13 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       toast.error(`You only have ${maxPointsAvailable} PXB Points available to bet`);
       return;
     }
+    
+    // Check if token meets minimum market cap requirements
+    if (!meetsRequirements) {
+      const minRequirement = prediction === 'moon' ? MIN_MARKET_CAP_MOON : MIN_MARKET_CAP_DUST;
+      toast.error(`Token must have minimum market cap of $${minRequirement.toLocaleString()} for ${prediction === 'moon' ? 'MOON' : 'DUST'} bets`);
+      return;
+    }
 
     setIsConfirmOpen(true);
   };
@@ -370,6 +459,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         prediction: ${prediction}
         percentage: ${percentageChange}%
         duration: ${duration} minutes
+        current market cap: $${currentMarketCap}
+        target market cap: $${targetMarketCap}
       `);
       
       setTransactionStatus('Processing your bet...');
@@ -463,6 +554,19 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
 
   const showExtraWalletReconnectOption = connected && publicKey && wallet && !isWalletReady && !walletCheckingInProgress;
 
+  // Format market cap for display
+  const formatMarketCap = (value: number | null): string => {
+    if (value === null) return "Loading...";
+    
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(2)}M`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(2)}K`;
+    } else {
+      return `$${value.toFixed(2)}`;
+    }
+  };
+
   return (
     <div className="glass-panel p-6 space-y-4">
       <div className="flex justify-between items-center">
@@ -484,6 +588,35 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+      </div>
+      
+      {/* Market Cap Display */}
+      <div className="mb-2 p-3 bg-dream-background/60 rounded-md border border-dream-foreground/10">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-dream-foreground/70">Current Market Cap:</span>
+          <span className={`font-semibold ${isLoadingMarketCap ? 'text-dream-foreground/50 animate-pulse' : 'text-dream-accent2'}`}>
+            {isLoadingMarketCap ? "Loading..." : formatMarketCap(currentMarketCap)}
+          </span>
+        </div>
+        
+        {targetMarketCap !== null && prediction && (
+          <div className="flex justify-between items-center mt-1">
+            <span className="text-sm text-dream-foreground/70">Target Market Cap:</span>
+            <span className={`font-semibold ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+              {formatMarketCap(targetMarketCap)}
+            </span>
+          </div>
+        )}
+        
+        {prediction && !meetsRequirements && currentMarketCap !== null && (
+          <div className="mt-2 p-2 bg-red-500/20 rounded text-xs text-red-400">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+              Market cap too low for {prediction === 'moon' ? 'MOON' : 'DUST'} bet. 
+              Need minimum ${prediction === 'moon' ? MIN_MARKET_CAP_MOON.toLocaleString() : MIN_MARKET_CAP_DUST.toLocaleString()}
+            </span>
+          </div>
+        )}
       </div>
       
       <div className="flex justify-around py-2">
@@ -555,7 +688,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
                     <TrendingUp className="h-4 w-4 text-green-400" />
                   </div>
                   <p><span className="font-semibold">MOON Predictions</span><br />
-                  Predict the token will increase by at least 80%. Higher percentage predictions earn higher multipliers.</p>
+                  Predict the token will increase by at least 80%. Higher percentage predictions earn higher multipliers.<br />
+                  <span className="text-xs text-dream-accent2">Minimum market cap: ${MIN_MARKET_CAP_MOON.toLocaleString()}</span></p>
                 </div>
                 
                 <div className="flex gap-2 items-start">
@@ -563,7 +697,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
                     <TrendingDown className="h-4 w-4 text-red-400" />
                   </div>
                   <p><span className="font-semibold">DIE Predictions</span><br />
-                  Predict the token will decrease by at least 50%. Higher percentage predictions earn higher multipliers.</p>
+                  Predict the token will decrease by at least 50%. Higher percentage predictions earn higher multipliers.<br />
+                  <span className="text-xs text-dream-accent2">Minimum market cap: ${MIN_MARKET_CAP_DUST.toLocaleString()}</span></p>
                 </div>
                 
                 <div className="flex gap-2 items-start">
@@ -772,6 +907,17 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
                   </p>
                 </div>
               )}
+              
+              {targetMarketCap !== null && (
+                <div className="flex items-center mt-2 gap-1 bg-dream-foreground/10 p-2 rounded">
+                  <p className="text-xs">
+                    <span className="text-dream-foreground/70">You win when market cap reaches </span>
+                    <span className={`font-semibold ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatMarketCap(targetMarketCap)}
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -789,7 +935,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       <div className="flex gap-3">
         <Button
           onClick={handleOpenConfirmation}
-          disabled={!isWalletReady || isSubmitting || !prediction || !amount || !percentageChange || walletCheckingInProgress || !!successMessage || !userProfile}
+          disabled={!isWalletReady || isSubmitting || !prediction || !amount || !percentageChange || walletCheckingInProgress || !!successMessage || !userProfile || !meetsRequirements}
           className={`flex-1 ${prediction === 'moon' ? 'bg-gradient-to-r from-green-500 to-dream-accent2' : prediction === 'die' ? 'bg-gradient-to-r from-red-500 to-dream-accent3' : 'bg-gradient-to-r from-dream-accent1 to-dream-accent3'}`}
         >
           {isSubmitting ? (
@@ -895,12 +1041,13 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
             </AlertDialogTitle>
             <AlertDialogDescription className="text-dream-foreground/70">
               {`You are about to place a bet of ${amount} PXB Points that ${tokenData.symbol} will ${prediction} by ${percentageChange}% within ${duration} minutes.`}
-              <div className="mt-4 p-3 bg-dream-foreground/10 rounded-md">
+              
+              <div className="mt-4 p-3 bg-dream-foreground/10 rounded-md space-y-2">
                 <div className="flex justify-between">
                   <p className="text-dream-foreground/90">Current Balance:</p>
                   <p className="text-dream-foreground/90 font-medium">{maxPointsAvailable} PXB</p>
                 </div>
-                <div className="flex justify-between mt-1">
+                <div className="flex justify-between">
                   <p className="text-dream-foreground/90">Amount to Bet:</p>
                   <p className="text-red-400 font-medium">-{amount} PXB</p>
                 </div>
@@ -913,6 +1060,22 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
                   <p className="text-dream-foreground/90">Potential Reward:</p>
                   <p className="text-green-400 font-medium">+{calculatePotentialReward()} PXB</p>
                 </div>
+                
+                {/* Market cap information in confirmation dialog */}
+                {currentMarketCap !== null && targetMarketCap !== null && (
+                  <div className="space-y-1 mt-3 pt-3 border-t border-dream-foreground/10">
+                    <div className="flex justify-between">
+                      <p className="text-dream-foreground/90">Current Market Cap:</p>
+                      <p className="text-dream-foreground/90 font-medium">{formatMarketCap(currentMarketCap)}</p>
+                    </div>
+                    <div className="flex justify-between">
+                      <p className="text-dream-foreground/90">Target Market Cap:</p>
+                      <p className={`font-medium ${prediction === 'moon' ? 'text-green-400' : 'text-red-400'}`}>
+                        {formatMarketCap(targetMarketCap)}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>

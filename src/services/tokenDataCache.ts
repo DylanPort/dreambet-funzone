@@ -16,6 +16,10 @@ const tokenMetricsCache = new Map<string, TokenMetrics>();
 // Cache expiry time in milliseconds (30 seconds)
 const CACHE_EXPIRY = 30000;
 
+// Minimum market cap requirements for betting
+export const MIN_MARKET_CAP_MOON = 30000; // $30k for moon bets
+export const MIN_MARKET_CAP_DUST = 50000; // $50k for dust bets
+
 /**
  * Get cached token metrics, returns null if not cached or expired
  */
@@ -50,6 +54,52 @@ export const setCachedTokenMetrics = (tokenId: string, metrics: Partial<TokenMet
     ...metrics,
     timestamp: Date.now()
   });
+};
+
+/**
+ * Check if token meets minimum market cap requirements for a specific bet type
+ */
+export const meetsMarketCapRequirements = (metrics: TokenMetrics | null, betType: 'moon' | 'die'): boolean => {
+  if (!metrics || metrics.marketCap === null) return false;
+  
+  if (betType === 'moon') {
+    return metrics.marketCap >= MIN_MARKET_CAP_MOON;
+  } else {
+    return metrics.marketCap >= MIN_MARKET_CAP_DUST;
+  }
+};
+
+/**
+ * Calculate target market cap for winning a bet
+ */
+export const calculateTargetMarketCap = (currentMarketCap: number, betType: 'moon' | 'die', percentageChange: number): number => {
+  if (betType === 'moon') {
+    // For moon bets, target is current + percentage increase
+    return currentMarketCap * (1 + (percentageChange / 100));
+  } else {
+    // For die bets, target is current - percentage decrease
+    return currentMarketCap * (1 - (percentageChange / 100));
+  }
+};
+
+/**
+ * Check if bet has reached its target (i.e., won)
+ */
+export const hasBetWon = (
+  initialMarketCap: number, 
+  currentMarketCap: number, 
+  betType: 'moon' | 'die', 
+  percentageChange: number
+): boolean => {
+  const targetMarketCap = calculateTargetMarketCap(initialMarketCap, betType, percentageChange);
+  
+  if (betType === 'moon') {
+    // For moon bets, current market cap must be >= target
+    return currentMarketCap >= targetMarketCap;
+  } else {
+    // For die bets, current market cap must be <= target
+    return currentMarketCap <= targetMarketCap;
+  }
 };
 
 /**
@@ -109,6 +159,7 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
     // Save to cache
     setCachedTokenMetrics(tokenId, metrics);
     
+    console.log("DexScreener data retrieved successfully:", metrics);
     return metrics;
   } catch (error) {
     console.error("Error fetching token metrics:", error);
