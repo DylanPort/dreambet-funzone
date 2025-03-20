@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Loader2, ExternalLink, Sparkle } from 'lucide-react';
+import { Search, X, Loader2, ExternalLink, Sparkle, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchTokenDataFromSolscan } from '@/services/solscanService';
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ const TokenSearchBar: React.FC = () => {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<{
     symbol: string;
     name: string;
@@ -21,10 +22,25 @@ const TokenSearchBar: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   
+  // Function to validate Solana address format
+  const isValidSolanaAddress = (address: string): boolean => {
+    // Basic validation - Solana addresses are usually 32-44 characters
+    return /^[A-HJ-NP-Za-km-z1-9]{32,44}$/.test(address.trim());
+  };
+  
   // Handle search query
   const handleSearch = async () => {
-    if (!query.trim() || query.length < 32) {
-      toast.error("Please enter a valid Solana token address");
+    // Clear previous results
+    setToken(null);
+    setError(null);
+    
+    if (!query.trim()) {
+      setError("Please enter a token address");
+      return;
+    }
+    
+    if (!isValidSolanaAddress(query.trim())) {
+      setError("Invalid Solana token address format");
       return;
     }
     
@@ -35,7 +51,8 @@ const TokenSearchBar: React.FC = () => {
     if (tokenData) {
       setToken(tokenData);
     } else {
-      setToken(null);
+      // The error toast is handled in the service
+      setError("Token not found or error occurred");
     }
   };
   
@@ -53,6 +70,7 @@ const TokenSearchBar: React.FC = () => {
       setQuery('');
       setToken(null);
       setIsFocused(false);
+      toast.success(`Navigating to ${token.name}`);
     }
   };
   
@@ -60,6 +78,7 @@ const TokenSearchBar: React.FC = () => {
   const clearSearch = () => {
     setQuery('');
     setToken(null);
+    setError(null);
     if (inputRef.current) {
       inputRef.current.focus();
     }
@@ -118,10 +137,16 @@ const TokenSearchBar: React.FC = () => {
           
           <Input
             ref={inputRef}
-            className="pl-10 pr-10 py-6 h-14 bg-transparent border-none focus-visible:ring-0 text-dream-foreground placeholder:text-dream-foreground/30"
+            className={cn(
+              "pl-10 pr-10 py-6 h-14 bg-transparent border-none focus-visible:ring-0 text-dream-foreground placeholder:text-dream-foreground/30",
+              error ? "text-red-400" : ""
+            )}
             placeholder="Search any Solana token address..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (error) setError(null);
+            }}
             onKeyDown={handleKeyPress}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setTimeout(() => setIsFocused(false), 100)}
@@ -159,6 +184,21 @@ const TokenSearchBar: React.FC = () => {
           )}
         </motion.button>
       </div>
+      
+      {/* Error message */}
+      <AnimatePresence>
+        {error && !token && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute w-full mt-2 bg-red-950/50 border border-red-500/30 rounded-lg p-3 backdrop-blur-lg text-sm flex items-center gap-2"
+          >
+            <AlertCircle className="text-red-400 w-4 h-4 flex-shrink-0" />
+            <span className="text-red-300">{error}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Search keyboard shortcut indicator */}
       <div className="absolute right-24 top-4 text-xs text-dream-foreground/30">

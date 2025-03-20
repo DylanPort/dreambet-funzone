@@ -23,9 +23,22 @@ export const fetchTokenDataFromSolscan = async (tokenAddress: string): Promise<{
   icon?: string;
 } | null> => {
   try {
+    // Show loading toast
+    const loadingToastId = toast.loading("Searching for token...");
+    
     const response = await fetch(`https://public-api.solscan.io/token/meta?tokenAddress=${tokenAddress}`);
     
+    // Clear loading toast
+    toast.dismiss(loadingToastId);
+    
+    if (response.status === 404) {
+      console.log(`Token not found on Solscan: ${tokenAddress}`);
+      toast.error("Token not found on Solscan. Please verify the address is correct and the token exists.");
+      return null;
+    }
+    
     if (!response.ok) {
+      console.error(`Solscan API error: ${response.status} - ${response.statusText}`);
       toast.error(`Error: ${response.status} - ${response.statusText}`);
       return null;
     }
@@ -33,9 +46,12 @@ export const fetchTokenDataFromSolscan = async (tokenAddress: string): Promise<{
     const data: SolscanTokenResponse = await response.json();
     
     if (!data.success || !data.data) {
-      toast.error("Token not found on Solscan");
+      console.error("Invalid token data response:", data);
+      toast.error("Token data format is invalid");
       return null;
     }
+    
+    toast.success(`Found token: ${data.data.name} (${data.data.symbol})`);
     
     return {
       symbol: data.data.symbol,
@@ -45,7 +61,7 @@ export const fetchTokenDataFromSolscan = async (tokenAddress: string): Promise<{
     };
   } catch (error) {
     console.error("Error fetching token data:", error);
-    toast.error("Failed to fetch token data");
+    toast.error("Failed to fetch token data. Please try again later.");
     return null;
   }
 };
