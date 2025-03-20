@@ -6,19 +6,33 @@ import { usePumpPortalWebSocket, RawTokenCreationEvent } from '@/services/pumpPo
 export const usePumpPortal = (tokenId?: string) => {
   const pumpPortal = usePumpPortalWebSocket();
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
   // Subscribe to specific token trades when needed
   useEffect(() => {
     if (pumpPortal.connected && tokenId && !isSubscribed) {
+      console.log("Subscribing to token:", tokenId);
       pumpPortal.subscribeToToken(tokenId);
       setIsSubscribed(true);
     }
-  }, [pumpPortal.connected, tokenId, isSubscribed]);
+    
+    // Add retry mechanism if connection fails
+    if (!pumpPortal.connected && tokenId && retryCount < 3) {
+      const timer = setTimeout(() => {
+        console.log(`Retry ${retryCount + 1} for token subscription:`, tokenId);
+        setRetryCount(prev => prev + 1);
+        setIsSubscribed(false); // Reset to try again
+      }, 2000 * (retryCount + 1));
+      
+      return () => clearTimeout(timer);
+    }
+  }, [pumpPortal.connected, tokenId, isSubscribed, retryCount]);
   
   // Check if already subscribed to new tokens in the first render
   useEffect(() => {
     // If no specific token is provided, make sure we're subscribed to new tokens
     if (pumpPortal.connected && !tokenId && !isSubscribed) {
+      console.log("Subscribing to new tokens");
       pumpPortal.subscribeToNewTokens();
       setIsSubscribed(true);
     }
@@ -65,6 +79,30 @@ export const usePumpPortal = (tokenId?: string) => {
       .filter(Boolean);
   };
   
+  // Combine all available token data
+  const getAllTokenData = () => {
+    if (!tokenId) return null;
+    
+    // Check if token exists in recent trades
+    if (pumpPortal.recentTrades[tokenId] && pumpPortal.recentTrades[tokenId].length > 0) {
+      return {
+        trades: pumpPortal.recentTrades[tokenId],
+        metrics: pumpPortal.tokenMetrics[tokenId]
+      };
+    }
+    
+    // Check raw tokens
+    const rawToken = pumpPortal.rawTokens?.find(t => t.token_mint === tokenId);
+    if (rawToken) {
+      return {
+        token: rawToken,
+        metrics: null
+      };
+    }
+    
+    return null;
+  };
+  
   return {
     isConnected: pumpPortal.connected,
     recentTokens: pumpPortal.recentTokens,
@@ -75,7 +113,9 @@ export const usePumpPortal = (tokenId?: string) => {
     subscribeToToken: pumpPortal.subscribeToToken,
     subscribeToNewTokens: pumpPortal.subscribeToNewTokens,
     tokenMetrics: tokenId ? (pumpPortal.tokenMetrics && pumpPortal.tokenMetrics[tokenId]) : null,
-    fetchTokenMetrics: pumpPortal.fetchTokenMetrics
+    fetchTokenMetrics: pumpPortal.fetchTokenMetrics,
+    getAllTokenData: getAllTokenData,
+    isSubscribed: isSubscribed
   };
 };
 

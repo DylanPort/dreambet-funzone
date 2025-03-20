@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Loader2, ExternalLink, Sparkle, AlertCircle } from 'lucide-react';
@@ -24,7 +23,6 @@ const TokenSearchBar: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   
-  // Handle search query
   const handleSearch = async () => {
     setToken(null);
     setError(null);
@@ -35,24 +33,29 @@ const TokenSearchBar: React.FC = () => {
     }
     
     setIsSearching(true);
-    const tokenData = await searchTokenFromSolanaTracker(query.trim());
-    setIsSearching(false);
-    
-    if (tokenData) {
-      setToken(tokenData);
-    } else {
-      setError("Token not found or error occurred. Please try a different search term.");
+    try {
+      const tokenData = await searchTokenFromSolanaTracker(query.trim());
+      setIsSearching(false);
+      
+      if (tokenData) {
+        console.log("Token found:", tokenData);
+        setToken(tokenData);
+      } else {
+        setError("Token not found or error occurred. Please try a different search term.");
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      setIsSearching(false);
+      setError("An error occurred during search. Please try again.");
     }
   };
   
-  // Handle key press (Enter to search)
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
   
-  // Navigate to token detail page
   const navigateToToken = () => {
     if (token) {
       navigate(`/token/${token.address}`);
@@ -63,7 +66,6 @@ const TokenSearchBar: React.FC = () => {
     }
   };
   
-  // Clear search
   const clearSearch = () => {
     setQuery('');
     setToken(null);
@@ -73,7 +75,6 @@ const TokenSearchBar: React.FC = () => {
     }
   };
   
-  // Effect to handle keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {

@@ -14,7 +14,16 @@ import BettingDashboard from "./pages/BettingDashboard";
 import TokenBetting from "./pages/TokenBetting";
 import PXBSpace from "./pages/MyBets";
 
-const queryClient = new QueryClient();
+// Configure Query Client with retry options for better error handling
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 function App() {
   console.log("App rendering");

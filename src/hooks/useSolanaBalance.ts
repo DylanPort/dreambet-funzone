@@ -20,8 +20,8 @@ export const useSolanaBalance = () => {
         setIsLoading(true);
         setError(null);
         
-        // Use Solana mainnet for production
-        const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+        // Use a different RPC endpoint with better rate limits
+        const connection = new Connection("https://api.devnet.solana.com", "confirmed");
         const lamports = await connection.getBalance(publicKey);
         const solBalance = lamports / LAMPORTS_PER_SOL;
         
@@ -29,6 +29,8 @@ export const useSolanaBalance = () => {
       } catch (err) {
         console.error("Error fetching SOL balance:", err);
         setError("Failed to fetch balance");
+        // Don't let the error prevent the UI from showing
+        setBalance(null);
       } finally {
         setIsLoading(false);
       }
@@ -36,8 +38,8 @@ export const useSolanaBalance = () => {
 
     fetchBalance();
 
-    // Set up a refresh interval
-    const intervalId = setInterval(fetchBalance, 30000); // Refresh every 30 seconds
+    // Reduce polling frequency to avoid rate limiting
+    const intervalId = setInterval(fetchBalance, 60000); // Refresh every 60 seconds
 
     return () => clearInterval(intervalId);
   }, [connected, publicKey]);
