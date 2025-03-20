@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,7 +9,6 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-
 interface TrendingToken {
   token_mint: string;
   token_name: string;
@@ -20,7 +18,6 @@ interface TrendingToken {
   moon_bets: number;
   die_bets: number;
 }
-
 const TrendingBetsList = () => {
   const [trendingTokens, setTrendingTokens] = useState<TrendingToken[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,19 +25,22 @@ const TrendingBetsList = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
-
   const scrollLeft = () => {
     if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+      scrollRef.current.scrollBy({
+        left: -200,
+        behavior: 'smooth'
+      });
     }
   };
-
   const scrollRight = () => {
     if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+      scrollRef.current.scrollBy({
+        left: 200,
+        behavior: 'smooth'
+      });
     }
   };
-
   useEffect(() => {
     const fetchTrendingTokens = async () => {
       setIsLoading(true);
@@ -57,7 +57,6 @@ const TrendingBetsList = () => {
           setIsLoading(false);
           return;
         }
-
         const tokenMap = new Map<string, {
           token_mint: string;
           token_name: string;
@@ -73,7 +72,6 @@ const TrendingBetsList = () => {
           if (existing) {
             existing.bet_count += 1;
             existing.total_amount += Number(bet.sol_amount) || 0;
-            
             if (bet.prediction_bettor1 === 'up') {
               existing.moon_bets += 1;
             } else if (bet.prediction_bettor1 === 'down') {
@@ -82,13 +80,11 @@ const TrendingBetsList = () => {
           } else {
             let moonBets = 0;
             let dieBets = 0;
-            
             if (bet.prediction_bettor1 === 'up') {
               moonBets = 1;
             } else if (bet.prediction_bettor1 === 'down') {
               dieBets = 1;
             }
-            
             tokenMap.set(bet.token_mint, {
               token_mint: bet.token_mint,
               token_name: bet.token_name || 'Unknown Token',
@@ -100,7 +96,6 @@ const TrendingBetsList = () => {
             });
           }
         });
-
         const sortedTokens = Array.from(tokenMap.values()).sort((a, b) => b.bet_count - a.bet_count);
         setTrendingTokens(sortedTokens);
       } catch (err) {
@@ -111,7 +106,6 @@ const TrendingBetsList = () => {
       }
     };
     fetchTrendingTokens();
-
     const interval = setInterval(() => {
       if (trendingTokens.length > 0) {
         setCurrentIndex(prev => (prev + 1) % trendingTokens.length);
@@ -119,9 +113,7 @@ const TrendingBetsList = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
-
   const visibleTokens = isExpanded ? trendingTokens : trendingTokens.slice(0, 5);
-  
   if (isLoading) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <div className="flex justify-center items-center py-8">
@@ -132,7 +124,6 @@ const TrendingBetsList = () => {
         </div>
       </Card>;
   }
-  
   if (trendingTokens.length === 0) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <p className="text-center text-dream-foreground/60">
@@ -140,36 +131,27 @@ const TrendingBetsList = () => {
         </p>
       </Card>;
   }
-
   const getHeatColor = (betCount: number) => {
     if (betCount > 10) return "from-amber-500 to-red-500";
     if (betCount > 5) return "from-orange-400 to-amber-500";
     return "from-yellow-400 to-orange-400";
   };
-
   const getHeatText = (betCount: number) => {
     if (betCount > 10) return "Very Hot";
     if (betCount > 5) return "Hot";
     return "Warming Up";
   };
-
-  return (
-    <>
+  return <>
       <div className="mb-4 overflow-hidden bg-gradient-to-r from-dream-accent3/20 to-dream-accent1/20 rounded-xl border border-dream-accent1/30 backdrop-blur-lg p-1">
         <div className="flex items-center gap-2 px-2">
           <div className="flex-shrink-0 px-3 py-1.5 bg-dream-accent3/40 rounded-lg flex items-center">
-            <img 
-              src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
-              alt="Fire" 
-              className="h-16 w-16 mr-1.5 animate-pulse" 
-            />
+            <img src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" alt="Fire" className="h-16 w-16 mr-1.5 animate-pulse" />
             <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">TRENDING</span>
           </div>
           
           <div className="overflow-hidden flex-1">
             <div className="flex animate-scroll items-center gap-3">
-              {trendingTokens.map((token, index) => (
-                <div key={`${token.token_mint}-${index}`} className="flex-shrink-0 py-1.5 px-3 bg-dream-background/40 rounded-lg border border-dream-accent1/20 flex items-center gap-2 hover:bg-dream-background/60 transition-all duration-300">
+              {trendingTokens.map((token, index) => <div key={`${token.token_mint}-${index}`} className="flex-shrink-0 py-1.5 px-3 bg-dream-background/40 rounded-lg border border-dream-accent1/20 flex items-center gap-2 hover:bg-dream-background/60 transition-all duration-300">
                   <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${getHeatColor(token.bet_count)} flex items-center justify-center`}>
                     <span className="text-xs font-bold text-white">{token.token_symbol.charAt(0)}</span>
                   </div>
@@ -177,8 +159,7 @@ const TrendingBetsList = () => {
                     <span className="text-xs font-semibold">{token.token_symbol}</span>
                     <span className="text-[10px] text-dream-foreground/60">{token.bet_count} bets</span>
                   </div>
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
         </div>
@@ -187,33 +168,18 @@ const TrendingBetsList = () => {
       <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
         <div className="flex items-center justify-between mb-4">
           <CardTitle className="text-xl text-dream-foreground flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" 
-              alt="Fire" 
-              className="h-10 w-10" 
-            />
-            <span>Trending Tokens</span>
+            <img src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" alt="Fire" className="h-10 w-10" />
+            <span>Trending Bets</span>
           </CardTitle>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs bg-dream-background/40 border-dream-accent1/20 hover:bg-dream-background/60 hover:border-dream-accent1/40"
-          >
-            {isExpanded ? (
-              <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Show Less</>
-            ) : (
-              <><ChevronDown className="h-3.5 w-3.5 mr-1" /> Show All</>
-            )}
+          <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="text-xs bg-dream-background/40 border-dream-accent1/20 hover:bg-dream-background/60 hover:border-dream-accent1/40">
+            {isExpanded ? <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Show Less</> : <><ChevronDown className="h-3.5 w-3.5 mr-1" /> Show All</>}
           </Button>
         </div>
 
-        {!isMobile && (
-          <Carousel className="mx-auto max-w-5xl">
+        {!isMobile && <Carousel className="mx-auto max-w-5xl">
             <CarouselContent>
-              {visibleTokens.map((token, index) => (
-                <CarouselItem key={`${token.token_mint}-${index}`} className="md:basis-1/2 lg:basis-1/3">
+              {visibleTokens.map((token, index) => <CarouselItem key={`${token.token_mint}-${index}`} className="md:basis-1/2 lg:basis-1/3">
                   <div className="p-1">
                     <Link to={`/token/${token.token_mint}`} className="block">
                       <div className="rounded-xl overflow-hidden bg-gradient-to-br from-dream-background/70 to-dream-background/40 border border-dream-accent1/10 p-4 h-full backdrop-blur-md hover:border-dream-accent1/30 transition-all duration-300">
@@ -289,41 +255,23 @@ const TrendingBetsList = () => {
                       </div>
                     </Link>
                   </div>
-                </CarouselItem>
-              ))}
+                </CarouselItem>)}
             </CarouselContent>
             <CarouselPrevious className="left-0 bg-dream-background/50 hover:bg-dream-background/80 border-dream-accent1/30 text-dream-accent2" />
             <CarouselNext className="right-0 bg-dream-background/50 hover:bg-dream-background/80 border-dream-accent1/30 text-dream-accent2" />
-          </Carousel>
-        )}
+          </Carousel>}
 
-        {isMobile && (
-          <div className="relative">
-            <button 
-              onClick={scrollLeft} 
-              className="scroll-button scroll-button-left z-10 absolute top-1/2 -translate-y-1/2 left-0 h-8 w-8 flex items-center justify-center bg-dream-background/50 hover:bg-dream-background/70 border border-dream-accent1/20 rounded-full"
-              aria-label="Scroll left"
-              type="button"
-            >
+        {isMobile && <div className="relative">
+            <button onClick={scrollLeft} className="scroll-button scroll-button-left z-10 absolute top-1/2 -translate-y-1/2 left-0 h-8 w-8 flex items-center justify-center bg-dream-background/50 hover:bg-dream-background/70 border border-dream-accent1/20 rounded-full" aria-label="Scroll left" type="button">
               <ChevronLeft className="h-4 w-4 text-dream-accent2" />
             </button>
-            <button 
-              onClick={scrollRight} 
-              className="scroll-button scroll-button-right z-10 absolute top-1/2 -translate-y-1/2 right-0 h-8 w-8 flex items-center justify-center bg-dream-background/50 hover:bg-dream-background/70 border border-dream-accent1/20 rounded-full"
-              aria-label="Scroll right"
-              type="button"
-            >
+            <button onClick={scrollRight} className="scroll-button scroll-button-right z-10 absolute top-1/2 -translate-y-1/2 right-0 h-8 w-8 flex items-center justify-center bg-dream-background/50 hover:bg-dream-background/70 border border-dream-accent1/20 rounded-full" aria-label="Scroll right" type="button">
               <ChevronRight className="h-4 w-4 text-dream-accent2" />
             </button>
             
             <div className="overflow-x-auto px-2 pb-4 scrollbar-hide" ref={scrollRef}>
               <div className="flex space-x-4 pb-2">
-                {visibleTokens.map((token, index) => (
-                  <Link 
-                    key={`${token.token_mint}-${index}`} 
-                    to={`/token/${token.token_mint}`} 
-                    className="flex-shrink-0 w-[280px]"
-                  >
+                {visibleTokens.map((token, index) => <Link key={`${token.token_mint}-${index}`} to={`/token/${token.token_mint}`} className="flex-shrink-0 w-[280px]">
                     <div className="rounded-xl overflow-hidden bg-gradient-to-br from-dream-background/70 to-dream-background/40 border border-dream-accent1/10 p-4 h-full backdrop-blur-md hover:border-dream-accent1/30 transition-all duration-300">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
@@ -395,32 +343,17 @@ const TrendingBetsList = () => {
                         </div>
                       </div>
                     </div>
-                  </Link>
-                ))}
+                  </Link>)}
               </div>
             </div>
-          </div>
-        )}
+          </div>}
         
-        {isMobile && trendingTokens.length > 5 && (
-          <div className="flex justify-center mt-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-xs bg-dream-background/40 border-dream-accent1/20 hover:bg-dream-background/60 hover:border-dream-accent1/40"
-            >
-              {isExpanded ? (
-                <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Show Less</>
-              ) : (
-                <><ChevronDown className="h-3.5 w-3.5 mr-1" /> Show All</>
-              )}
+        {isMobile && trendingTokens.length > 5 && <div className="flex justify-center mt-4">
+            <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="text-xs bg-dream-background/40 border-dream-accent1/20 hover:bg-dream-background/60 hover:border-dream-accent1/40">
+              {isExpanded ? <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Show Less</> : <><ChevronDown className="h-3.5 w-3.5 mr-1" /> Show All</>}
             </Button>
-          </div>
-        )}
+          </div>}
       </Card>
-    </>
-  );
+    </>;
 };
-
 export default TrendingBetsList;
