@@ -20,57 +20,14 @@ export const fetchTokens = async () => {
 };
 
 export const fetchTokenById = async (tokenMint: string) => {
-  try {
-    // First try to get the token from Supabase
-    const { data, error } = await supabase
-      .from('tokens')
-      .select('*')
-      .eq('token_mint', tokenMint);
-    
-    if (error) {
-      console.error("Supabase error fetching token:", error);
-      return null;
-    }
-    
-    // If we found a token, return the first one
-    if (data && data.length > 0) {
-      return data[0];
-    }
-    
-    // If no token found in database, query the Solana tracker function
-    console.log("Token not found in database, checking Solana tracker...");
-    const { data: trackerData, error: trackerError } = await supabase.functions.invoke('solana-tracker', {
-      body: { query: tokenMint }
-    });
-    
-    if (trackerError) {
-      console.error("Error querying Solana tracker:", trackerError);
-      return null;
-    }
-    
-    if (trackerData && trackerData.results && trackerData.results.length > 0) {
-      // Found a token via the Solana tracker
-      const tokenInfo = trackerData.results[0];
-      
-      // Create a temporary token record that matches the expected format
-      return {
-        token_mint: tokenInfo.mint,
-        token_name: tokenInfo.name || 'Unknown Token',
-        token_symbol: tokenInfo.symbol || '',
-        last_trade_price: 0,
-        volume_24h: 0,
-        last_updated_time: new Date().toISOString(),
-        total_supply: 1000000000,
-        current_market_cap: 0,
-        initial_market_cap: 0
-      };
-    }
-    
-    return null;
-  } catch (error) {
-    console.error("Error in fetchTokenById:", error);
-    return null;
-  }
+  const { data, error } = await supabase
+    .from('tokens')
+    .select('*')
+    .eq('token_mint', tokenMint)
+    .single();
+  
+  if (error) throw error;
+  return data;
 };
 
 // Trending tokens function
