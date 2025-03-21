@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import PXBProfilePanel from '@/components/PXBProfilePanel';
 import PXBStatsPanel from '@/components/PXBStatsPanel';
 import PXBBetsHistory from '@/components/PXBBetsHistory';
+import PXBWallet from '@/components/PXBWallet';
 
 const Profile = () => {
   const { connected, publicKey } = useWallet();
@@ -97,7 +98,12 @@ const Profile = () => {
           
           {/* Right column - PXB Wallet and Stats */}
           <div className="lg:col-span-4 space-y-6">
-            {/* PXB Wallet Component */}
+            {/* Add PXB Wallet at the top */}
+            <div className="block w-full">
+              <PXBWallet />
+            </div>
+            
+            {/* PXB Stats Panel */}
             <div className="block w-full">
               <PXBStatsPanel userProfile={userProfile} />
             </div>
