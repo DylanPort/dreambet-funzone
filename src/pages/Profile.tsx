@@ -55,13 +55,21 @@ const Profile = () => {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center bg-black">
-          <div className="glass-panel p-10 flex flex-col items-center">
-            <div className="w-20 h-20 mb-6 bg-dream-foreground/10 rounded-full flex items-center justify-center">
-              <img src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" alt="Profile" className="w-12 h-12" />
+        <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 flex justify-center items-center min-h-[80vh]">
+            <div className="w-full max-w-md p-8 rounded-2xl bg-[#0f1628]/80 backdrop-blur-lg border border-indigo-900/30 text-center">
+              <div className="w-20 h-20 mb-6 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto">
+                <img src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" alt="Profile" className="w-12 h-12" />
+              </div>
+              <h2 className="text-2xl font-display font-bold mb-4 text-white">Connect Your Wallet</h2>
+              <p className="text-indigo-300/70 mb-6">You need to connect your wallet to access your profile.</p>
+              <Button 
+                variant="default" 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2"
+              >
+                Connect Wallet
+              </Button>
             </div>
-            <h2 className="text-xl font-display font-bold mb-4">Connect Your Wallet</h2>
-            <p className="text-dream-foreground/70 text-center mb-6">You need to connect your wallet to access your profile.</p>
           </div>
         </main>
       </>
@@ -72,10 +80,12 @@ const Profile = () => {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center bg-black">
-          <div className="glass-panel p-10 flex flex-col items-center">
-            <div className="w-12 h-12 border-4 border-t-transparent border-dream-accent1 rounded-full animate-spin mb-4"></div>
-            <p className="text-dream-foreground/70">Loading profile...</p>
+        <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 flex justify-center items-center min-h-[80vh]">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 border-4 border-t-transparent border-indigo-500 rounded-full animate-spin mb-4"></div>
+              <p className="text-indigo-300/70">Loading profile...</p>
+            </div>
           </div>
         </main>
       </>
@@ -85,34 +95,36 @@ const Profile = () => {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto bg-black">
-        {/* PXB Wallet at the top - full width */}
-        <div className="mb-6 w-full">
-          <PXBWallet />
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 mb-6">
-          {/* Left column - Profile info */}
-          <div className="lg:col-span-3">
-            <PXBProfilePanel 
-              userProfile={userProfile} 
-              publicKey={publicKey} 
-              localPxbPoints={localPxbPoints || userProfile?.pxbPoints || 0} 
-            />
+      <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 space-y-8">
+          {/* PXB Wallet at the top - full width */}
+          <div className="w-full">
+            <PXBWallet />
           </div>
           
-          {/* Right column - Stats */}
-          <div className="lg:col-span-4">
-            {/* PXB Stats Panel */}
-            <div className="w-full">
-              <PXBStatsPanel userProfile={userProfile} />
+          <div className="grid grid-cols-1 lg:grid-cols-7 gap-8">
+            {/* Left column - Profile info */}
+            <div className="lg:col-span-3">
+              <PXBProfilePanel 
+                userProfile={userProfile} 
+                publicKey={publicKey} 
+                localPxbPoints={localPxbPoints || userProfile?.pxbPoints || 0} 
+              />
+            </div>
+            
+            {/* Right column - Stats */}
+            <div className="lg:col-span-4">
+              {/* PXB Stats Panel */}
+              <div className="w-full">
+                <PXBStatsPanel userProfile={userProfile} />
+              </div>
             </div>
           </div>
-        </div>
-        
-        {/* Betting History - Full width */}
-        <div className="w-full mb-6">
-          <PXBBetsHistory />
+          
+          {/* Betting History - Full width */}
+          <div className="w-full">
+            <PXBBetsHistory />
+          </div>
         </div>
       </main>
     </>
