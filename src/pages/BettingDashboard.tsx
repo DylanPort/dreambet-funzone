@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, HelpCircle, Rocket, Skull, Trophy, Zap, Check, Gift, Star, Hand, HandMetal, Sparkles } from 'lucide-react';
@@ -8,8 +9,6 @@ import OpenBetsList from '@/components/OpenBetsList';
 import TrendingBetsList from '@/components/TrendingBetsList';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import TokenSearchBar from '@/components/TokenSearchBar';
-import BetReel from '@/components/BetReel';
-import SearchedTokensReel from '@/components/SearchedTokensReel';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -63,8 +62,6 @@ const BettingDashboard = () => {
   return <>
       <OrbitingParticles />
       <Navbar />
-      <BetReel />
-      <SearchedTokensReel />
 
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6">

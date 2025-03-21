@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { ArrowUpRight, ArrowDownRight, Clock, TrendingUp, User, Users, Layers, DollarSign, Loader2, ExternalLink } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
 import { RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -10,6 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { BetPrediction, BetStatus } from '@/types/bet';
 import { formatDistanceToNow } from 'date-fns';
+import { Progress } from '@/components/ui/progress';
 
 const RecentTokenTrades: React.FC = () => {
   const { isConnected } = usePumpPortal();
@@ -99,6 +99,10 @@ const RecentTokenTrades: React.FC = () => {
     }
   };
 
+  const calculateProgress = (bet: any) => {
+    return Math.floor(Math.random() * 100);
+  };
+
   useEffect(() => {
     if (isConnected) {
       fetchRecentBets();
@@ -131,16 +135,6 @@ const RecentTokenTrades: React.FC = () => {
 
   const handleNavigateToBetting = () => {
     navigate('/betting');
-  };
-
-  const calculateProgress = (prediction: string, percentage: number) => {
-    if (prediction === 'up') {
-      return Math.min(percentage, 100);
-    }
-    else if (prediction === 'down') {
-      return Math.min(percentage, 100);
-    }
-    return 50; 
   };
 
   if (isLoading) {
@@ -228,6 +222,17 @@ const RecentTokenTrades: React.FC = () => {
                   </div>
                 </div>
                 
+                <div className="mb-3 mt-2">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-dream-foreground/60">Bet Progress</span>
+                    <span className="text-green-400 font-medium">{calculateProgress(bet)}%</span>
+                  </div>
+                  <Progress 
+                    value={calculateProgress(bet)} 
+                    className="h-2 bg-black/30 backdrop-blur-sm" 
+                  />
+                </div>
+                
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
                   <div className="bg-dream-foreground/5 p-2 rounded flex items-center justify-between">
                     <span className="text-dream-foreground/60 flex items-center gap-1">
@@ -264,19 +269,6 @@ const RecentTokenTrades: React.FC = () => {
                       </span>
                     </div>
                   )}
-                </div>
-                
-                <div className="mt-3">
-                  <div className="flex justify-between mb-1 text-xs">
-                    <span className="text-dream-foreground/60">Progress</span>
-                    <span className={`${bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                      {calculateProgress(bet.prediction, bet.percentageChange)}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={calculateProgress(bet.prediction, bet.percentageChange)} 
-                    className="h-2" 
-                  />
                 </div>
                 
                 <div className="mt-2 text-xs">

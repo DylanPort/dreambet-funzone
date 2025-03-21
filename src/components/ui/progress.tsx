@@ -19,19 +19,19 @@ const Progress = React.forwardRef<
     {/* Dynamic background shimmer effect */}
     <div className="absolute inset-0 bg-gradient-to-r from-black/5 via-white/5 to-black/5 animate-gradient-move"></div>
     
-    {/* Floating particles - enhanced with more colors */}
+    {/* Floating particles - enhanced with more colors and green tones */}
     <div className="absolute inset-0 overflow-hidden">
       {Array.from({ length: 8 }).map((_, i) => {
-        // Array of vibrant colors for particles
+        // Array of vibrant colors for particles, emphasizing green hues
         const colors = [
           "bg-[#00ff9d]/40", // Green
-          "bg-[#ff8a00]/40", // Orange
           "bg-[#00ffe0]/40", // Cyan
-          "bg-[#ff3dfc]/40", // Pink
-          "bg-[#7b61ff]/40", // Purple
-          "bg-[#fffc00]/40", // Yellow
-          "bg-[#ff0055]/40", // Red
-          "bg-white/40",     // White
+          "bg-[#4dff6a]/40", // Light Green
+          "bg-[#00ff62]/40", // Emerald
+          "bg-[#47ff9e]/40", // Mint
+          "bg-[#7bff86]/40", // Lime
+          "bg-[#b9ff00]/40", // Yellow-Green
+          "bg-[#00ffaa]/40", // Teal
         ];
         
         return (
@@ -54,13 +54,13 @@ const Progress = React.forwardRef<
     </div>
     
     <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3 transition-all duration-300 relative"
+      className="h-full w-full flex-1 bg-gradient-to-r from-green-500 via-emerald-400 to-teal-500 transition-all duration-300 relative"
       style={{ 
         transform: `translateX(-${100 - (value || 0)}%)`,
       }}
     >
       {/* Dynamic pulsing glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/60 via-dream-accent2/60 to-dream-accent3/60 blur-md animate-pulse-glow"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-green-500/60 via-emerald-400/60 to-teal-500/60 blur-md animate-pulse-glow"></div>
       
       {/* Inner shimmering effect - enhanced with faster animation */}
       <div className="absolute inset-0">
@@ -73,7 +73,7 @@ const Progress = React.forwardRef<
       
       {/* Fluid wave effect */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-dream-accent1/20 via-dream-accent2/40 to-dream-accent3/20 animate-drift"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-green-500/20 via-emerald-400/40 to-teal-500/20 animate-drift"></div>
       </div>
       
       {/* Fast-moving particles based on progress value */}
