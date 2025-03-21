@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,6 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 
-// Define transaction types for activity
 interface Transaction {
   id: string;
   amount: number;
@@ -62,7 +60,6 @@ const PXBWallet: React.FC = () => {
     }
   }, [lastClaimTime]);
 
-  // Fetch transaction history when the activity tab is opened
   useEffect(() => {
     if (activeTab === 'activity' && userProfile) {
       fetchTransactionHistory();
@@ -74,7 +71,6 @@ const PXBWallet: React.FC = () => {
     
     setIsLoadingTransactions(true);
     try {
-      // Fetch points history for the user
       const { data, error } = await supabase
         .from('points_history')
         .select('*')
@@ -112,15 +108,11 @@ const PXBWallet: React.FC = () => {
     
     setIsSending(true);
     try {
-      // Extract the actual user ID from the PXB ID format (PXB-userID-timestamp)
       let actualUserId = recipientId;
       
-      // Check if the input is in PXB-ID format and extract the userId portion
       if (recipientId.startsWith('PXB-')) {
         const parts = recipientId.split('-');
         if (parts.length >= 2) {
-          // The full UUID might be spread across multiple parts if it contains hyphens
-          // For simplicity, we'll take just the second part as the user identifier
           actualUserId = parts[1];
         }
       }
@@ -152,9 +144,10 @@ const PXBWallet: React.FC = () => {
 
   const formatCooldownTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const handleClaimPoints = async () => {
@@ -162,9 +155,8 @@ const PXBWallet: React.FC = () => {
     
     setIsClaiming(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For this demo, we'll just set the last claim time
       const now = Date.now();
       localStorage.setItem('lastPxbClaim', now.toString());
       setLastClaimTime(now);
@@ -172,15 +164,12 @@ const PXBWallet: React.FC = () => {
       
       toast.success('Successfully claimed 100 PXB points!');
       
-      // In a real implementation, you would call an API to claim points
-      // await mintPoints(100);
       fetchUserProfile();
     } finally {
       setIsClaiming(false);
     }
   };
 
-  // Get a friendly description for a transaction
   const getTransactionDescription = (transaction: Transaction) => {
     switch (transaction.action) {
       case 'bet_placed':
@@ -200,7 +189,6 @@ const PXBWallet: React.FC = () => {
     }
   };
 
-  // Format transaction time
   const formatTransactionTime = (timestamp: string) => {
     return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   };
@@ -224,7 +212,6 @@ const PXBWallet: React.FC = () => {
 
   return (
     <div className="mb-6 overflow-hidden relative rounded-lg bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
-      {/* PXB Wallet Header - More Futuristic */}
       <div className="p-6 flex justify-between items-center bg-gradient-to-r from-[#131c36] to-[#1a2542]">
         <div className="flex items-center">
           <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-3 border border-indigo-500/20">
@@ -241,7 +228,6 @@ const PXBWallet: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs - Cleaner Design */}
       <div className="flex border-b border-indigo-900/30">
         <button
           className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${
@@ -281,7 +267,6 @@ const PXBWallet: React.FC = () => {
         </button>
       </div>
 
-      {/* Tab Content */}
       <div className="p-6">
         {activeTab === 'send' && (
           <motion.div
@@ -444,7 +429,6 @@ const PXBWallet: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            {/* Transaction History */}
             <div>
               <h3 className="text-lg font-medium mb-4 text-white">Recent Activity</h3>
               
