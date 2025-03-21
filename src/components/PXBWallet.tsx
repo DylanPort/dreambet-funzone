@@ -6,14 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Copy, Send, CreditCard, QrCode, Coins, CheckCircle2, Clock, ArrowRight, ArrowUpDown, History } from 'lucide-react';
+import { Copy, Send, CreditCard, QrCode, Coins, CheckCircle2, Clock, ArrowRight, ArrowUpDown, History, LockClock } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+
 interface PXBWalletProps {
   userProfile: UserProfile | null;
 }
+
 interface TransactionHistory {
   id: string;
   userId: string;
@@ -22,6 +24,7 @@ interface TransactionHistory {
   referenceId: string | null;
   createdAt: string;
 }
+
 const PXBWallet: React.FC<PXBWalletProps> = ({
   userProfile
 }) => {
@@ -40,12 +43,78 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [transactions, setTransactions] = useState<TransactionHistory[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [lastClaimTime, setLastClaimTime] = useState<Date | null>(null);
+  const [claimCooldown, setClaimCooldown] = useState<number>(0);
+  const [isCooldownActive, setIsCooldownActive] = useState<boolean>(false);
+
   useEffect(() => {
     if (userProfile && generatePxbId) {
       setUserPxbId(userProfile.id);
       fetchTransactionHistory();
+      fetchLastClaimTime();
     }
   }, [userProfile, generatePxbId]);
+
+  useEffect(() => {
+    let intervalId: number;
+    
+    if (isCooldownActive && lastClaimTime) {
+      intervalId = window.setInterval(() => {
+        const now = new Date();
+        const timeSinceClaim = now.getTime() - lastClaimTime.getTime();
+        const sixHoursInMs = 6 * 60 * 60 * 1000;
+        const remainingTime = Math.max(0, sixHoursInMs - timeSinceClaim);
+        
+        if (remainingTime <= 0) {
+          setIsCooldownActive(false);
+          setClaimCooldown(0);
+          clearInterval(intervalId);
+        } else {
+          setClaimCooldown(remainingTime);
+        }
+      }, 1000);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [lastClaimTime, isCooldownActive]);
+
+  const fetchLastClaimTime = async () => {
+    if (!userProfile) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('points_history')
+        .select('created_at')
+        .eq('user_id', userProfile.id)
+        .eq('action', 'mint')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('Error fetching last claim time:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const lastClaimDate = new Date(data[0].created_at);
+        setLastClaimTime(lastClaimDate);
+        
+        const now = new Date();
+        const timeSinceClaim = now.getTime() - lastClaimDate.getTime();
+        const sixHoursInMs = 6 * 60 * 60 * 1000;
+        
+        if (timeSinceClaim < sixHoursInMs) {
+          setIsCooldownActive(true);
+          setClaimCooldown(sixHoursInMs - timeSinceClaim);
+        }
+      }
+    } catch (error) {
+      console.error('Error in fetchLastClaimTime:', error);
+    }
+  };
+
   const fetchTransactionHistory = async () => {
     if (!userProfile) return;
     setIsLoadingTransactions(true);
@@ -75,6 +144,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
       setIsLoadingTransactions(false);
     }
   };
+
   const handleCopyId = () => {
     if (userPxbId) {
       navigator.clipboard.writeText(userPxbId);
@@ -83,6 +153,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
       toast.success('PXB ID copied to clipboard');
     }
   };
+
   const handleSendPoints = async () => {
     if (!userProfile || !sendPoints) return;
     if (!recipientId.trim()) {
@@ -114,24 +185,41 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
       setIsSending(false);
     }
   };
+
   const handleRequestMint = async () => {
-    if (mintPoints) {
+    if (!mintPoints) return;
+    
+    try {
       await mintPoints(100);
       toast.success('You received 100 PXB Points!');
+      
+      const now = new Date();
+      setLastClaimTime(now);
+      setIsCooldownActive(true);
+      setClaimCooldown(6 * 60 * 60 * 1000); // 6 hours in milliseconds
+      
+      fetchTransactionHistory();
+    } catch (error) {
+      console.error('Error in handleRequestMint:', error);
+      toast.error('Failed to claim points');
     }
   };
-  if (!userProfile) {
-    return <Card className="p-6 bg-black/20 border-dream-accent2/20 backdrop-blur-sm">
-        <div className="text-center p-4">
-          <p className="text-gray-400">Connect your wallet to access your PXB Wallet</p>
-        </div>
-      </Card>;
-  }
+
+  const formatCooldownTime = (ms: number): string => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const formatPXBId = (id: string) => {
     if (!id) return '';
     if (id.length <= 12) return id;
     return `${id.substring(0, 6)}...${id.substring(id.length - 6)}`;
   };
+
   const getActionLabel = (action: string): string => {
     switch (action) {
       case 'transfer_sent':
@@ -148,6 +236,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
         return 'Transaction';
     }
   };
+
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'transfer_sent':
@@ -164,6 +253,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
         return <CreditCard className="w-4 h-4 text-gray-500" />;
     }
   };
+
   const getAmountColor = (action: string): string => {
     if (action === 'transfer_received' || action === 'bet_won' || action === 'mint') {
       return 'text-green-500';
@@ -172,10 +262,12 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
     }
     return 'text-gray-500';
   };
+
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
+
   return <Card className="p-0 overflow-hidden bg-gradient-to-br from-[#1A1A2E] to-[#16213E] border-[#30475E]/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-sm">
       <div className="bg-gradient-to-r from-[#4B31DD]/20 to-[#1E93FF]/20 p-4 flex justify-between items-center border-b border-white/5">
         <div className="flex items-center space-x-3">
@@ -231,9 +323,24 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
           </Button>
 
           <div className="pt-2">
-            <Button variant="outline" size="sm" onClick={handleRequestMint} className="w-full border-dashed border-gray-600 bg-black/20 hover:bg-black/30 text-gray-400">
-              <Coins className="w-4 h-4 mr-2 text-gray-400" />
-              Request 100 Free PXB Points
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRequestMint} 
+              disabled={isCooldownActive} 
+              className={`w-full border-dashed border-gray-600 bg-black/20 hover:bg-black/30 text-gray-400 ${isCooldownActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isCooldownActive ? (
+                <>
+                  <LockClock className="w-4 h-4 mr-2 text-gray-400" />
+                  Claim again in {formatCooldownTime(claimCooldown)}
+                </>
+              ) : (
+                <>
+                  <Coins className="w-4 h-4 mr-2 text-gray-400" />
+                  Request 100 Free PXB Points
+                </>
+              )}
             </Button>
           </div>
         </TabsContent>
@@ -267,7 +374,6 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
               Share this ID with others to receive PXB Points
             </p>
           </div>
-          
           
         </TabsContent>
 
@@ -311,4 +417,5 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
       </Tabs>
     </Card>;
 };
+
 export default PXBWallet;
