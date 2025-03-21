@@ -186,7 +186,7 @@ const RecentTokenTrades: React.FC = () => {
           {recentBets.map((bet, index) => (
             <Link 
               key={`bet-${bet.id}`} 
-              to={`/betting/token/${bet.tokenMint}`}
+              to={`/token/${bet.tokenMint}`}
               className="block"
             >
               <div className="p-4 hover:bg-dream-accent1/5 transition-colors">
