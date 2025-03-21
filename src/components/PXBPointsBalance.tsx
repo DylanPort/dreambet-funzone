@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Coins, Trophy, RefreshCw, User } from 'lucide-react';
+import { Coins, RefreshCw, User } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -49,32 +49,32 @@ const PXBPointsBalance: React.FC = () => {
                      (publicKey ? publicKey.toString().substring(0, 8) : 'User');
 
   return (
-    <div className="glass-panel p-4 rounded-lg relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-[#00ff9d]/30 to-[#00ffe0]/30 animate-gradient-move shadow-[0_0_15px_rgba(0,255,150,0.3)] after:content-[''] after:absolute after:inset-0 after:bg-[#00ff8a]/10 after:z-0"></div>
+    <div className="rounded-lg relative overflow-hidden border border-indigo-900/30 bg-[#0f1628] backdrop-blur-lg">
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-indigo-600/5"></div>
       
-      <div className="flex items-center space-x-4 relative z-10">
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00ff9d]/40 to-[#00ffe0]/40 flex items-center justify-center border border-[#00ff9d]/30 shadow-[0_0_10px_rgba(0,255,150,0.3)]">
-          <Coins className="w-6 h-6 text-[#00ffe0]" />
+      <div className="p-4 flex items-center space-x-4 relative z-10">
+        <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+          <Coins className="w-6 h-6 text-indigo-400" />
         </div>
         
         <div className="flex-1">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-white drop-shadow-[0_0_2px_rgba(0,255,150,0.5)]">{userProfile.pxbPoints.toLocaleString()}</h3>
+            <h3 className="text-xl font-bold text-white">{userProfile.pxbPoints.toLocaleString()}</h3>
             <button 
               onClick={handleRefresh} 
-              className="p-1 rounded-full hover:bg-[#00ff9d]/20 transition-colors"
+              className="p-1 rounded-full hover:bg-indigo-500/10 transition-colors"
               title="Refresh PXB Points"
             >
-              <RefreshCw className="w-4 h-4 text-[#00ffe0]" />
+              <RefreshCw className="w-4 h-4 text-indigo-400" />
             </button>
           </div>
         </div>
       </div>
       
-      <div className="mt-3 pt-3 border-t border-[#00ff9d]/20 flex justify-between items-center text-xs text-dream-foreground/60">
+      <div className="mt-1 pt-2 px-4 pb-3 border-t border-indigo-900/20 flex justify-between items-center text-xs text-white/60">
         <div className="flex items-center">
-          <User className="w-3 h-3 mr-1 text-[#00ffe0]" />
-          <span className="font-medium text-dream-foreground/80">{displayName}</span>
+          <User className="w-3 h-3 mr-1 text-indigo-400" />
+          <span className="font-medium text-white/80">{displayName}</span>
         </div>
         <span>#{userProfile.id.substring(0, 8)}</span>
       </div>

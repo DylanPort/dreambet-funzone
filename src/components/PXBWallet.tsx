@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
@@ -222,29 +223,29 @@ const PXBWallet: React.FC = () => {
   }
 
   return (
-    <div className="glass-panel mb-6 overflow-hidden relative rounded-lg bg-[#1a2542] border border-indigo-900/50">
-      {/* PXB Wallet Header */}
-      <div className="p-6 flex justify-between items-center">
+    <div className="mb-6 overflow-hidden relative rounded-lg bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
+      {/* PXB Wallet Header - More Futuristic */}
+      <div className="p-6 flex justify-between items-center bg-gradient-to-r from-[#131c36] to-[#1a2542]">
         <div className="flex items-center">
-          <div className="w-12 h-12 rounded-full bg-indigo-600/20 flex items-center justify-center mr-3">
+          <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-3 border border-indigo-500/20">
             <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-8 h-8" />
           </div>
           <div>
-            <h2 className="text-xl font-bold">PXB Wallet</h2>
+            <h2 className="text-xl font-bold text-white">PXB Wallet</h2>
             <p className="text-indigo-300/70 text-sm">Send and receive PXB points</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-3xl font-bold">{userProfile.pxbPoints.toLocaleString()}</p>
+          <p className="text-3xl font-bold text-white">{userProfile.pxbPoints.toLocaleString()}</p>
           <p className="text-indigo-300/70 text-sm">PXB Points</p>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-indigo-900/50">
+      {/* Tabs - Cleaner Design */}
+      <div className="flex border-b border-indigo-900/30">
         <button
           className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${
-            activeTab === 'send' ? 'border-b-2 border-purple-500 text-white' : 'text-indigo-300/70 hover:text-white'
+            activeTab === 'send' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'
           }`}
           onClick={() => setActiveTab('send')}
         >
@@ -253,7 +254,7 @@ const PXBWallet: React.FC = () => {
         </button>
         <button
           className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${
-            activeTab === 'receive' ? 'border-b-2 border-purple-500 text-white' : 'text-indigo-300/70 hover:text-white'
+            activeTab === 'receive' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'
           }`}
           onClick={() => setActiveTab('receive')}
         >
@@ -262,7 +263,7 @@ const PXBWallet: React.FC = () => {
         </button>
         <button
           className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${
-            activeTab === 'claim' ? 'border-b-2 border-purple-500 text-white' : 'text-indigo-300/70 hover:text-white'
+            activeTab === 'claim' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'
           }`}
           onClick={() => setActiveTab('claim')}
         >
@@ -271,7 +272,7 @@ const PXBWallet: React.FC = () => {
         </button>
         <button
           className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${
-            activeTab === 'activity' ? 'border-b-2 border-purple-500 text-white' : 'text-indigo-300/70 hover:text-white'
+            activeTab === 'activity' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'
           }`}
           onClick={() => setActiveTab('activity')}
         >
@@ -295,7 +296,7 @@ const PXBWallet: React.FC = () => {
                   value={recipientId}
                   onChange={(e) => setRecipientId(e.target.value)}
                   placeholder="Enter PXB ID (e.g., PXB-12345678-abc123)"
-                  className="bg-indigo-900/20 border-indigo-900/50 text-white"
+                  className="bg-indigo-900/10 border-indigo-900/30 text-white"
                 />
               </div>
               
@@ -308,7 +309,7 @@ const PXBWallet: React.FC = () => {
                     placeholder="0"
                     type="number"
                     min="1"
-                    className="bg-indigo-900/20 border-indigo-900/50 text-white pr-12"
+                    className="bg-indigo-900/10 border-indigo-900/30 text-white pr-12"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-indigo-300/70">
                     PXB
@@ -316,15 +317,15 @@ const PXBWallet: React.FC = () => {
                 </div>
               </div>
               
-              <div className="flex justify-between items-center py-2 px-3 bg-indigo-900/20 rounded-lg">
+              <div className="flex justify-between items-center py-2 px-3 bg-indigo-900/10 rounded-lg">
                 <span className="text-sm text-indigo-300/70">Available</span>
-                <span className="font-medium">{userProfile.pxbPoints.toLocaleString()} PXB</span>
+                <span className="font-medium text-white">{userProfile.pxbPoints.toLocaleString()} PXB</span>
               </div>
               
               <Button 
                 onClick={handleSendPoints} 
                 disabled={isSending || !recipientId || !amount}
-                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white"
               >
                 {isSending ? (
                   <div className="flex items-center">
@@ -349,13 +350,13 @@ const PXBWallet: React.FC = () => {
             transition={{ duration: 0.3 }}
             className="flex flex-col items-center"
           >
-            <div className="w-40 h-40 bg-indigo-900/20 rounded-lg mb-4 flex items-center justify-center">
-              <QrCode className="w-20 h-20 text-indigo-300/70" />
+            <div className="w-40 h-40 bg-indigo-900/10 rounded-lg mb-4 flex items-center justify-center border border-indigo-500/20">
+              <QrCode className="w-20 h-20 text-indigo-400" />
             </div>
             
             <p className="text-sm text-indigo-300/70 mb-2">Your PXB ID</p>
-            <div className="w-full bg-indigo-900/20 rounded-lg p-3 flex justify-between items-center mb-6">
-              <code className="text-sm text-indigo-200 font-mono">{myPxbId || 'Generating...'}</code>
+            <div className="w-full bg-indigo-900/10 rounded-lg p-3 flex justify-between items-center mb-6 border border-indigo-900/30">
+              <code className="text-sm text-indigo-100 font-mono">{myPxbId || 'Generating...'}</code>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -376,7 +377,7 @@ const PXBWallet: React.FC = () => {
             
             <Button 
               onClick={handleGenerateId} 
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Generate New ID
@@ -392,28 +393,28 @@ const PXBWallet: React.FC = () => {
           >
             <div className="flex flex-col items-center py-6">
               <div className="text-center mb-6">
-                <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
-                  <Gift className="w-10 h-10 text-green-400" />
+                <div className="w-20 h-20 rounded-full bg-indigo-500/10 flex items-center justify-center mx-auto mb-4 border border-indigo-500/20">
+                  <Gift className="w-10 h-10 text-indigo-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">Daily PXB Points</h3>
+                <h3 className="text-xl font-bold mb-2 text-white">Daily PXB Points</h3>
                 <p className="text-indigo-300/70">
                   Claim free PXB points once every 6 hours
                 </p>
               </div>
               
               {cooldownRemaining ? (
-                <div className="text-center mb-6 p-6 bg-indigo-900/20 rounded-lg w-full max-w-md">
-                  <p className="text-lg font-medium mb-4">Next claim available in</p>
+                <div className="text-center mb-6 p-6 bg-indigo-900/10 rounded-lg w-full max-w-md border border-indigo-900/30">
+                  <p className="text-lg font-medium mb-4 text-white">Next claim available in</p>
                   <div className="flex items-center justify-center space-x-2">
-                    <Clock className="w-5 h-5 text-indigo-300/70" />
-                    <span className="text-2xl font-mono">{formatCooldownTime(cooldownRemaining)}</span>
+                    <Clock className="w-5 h-5 text-indigo-400" />
+                    <span className="text-2xl font-mono text-white">{formatCooldownTime(cooldownRemaining)}</span>
                   </div>
                 </div>
               ) : (
                 <Button 
                   onClick={handleClaimPoints} 
                   disabled={isClaiming}
-                  className="w-full max-w-md bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 mb-4"
+                  className="w-full max-w-md bg-indigo-500 hover:bg-indigo-600 text-white mb-4"
                   size="lg"
                 >
                   {isClaiming ? (
@@ -445,7 +446,7 @@ const PXBWallet: React.FC = () => {
           >
             {/* Transaction History */}
             <div>
-              <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
+              <h3 className="text-lg font-medium mb-4 text-white">Recent Activity</h3>
               
               {isLoadingTransactions ? (
                 <div className="flex justify-center py-8">
@@ -456,34 +457,34 @@ const PXBWallet: React.FC = () => {
                   {transactions.map((tx) => (
                     <div 
                       key={tx.id} 
-                      className="flex items-center justify-between p-3 bg-indigo-900/20 rounded-lg hover:bg-indigo-800/20 transition-colors"
+                      className="flex items-center justify-between p-3 bg-indigo-900/10 rounded-lg hover:bg-indigo-900/20 transition-colors border border-indigo-900/20"
                     >
                       <div className="flex items-center">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                          tx.amount >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                        }`}>
+                          tx.amount >= 0 ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-500/10 text-indigo-400'
+                        } border border-indigo-500/20`}>
                           {tx.amount >= 0 ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
                         </div>
                         <div>
-                          <p className="font-medium text-sm">{getTransactionDescription(tx)}</p>
+                          <p className="font-medium text-sm text-white">{getTransactionDescription(tx)}</p>
                           <p className="text-xs text-indigo-300/70">{formatTransactionTime(tx.created_at)}</p>
                         </div>
                       </div>
-                      <div className={`font-medium ${tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <div className={`font-medium ${tx.amount >= 0 ? 'text-indigo-400' : 'text-indigo-400'}`}>
                         {tx.amount >= 0 ? '+' : ''}{tx.amount} PXB
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6 text-indigo-300/50">
+                <div className="text-center py-6 text-indigo-300/50 bg-indigo-900/10 rounded-lg border border-indigo-900/20">
                   <p>No recent transactions</p>
                 </div>
               )}
               
               <Button 
                 variant="outline" 
-                className="w-full mt-4 border-indigo-900/50 text-indigo-300/70 hover:text-white hover:bg-indigo-900/30"
+                className="w-full mt-4 border-indigo-900/30 text-indigo-300/70 hover:text-white hover:bg-indigo-900/20"
                 onClick={fetchTransactionHistory}
                 disabled={isLoadingTransactions}
               >
