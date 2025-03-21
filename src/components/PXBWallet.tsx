@@ -1,37 +1,63 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Coins, Send, Wallet, Copy, RefreshCw, QrCode, PlusCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Coins, Send, Wallet, Copy, RefreshCw, QrCode, PlusCircle, ArrowRight, ArrowLeft, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
 const PXBWallet: React.FC = () => {
-  const { userProfile, isLoading, sendPoints, generatePxbId, fetchUserProfile } = usePXBPoints();
+  const { 
+    userProfile, 
+    isLoading, 
+    sendPoints, 
+    generatePxbId, 
+    mintPoints,
+    cooldownEnds,
+    checkCooldown,
+    fetchUserProfile 
+  } = usePXBPoints();
+  
   const [showSend, setShowSend] = useState(false);
   const [recipientId, setRecipientId] = useState('');
   const [amount, setAmount] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
   const [myPxbId, setMyPxbId] = useState('');
+  const [isMinting, setIsMinting] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<string>('');
 
-  if (isLoading) {
-    return (
-      <div className="glass-panel p-6 mb-6 animate-pulse">
-        <div className="w-full h-12 bg-white/5 rounded-lg mb-4"></div>
-        <div className="w-1/2 h-8 bg-white/5 rounded-lg"></div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (checkCooldown) {
+      checkCooldown();
+    }
+  }, [checkCooldown]);
 
-  if (!userProfile) {
-    return (
-      <div className="glass-panel p-6 mb-6">
-        <p className="text-center text-dream-foreground/60">Connect your wallet to view your PXB balance</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!cooldownEnds) {
+      setTimeRemaining('');
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = Date.now();
+      if (now >= cooldownEnds) {
+        setTimeRemaining('');
+        return;
+      }
+
+      const remainingMs = cooldownEnds - now;
+      const hours = Math.floor(remainingMs / (60 * 60 * 1000));
+      const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+      const seconds = Math.floor((remainingMs % (60 * 1000)) / 1000);
+
+      setTimeRemaining(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownEnds]);
 
   const handleSendPoints = async () => {
     if (!sendPoints) return;
@@ -49,7 +75,6 @@ const PXBWallet: React.FC = () => {
     
     setIsSending(true);
     try {
-      // Extract the actual user ID from the PXB ID format (PXB-userID-timestamp)
       const parts = recipientId.split('-');
       const actualUserId = parts.length >= 2 ? parts[1] : recipientId;
       
@@ -81,9 +106,40 @@ const PXBWallet: React.FC = () => {
     toast.info('Refreshing balance...');
   };
 
+  const handleMintPoints = async () => {
+    if (!mintPoints) return;
+    
+    setIsMinting(true);
+    try {
+      await mintPoints(500);
+      toast.success('Successfully minted 500 PXB points!');
+    } catch (error) {
+      console.error('Error minting points:', error);
+      toast.error('Failed to mint PXB points');
+    } finally {
+      setIsMinting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="glass-panel p-6 mb-6 animate-pulse">
+        <div className="w-full h-12 bg-white/5 rounded-lg mb-4"></div>
+        <div className="w-1/2 h-8 bg-white/5 rounded-lg"></div>
+      </div>
+    );
+  }
+
+  if (!userProfile) {
+    return (
+      <div className="glass-panel p-6 mb-6">
+        <p className="text-center text-dream-foreground/60">Connect your wallet to view your PXB balance</p>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-panel p-6 mb-6 overflow-hidden relative">
-      {/* Glowing Web3 wallet effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 z-0"></div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent opacity-60 animate-pulse"></div>
       
@@ -117,6 +173,35 @@ const PXBWallet: React.FC = () => {
                 {userProfile.pxbPoints.toLocaleString()}
               </h3>
               <p className="text-dream-foreground/80 font-medium">PXB</p>
+              
+              {userProfile.pxbPoints < 100 && (
+                <div className="mt-4">
+                  {cooldownEnds && timeRemaining ? (
+                    <div className="flex items-center bg-white/5 rounded-lg px-4 py-2 text-sm text-dream-foreground/70">
+                      <Clock className="w-4 h-4 mr-2 text-indigo-300" />
+                      <span>Claim again in {timeRemaining}</span>
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={handleMintPoints} 
+                      disabled={isMinting || !!cooldownEnds}
+                      className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
+                    >
+                      {isMinting ? (
+                        <>
+                          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          <span>Claiming...</span>
+                        </>
+                      ) : (
+                        <>
+                          <PlusCircle className="w-4 h-4 mr-2" />
+                          <span>Claim 500 PXB</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="grid grid-cols-2 gap-4">
