@@ -174,9 +174,9 @@ const RecentTokenTrades: React.FC = () => {
           New Bets
         </h3>
         <div className="flex items-center gap-2">
-          <span className="text-green-400 text-xs flex items-center gap-1">
-            <span className="inline-block w-2 h-2 rounded-full bg-green-400"></span>
-            Live from PumpPortal
+          <span className="text-purple-400 text-xs flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+            Live from PumpXBounty
           </span>
         </div>
       </div>
