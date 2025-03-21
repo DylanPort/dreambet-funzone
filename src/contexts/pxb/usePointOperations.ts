@@ -15,7 +15,21 @@ export const usePointOperations = (
 ) => {
   const [isMinting, setIsMinting] = useState(false);
   const [isPlacingBet, setIsPlacingBet] = useState(false);
+  const [isSendingPoints, setIsSendingPoints] = useState(false);
   const { publicKey } = useWallet();
+
+  // Generate a unique PXB ID based on user's profile
+  const generatePxbId = useCallback(() => {
+    if (!userProfile) return '';
+    
+    // Use the first 8 chars of the user ID as the base
+    const baseId = userProfile.id.substring(0, 8);
+    
+    // Add a timestamp hash to make it unique even for the same user
+    const timestamp = new Date().getTime().toString(36);
+    
+    return `PXB-${baseId}-${timestamp}`;
+  }, [userProfile]);
 
   // Mint free PXB points
   const mintPoints = useCallback(async (amount: number = 100) => {
@@ -343,10 +357,76 @@ export const usePointOperations = (
     }
   }, [userProfile, publicKey, setUserProfile, setBets, fetchUserProfile]);
 
+  // Send PXB points to another user
+  const sendPoints = useCallback(async (recipientId: string, amount: number) => {
+    if (!userProfile || !publicKey) {
+      toast.error('Connect your wallet to send PXB points');
+      return false;
+    }
+    
+    if (userProfile.pxbPoints < amount) {
+      toast.error(`Not enough PXB points. You need ${amount} but only have ${userProfile.pxbPoints}.`);
+      return false;
+    }
+
+    if (amount <= 0) {
+      toast.error('Amount must be greater than 0');
+      return false;
+    }
+
+    setIsSendingPoints(true);
+    
+    try {
+      // First verify the recipient exists
+      const { data: recipientData, error: recipientError } = await supabase
+        .from('users')
+        .select('id, username')
+        .eq('id', recipientId)
+        .single();
+      
+      if (recipientError || !recipientData) {
+        console.error('Error finding recipient:', recipientError);
+        toast.error('Recipient not found. Check the PXB ID and try again.');
+        return false;
+      }
+      
+      // Start a transaction to ensure atomicity
+      const { data: transaction, error: transactionError } = await supabase.rpc('transfer_pxb_points', {
+        sender_id: userProfile.id,
+        recipient_id: recipientId,
+        amount: amount
+      });
+      
+      if (transactionError) {
+        console.error('Error sending points:', transactionError);
+        toast.error('Failed to send PXB points. Please try again.');
+        return false;
+      }
+      
+      // Update the user profile in the state
+      setUserProfile({
+        ...userProfile,
+        pxbPoints: userProfile.pxbPoints - amount
+      });
+      
+      toast.success(`Successfully sent ${amount} PXB points to ${recipientData.username || 'user'}!`);
+      return true;
+    } catch (error) {
+      console.error('Unexpected error in sendPoints:', error);
+      toast.error('Failed to send PXB points due to an unexpected error');
+      return false;
+    } finally {
+      setIsSendingPoints(false);
+    }
+  }, [userProfile, publicKey, setUserProfile]);
+
   return {
     mintPoints,
     placeBet,
+    sendPoints,
+    generatePxbId,
     isMinting,
-    isPlacingBet
+    isPlacingBet,
+    isSendingPoints
   };
 };

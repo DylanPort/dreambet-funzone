@@ -5,8 +5,8 @@ import Navbar from '@/components/Navbar';
 import { Clock, TrendingUp, TrendingDown, Settings, History, Coins, Activity, Filter, RefreshCw, User, Plus, Save, X, Edit2, ArrowUp, ArrowDown, Zap, Sparkles } from 'lucide-react';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { Button } from '@/components/ui/button';
-import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile, UserBet, UserStats } from '@/services/userService';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile as UserProfileType, UserBet, UserStats } from '@/services/userService';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { toast } from 'sonner';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,12 +15,18 @@ import { Input } from '@/components/ui/input';
 import { fetchUserBets } from '@/api/mockData';
 import { Bet } from '@/types/bet';
 import { useBetsData } from '@/contexts/pxb/useBetsData';
+import PXBWallet from '@/components/PXBWallet';
+
+type ExtendedPXBBet = {
+  isActive?: boolean;
+};
+
 const Profile = () => {
   const {
     connected,
     publicKey
   } = useWallet();
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfileType | null>(null);
   const [bets, setBets] = useState<UserBet[]>([]);
   const [activeBets, setActiveBets] = useState<UserBet[]>([]);
   const [apiActiveBets, setApiActiveBets] = useState<Bet[]>([]);
@@ -52,6 +58,7 @@ const Profile = () => {
     isLoading: isPXBBetsLoading,
     fetchUserBets: fetchPXBUserBets
   } = useBetsData(userProfile);
+
   useEffect(() => {
     const loadUserData = async () => {
       setIsLoading(true);
@@ -79,6 +86,7 @@ const Profile = () => {
     };
     loadUserData();
   }, [connected, publicKey]);
+
   useEffect(() => {
     const loadActiveBets = async () => {
       setIsActiveBetsLoading(true);
@@ -170,35 +178,38 @@ const Profile = () => {
     }, 30000);
     return () => clearInterval(interval);
   }, [connected, publicKey]);
-  useEffect(() => {
-    const loadDetailedBets = async () => {
-      try {
-        setIsActiveBetsLoading(true);
-        if (connected && publicKey) {
-          console.log('Fetching bets for user:', publicKey.toString());
-          const userBets = await fetchUserBets(publicKey.toString());
-          const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
-          let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
-          localBets = localBets.filter(bet => bet.initiator === publicKey.toString());
-          const allBets = [...userBets];
-          for (const localBet of localBets) {
-            const exists = allBets.some(existingBet => existingBet.id === localBet.id || existingBet.onChainBetId && localBet.onChainBetId && existingBet.onChainBetId === localBet.onChainBetId);
-            if (!exists) {
-              allBets.push(localBet);
-            }
+
+  const loadDetailedBets = async () => {
+    try {
+      setIsActiveBetsLoading(true);
+      if (connected && publicKey) {
+        console.log('Fetching bets for user:', publicKey.toString());
+        const userBets = await fetchUserBets(publicKey.toString());
+        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
+        let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+        localBets = localBets.filter(bet => bet.initiator === publicKey.toString());
+        const allBets = [...userBets];
+        for (const localBet of localBets) {
+          const exists = allBets.some(existingBet => existingBet.id === localBet.id || existingBet.onChainBetId && localBet.onChainBetId && existingBet.onChainBetId === localBet.onChainBetId);
+          if (!exists) {
+            allBets.push(localBet);
           }
-          setApiActiveBets(allBets);
-        } else {
-          setApiActiveBets([]);
         }
-      } catch (error) {
-        console.error('Error loading bets:', error);
-      } finally {
-        setIsActiveBetsLoading(false);
+        setApiActiveBets(allBets);
+      } else {
+        setApiActiveBets([]);
       }
-    };
+    } catch (error) {
+      console.error('Error loading bets:', error);
+    } finally {
+      setIsActiveBetsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadDetailedBets();
   }, [connected, publicKey]);
+
   useEffect(() => {
     if (connected && publicKey) {
       fetchPXBUserProfile();
@@ -220,16 +231,19 @@ const Profile = () => {
       };
     }
   }, [connected, publicKey]);
+
   useEffect(() => {
     if (userProfile && userProfile.pxbPoints !== undefined) {
       setLocalPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
+
   useEffect(() => {
     if (connected && publicKey && userProfile) {
       fetchPXBUserBets();
     }
   }, [connected, publicKey, userProfile, fetchPXBUserBets]);
+
   const handleUpdateProfile = async () => {
     if (!usernameInput.trim()) {
       toast.error("Username cannot be empty");
@@ -253,14 +267,17 @@ const Profile = () => {
     }
     setIsSavingUsername(false);
   };
+
   const startEditingUsername = () => {
     setUsernameInput(user?.username || userProfile?.username || '');
     setIsEditingUsername(true);
   };
+
   const cancelEditingUsername = () => {
     setIsEditingUsername(false);
     setUsernameInput(user?.username || userProfile?.username || '');
   };
+
   const handleRefresh = () => {
     if (!connected || !publicKey) return;
     toast.info("Refreshing bets data...");
@@ -284,6 +301,7 @@ const Profile = () => {
       setIsActiveBetsLoading(false);
     });
   };
+
   const handleMintPXBPoints = async () => {
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
@@ -305,6 +323,7 @@ const Profile = () => {
       setIsMintingPoints(false);
     }
   };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -313,12 +332,15 @@ const Profile = () => {
       day: 'numeric'
     });
   };
+
   const filteredBets = betsFilter === 'all' ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id)), ...pxbBets] : betsFilter === 'active' ? [...activeBets, ...pxbBets.filter(bet => bet.status === 'pending')] : [...bets.filter(bet => bet.result !== 'pending'), ...pxbBets.filter(bet => bet.status !== 'pending')];
+
   const filteredDetailedBets = apiActiveBets.filter(bet => {
     if (activeDetailFilter === 'all') return true;
     if (activeDetailFilter === 'active') return bet.status === 'open' || bet.status === 'matched';
     return bet.status === activeDetailFilter;
   });
+
   const getBetStatusColor = (status: string) => {
     switch (status) {
       case 'open':
@@ -333,6 +355,7 @@ const Profile = () => {
         return 'from-gray-500/20 to-gray-500/30 text-gray-400 border-gray-400/30';
     }
   };
+
   if (!connected || !publicKey) {
     return <>
         <Navbar />
@@ -347,6 +370,7 @@ const Profile = () => {
         </main>
       </>;
   }
+
   if (isLoading) {
     return <>
         <Navbar />
@@ -358,10 +382,13 @@ const Profile = () => {
         </main>
       </>;
   }
+
   return <>
       <OrbitingParticles />
       <Navbar />
       <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto">
+        
+        <PXBWallet />
         
         <div className="glass-panel p-6 mb-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
@@ -519,7 +546,9 @@ const Profile = () => {
                   const date = isPXBBet ? (bet as any).createdAt : bet.date;
                   const profit = isPXBBet ? (bet as any).status === 'won' ? (bet as any).pointsWon : 0 : bet.profit;
                   const expiresAt = isPXBBet ? new Date((bet as any).expiresAt).getTime() : bet.expiresAt;
-                  return <motion.tr key={bet.id} className={`border-b border-white/5 hover:bg-white/5 ${bet.isActive || status === 'pending' ? 'relative' : ''}`} initial={{
+                  const isActive = isPXBBet ? (bet as any).status === 'pending' : (bet as any).isActive;
+                  
+                  return <motion.tr key={bet.id} className={`border-b border-white/5 hover:bg-white/5 ${isActive ? 'relative' : ''}`} initial={{
                     opacity: 0,
                     y: 20
                   }} animate={{
@@ -528,7 +557,7 @@ const Profile = () => {
                   }} transition={{
                     duration: 0.3
                   }}>
-                              {(bet.isActive || status === 'pending') && <div className="absolute left-0 top-0 h-full w-1 bg-dream-accent2/50"></div>}
+                              {isActive && <div className="absolute left-0 top-0 h-full w-1 bg-dream-accent2/50"></div>}
                               <td className="px-4 py-4">
                                 <div className="flex items-center">
                                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
@@ -564,7 +593,7 @@ const Profile = () => {
                                 </span>
                               </td>
                               <td className="px-4 py-4 text-dream-foreground/80">
-                                {(bet.isActive || status === 'pending') && expiresAt ? <span className="text-sm text-dream-accent2/80">
+                                {isActive && expiresAt ? <span className="text-sm text-dream-accent2/80">
                                     {formatTimeRemaining(expiresAt)}
                                   </span> : <span className="text-sm text-dream-foreground/40">—</span>}
                               </td>
@@ -622,4 +651,5 @@ const Profile = () => {
       </main>
     </>;
 };
+
 export default Profile;
