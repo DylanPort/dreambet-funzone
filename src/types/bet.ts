@@ -1,7 +1,7 @@
 
 export type BetPrediction = 'migrate' | 'die' | 'moon' | 'up' | 'down';
 
-export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed';
+export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed' | 'pending';
 
 export interface Bet {
   id: string;
@@ -22,6 +22,7 @@ export interface Bet {
   winner?: string;
   onChainBetId: string;
   transactionSignature: string;
+  outcome?: 'win' | 'loss'; // Add outcome field to track bet result
 }
 
 export enum SolanaContractPrediction {
