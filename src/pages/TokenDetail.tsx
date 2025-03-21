@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchTokenById } from '@/services/supabaseService';
@@ -31,9 +30,23 @@ import TokenVolume from '@/components/TokenVolume';
 import { fetchTokenDataFromSolscan } from '@/services/solscanService';
 import { fetchGMGNTokenData } from '@/services/gmgnService';
 
+// Define the expected token structure to match what's needed
+interface TokenData {
+  token_mint: string;
+  token_name: string;
+  token_symbol: string;
+  current_market_cap: number;
+  initial_market_cap: number;
+  created_on: string;
+  last_trade_price: number;
+  last_updated_time: string;
+  total_supply: number;
+  volume_24h: number;
+}
+
 const TokenDetail = () => {
   const { tokenId } = useParams<{ tokenId: string }>();
-  const [token, setToken] = useState<any>(null);
+  const [token, setToken] = useState<TokenData | null>(null);
   const [tokenMetrics, setTokenMetrics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [prediction, setPrediction] = useState<BetPrediction>('migrate');
@@ -67,13 +80,18 @@ const TokenDetail = () => {
           const solscanData = await fetchTokenDataFromSolscan(tokenId);
           
           if (solscanData) {
+            // Create a complete token object with all required properties
             tokenData = {
               token_mint: tokenId,
-              token_name: solscanData.name,
-              token_symbol: solscanData.symbol,
-              // Add estimated data for metrics
-              current_market_cap: null,
-              initial_market_cap: null
+              token_name: solscanData.name || 'Unknown Token',
+              token_symbol: solscanData.symbol || tokenId.substring(0, 5).toUpperCase(),
+              current_market_cap: 0,
+              initial_market_cap: 0,
+              created_on: 'unknown',
+              last_trade_price: 0,
+              last_updated_time: new Date().toISOString(),
+              total_supply: 1000000000,
+              volume_24h: 0
             };
             
             // Create custom entry in token cache
@@ -88,15 +106,23 @@ const TokenDetail = () => {
             const gmgnData = await fetchGMGNTokenData(tokenId);
             if (gmgnData.marketCap || gmgnData.price) {
               if (!tokenData) {
+                // Create complete token object with default values
                 tokenData = {
                   token_mint: tokenId,
                   token_name: 'Unknown Token',
                   token_symbol: tokenId.substring(0, 5).toUpperCase(),
-                  current_market_cap: gmgnData.marketCap || null,
-                  initial_market_cap: null
+                  current_market_cap: gmgnData.marketCap || 0,
+                  initial_market_cap: 0,
+                  created_on: 'unknown',
+                  last_trade_price: gmgnData.price || 0,
+                  last_updated_time: new Date().toISOString(),
+                  total_supply: 1000000000,
+                  volume_24h: gmgnData.volume24h || 0
                 };
               } else {
-                tokenData.current_market_cap = gmgnData.marketCap || null;
+                tokenData.current_market_cap = gmgnData.marketCap || tokenData.current_market_cap;
+                tokenData.last_trade_price = gmgnData.price || tokenData.last_trade_price;
+                tokenData.volume_24h = gmgnData.volume24h || tokenData.volume_24h;
               }
             }
           } catch (gmgnError) {
@@ -105,15 +131,20 @@ const TokenDetail = () => {
           }
         }
         
-        // If still no token, create a minimal placeholder
+        // If still no token, create a minimal placeholder with all required fields
         if (!tokenData) {
           console.log(`Creating minimal placeholder for token: ${tokenId}`);
           tokenData = {
             token_mint: tokenId,
             token_name: 'Unknown Token',
             token_symbol: tokenId.substring(0, 5).toUpperCase(),
-            current_market_cap: null,
-            initial_market_cap: null
+            current_market_cap: 0,
+            initial_market_cap: 0,
+            created_on: 'unknown',
+            last_trade_price: 0,
+            last_updated_time: new Date().toISOString(),
+            total_supply: 1000000000,
+            volume_24h: 0
           };
         }
         
@@ -125,8 +156,20 @@ const TokenDetail = () => {
           tokenData.token_symbol = tokenId.substring(0, 5).toUpperCase();
         }
         
-        console.log("Final token data:", tokenData);
-        setToken(tokenData);
+        // Ensure all required properties have default values if missing
+        const completeTokenData: TokenData = {
+          ...tokenData,
+          created_on: tokenData.created_on || 'unknown',
+          current_market_cap: tokenData.current_market_cap || 0,
+          initial_market_cap: tokenData.initial_market_cap || 0,
+          last_trade_price: tokenData.last_trade_price || 0,
+          last_updated_time: tokenData.last_updated_time || new Date().toISOString(),
+          total_supply: tokenData.total_supply || 1000000000,
+          volume_24h: tokenData.volume_24h || 0
+        };
+        
+        console.log("Final token data:", completeTokenData);
+        setToken(completeTokenData);
 
         // Fetch token metrics from TokenDataCache
         const metrics = await fetchTokenMetrics(tokenId);
@@ -307,13 +350,13 @@ const TokenDetail = () => {
                     <TableCell className="font-medium">Token Symbol</TableCell>
                     <TableCell>{token.token_symbol || "UNKNOWN"}</TableCell>
                   </TableRow>
-                  {token.initial_market_cap && (
+                  {token.initial_market_cap > 0 && (
                     <TableRow>
                       <TableCell className="font-medium">Initial Market Cap</TableCell>
                       <TableCell>${token.initial_market_cap.toLocaleString()}</TableCell>
                     </TableRow>
                   )}
-                  {token.current_market_cap && (
+                  {token.current_market_cap > 0 && (
                     <TableRow>
                       <TableCell className="font-medium">Current Market Cap</TableCell>
                       <TableCell>${token.current_market_cap.toLocaleString()}</TableCell>
