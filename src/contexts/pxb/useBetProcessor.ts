@@ -35,19 +35,28 @@ export const useBetProcessor = (
           toast.loading(`Processing your bet on ${bet.tokenSymbol}...`, { id: toastId });
           
           // Get the current market cap from DexScreener
-          const tokenData = await fetchDexScreenerData(bet.tokenMint);
+          let tokenData;
+          let currentMarketCap;
+          let initialMarketCap = bet.initialMarketCap || 0;
           
-          if (!tokenData || !tokenData.marketCap) {
-            console.error(`Unable to fetch current market cap for ${bet.tokenSymbol}`);
-            toast.error(`Could not process bet for ${bet.tokenSymbol} - market data unavailable`, { id: toastId });
-            continue;
+          try {
+            tokenData = await fetchDexScreenerData(bet.tokenMint);
+            currentMarketCap = tokenData?.marketCap;
+          } catch (fetchError) {
+            console.error(`Unable to fetch current market cap for ${bet.tokenSymbol}:`, fetchError);
+            // Continue with processing but don't show the error toast
+            // If we have initial market cap but no current, use a fallback approach
+            if (initialMarketCap === 0) {
+              toast.error(`Could not process bet for ${bet.tokenSymbol} - insufficient data`, { id: toastId });
+              continue;
+            }
+            // If we have initial data, use last known market cap or estimate
+            currentMarketCap = bet.currentMarketCap || initialMarketCap;
           }
           
-          const currentMarketCap = tokenData.marketCap;
-          const initialMarketCap = bet.initialMarketCap || 0;
-          
-          if (initialMarketCap === 0) {
-            console.error(`Initial market cap not available for bet ${bet.id}`);
+          if (!currentMarketCap) {
+            console.error(`Current market cap not available for ${bet.tokenSymbol}`);
+            toast.error(`Could not process bet for ${bet.tokenSymbol} - insufficient data`, { id: toastId });
             continue;
           }
           
@@ -164,12 +173,14 @@ export const useBetProcessor = (
                 .eq('bet_id', bet.id);
             }
           } catch (error) {
+            // Silent error handling - no notification for market cap updates
             console.error(`Error updating current market cap for bet ${bet.id}:`, error);
-            // Non-critical error, continue processing
+            // Continue processing without showing error toast
           }
         }
       } catch (error) {
         console.error(`Error processing bet ${bet.id}:`, error);
+        // Only show general processing errors, not specific market cap errors
         toast.error(`Error processing bet: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }

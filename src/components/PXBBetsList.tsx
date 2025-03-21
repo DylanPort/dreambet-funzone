@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
-import { toast } from 'sonner';
 
 const PXBBetsList = () => {
   const { bets, fetchUserBets } = usePXBPoints();
@@ -60,7 +59,7 @@ const PXBBetsList = () => {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [bets]);
+  }, [bets, marketCapData]);
 
   if (!bets || bets.length === 0) {
     return (

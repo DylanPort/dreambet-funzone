@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, ExternalLink, RefreshCcw } from 'lucide-react';
 import { subscribeToMarketCap } from '@/services/dexScreenerService';
@@ -101,20 +100,8 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       }
     });
     
-    // Shorter timeout for toast (5 seconds instead of 10)
-    const timeoutId = setTimeout(() => {
-      if (loading && !marketCap && isMounted.current) {
-        toast({
-          title: "Still loading data",
-          description: "Market cap data is taking longer than expected",
-          variant: "default",
-        });
-      }
-    }, 5000);
-    
     return () => {
       cleanupDexScreener();
-      clearTimeout(timeoutId);
     };
   }, [tokenId, loading, toast, marketCap]);
 
@@ -204,3 +191,4 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
 };
 
 export default React.memo(TokenMarketCap);
+
