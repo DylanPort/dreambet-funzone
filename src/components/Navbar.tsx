@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Coins } from 'lucide-react';
@@ -70,33 +69,33 @@ const Navbar = () => {
             PumpXBounty
           </Link>
           
-          <nav className="hidden md:flex space-x-4 items-center">
-            <Link to="/betting" className={`nav-link flex items-center gap-1 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105">
+          <nav className="hidden md:flex space-x-6 items-center">
+            <Link to="/betting" className={`nav-link flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+              <div className="w-16 h-16 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
               </div>
-              <span className="text-sm">Playground</span>
+              <span>Playground</span>
             </Link>
-            <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105">
+            <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+              <div className="w-16 h-16 flex items-center justify-center transition-transform hover:scale-105">
                 <img alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" src="/lovable-uploads/f4f0715a-b593-4250-b09f-b31137657bf2.png" />
               </div>
-              <span className="text-sm">PXB Space</span>
+              <span>PXB Space</span>
             </Link>
             
             <ProfileButton />
             
-            {pxbPoints !== null && pxbPoints > 0 ? <div className="glass-panel relative py-1 px-2 flex items-center gap-1 text-yellow-400 group">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="w-5 h-5 flex items-center justify-center">
-                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-7 h-7 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+            {pxbPoints !== null && pxbPoints > 0 ? <div className="glass-panel relative overflow-hidden py-1 px-3 flex items-center gap-1.5 text-yellow-400 group animate-pulse-subtle">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300 py-[-7px]"></div>
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-8 h-8 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
-                <span className="relative z-10 text-sm">{pxbPoints.toLocaleString()}</span>
-              </div> : userProfile && <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400/70">
-                <div className="w-5 h-5 flex items-center justify-center">
-                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-7 h-7 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                <span className="relative z-10 text-sm">{pxbPoints.toLocaleString()} PXB</span>
+              </div> : userProfile && <div className="glass-panel py-1 px-3 flex items-center gap-1.5 text-yellow-400/70">
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-8 h-8 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
-                <span className="text-sm">0</span>
+                <span className="text-sm">0 PXB</span>
               </div>}
             
             {balance !== null}
