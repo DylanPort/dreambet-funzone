@@ -22,7 +22,6 @@ import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
-
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -126,7 +125,6 @@ const TokenChart = ({
       </div>
     </div>;
 };
-
 const TokenDetail = () => {
   const {
     id
@@ -651,14 +649,11 @@ const TokenDetail = () => {
     if (bet.status !== 'pending') {
       return bet.status === 'won' ? 100 : 0;
     }
-    
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
-    
     if (currentMarketCap && initialMarketCap) {
       const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
       const targetChange = bet.percentageChange;
-      
       if (bet.betType === 'up') {
         if (actualChange < 0) return 0;
         return Math.min(100, actualChange / targetChange * 100);
@@ -667,7 +662,6 @@ const TokenDetail = () => {
         return Math.min(100, Math.abs(actualChange) / targetChange * 100);
       }
     }
-    
     return 0;
   };
   const calculateTargetMarketCap = bet => {
@@ -692,8 +686,7 @@ const TokenDetail = () => {
       fetchUserBets();
     }
   }, [userProfile, id, fetchUserBets]);
-  return (
-    <>
+  return <>
       <OrbitingParticles />
       <Navbar />
       
@@ -784,6 +777,160 @@ const TokenDetail = () => {
               
               
               
-              {userProfile && (
-               
-
+              {userProfile && <div className="glass-panel p-6 mb-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-display font-bold flex items-center">
+                      <DollarSign className="w-5 h-5 mr-2 text-dream-accent1" />
+                      Your PXB Bets on this Token
+                    </h2>
+                    <Button variant="outline" size="sm" onClick={() => fetchUserBets()} disabled={pxbLoading} className="text-xs">
+                      <RefreshCw className={`w-3 h-3 mr-1 ${pxbLoading ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
+                  </div>
+                  
+                  {!userProfile ? <div className="text-center py-8 text-dream-foreground/70">
+                      <p className="mb-4">Connect your wallet to see your PXB bets</p>
+                      <Button onClick={() => window.scrollTo(0, 0)}>Connect Wallet</Button>
+                    </div> : pxbLoading ? <div className="flex justify-center py-8">
+                      <div className="w-8 h-8 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
+                    </div> : tokenPXBBets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                      <p className="mb-4">You haven't placed any PXB bets on this token yet</p>
+                      <Button onClick={() => setShowCreateBet(true)}>Place Your First Bet</Button>
+                    </div> : <div className="space-y-3">
+                      {tokenPXBBets.map(bet => {
+                const isActive = bet.status === 'pending';
+                const expiryDate = new Date(bet.expiresAt);
+                const timeLeft = isActive ? formatDistanceToNow(expiryDate, {
+                  addSuffix: true
+                }) : '';
+                let statusIcon;
+                let statusClass;
+                if (bet.status === 'pending') {
+                  statusIcon = <HelpCircle className="h-4 w-4 text-yellow-400" />;
+                  statusClass = 'text-yellow-400';
+                } else if (bet.status === 'won') {
+                  statusIcon = <CheckCircle className="h-4 w-4 text-green-400" />;
+                  statusClass = 'text-green-400';
+                } else {
+                  statusIcon = <XCircle className="h-4 w-4 text-red-400" />;
+                  statusClass = 'text-red-400';
+                }
+                const progressPercentage = calculateProgress(bet);
+                const marketCapChangePercentage = calculateMarketCapChange(bet);
+                const targetMarketCap = calculateTargetMarketCap(bet);
+                const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+                const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
+                const isLoading = loadingMarketCaps[bet.id];
+                return <div key={bet.id} className={`bg-dream-foreground/5 rounded-md p-4 border transition-all ${isActive ? 'border-yellow-400/30 animate-pulse-slow' : bet.status === 'won' ? 'border-green-400/30' : 'border-red-400/30'}`}>
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="flex items-center">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2">
+                                  {bet.betType === 'up' ? <ArrowUp className="h-4 w-4 text-green-400" /> : <ArrowDown className="h-4 w-4 text-red-400" />}
+                                </div>
+                                <div>
+                                  <p className="font-semibold">{bet.tokenSymbol}</p>
+                                  <p className="text-xs text-dream-foreground/60">{bet.tokenName}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="text-right">
+                                <p className="font-semibold">{bet.betAmount} PXB</p>
+                                <p className="text-xs text-dream-foreground/60">
+                                  Prediction: {bet.betType === 'up' ? 'MOON' : 'DIE'} by {bet.percentageChange}%
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-2 mb-3 mt-2 text-xs">
+                              <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                                <div className="text-dream-foreground/50 mb-1">Start MCAP</div>
+                                <div className="font-medium">
+                                  {isLoading && !initialMarketCap ? <span className="animate-pulse">Loading...</span> : formatLargeNumber(initialMarketCap)}
+                                </div>
+                              </div>
+                              <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                                <div className="text-dream-foreground/50 mb-1">Current MCAP</div>
+                                <div className="font-medium">
+                                  {isLoading && !currentMarketCap ? <span className="animate-pulse">Loading...</span> : formatLargeNumber(currentMarketCap)}
+                                </div>
+                              </div>
+                              <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                                <div className="text-dream-foreground/50 mb-1">Target MCAP</div>
+                                <div className="font-medium">
+                                  {isLoading && !targetMarketCap ? <span className="animate-pulse">Loading...</span> : formatLargeNumber(targetMarketCap)}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {isActive && <div className="mb-3 mt-3">
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span className="text-dream-foreground/60">Progress towards target</span>
+                                  <span className={bet.betType === 'up' ? 'text-green-400' : 'text-red-400'}>
+                                    {progressPercentage.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <Progress value={progressPercentage} className="h-2" />
+                                {marketCapChangePercentage !== null && <div className="text-xs text-dream-foreground/60 mt-1">
+                                    Current change: {marketCapChangePercentage.toFixed(2)}%
+                                    {bet.betType === 'up' ? ` / Target: +${bet.percentageChange}%` : ` / Target: -${bet.percentageChange}%`}
+                                  </div>}
+                              </div>}
+                            
+                            <div className="flex justify-between items-center text-xs">
+                              <div className="flex items-center">
+                                {statusIcon}
+                                <span className={`ml-1 ${statusClass}`}>
+                                  {bet.status === 'pending' ? 'Active' : bet.status === 'won' ? 'Won' : 'Lost'}
+                                </span>
+                                {isActive && <span className="ml-2 text-dream-foreground/60">
+                                    Ends {timeLeft}
+                                  </span>}
+                              </div>
+                              
+                              {bet.status === 'won' && <span className="text-green-400 font-semibold">
+                                  +{bet.pointsWon} PXB
+                                </span>}
+                              
+                              {!isActive && marketCapChangePercentage !== null && <span className="text-dream-foreground/60">
+                                  Final market cap change: {marketCapChangePercentage.toFixed(2)}%
+                                </span>}
+                            </div>
+                            
+                            <div className="mt-2 pt-2 border-t border-dream-foreground/10 flex justify-between items-center">
+                              <div className="text-xs text-dream-foreground/50">
+                                {bet.status === 'pending' ? <p>Betting against the house: If you win, you'll earn {bet.betAmount} PXB from the supply.</p> : bet.status === 'won' ? <p>You won {bet.pointsWon} PXB from the house supply!</p> : <p>Your {bet.betAmount} PXB has returned to the house supply.</p>}
+                              </div>
+                              
+                              <div className="flex items-center text-xs text-dream-foreground/50">
+                                <span>Bet ID: </span>
+                                <span className="font-mono ml-1">{bet.id.substring(0, 8)}</span>
+                                <button onClick={() => {
+                        navigator.clipboard.writeText(bet.id).then(() => toast.success('Bet ID copied to clipboard')).catch(() => toast.error('Failed to copy to clipboard'));
+                      }} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-1 text-xs text-dream-foreground/50 flex items-center">
+                              <span>Bettor: </span>
+                              <span className="font-mono ml-1" title={bet.userId}>
+                                {bet.userId.substring(0, 4)}...{bet.userId.substring(bet.userId.length - 4)}
+                              </span>
+                              <button onClick={() => {
+                      navigator.clipboard.writeText(bet.userId).then(() => toast.success('Bettor ID copied to clipboard')).catch(() => toast.error('Failed to copy to clipboard'));
+                    }} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>;
+              })}
+                    </div>}
+                </div>}
+            </>}
+        </div>
+      </main>
+    </>;
+};
+export default TokenDetail;
