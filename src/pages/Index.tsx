@@ -215,12 +215,8 @@ const Index = () => {
       <footer className="glass-panel mt-20 px-6 py-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
-            <Link to="/" className="text-xl font-display font-bold text-gradient mb-3 inline-block">
-              PumpXBounty
-            </Link>
-            <p className="text-white/80 max-w-md mx-auto text-sm">
-              PumpXBounty is a platform for predicting the future of tokens migrating from PumpFun to Raydium. This is for entertainment purposes only.
-            </p>
+            
+            
             <div className="mt-6 border-t border-white/10 pt-6 text-sm text-white/60">
               © {new Date().getFullYear()} PumpXBounty. All rights reserved.
             </div>
