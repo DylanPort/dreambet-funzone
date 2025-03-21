@@ -77,46 +77,6 @@ const Profile = () => {
     loadUserData();
   }, [connected, publicKey]);
   
-  const loadDetailedBets = async () => {
-    try {
-      setIsActiveBetsLoading(true);
-      if (connected && publicKey) {
-        console.log('Fetching bets for user:', publicKey.toString());
-        
-        const userBets = await fetchUserBets(publicKey.toString());
-        
-        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
-        let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
-        
-        localBets = localBets.filter(bet => bet.initiator === publicKey.toString());
-        
-        const allBets = [...userBets];
-        for (const localBet of localBets) {
-          const exists = allBets.some(
-            existingBet => existingBet.id === localBet.id || 
-            (existingBet.onChainBetId && localBet.onChainBetId && existingBet.onChainBetId === localBet.onChainBetId)
-          );
-          
-          if (!exists) {
-            allBets.push(localBet);
-          }
-        }
-        
-        setApiActiveBets(allBets);
-        
-        const activeCount = allBets.filter(bet => 
-          bet.status === 'open' || bet.status === 'matched'
-        ).length;
-      } else {
-        setApiActiveBets([]);
-      }
-    } catch (error) {
-      console.error('Error loading bets:', error);
-    } finally {
-      setIsActiveBetsLoading(false);
-    }
-  };
-  
   useEffect(() => {
     const loadActiveBets = async () => {
       setIsActiveBetsLoading(true);
@@ -215,6 +175,50 @@ const Profile = () => {
   }, [connected, publicKey]);
   
   useEffect(() => {
+    const loadDetailedBets = async () => {
+      try {
+        setIsActiveBetsLoading(true);
+        if (connected && publicKey) {
+          console.log('Fetching bets for user:', publicKey.toString());
+          
+          const userBets = await fetchUserBets(publicKey.toString());
+          
+          const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
+          let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
+          
+          localBets = localBets.filter(bet => bet.initiator === publicKey.toString());
+          
+          const allBets = [...userBets];
+          for (const localBet of localBets) {
+            const exists = allBets.some(
+              existingBet => existingBet.id === localBet.id || 
+              (existingBet.onChainBetId && localBet.onChainBetId && existingBet.onChainBetId === localBet.onChainBetId)
+            );
+            
+            if (!exists) {
+              allBets.push(localBet);
+            }
+          }
+          
+          setApiActiveBets(allBets);
+          
+          const activeCount = allBets.filter(bet => 
+            bet.status === 'open' || bet.status === 'matched'
+          ).length;
+        } else {
+          setApiActiveBets([]);
+        }
+      } catch (error) {
+        console.error('Error loading bets:', error);
+      } finally {
+        setIsActiveBetsLoading(false);
+      }
+    };
+    
+    loadDetailedBets();
+  }, [connected, publicKey]);
+  
+  useEffect(() => {
     if (connected && publicKey) {
       fetchPXBUserProfile();
     }
@@ -241,6 +245,12 @@ const Profile = () => {
       setLocalPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
+  
+  useEffect(() => {
+    if (connected && publicKey) {
+      fetchUserBets();
+    }
+  }, [connected, publicKey, fetchUserBets]);
   
   const handleUpdateProfile = async () => {
     if (!usernameInput.trim()) {
@@ -333,7 +343,11 @@ const Profile = () => {
     });
   };
   
-  const filteredBets = betsFilter === 'all' ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id))] : betsFilter === 'active' ? activeBets : bets.filter(bet => bet.result !== 'pending');
+  const filteredBets = betsFilter === 'all' 
+    ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id)), ...(userProfile?.bets || [])]
+    : betsFilter === 'active' 
+      ? [...activeBets, ...(userProfile?.bets || []).filter(bet => bet.status === 'pending')]
+      : [...bets.filter(bet => bet.result !== 'pending'), ...(userProfile?.bets || []).filter(bet => bet.status !== 'pending')];
   
   const filteredDetailedBets = apiActiveBets.filter(bet => {
     if (activeDetailFilter === 'all') return true;
@@ -569,6 +583,7 @@ const Profile = () => {
                         <tr className="border-b border-white/10">
                           <th className="px-4 py-3 text-left text-dream-foreground/60">Token</th>
                           <th className="px-4 py-3 text-left text-dream-foreground/60">Date</th>
+                          <th className="px-4 py-3 text-left text-dream-foreground/60">Type</th>
                           <th className="px-4 py-3 text-left text-dream-foreground/60">Prediction</th>
                           <th className="px-4 py-3 text-left text-dream-foreground/60">Amount</th>
                           <th className="px-4 py-3 text-left text-dream-foreground/60">Status</th>
@@ -577,62 +592,100 @@ const Profile = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredBets.map(bet => (
-                          <motion.tr 
-                            key={bet.id} 
-                            className={`border-b border-white/5 hover:bg-white/5 ${bet.isActive ? 'relative' : ''}`} 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            {bet.isActive && <div className="absolute left-0 top-0 h-full w-1 bg-dream-accent2/50"></div>}
-                            <td className="px-4 py-4">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
-                                  <span className="font-display font-bold text-sm">{bet.tokenSymbol.charAt(0)}</span>
+                        {filteredBets.map((bet) => {
+                          const isPXBBet = 'betType' in bet;
+                          const betType = isPXBBet ? 'PXB' : 'SOL';
+                          const prediction = isPXBBet 
+                              ? (bet as any).betType === 'up' ? 'moon' : 'die'
+                              : bet.prediction;
+                          const tokenName = isPXBBet ? (bet as any).tokenName : bet.tokenName;
+                          const tokenSymbol = isPXBBet ? (bet as any).tokenSymbol : bet.tokenSymbol;
+                          const amount = isPXBBet ? (bet as any).betAmount : bet.amount;
+                          const status = isPXBBet 
+                              ? (bet as any).status 
+                              : bet.isActive ? 'active' : bet.result;
+                          const date = isPXBBet ? (bet as any).createdAt : bet.date;
+                          const profit = isPXBBet 
+                              ? (bet as any).status === 'won' ? (bet as any).pointsWon : 0
+                              : bet.profit;
+                          const expiresAt = isPXBBet ? new Date((bet as any).expiresAt).getTime() : bet.expiresAt;
+                          
+                          return (
+                            <motion.tr 
+                              key={bet.id} 
+                              className={`border-b border-white/5 hover:bg-white/5 ${(bet.isActive || status === 'pending') ? 'relative' : ''}`} 
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              {(bet.isActive || status === 'pending') && <div className="absolute left-0 top-0 h-full w-1 bg-dream-accent2/50"></div>}
+                              <td className="px-4 py-4">
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
+                                    <span className="font-display font-bold text-sm">{tokenSymbol.charAt(0)}</span>
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">{tokenName}</p>
+                                    <p className="text-dream-foreground/60 text-sm">{tokenSymbol}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-medium">{bet.tokenName}</p>
-                                  <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 text-dream-foreground/80">{formatDate(bet.date)}</td>
-                            <td className="px-4 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.prediction === 'moon' ? 'bg-dream-accent1/20 text-dream-accent1' : 'bg-dream-accent2/20 text-dream-accent2'}`}>
-                                {bet.prediction === 'moon' ? (
-                                  <>
-                                    <TrendingUp className="w-3 h-3 mr-1" />
-                                    Moon
-                                  </>
-                                ) : (
-                                  <>
-                                    <TrendingDown className="w-3 h-3 mr-1" />
-                                    Die
-                                  </>
-                                )}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-dream-foreground/80">{bet.amount} SOL</td>
-                            <td className="px-4 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.isActive ? 'bg-dream-accent2/20 text-dream-accent2' : bet.result === 'win' ? 'bg-green-500/20 text-green-500' : bet.result === 'loss' ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                                {bet.isActive ? 'Active' : bet.result === 'win' ? 'Win' : bet.result === 'loss' ? 'Loss' : 'Pending'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-dream-foreground/80">
-                              {bet.isActive && bet.expiresAt ? (
-                                <span className="text-sm text-dream-accent2/80">
-                                  {formatTimeRemaining(bet.expiresAt)}
+                              </td>
+                              <td className="px-4 py-4 text-dream-foreground/80">{formatDate(date)}</td>
+                              <td className="px-4 py-4">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${betType === 'PXB' ? 'bg-purple-500/20 text-purple-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                                  {betType}
                                 </span>
-                              ) : (
-                                <span className="text-sm text-dream-foreground/40">—</span>
-                              )}
-                            </td>
-                            <td className={`px-4 py-4 font-medium ${bet.profit > 0 ? 'text-green-400' : bet.profit < 0 ? 'text-red-400' : 'text-dream-foreground/40'}`}>
-                              {bet.profit > 0 ? `+${bet.profit.toFixed(2)} SOL` : bet.profit < 0 ? `${bet.profit.toFixed(2)} SOL` : '—'}
-                            </td>
-                          </motion.tr>
-                        ))}
+                              </td>
+                              <td className="px-4 py-4">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${prediction === 'moon' ? 'bg-dream-accent1/20 text-dream-accent1' : 'bg-dream-accent2/20 text-dream-accent2'}`}>
+                                  {prediction === 'moon' ? (
+                                    <>
+                                      <TrendingUp className="w-3 h-3 mr-1" />
+                                      Moon
+                                    </>
+                                  ) : (
+                                    <>
+                                      <TrendingDown className="w-3 h-3 mr-1" />
+                                      Die
+                                    </>
+                                  )}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 text-dream-foreground/80">{amount} {betType}</td>
+                              <td className="px-4 py-4">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  status === 'active' || status === 'pending' 
+                                    ? 'bg-dream-accent2/20 text-dream-accent2' 
+                                    : status === 'win' || status === 'won' 
+                                      ? 'bg-green-500/20 text-green-500' 
+                                      : status === 'loss' || status === 'lost' 
+                                        ? 'bg-red-500/20 text-red-500' 
+                                        : 'bg-yellow-500/20 text-yellow-500'
+                                }`}>
+                                  {status === 'active' || status === 'pending' 
+                                    ? 'Active' 
+                                    : status === 'win' || status === 'won' 
+                                      ? 'Win' 
+                                      : status === 'loss' || status === 'lost' 
+                                        ? 'Loss' 
+                                        : 'Pending'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 text-dream-foreground/80">
+                                {(bet.isActive || status === 'pending') && expiresAt ? (
+                                  <span className="text-sm text-dream-accent2/80">
+                                    {formatTimeRemaining(expiresAt)}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-dream-foreground/40">—</span>
+                                )}
+                              </td>
+                              <td className={`px-4 py-4 font-medium ${profit > 0 ? 'text-green-400' : profit < 0 ? 'text-red-400' : 'text-dream-foreground/40'}`}>
+                                {profit > 0 ? `+${profit.toFixed(2)} ${betType}` : profit < 0 ? `${profit.toFixed(2)} ${betType}` : '—'}
+                              </td>
+                            </motion.tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -700,7 +753,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
-
-
-
