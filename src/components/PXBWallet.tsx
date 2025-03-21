@@ -1,524 +1,268 @@
-import React, { useState, useEffect } from 'react';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { UserProfile } from '@/types/pxb';
-import { Card } from '@/components/ui/card';
+
+import React, { useState } from 'react';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Copy, Send, CreditCard, QrCode, Coins, CheckCircle2, Clock, ArrowRight, ArrowUpDown, History, Lock } from 'lucide-react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { motion } from 'framer-motion';
+import { Coins, Send, Wallet, Copy, RefreshCw, QrCode, PlusCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import CountdownTimer from './CountdownTimer';
+import { motion } from 'framer-motion';
 
-interface PXBWalletProps {
-  userProfile: UserProfile | null;
-}
-
-interface TransactionHistory {
-  id: string;
-  userId: string;
-  amount: number;
-  action: 'transfer_sent' | 'transfer_received' | 'bet_won' | 'bet_lost' | 'mint';
-  referenceId: string | null;
-  createdAt: string;
-}
-
-const PXBWallet: React.FC<PXBWalletProps> = ({
-  userProfile
-}) => {
-  const {
-    mintPoints,
-    sendPoints,
-    generatePxbId
-  } = usePXBPoints();
-  const {
-    publicKey
-  } = useWallet();
+const PXBWallet: React.FC = () => {
+  const { userProfile, isLoading, sendPoints, generatePxbId, fetchUserProfile } = usePXBPoints();
+  const [showSend, setShowSend] = useState(false);
   const [recipientId, setRecipientId] = useState('');
-  const [sendAmount, setSendAmount] = useState<number>(0);
-  const [userPxbId, setUserPxbId] = useState<string>('');
-  const [showCopied, setShowCopied] = useState(false);
+  const [amount, setAmount] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [transactions, setTransactions] = useState<TransactionHistory[]>([]);
-  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
-  const [lastClaimTime, setLastClaimTime] = useState<Date | null>(null);
-  const [claimCooldown, setClaimCooldown] = useState<number>(0);
-  const [isCooldownActive, setIsCooldownActive] = useState<boolean>(false);
-  const [cooldownEndTime, setCooldownEndTime] = useState<Date | null>(null);
-  const [isClaimButtonLoading, setIsClaimButtonLoading] = useState<boolean>(false);
+  const [showReceive, setShowReceive] = useState(false);
+  const [myPxbId, setMyPxbId] = useState('');
 
-  useEffect(() => {
-    if (userProfile && generatePxbId) {
-      setUserPxbId(userProfile.id);
-      fetchTransactionHistory();
-      fetchLastClaimTime();
-    }
-  }, [userProfile, generatePxbId]);
+  if (isLoading) {
+    return (
+      <div className="glass-panel p-6 mb-6 animate-pulse">
+        <div className="w-full h-12 bg-white/5 rounded-lg mb-4"></div>
+        <div className="w-1/2 h-8 bg-white/5 rounded-lg"></div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    let intervalId: number;
-    
-    if (isCooldownActive && lastClaimTime) {
-      const cooldownEnd = new Date(lastClaimTime.getTime() + (6 * 60 * 60 * 1000));
-      setCooldownEndTime(cooldownEnd);
-      
-      intervalId = window.setInterval(() => {
-        const now = new Date();
-        const timeSinceClaim = now.getTime() - lastClaimTime.getTime();
-        const sixHoursInMs = 6 * 60 * 60 * 1000;
-        const remainingTime = Math.max(0, sixHoursInMs - timeSinceClaim);
-        
-        if (remainingTime <= 0) {
-          setIsCooldownActive(false);
-          setClaimCooldown(0);
-          setCooldownEndTime(null);
-          clearInterval(intervalId);
-        } else {
-          setClaimCooldown(remainingTime);
-        }
-      }, 1000);
-    }
-    
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [lastClaimTime, isCooldownActive]);
-
-  const fetchLastClaimTime = async () => {
-    if (!userProfile) return;
-    
-    try {
-      console.log("Fetching last claim time for user:", userProfile.id);
-      
-      const { data, error } = await supabase
-        .from('points_history')
-        .select('created_at')
-        .eq('user_id', userProfile.id)
-        .eq('action', 'mint')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) {
-        console.error('Error fetching last claim time:', error);
-        return;
-      }
-      
-      if (data && data.length > 0) {
-        console.log("Last claim found:", data[0].created_at);
-        const lastClaimDate = new Date(data[0].created_at);
-        setLastClaimTime(lastClaimDate);
-        
-        const now = new Date();
-        const timeSinceClaim = now.getTime() - lastClaimDate.getTime();
-        const sixHoursInMs = 6 * 60 * 60 * 1000;
-        
-        if (timeSinceClaim < sixHoursInMs) {
-          console.log("Cooldown active - time since last claim:", Math.floor(timeSinceClaim / (60 * 1000)), "minutes");
-          setIsCooldownActive(true);
-          setClaimCooldown(sixHoursInMs - timeSinceClaim);
-          const cooldownEnd = new Date(lastClaimDate.getTime() + sixHoursInMs);
-          setCooldownEndTime(cooldownEnd);
-        } else {
-          console.log("No cooldown - last claim was", Math.floor(timeSinceClaim / (60 * 1000)), "minutes ago");
-          setIsCooldownActive(false);
-          setClaimCooldown(0);
-          setCooldownEndTime(null);
-        }
-      } else {
-        console.log("No previous claims found");
-        setIsCooldownActive(false);
-        setLastClaimTime(null);
-      }
-    } catch (error) {
-      console.error('Error in fetchLastClaimTime:', error);
-    }
-  };
-
-  const fetchTransactionHistory = async () => {
-    if (!userProfile) return;
-    setIsLoadingTransactions(true);
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('points_history').select('*').eq('user_id', userProfile.id).order('created_at', {
-        ascending: false
-      }).limit(5);
-      if (error) {
-        console.error('Error fetching transaction history:', error);
-        return;
-      }
-      const formattedTransactions: TransactionHistory[] = data.map(item => ({
-        id: item.id,
-        userId: item.user_id,
-        amount: item.amount,
-        action: item.action as 'transfer_sent' | 'transfer_received' | 'bet_won' | 'bet_lost' | 'mint',
-        referenceId: item.reference_id,
-        createdAt: item.created_at
-      }));
-      setTransactions(formattedTransactions);
-    } catch (error) {
-      console.error('Error fetching transaction history:', error);
-    } finally {
-      setIsLoadingTransactions(false);
-    }
-  };
-
-  const handleCopyId = () => {
-    if (userPxbId) {
-      navigator.clipboard.writeText(userPxbId);
-      setShowCopied(true);
-      setTimeout(() => setShowCopied(false), 2000);
-      toast.success('PXB ID copied to clipboard');
-    }
-  };
+  if (!userProfile) {
+    return (
+      <div className="glass-panel p-6 mb-6">
+        <p className="text-center text-dream-foreground/60">Connect your wallet to view your PXB balance</p>
+      </div>
+    );
+  }
 
   const handleSendPoints = async () => {
-    if (!userProfile || !sendPoints) return;
+    if (!sendPoints) return;
+    
     if (!recipientId.trim()) {
       toast.error('Please enter a recipient PXB ID');
       return;
     }
-    if (sendAmount <= 0) {
-      toast.error('Amount must be greater than 0');
+    
+    const amountNumber = parseFloat(amount);
+    if (isNaN(amountNumber) || amountNumber <= 0) {
+      toast.error('Please enter a valid amount');
       return;
     }
-    if (sendAmount > userProfile.pxbPoints) {
-      toast.error(`Not enough PXB points. You need ${sendAmount} but only have ${userProfile.pxbPoints}.`);
-      return;
-    }
+    
     setIsSending(true);
     try {
-      const success = await sendPoints(recipientId, sendAmount);
+      // Extract the actual user ID from the PXB ID format (PXB-userID-timestamp)
+      const parts = recipientId.split('-');
+      const actualUserId = parts.length >= 2 ? parts[1] : recipientId;
+      
+      const success = await sendPoints(actualUserId, amountNumber);
       if (success) {
         setRecipientId('');
-        setSendAmount(0);
-        toast.success('Points sent successfully!');
-      } else {
-        toast.error('Failed to send points');
+        setAmount('');
+        setShowSend(false);
       }
-    } catch (error) {
-      console.error('Error sending points:', error);
-      toast.error('An error occurred while sending points');
     } finally {
       setIsSending(false);
     }
   };
 
-  const canClaimPoints = async (): Promise<boolean> => {
-    if (!userProfile) return false;
+  const handleGenerateId = () => {
+    if (!generatePxbId) return;
     
-    try {
-      console.log("Checking claim eligibility for user:", userProfile.id);
-      
-      const { data, error } = await supabase
-        .from('points_history')
-        .select('created_at')
-        .eq('user_id', userProfile.id)
-        .eq('action', 'mint')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) {
-        console.error('Error checking claim eligibility:', error);
-        return false;
-      }
-      
-      if (!data || data.length === 0) {
-        console.log("No previous claims found, user is eligible");
-        return true;
-      }
-      
-      const lastClaimDate = new Date(data[0].created_at);
-      const now = new Date();
-      const timeSinceClaim = now.getTime() - lastClaimDate.getTime();
-      const sixHoursInMs = 6 * 60 * 60 * 1000;
-      
-      const isEligible = timeSinceClaim >= sixHoursInMs;
-      console.log("Time since last claim:", Math.floor(timeSinceClaim / (60 * 1000)), "minutes. User is", isEligible ? "eligible" : "not eligible");
-      
-      if (!isEligible) {
-        setLastClaimTime(lastClaimDate);
-        setIsCooldownActive(true);
-        setClaimCooldown(sixHoursInMs - timeSinceClaim);
-        const cooldownEnd = new Date(lastClaimDate.getTime() + sixHoursInMs);
-        setCooldownEndTime(cooldownEnd);
-      }
-      
-      return isEligible;
-    } catch (error) {
-      console.error('Error in canClaimPoints:', error);
-      return false;
-    }
+    const newId = generatePxbId();
+    setMyPxbId(newId);
   };
 
-  const handleRequestMint = async () => {
-    if (!mintPoints || !userProfile) {
-      toast.error("Cannot claim points right now");
-      return;
-    }
-    
-    setIsClaimButtonLoading(true);
-    
-    try {
-      const isEligible = await canClaimPoints();
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
+  const handleRefresh = () => {
+    fetchUserProfile();
+    toast.info('Refreshing balance...');
+  };
+
+  return (
+    <div className="glass-panel p-6 mb-6 overflow-hidden relative">
+      {/* Glowing Web3 wallet effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 z-0"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent opacity-60 animate-pulse"></div>
       
-      if (!isEligible) {
-        toast.error('You need to wait 6 hours between claims');
-        return;
-      }
-      
-      const success = await mintPoints(100);
-      
-      if (success) {
-        toast.success('You received 100 PXB Points!');
-        
-        const now = new Date();
-        setLastClaimTime(now);
-        setIsCooldownActive(true);
-        setClaimCooldown(6 * 60 * 60 * 1000); // 6 hours in milliseconds
-        
-        const cooldownEnd = new Date(now.getTime() + (6 * 60 * 60 * 1000));
-        setCooldownEndTime(cooldownEnd);
-        
-        await fetchTransactionHistory();
-      } else {
-        toast.error('Failed to claim points');
-      }
-    } catch (error) {
-      console.error('Error in handleRequestMint:', error);
-      toast.error('Failed to claim points');
-    } finally {
-      setIsClaimButtonLoading(false);
-    }
-  };
-
-  const formatCooldownTime = (ms: number): string => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const formatPXBId = (id: string) => {
-    if (!id) return '';
-    if (id.length <= 12) return id;
-    return `${id.substring(0, 6)}...${id.substring(id.length - 6)}`;
-  };
-
-  const getActionLabel = (action: string): string => {
-    switch (action) {
-      case 'transfer_sent':
-        return 'Sent';
-      case 'transfer_received':
-        return 'Received';
-      case 'bet_won':
-        return 'Won Bet';
-      case 'bet_lost':
-        return 'Lost Bet';
-      case 'mint':
-        return 'Minted';
-      default:
-        return 'Transaction';
-    }
-  };
-
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case 'transfer_sent':
-        return <ArrowUpDown className="w-4 h-4 text-orange-500" />;
-      case 'transfer_received':
-        return <ArrowRight className="w-4 h-4 text-green-500" />;
-      case 'bet_won':
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-      case 'bet_lost':
-        return <Clock className="w-4 h-4 text-red-500" />;
-      case 'mint':
-        return <Coins className="w-4 h-4 text-purple-500" />;
-      default:
-        return <CreditCard className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
-  const getAmountColor = (action: string): string => {
-    if (action === 'transfer_received' || action === 'bet_won' || action === 'mint') {
-      return 'text-green-500';
-    } else if (action === 'transfer_sent' || action === 'bet_lost') {
-      return 'text-red-500';
-    }
-    return 'text-gray-500';
-  };
-
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
-
-  return <Card className="p-0 overflow-hidden bg-gradient-to-br from-[#1A1A2E] to-[#16213E] border-[#30475E]/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-sm">
-      <div className="bg-gradient-to-r from-[#4B31DD]/20 to-[#1E93FF]/20 p-4 flex justify-between items-center border-b border-white/5">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4B31DD] to-[#1E93FF] flex items-center justify-center">
-            <Coins className="w-5 h-5 text-white" />
+      <motion.div 
+        className="relative z-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Wallet className="w-6 h-6 mr-2 text-indigo-400" />
+            <h2 className="text-xl font-bold text-white">PXB Wallet</h2>
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-white">PXB Wallet</h3>
-            <p className="text-xs text-gray-400">Send and receive PXB points</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <span className="text-2xl font-bold text-white">{userProfile?.pxbPoints.toLocaleString()}</span>
-          <p className="text-xs text-gray-400">PXB Points</p>
-        </div>
-      </div>
-
-      <Tabs defaultValue="send" className="w-full">
-        <TabsList className="w-full grid grid-cols-3 bg-black/20 rounded-none border-b border-white/5">
-          <TabsTrigger value="send" className="data-[state=active]:bg-[#4B31DD]/10 data-[state=active]:text-white">
-            <Send className="w-4 h-4 mr-2" />
-            Send
-          </TabsTrigger>
-          <TabsTrigger value="receive" className="data-[state=active]:bg-[#4B31DD]/10 data-[state=active]:text-white">
-            <QrCode className="w-4 h-4 mr-2" />
-            Receive
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="data-[state=active]:bg-[#4B31DD]/10 data-[state=active]:text-white">
-            <History className="w-4 h-4 mr-2" />
-            Activity
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="send" className="p-6 pt-5 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="recipientId" className="text-sm text-gray-400">Recipient PXB ID</Label>
-            <Input id="recipientId" placeholder="Enter recipient PXB ID" value={recipientId} onChange={e => setRecipientId(e.target.value)} className="bg-black/30 border-white/10 focus:border-[#4B31DD]/50 text-white" />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="amount" className="text-sm text-gray-400">Amount</Label>
-            <div className="relative">
-              <Input id="amount" type="number" placeholder="0" value={sendAmount || ''} onChange={e => setSendAmount(Number(e.target.value))} className="bg-black/30 border-white/10 focus:border-[#4B31DD]/50 text-white pr-16" />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm font-medium">
-                PXB
-              </div>
-            </div>
-            <p className="text-xs text-gray-500">Available: {userProfile?.pxbPoints.toLocaleString()} PXB</p>
-          </div>
-          
-          <Button onClick={handleSendPoints} disabled={isSending || !recipientId || sendAmount <= 0 || (userProfile && sendAmount > userProfile.pxbPoints)} className="w-full bg-gradient-to-r from-[#4B31DD] to-[#1E93FF] hover:from-[#3A28B0] hover:to-[#1776CC] text-white border-none">
-            {isSending ? <><Clock className="w-4 h-4 mr-2 animate-spin" /> Processing...</> : <><Send className="w-4 h-4 mr-2" /> Send PXB Points</>}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0 text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-foreground/10"
+            onClick={handleRefresh}
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span className="sr-only">Refresh</span>
           </Button>
-
-          <div className="pt-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRequestMint} 
-              disabled={isCooldownActive || isClaimButtonLoading} 
-              className={`w-full border-dashed border-gray-600 bg-black/20 hover:bg-black/30 text-gray-400 ${isCooldownActive || isClaimButtonLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
-            >
-              {isClaimButtonLoading ? (
-                <div className="w-full flex items-center justify-center">
-                  <Clock className="w-4 h-4 mr-2 animate-spin text-gray-400" />
-                  <span>Processing...</span>
-                </div>
-              ) : isCooldownActive && cooldownEndTime ? (
-                <div className="w-full flex items-center justify-center">
-                  <Lock className="w-4 h-4 mr-2 text-gray-400" />
-                  <span className="mr-2">Locked:</span>
-                  <CountdownTimer 
-                    endTime={cooldownEndTime} 
-                    onComplete={() => {
-                      setIsCooldownActive(false);
-                      setClaimCooldown(0);
-                    }} 
-                  />
-                </div>
-              ) : (
-                <>
-                  <Coins className="w-4 h-4 mr-2 text-gray-400" />
-                  Request 100 Free PXB Points
-                </>
-              )}
-            </Button>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="receive" className="p-6 space-y-6">
-          <div className="text-center">
-            <div className="bg-black/30 p-4 rounded-lg mb-4 mx-auto w-48 h-48 flex items-center justify-center">
-              <QrCode className="w-32 h-32 text-[#4B31DD]/70" />
+        </div>
+        
+        {!showSend && !showReceive ? (
+          <>
+            <div className="flex flex-col items-center py-6 mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 rounded-xl border border-white/10">
+              <p className="text-sm text-dream-foreground/60 mb-1">Available Balance</p>
+              <h3 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">
+                {userProfile.pxbPoints.toLocaleString()}
+              </h3>
+              <p className="text-dream-foreground/80 font-medium">PXB</p>
             </div>
             
-            <p className="text-sm text-gray-400 mb-3">Your PXB ID</p>
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                onClick={() => setShowSend(true)} 
+                className="flex items-center justify-center py-6 px-4 bg-gradient-to-r from-purple-600/80 to-indigo-600/80 hover:from-purple-600 hover:to-indigo-600 rounded-xl border border-white/10 transition-all duration-200"
+              >
+                <Send className="w-5 h-5 mr-2" strokeWidth={1.5} />
+                <span>Send PXB</span>
+              </Button>
+              
+              <Button 
+                onClick={() => {
+                  setShowReceive(true);
+                  handleGenerateId();
+                }}
+                className="flex items-center justify-center py-6 px-4 bg-gradient-to-r from-blue-600/80 to-indigo-600/80 hover:from-blue-600 hover:to-indigo-600 rounded-xl border border-white/10 transition-all duration-200"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" strokeWidth={1.5} />
+                <span>Receive PXB</span>
+              </Button>
+            </div>
+          </>
+        ) : showSend ? (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 rounded-xl border border-white/10 p-4"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium flex items-center">
+                <Send className="w-4 h-4 mr-2 text-indigo-400" strokeWidth={1.5} />
+                Send PXB
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0 text-dream-foreground/60 hover:text-dream-foreground"
+                onClick={() => setShowSend(false)}
+              >
+                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+                <span className="sr-only">Back</span>
+              </Button>
+            </div>
             
-            <div className="relative">
-              <div className="bg-black/30 border border-white/10 rounded-md py-2 px-4 flex items-center justify-between cursor-pointer" onClick={handleCopyId}>
-                <span className="text-gray-300 font-mono">{formatPXBId(userPxbId)}</span>
-                {showCopied ? <motion.div initial={{
-                scale: 0.8,
-                opacity: 0
-              }} animate={{
-                scale: 1,
-                opacity: 1
-              }} transition={{
-                duration: 0.2
-              }}>
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  </motion.div> : <Copy className="w-4 h-4 text-gray-400" />}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-dream-foreground/60 mb-1 block">Recipient PXB ID</label>
+                <Input
+                  value={recipientId}
+                  onChange={(e) => setRecipientId(e.target.value)}
+                  placeholder="Enter PXB ID (e.g., PXB-12345678-abc123)"
+                  className="bg-white/5 border-white/10"
+                />
               </div>
+              
+              <div>
+                <label className="text-sm text-dream-foreground/60 mb-1 block">Amount</label>
+                <Input
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                  placeholder="Amount to send"
+                  type="number"
+                  min="1"
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+              
+              <div className="flex justify-between items-center py-2 px-3 bg-white/5 rounded-lg">
+                <span className="text-sm text-dream-foreground/60">Available</span>
+                <span className="font-medium">{userProfile.pxbPoints.toLocaleString()} PXB</span>
+              </div>
+              
+              <Button 
+                onClick={handleSendPoints} 
+                disabled={isSending || !recipientId || !amount}
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+              >
+                {isSending ? 
+                  <div className="flex items-center">
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <span>Sending...</span>
+                  </div> 
+                  : 'Send PXB'}
+              </Button>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-xl border border-white/10 p-4"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium flex items-center">
+                <ArrowLeft className="w-4 h-4 mr-2 text-indigo-400" strokeWidth={1.5} />
+                Receive PXB
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0 text-dream-foreground/60 hover:text-dream-foreground"
+                onClick={() => setShowReceive(false)}
+              >
+                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+                <span className="sr-only">Back</span>
+              </Button>
             </div>
             
-            <p className="text-xs text-gray-500 mt-3">
-              Share this ID with others to receive PXB Points
-            </p>
-          </div>
-          
-        </TabsContent>
-
-        <TabsContent value="activity" className="p-6 space-y-4">
-          <h4 className="text-sm font-medium text-gray-400 mb-3">Transaction History</h4>
-          
-          {isLoadingTransactions ? <div className="flex justify-center py-4">
-              <Clock className="w-5 h-5 text-gray-400 animate-spin" />
-            </div> : transactions.length > 0 ? <div className="space-y-2">
-              {transactions.map(transaction => <div key={transaction.id} className="flex items-center justify-between p-3 bg-black/20 rounded-md">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center">
-                      {getActionIcon(transaction.action)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">
-                        {getActionLabel(transaction.action)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatDate(transaction.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-medium ${getAmountColor(transaction.action)}`}>
-                      {transaction.amount > 0 ? '+' : ''}{transaction.amount} PXB
-                    </p>
-                  </div>
-                </div>)}
-            </div> : <div className="text-center py-4">
-              <p className="text-sm text-gray-500">No transaction history found</p>
-            </div>}
-          
-          <div className="flex justify-center pt-4">
-            <Button variant="outline" size="sm" onClick={fetchTransactionHistory} className="border-gray-600 bg-black/20 hover:bg-black/30 text-gray-400">
-              <History className="w-4 h-4 mr-2" />
-              Refresh History
+            <div className="flex flex-col items-center justify-center p-4 bg-white/5 rounded-xl mb-4">
+              <div className="w-32 h-32 flex items-center justify-center bg-gradient-to-r from-indigo-500/30 to-purple-500/30 rounded-lg mb-4">
+                <QrCode className="w-16 h-16 text-white/80" strokeWidth={1} />
+              </div>
+              <p className="text-sm text-dream-foreground/60 mb-1">Your PXB ID</p>
+              <div className="bg-white/10 rounded-lg p-2 flex justify-between items-center w-full mb-2">
+                <code className="text-xs text-indigo-200 truncate max-w-[180px]">{myPxbId || 'Generating...'}</code>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0 text-dream-foreground/60 hover:text-dream-foreground"
+                  onClick={() => copyToClipboard(myPxbId)}
+                  disabled={!myPxbId}
+                >
+                  <Copy className="w-3 h-3" />
+                  <span className="sr-only">Copy ID</span>
+                </Button>
+              </div>
+              <p className="text-xs text-dream-foreground/60 text-center mt-2">
+                Share this ID with others to receive PXB points
+              </p>
+            </div>
+            
+            <Button 
+              onClick={handleGenerateId} 
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" strokeWidth={1.5} />
+              Generate New ID
             </Button>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </Card>;
+          </motion.div>
+        )}
+      </motion.div>
+    </div>
+  );
 };
 
 export default PXBWallet;

@@ -89,7 +89,6 @@ const WalletConnectionMonitor = ({ children }: { children: React.ReactNode }) =>
 const SolanaWalletProvider = ({ children }: { children: React.ReactNode }) => {
   // Set the network to mainnet-beta instead of devnet
   const network = WalletAdapterNetwork.Mainnet;
-  const [walletInitialized, setWalletInitialized] = useState(false);
 
   // Set custom RPC endpoint with configurable commitment level
   const endpoint = useMemo(() => {
@@ -99,44 +98,21 @@ const SolanaWalletProvider = ({ children }: { children: React.ReactNode }) => {
 
   console.log("Using Solana RPC endpoint:", endpoint);
 
-  // Safely initialize wallets to avoid conflicts with Ethereum provider
-  const wallets = useMemo(() => {
-    try {
-      // Detect if there are conflicting providers
-      const hasConflictingProvider = 
-        window.ethereum && 
-        Object.getOwnPropertyDescriptor(window, 'ethereum')?.configurable === false;
-      
-      if (hasConflictingProvider) {
-        console.warn("Detected non-configurable Ethereum provider, initializing with minimal wallet set");
-        // Use a more minimal set of wallets if there might be conflicts
-        return [
-          new PhantomWalletAdapter(),
-          new SolflareWalletAdapter()
-        ];
-      }
-      
-      return [
-        new PhantomWalletAdapter(),
-        new SolflareWalletAdapter(),
-        new TorusWalletAdapter(),
-        new SolongWalletAdapter(),
-        new CloverWalletAdapter(),
-        new Coin98WalletAdapter(),
-        new CoinbaseWalletAdapter(),
-        new LedgerWalletAdapter(),
-      ];
-    } catch (error) {
-      console.error("Error initializing wallet adapters:", error);
-      // Fallback to minimal wallet set
-      return [
-        new PhantomWalletAdapter(),
-        new SolflareWalletAdapter()
-      ];
-    } finally {
-      setWalletInitialized(true);
-    }
-  }, []);
+  // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking --
+  // Only the wallets you configure here will be compiled into your application
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new TorusWalletAdapter(),
+      new SolongWalletAdapter(),
+      new CloverWalletAdapter(),
+      new Coin98WalletAdapter(),
+      new CoinbaseWalletAdapter(),
+      new LedgerWalletAdapter(),
+    ],
+    []
+  );
 
   return (
     <ConnectionProvider endpoint={endpoint} config={{ commitment: 'confirmed' }}>
