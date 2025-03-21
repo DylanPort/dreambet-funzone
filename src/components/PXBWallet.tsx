@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Copy, Send, CreditCard, QrCode, Coins, CheckCircle2, Clock, ArrowRight, ArrowUpDown } from 'lucide-react';
+import { Copy, Send, CreditCard, QrCode, Coins, CheckCircle2, Clock, ArrowRight, ArrowUpDown, History } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -214,7 +214,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
       </div>
 
       <Tabs defaultValue="send" className="w-full">
-        <TabsList className="w-full grid grid-cols-2 bg-black/20 rounded-none border-b border-white/5">
+        <TabsList className="w-full grid grid-cols-3 bg-black/20 rounded-none border-b border-white/5">
           <TabsTrigger value="send" className="data-[state=active]:bg-[#4B31DD]/10 data-[state=active]:text-white">
             <Send className="w-4 h-4 mr-2" />
             Send
@@ -222,6 +222,10 @@ const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
           <TabsTrigger value="receive" className="data-[state=active]:bg-[#4B31DD]/10 data-[state=active]:text-white">
             <QrCode className="w-4 h-4 mr-2" />
             Receive
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="data-[state=active]:bg-[#4B31DD]/10 data-[state=active]:text-white">
+            <History className="w-4 h-4 mr-2" />
+            Activity
           </TabsTrigger>
         </TabsList>
 
@@ -350,6 +354,57 @@ const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
                 <p className="text-sm text-gray-500">No recent transactions</p>
               </div>
             )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="activity" className="p-6 space-y-4">
+          <h4 className="text-sm font-medium text-gray-400 mb-3">Transaction History</h4>
+          
+          {isLoadingTransactions ? (
+            <div className="flex justify-center py-4">
+              <Clock className="w-5 h-5 text-gray-400 animate-spin" />
+            </div>
+          ) : transactions.length > 0 ? (
+            <div className="space-y-2">
+              {transactions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between p-3 bg-black/20 rounded-md">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center">
+                      {getActionIcon(transaction.action)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">
+                        {getActionLabel(transaction.action)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {formatDate(transaction.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm font-medium ${getAmountColor(transaction.action)}`}>
+                      {transaction.amount > 0 ? '+' : ''}{transaction.amount} PXB
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-500">No transaction history found</p>
+            </div>
+          )}
+          
+          <div className="flex justify-center pt-4">
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={fetchTransactionHistory}
+              className="border-gray-600 bg-black/20 hover:bg-black/30 text-gray-400"
+            >
+              <History className="w-4 h-4 mr-2" />
+              Refresh History
+            </Button>
           </div>
         </TabsContent>
       </Tabs>
