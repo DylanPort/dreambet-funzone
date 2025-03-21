@@ -44,9 +44,42 @@ const MigratingTokenList = () => {
     navigate(`/betting/bet/${betId}`);
   };
   
-  const navigateToTokenDetails = (tokenMint: string) => {
-    navigate(`/token/${tokenMint}`);
-  };
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        setLoading(true);
+        const fetchedBets = await fetchOpenBets();
+        setBets(fetchedBets);
+        const betTotal = fetchedBets.length;
+        const valueTotal = fetchedBets.reduce((sum, bet) => sum + bet.amount, 0);
+        const upPredictions = fetchedBets.filter(bet => bet.prediction === 'migrate' || bet.prediction === 'up').length;
+        const downPredictions = fetchedBets.filter(bet => bet.prediction === 'die' || bet.prediction === 'down').length;
+        setTotalBets(betTotal);
+        setTotalValue(valueTotal);
+        setUpVotes(upPredictions);
+        setDownVotes(downPredictions);
+        const {
+          data: tokensData,
+          error: tokensError
+        } = await supabase.from('tokens').select('*').order('last_updated_time', {
+          ascending: false
+        });
+        if (tokensError) {
+          console.error('Error fetching tokens:', tokensError);
+        } else {
+          setTokens(tokensData || []);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load betting data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAllData();
+    const interval = setInterval(fetchAllData, 60000);
+    return () => clearInterval(interval);
+  }, []);
   
   const formatTimeAgo = (timestamp: number) => {
     return formatDistanceToNow(new Date(timestamp), {
@@ -198,8 +231,8 @@ const MigratingTokenList = () => {
             bgColor
           } = getPredictionDetails(bet.prediction);
           return <CarouselItem key={bet.id} className="pl-2 md:pl-0 basis-[85%] sm:basis-[60%] md:basis-full">
-                <div className="cursor-pointer glass-panel bg-dream-foreground/5 p-4 rounded-lg border border-dream-accent1/20 h-full hover:bg-dream-accent1/5 transition-colors">
-                  <div className="flex items-center mb-3" onClick={() => navigateToTokenDetails(bet.tokenMint)}>
+                <div onClick={() => navigateToBetDetails(bet.id)} className="cursor-pointer glass-panel bg-dream-foreground/5 p-4 rounded-lg border border-dream-accent1/20 h-full hover:bg-dream-accent1/5 transition-colors">
+                  <div className="flex items-center mb-3">
                     <div className="w-10 h-10 mr-3 flex items-center justify-center">
                       <img src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" alt="Token" className="w-full h-full object-contain" />
                     </div>
@@ -215,10 +248,7 @@ const MigratingTokenList = () => {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <button onClick={(e) => {
-                                  e.stopPropagation();
-                                  copyToClipboard(bet.tokenMint);
-                                }} className="hover:text-dream-accent1 transition-colors">
+                                <button onClick={() => copyToClipboard(bet.tokenMint)} className="hover:text-dream-accent1 transition-colors">
                                   <Copy size={12} />
                                 </button>
                               </TooltipTrigger>
@@ -235,51 +265,49 @@ const MigratingTokenList = () => {
                     </Badge>
                   </div>
                   
-                  <div onClick={() => navigateToBetDetails(bet.id)} className="rest-of-card">
-                    <div className="flex justify-between items-center mb-3">
-                      <div>
-                        <div className="text-sm text-dream-foreground/60">Bet Amount</div>
-                        <div className="font-medium">{bet.amount} PXB</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-dream-foreground/60">Status</div>
-                        <Badge variant="outline" className="border-dream-accent1/30">
-                          {bet.status.toUpperCase()}
-                        </Badge>
+                  <div className="flex justify-between items-center mb-3">
+                    <div>
+                      <div className="text-sm text-dream-foreground/60">Bet Amount</div>
+                      <div className="font-medium">{bet.amount} PXB</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-dream-foreground/60">Status</div>
+                      <Badge variant="outline" className="border-dream-accent1/30">
+                        {bet.status.toUpperCase()}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 mb-3">
+                    <div>
+                      <div className="text-xs text-dream-foreground/60 mb-1">Initiated by</div>
+                      <div className="text-sm font-medium overflow-hidden text-ellipsis">
+                        {formatAddress(bet.initiator)}
                       </div>
                     </div>
                     
-                    <div className="space-y-2 mb-3">
-                      <div>
-                        <div className="text-xs text-dream-foreground/60 mb-1">Initiated by</div>
-                        <div className="text-sm font-medium overflow-hidden text-ellipsis">
-                          {formatAddress(bet.initiator)}
-                        </div>
+                    <div>
+                      <div className="text-xs text-dream-foreground/60 mb-1">Time Remaining</div>
+                      <div className="text-sm font-medium flex items-center">
+                        <Clock className="h-3.5 w-3.5 mr-1.5 text-dream-foreground/60" />
+                        <span>{formatTimeRemaining(bet.expiresAt)}</span>
                       </div>
-                      
-                      <div>
-                        <div className="text-xs text-dream-foreground/60 mb-1">Time Remaining</div>
+                    </div>
+                    
+                    {tokenDetails && <div>
+                        <div className="text-xs text-dream-foreground/60 mb-1">Market Cap</div>
                         <div className="text-sm font-medium flex items-center">
-                          <Clock className="h-3.5 w-3.5 mr-1.5 text-dream-foreground/60" />
-                          <span>{formatTimeRemaining(bet.expiresAt)}</span>
+                          <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-dream-foreground/60" />
+                          <span>${formatNumberWithCommas(tokenDetails.current_market_cap)}</span>
                         </div>
-                      </div>
-                      
-                      {tokenDetails && <div>
-                          <div className="text-xs text-dream-foreground/60 mb-1">Market Cap</div>
-                          <div className="text-sm font-medium flex items-center">
-                            <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-dream-foreground/60" />
-                            <span>${formatNumberWithCommas(tokenDetails.current_market_cap)}</span>
-                          </div>
-                        </div>}
-                    </div>
-                    
-                    <div className="flex justify-center gap-2">
-                      <button className="btn-accept py-1.5 px-3 text-sm flex items-center gap-1 bg-gradient-to-r from-dream-accent2/20 to-dream-accent2/10 rounded-lg hover:from-dream-accent2/30 hover:to-dream-accent2/20 transition-all">
-                        <Trophy className="w-3 h-3" />
-                        <span className="text-dream-accent2 font-bold">CHALLENGE</span>
-                      </button>
-                    </div>
+                      </div>}
+                  </div>
+                  
+                  <div className="flex justify-center gap-2">
+                    <button className="btn-accept py-1.5 px-3 text-sm flex items-center gap-1 bg-gradient-to-r from-dream-accent2/20 to-dream-accent2/10 rounded-lg hover:from-dream-accent2/30 hover:to-dream-accent2/20 transition-all">
+                      <Trophy className="w-3 h-3" />
+                      <span className="text-dream-accent2 font-bold">CHALLENGE</span>
+                    </button>
                   </div>
                 </div>
               </CarouselItem>;
@@ -381,13 +409,11 @@ const MigratingTokenList = () => {
             } = getPredictionDetails(bet.prediction);
             return <TableRow 
                     key={bet.id} 
-                    className="hover:bg-dream-accent1/5 transition-colors"
+                    className="hover:bg-dream-accent1/5 transition-colors cursor-pointer"
+                    onClick={() => navigateToBetDetails(bet.id)}
                   >
                     <TableCell className="py-3 px-4">
-                      <div 
-                        className="flex items-center cursor-pointer" 
-                        onClick={() => navigateToTokenDetails(bet.tokenMint)}
-                      >
+                      <div className="flex items-center">
                         <div className="w-8 h-8 mr-3 flex items-center justify-center">
                           <img src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" alt="Token" className="w-full h-full object-contain" />
                         </div>
@@ -432,7 +458,7 @@ const MigratingTokenList = () => {
                                   <TooltipTrigger asChild>
                                     <button 
                                       onClick={(e) => {
-                                        e.stopPropagation();
+                                        e.stopPropagation(); // Prevent row click event
                                         copyToClipboard(bet.tokenMint);
                                       }} 
                                       className="hover:text-dream-accent1 transition-colors"
@@ -450,38 +476,23 @@ const MigratingTokenList = () => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell 
-                      className="py-3 px-4 text-right font-medium cursor-pointer"
-                      onClick={() => navigateToBetDetails(bet.id)}
-                    >
+                    <TableCell className="py-3 px-4 text-right font-medium">
                       {bet.amount} PXB
                     </TableCell>
-                    <TableCell 
-                      className="py-3 px-4 text-center cursor-pointer"
-                      onClick={() => navigateToBetDetails(bet.id)}
-                    >
+                    <TableCell className="py-3 px-4 text-center">
                       <Badge className={`${bgColor} ${color} border-none`}>
                         {text}
                       </Badge>
                     </TableCell>
-                    <TableCell 
-                      className="py-3 px-4 text-center cursor-pointer"
-                      onClick={() => navigateToBetDetails(bet.id)}
-                    >
+                    <TableCell className="py-3 px-4 text-center">
                       <Badge variant="outline" className="border-dream-accent1/30">
                         {bet.status.toUpperCase()}
                       </Badge>
                     </TableCell>
-                    <TableCell 
-                      className="py-3 px-4 text-right text-xs cursor-pointer"
-                      onClick={() => navigateToBetDetails(bet.id)}
-                    >
+                    <TableCell className="py-3 px-4 text-right text-xs">
                       {formatAddress(bet.initiator)}
                     </TableCell>
-                    <TableCell 
-                      className="py-3 px-4 text-right text-xs cursor-pointer"
-                      onClick={() => navigateToBetDetails(bet.id)}
-                    >
+                    <TableCell className="py-3 px-4 text-right text-xs">
                       {formatTimeRemaining(bet.expiresAt)}
                     </TableCell>
                     <TableCell className="py-3 px-4">
@@ -489,7 +500,7 @@ const MigratingTokenList = () => {
                         <button 
                           className="btn-accept py-1 px-2 text-xs flex items-center gap-1 bg-gradient-to-r from-dream-accent2/20 to-dream-accent2/10 rounded-lg hover:from-dream-accent2/30 hover:to-dream-accent2/20 transition-all"
                           onClick={(e) => {
-                            e.stopPropagation();
+                            e.stopPropagation(); // Prevent row click event
                             toast.info("Challenge feature coming soon!");
                           }}
                         >
