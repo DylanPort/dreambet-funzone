@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
@@ -8,7 +9,19 @@ import { Progress } from '@/components/ui/progress';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
 import { toast } from 'sonner';
 
-const PXBBetsList = () => {
+interface PXBBetsListProps {
+  showHeader?: boolean;
+  maxItems?: number;
+  compact?: boolean;
+  className?: string;
+}
+
+const PXBBetsList = ({ 
+  showHeader = true,
+  maxItems,
+  compact = false,
+  className = ""
+}: PXBBetsListProps) => {
   const { bets, fetchUserBets } = usePXBPoints();
   const [loadingMarketCaps, setLoadingMarketCaps] = useState<Record<string, boolean>>({});
   const [marketCapData, setMarketCapData] = useState<Record<string, { initialMarketCap: number | null, currentMarketCap: number | null }>>({});
@@ -62,13 +75,18 @@ const PXBBetsList = () => {
     return () => clearInterval(interval);
   }, [bets]);
 
-  if (!bets || bets.length === 0) {
+  // Display bets based on maxItems prop if provided
+  const displayBets = maxItems ? bets?.slice(0, maxItems) : bets;
+
+  if (!displayBets || displayBets.length === 0) {
     return (
-      <div className="glass-panel p-6">
-        <h2 className="font-semibold text-lg mb-4 flex items-center">
-          <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
-          Your PXB Bets
-        </h2>
+      <div className={`glass-panel p-6 ${className}`}>
+        {showHeader && (
+          <h2 className="font-semibold text-lg mb-4 flex items-center">
+            <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
+            Your PXB Bets
+          </h2>
+        )}
         <div className="text-center py-6">
           <p className="text-dream-foreground/70 mb-4">You haven't placed any PXB bets yet</p>
           <Button asChild>
@@ -139,14 +157,16 @@ const PXBBetsList = () => {
   };
 
   return (
-    <div className="glass-panel p-6">
-      <h2 className="font-semibold text-lg mb-4 flex items-center">
-        <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
-        Your PXB Bets
-      </h2>
+    <div className={`glass-panel p-6 ${className}`}>
+      {showHeader && (
+        <h2 className="font-semibold text-lg mb-4 flex items-center">
+          <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
+          Your PXB Bets
+        </h2>
+      )}
       
       <div className="space-y-3">
-        {bets.map((bet) => {
+        {displayBets.map((bet) => {
           const isActive = bet.status === 'pending';
           const expiryDate = new Date(bet.expiresAt);
           const timeLeft = isActive ? formatDistanceToNow(expiryDate, { addSuffix: true }) : '';
@@ -184,7 +204,7 @@ const PXBBetsList = () => {
                   : bet.status === 'won' 
                     ? 'border-green-400/30' 
                     : 'border-red-400/30'
-              }`}
+              } ${compact ? 'text-sm' : ''}`}
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
@@ -208,37 +228,39 @@ const PXBBetsList = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-2 mb-3 mt-2 text-xs">
-                <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
-                  <div className="text-dream-foreground/50 mb-1">Start MCAP</div>
-                  <div className="font-medium">
-                    {isLoading && !initialMarketCap 
-                      ? <span className="animate-pulse">Loading...</span>
-                      : formatLargeNumber(initialMarketCap)
-                    }
+              {!compact && (
+                <div className="grid grid-cols-3 gap-2 mb-3 mt-2 text-xs">
+                  <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                    <div className="text-dream-foreground/50 mb-1">Start MCAP</div>
+                    <div className="font-medium">
+                      {isLoading && !initialMarketCap 
+                        ? <span className="animate-pulse">Loading...</span>
+                        : formatLargeNumber(initialMarketCap)
+                      }
+                    </div>
+                  </div>
+                  <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                    <div className="text-dream-foreground/50 mb-1">Current MCAP</div>
+                    <div className="font-medium">
+                      {isLoading && !currentMarketCap 
+                        ? <span className="animate-pulse">Loading...</span>
+                        : formatLargeNumber(currentMarketCap)
+                      }
+                    </div>
+                  </div>
+                  <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                    <div className="text-dream-foreground/50 mb-1">Target MCAP</div>
+                    <div className="font-medium">
+                      {isLoading && !targetMarketCap 
+                        ? <span className="animate-pulse">Loading...</span>
+                        : formatLargeNumber(targetMarketCap)
+                      }
+                    </div>
                   </div>
                 </div>
-                <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
-                  <div className="text-dream-foreground/50 mb-1">Current MCAP</div>
-                  <div className="font-medium">
-                    {isLoading && !currentMarketCap 
-                      ? <span className="animate-pulse">Loading...</span>
-                      : formatLargeNumber(currentMarketCap)
-                    }
-                  </div>
-                </div>
-                <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
-                  <div className="text-dream-foreground/50 mb-1">Target MCAP</div>
-                  <div className="font-medium">
-                    {isLoading && !targetMarketCap 
-                      ? <span className="animate-pulse">Loading...</span>
-                      : formatLargeNumber(targetMarketCap)
-                    }
-                  </div>
-                </div>
-              </div>
+              )}
               
-              {isActive && (
+              {isActive && !compact && (
                 <div className="mb-3 mt-3">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-dream-foreground/60">Progress towards target</span>
@@ -278,22 +300,24 @@ const PXBBetsList = () => {
                   </span>
                 )}
                 
-                {!isActive && marketCapChangePercentage !== null && (
+                {!isActive && marketCapChangePercentage !== null && !compact && (
                   <span className="text-dream-foreground/60">
                     Final market cap change: {marketCapChangePercentage.toFixed(2)}%
                   </span>
                 )}
               </div>
               
-              <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
-                {bet.status === 'pending' ? (
-                  <p>Betting against the house: If you win, you'll earn {bet.betAmount} PXB from the supply.</p>
-                ) : bet.status === 'won' ? (
-                  <p>You won {bet.pointsWon} PXB from the house supply!</p>
-                ) : (
-                  <p>Your {bet.betAmount} PXB has returned to the house supply.</p>
-                )}
-              </div>
+              {!compact && (
+                <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
+                  {bet.status === 'pending' ? (
+                    <p>Betting against the house: If you win, you'll earn {bet.betAmount} PXB from the supply.</p>
+                  ) : bet.status === 'won' ? (
+                    <p>You won {bet.pointsWon} PXB from the house supply!</p>
+                  ) : (
+                    <p>Your {bet.betAmount} PXB has returned to the house supply.</p>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
