@@ -25,19 +25,40 @@ import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
 import { updateUsername } from '@/services/userService';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Loader2, Trophy, Clock, Check, X, Send, ArrowUpDown } from 'lucide-react';
+import { Coins, Loader2, Trophy, Clock, Check, X, Send, ArrowUpDown, Sparkles, Orbit } from 'lucide-react';
 import PXBWallet from '@/components/PXBWallet';
 import { PXBBet } from '@/types/pxb';
+
+interface CombinedBet {
+  betType: 'PXB' | 'SOL';
+  id: string;
+  tokenId: string;
+  tokenMint: string;
+  tokenSymbol: string;
+  tokenName: string;
+  initiator: string;
+  amount: number;
+  prediction: string;
+  timestamp: number;
+  expiresAt: number;
+  status: string;
+  duration: number;
+  onChainBetId?: string;
+  transactionSignature?: string;
+  currentMarketCap?: number;
+}
 
 const ProfilePage = () => {
   const { publicKey, connected } = useWallet();
   const [username, setUsername] = useState('');
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   const { bets: walletBets, isLoading: isLoadingWalletBets, loadBets } = useWalletBets();
-  const [combinedBets, setCombinedBets] = useState<Array<Bet | PXBBet & { betType: 'PXB' | 'SOL' }>>([]);
+  const [combinedBets, setCombinedBets] = useState<CombinedBet[]>([]);
   const [isLoadingAllBets, setIsLoadingAllBets] = useState(true);
+  const [isGeneratingId, setIsGeneratingId] = useState(false);
+  const [pxbIdCopied, setPxbIdCopied] = useState(false);
 
-  const { userProfile, bets: pxbBets, fetchUserProfile, fetchUserBets } = usePXBPoints();
+  const { userProfile, bets: pxbBets, fetchUserProfile, fetchUserBets, generatePxbId } = usePXBPoints();
 
   const loadDetailedBets = async () => {
     setIsLoadingAllBets(true);
@@ -101,6 +122,8 @@ const ProfilePage = () => {
                 bet.status === 'won' ? 'completed' : 
                 bet.status === 'lost' ? 'expired' : 'open',
         duration: 30, // Default duration in minutes
+        onChainBetId: `pxb-${bet.id}`,
+        transactionSignature: `pxb-tx-${bet.id}`
       }));
       
       // Combine and sort by timestamp (newest first)
@@ -131,6 +154,27 @@ const ProfilePage = () => {
       toast.error("Failed to update username");
     } finally {
       setIsUpdatingUsername(false);
+    }
+  };
+
+  const handleGeneratePxbId = async () => {
+    if (!generatePxbId || !userProfile) return;
+    
+    setIsGeneratingId(true);
+    try {
+      const id = generatePxbId();
+      toast.success("New PXB ID generated!");
+      
+      // Show copied notification briefly
+      navigator.clipboard.writeText(id);
+      setPxbIdCopied(true);
+      setTimeout(() => setPxbIdCopied(false), 2000);
+      
+    } catch (error) {
+      console.error("Error generating PXB ID:", error);
+      toast.error("Failed to generate PXB ID");
+    } finally {
+      setIsGeneratingId(false);
     }
   };
 
@@ -239,6 +283,38 @@ const ProfilePage = () => {
                         )}
                       </Button>
                     </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="pxb-id">PXB ID</Label>
+                    <Button
+                      onClick={handleGeneratePxbId}
+                      disabled={isGeneratingId || !generatePxbId}
+                      className="w-full bg-gradient-to-r from-[#6E59A5] to-[#8B5CF6] hover:from-[#7E69AB] hover:to-[#9B87F5] text-white border-none relative overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-40 h-40 rounded-full bg-white/10 absolute animate-ping opacity-0 group-hover:opacity-30 duration-1000" />
+                        <div className="w-32 h-32 rounded-full bg-white/20 absolute animate-ping opacity-0 group-hover:opacity-30 delay-100 duration-1000" />
+                        <div className="w-24 h-24 rounded-full bg-white/30 absolute animate-ping opacity-0 group-hover:opacity-30 delay-200 duration-1000" />
+                      </div>
+                      
+                      {isGeneratingId ? (
+                        <div className="flex items-center justify-center relative z-10">
+                          <Orbit className="h-5 w-5 mr-2 animate-spin" />
+                          <span>Generating...</span>
+                        </div>
+                      ) : pxbIdCopied ? (
+                        <div className="flex items-center justify-center relative z-10">
+                          <Check className="h-5 w-5 mr-2" />
+                          <span>Copied to clipboard!</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center relative z-10">
+                          <Sparkles className="h-5 w-5 mr-2" />
+                          <span>Generate PXB ID</span>
+                        </div>
+                      )}
+                    </Button>
                   </div>
                   
                   <Separator className="my-4" />
@@ -364,7 +440,7 @@ const ProfilePage = () => {
 };
 
 interface BetsTableProps {
-  bets: Array<any>;
+  bets: CombinedBet[];
   isLoading: boolean;
   formatDate: (timestamp: number) => string;
   getStatusBadge: (status: string, prediction: string) => React.ReactNode;
