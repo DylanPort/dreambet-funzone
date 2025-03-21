@@ -29,6 +29,8 @@ import { BetPrediction } from '@/types/bet';
 import { createSupabaseBet } from '@/services/supabaseService';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import TokenMarketCap from '@/components/TokenMarketCap';
+import TokenVolume from '@/components/TokenVolume';
 
 const TokenDetail = () => {
   const { tokenId } = useParams<{ tokenId: string }>();
@@ -40,21 +42,40 @@ const TokenDetail = () => {
   const [amount, setAmount] = useState(1);
   const [placingBet, setPlacingBet] = useState(false);
   const { publicKey } = useWallet();
-  const { userProfile } = usePXBPoints();
+  const { userProfile, placeBet } = usePXBPoints();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadTokenData = async () => {
+      if (!tokenId) {
+        setError("Token ID is missing from URL parameters");
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
+      setError(null);
       try {
+        console.log("Fetching token details for:", tokenId);
         // Fetch token details from Supabase
-        const tokenData = await fetchTokenById(tokenId!);
+        const tokenData = await fetchTokenById(tokenId);
+        
+        if (!tokenData) {
+          setError(`Token with ID ${tokenId} not found`);
+          setLoading(false);
+          return;
+        }
+        
+        console.log("Token data fetched:", tokenData);
         setToken(tokenData);
 
         // Fetch token metrics from TokenDataCache
-        const metrics = await fetchTokenMetrics(tokenId!);
+        const metrics = await fetchTokenMetrics(tokenId);
+        console.log("Token metrics fetched:", metrics);
         setTokenMetrics(metrics);
       } catch (error) {
         console.error("Error fetching token data:", error);
+        setError("Failed to load token data. Please try again later.");
         toast.error("Failed to load token data");
       } finally {
         setLoading(false);
@@ -76,23 +97,36 @@ const TokenDetail = () => {
     setAmount(Number(event.target.value));
   };
 
-  const placeBet = async () => {
-    if (!tokenId || !token || !publicKey) return;
+  const handlePlaceBet = async () => {
+    if (!tokenId || !token || !publicKey || !userProfile) {
+      toast.error("You need to be logged in with a wallet to place a bet");
+      return;
+    }
+
+    if (amount <= 0) {
+      toast.error("Bet amount must be greater than 0");
+      return;
+    }
+
+    if (!userProfile.pxbPoints || userProfile.pxbPoints < amount) {
+      toast.error(`Not enough PXB points. You have ${userProfile.pxbPoints || 0}, but tried to bet ${amount}.`);
+      return;
+    }
 
     setPlacingBet(true);
     try {
-      const creatorWalletAddress = publicKey.toString();
-      const success = await createSupabaseBet(
+      // Use the placeBet function from the PXBPoints context
+      const betResult = await placeBet(
         tokenId,
         token.token_name,
         token.token_symbol,
-        prediction,
-        duration,
         amount,
-        creatorWalletAddress
+        prediction === 'migrate' ? 'up' : 'down',
+        5, // Default percentage change
+        duration
       );
 
-      if (success) {
+      if (betResult) {
         toast.success("Bet placed successfully!");
       } else {
         toast.error("Failed to place bet");
@@ -106,16 +140,55 @@ const TokenDetail = () => {
   };
 
   if (loading) {
-    return <div className="text-center">Loading token data...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4 text-dream-accent2" />
+          <p className="text-lg text-dream-foreground/70">Loading token data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="text-center p-6 bg-red-50 rounded-lg border border-red-200 max-w-md">
+          <p className="text-lg font-medium text-red-600 mb-2">Error</p>
+          <p className="text-gray-700">{error}</p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => window.history.back()}
+          >
+            Go Back
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (!token) {
-    return <div className="text-center">Token not found</div>;
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="text-center p-6 bg-amber-50 rounded-lg border border-amber-200 max-w-md">
+          <p className="text-lg font-medium text-amber-600 mb-2">Token Not Found</p>
+          <p className="text-gray-700">The token you're looking for doesn't exist or has been removed.</p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => window.history.back()}
+          >
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto p-4">
-      <Card className="glass-panel border-dream-accent2/20">
+      <Card className="glass-panel border-dream-accent2/20 mb-6">
         <CardHeader>
           <CardTitle className="flex items-center">
             {token.token_name}
@@ -126,6 +199,12 @@ const TokenDetail = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Token metrics grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {tokenId && <TokenMarketCap tokenId={tokenId} />}
+            {tokenId && <TokenVolume tokenId={tokenId} />}
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h3 className="text-xl font-semibold mb-2">Token Information</h3>
@@ -133,7 +212,7 @@ const TokenDetail = () => {
                 <TableBody>
                   <TableRow>
                     <TableCell className="font-medium">Token Mint</TableCell>
-                    <TableCell>{token.token_mint}</TableCell>
+                    <TableCell className="break-all">{token.token_mint}</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-medium">Token Name</TableCell>
@@ -143,14 +222,18 @@ const TokenDetail = () => {
                     <TableCell className="font-medium">Token Symbol</TableCell>
                     <TableCell>{token.token_symbol}</TableCell>
                   </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Initial Market Cap</TableCell>
-                    <TableCell>${token.initial_market_cap}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Current Market Cap</TableCell>
-                    <TableCell>${token.current_market_cap}</TableCell>
-                  </TableRow>
+                  {token.initial_market_cap && (
+                    <TableRow>
+                      <TableCell className="font-medium">Initial Market Cap</TableCell>
+                      <TableCell>${token.initial_market_cap.toLocaleString()}</TableCell>
+                    </TableRow>
+                  )}
+                  {token.current_market_cap && (
+                    <TableRow>
+                      <TableCell className="font-medium">Current Market Cap</TableCell>
+                      <TableCell>${token.current_market_cap.toLocaleString()}</TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -201,19 +284,30 @@ const TokenDetail = () => {
                   className="w-full p-2 border rounded"
                   value={amount}
                   onChange={handleAmountChange}
+                  min="1"
                 />
               </div>
 
-              <Button onClick={placeBet} disabled={placingBet} className="w-full">
+              <Button 
+                onClick={handlePlaceBet} 
+                disabled={placingBet || !userProfile} 
+                className="w-full"
+              >
                 {placingBet ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Placing Bet...
                   </>
                 ) : (
-                  "Place Bet"
+                  `Place Bet (${amount} PXB)`
                 )}
               </Button>
+              
+              {!userProfile && (
+                <p className="text-sm text-amber-600 mt-2 text-center">
+                  You need to connect your wallet to place bets.
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
