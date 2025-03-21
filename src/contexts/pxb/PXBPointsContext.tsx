@@ -48,8 +48,10 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Load user profile when wallet connects
   useEffect(() => {
     if (connected && publicKey) {
+      console.log("Wallet connected in PXBPointsContext, fetching profile");
       fetchUserProfile();
     } else {
+      console.log("Wallet disconnected in PXBPointsContext, clearing profile");
       setUserProfile(null);
     }
   }, [connected, publicKey, fetchUserProfile, setUserProfile]);

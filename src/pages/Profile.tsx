@@ -17,12 +17,14 @@ const Profile = () => {
   const { userProfile, isLoading, fetchUserProfile, fetchUserBets } = usePXBPoints();
   const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
 
+  // Fetch user profile when wallet connects
   useEffect(() => {
     if (connected && publicKey) {
       fetchUserProfile();
     }
   }, [connected, publicKey, fetchUserProfile]);
 
+  // Subscribe to Supabase user points changes
   useEffect(() => {
     if (connected && publicKey) {
       const walletAddress = publicKey.toString();
@@ -45,12 +47,14 @@ const Profile = () => {
     }
   }, [connected, publicKey]);
 
+  // Update local points state when userProfile changes
   useEffect(() => {
     if (userProfile && userProfile.pxbPoints !== undefined) {
       setLocalPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
 
+  // Show disconnected state when wallet is not connected
   if (!connected || !publicKey) {
     return (
       <>
@@ -76,6 +80,7 @@ const Profile = () => {
     );
   }
 
+  // Show loading state
   if (isLoading) {
     return (
       <>
@@ -92,6 +97,7 @@ const Profile = () => {
     );
   }
 
+  // Show profile content with proper fallbacks
   return (
     <>
       <Navbar />

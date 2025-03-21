@@ -15,6 +15,7 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
   const [winRate, setWinRate] = React.useState(0);
   const [ranking, setRanking] = React.useState<number | null>(null);
 
+  // Calculate betting statistics from bets data
   React.useEffect(() => {
     if (bets && bets.length > 0) {
       setTotalBets(bets.length);
@@ -22,19 +23,29 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
       const wins = bets.filter(bet => bet.status === 'won').length;
       const calculatedWinRate = Math.round((wins / bets.length) * 100);
       setWinRate(calculatedWinRate);
+    } else {
+      // Default values when no bets are available
+      setTotalBets(0);
+      setWinRate(0);
     }
   }, [bets]);
 
+  // Fetch leaderboard data when component mounts
   React.useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
 
+  // Determine user's ranking on leaderboard
   React.useEffect(() => {
     if (userProfile && leaderboard && leaderboard.length > 0) {
       const userRanking = leaderboard.findIndex(user => user.id === userProfile.id);
       if (userRanking !== -1) {
         setRanking(userRanking + 1);
+      } else {
+        setRanking(null);
       }
+    } else {
+      setRanking(null);
     }
   }, [userProfile, leaderboard]);
 
@@ -56,7 +67,7 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
         
         <div className="p-4 bg-green-900/30 rounded-lg">
           <p className="text-green-400 text-sm mb-1">PXB Points</p>
-          <p className="text-3xl font-bold">{userProfile?.pxbPoints.toLocaleString() || 0}</p>
+          <p className="text-3xl font-bold">{userProfile?.pxbPoints?.toLocaleString() || 0}</p>
         </div>
         
         <div className="p-4 bg-green-900/30 rounded-lg">
