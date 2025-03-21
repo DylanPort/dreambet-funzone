@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase, isAuthRateLimited, checkSupabaseTables, isAuthDisabled } from '@/integrations/supabase/client';
@@ -390,15 +391,19 @@ export const usePointOperations = (
         return false;
       }
       
-      // Start a transaction to ensure atomicity
-      const { data: transaction, error: transactionError } = await supabase.rpc('transfer_pxb_points', {
-        sender_id: userProfile.id,
-        recipient_id: recipientId,
-        amount: amount
-      });
+      // Call the Supabase function to transfer the points
+      // Using .rpc is the correct way to call database functions
+      const { data, error } = await supabase.rpc(
+        'transfer_pxb_points',
+        {
+          sender_id: userProfile.id,
+          recipient_id: recipientId,
+          amount: amount
+        }
+      );
       
-      if (transactionError) {
-        console.error('Error sending points:', transactionError);
+      if (error) {
+        console.error('Error sending points:', error);
         toast.error('Failed to send PXB points. Please try again.');
         return false;
       }

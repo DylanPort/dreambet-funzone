@@ -495,6 +495,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      transfer_pxb_points: {
+        Args: {
+          sender_id: string
+          recipient_id: string
+          amount: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
