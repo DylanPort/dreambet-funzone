@@ -24,9 +24,13 @@ export const fetchTokenById = async (tokenMint: string) => {
     .from('tokens')
     .select('*')
     .eq('token_mint', tokenMint)
-    .single();
+    .maybeSingle();
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching token by ID:', error);
+    throw error;
+  }
+  
   return data;
 };
 
