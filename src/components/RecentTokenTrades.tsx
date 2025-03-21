@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { ArrowUpRight, ArrowDownRight, Clock, TrendingUp, User, Users, Layers, DollarSign, Loader2, ExternalLink } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -132,6 +133,16 @@ const RecentTokenTrades: React.FC = () => {
     navigate('/betting');
   };
 
+  const calculateProgress = (prediction: string, percentage: number) => {
+    if (prediction === 'up') {
+      return Math.min(percentage, 100);
+    }
+    else if (prediction === 'down') {
+      return Math.min(percentage, 100);
+    }
+    return 50; 
+  };
+
   if (isLoading) {
     return (
       <div className="bg-dream-foreground/5 backdrop-blur-sm p-4 rounded-lg border border-dream-accent1/20">
@@ -253,6 +264,19 @@ const RecentTokenTrades: React.FC = () => {
                       </span>
                     </div>
                   )}
+                </div>
+                
+                <div className="mt-3">
+                  <div className="flex justify-between mb-1 text-xs">
+                    <span className="text-dream-foreground/60">Progress</span>
+                    <span className={`${bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                      {calculateProgress(bet.prediction, bet.percentageChange)}%
+                    </span>
+                  </div>
+                  <Progress 
+                    value={calculateProgress(bet.prediction, bet.percentageChange)} 
+                    className="h-2" 
+                  />
                 </div>
                 
                 <div className="mt-2 text-xs">
