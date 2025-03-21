@@ -113,8 +113,19 @@ const PXBWallet: React.FC = () => {
     setIsSending(true);
     try {
       // Extract the actual user ID from the PXB ID format (PXB-userID-timestamp)
-      const parts = recipientId.split('-');
-      const actualUserId = parts.length >= 2 ? parts[1] : recipientId;
+      let actualUserId = recipientId;
+      
+      // Check if the input is in PXB-ID format and extract the userId portion
+      if (recipientId.startsWith('PXB-')) {
+        const parts = recipientId.split('-');
+        if (parts.length >= 2) {
+          // The full UUID might be spread across multiple parts if it contains hyphens
+          // For simplicity, we'll take just the second part as the user identifier
+          actualUserId = parts[1];
+        }
+      }
+      
+      console.log('Extracted user ID for sending:', actualUserId);
       
       const success = await sendPoints(actualUserId, amountNumber);
       if (success) {

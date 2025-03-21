@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase, isAuthRateLimited, checkSupabaseTables, isAuthDisabled } from '@/integrations/supabase/client';
@@ -377,12 +378,38 @@ export const usePointOperations = (
     setIsSendingPoints(true);
     
     try {
-      // First verify the recipient exists
-      const { data: recipientData, error: recipientError } = await supabase
-        .from('users')
-        .select('id, username')
-        .eq('id', recipientId)
-        .single();
+      console.log('Searching for recipient with ID:', recipientId);
+      
+      // First try to query by username if the ID doesn't look like a UUID
+      let recipientData;
+      let recipientError;
+      
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(recipientId);
+      
+      if (!isUUID) {
+        // Try to find user by username first
+        ({ data: recipientData, error: recipientError } = await supabase
+          .from('users')
+          .select('id, username')
+          .eq('username', recipientId)
+          .maybeSingle());
+          
+        if (recipientData) {
+          console.log('Found recipient by username:', recipientData);
+          recipientId = recipientData.id;
+        } else {
+          console.log('Could not find recipient by username, will try by ID');
+        }
+      }
+      
+      // If we couldn't find by username or if the input was a UUID, try by ID
+      if (!recipientData) {
+        ({ data: recipientData, error: recipientError } = await supabase
+          .from('users')
+          .select('id, username')
+          .eq('id', recipientId)
+          .maybeSingle());
+      }
       
       if (recipientError || !recipientData) {
         console.error('Error finding recipient:', recipientError);
