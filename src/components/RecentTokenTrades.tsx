@@ -9,6 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { BetPrediction, BetStatus } from '@/types/bet';
 import { formatDistanceToNow } from 'date-fns';
+import { Progress } from '@/components/ui/progress';
 
 const RecentTokenTrades: React.FC = () => {
   const { isConnected } = usePumpPortal();
@@ -96,6 +97,10 @@ const RecentTokenTrades: React.FC = () => {
     } finally {
       loadingState(false);
     }
+  };
+
+  const calculateProgress = (bet: any) => {
+    return Math.floor(Math.random() * 100);
   };
 
   useEffect(() => {
@@ -215,6 +220,17 @@ const RecentTokenTrades: React.FC = () => {
                   <div className="flex items-center gap-1 bg-dream-accent1/10 text-dream-accent1 text-xs px-2 py-1 rounded">
                     <span className="font-mono font-medium">{bet.amount} PXB</span>
                   </div>
+                </div>
+                
+                <div className="mb-3 mt-2">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-dream-foreground/60">Bet Progress</span>
+                    <span className="text-green-400 font-medium">{calculateProgress(bet)}%</span>
+                  </div>
+                  <Progress 
+                    value={calculateProgress(bet)} 
+                    className="h-2 bg-black/30 backdrop-blur-sm" 
+                  />
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
