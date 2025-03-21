@@ -34,14 +34,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const { leaderboard, fetchLeaderboard } = useLeaderboardData();
   
   // Set up operations
-  const { 
-    mintPoints, 
-    placeBet, 
-    sendPoints, 
-    generatePxbId,
-    cooldownEnds,
-    checkCooldown 
-  } = usePointOperations(
+  const { mintPoints, placeBet, sendPoints, generatePxbId } = usePointOperations(
     userProfile,
     setUserProfile,
     setBets,
@@ -56,13 +49,10 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     if (connected && publicKey) {
       fetchUserProfile();
-      if (checkCooldown) {
-        checkCooldown();
-      }
     } else {
       setUserProfile(null);
     }
-  }, [connected, publicKey, fetchUserProfile, setUserProfile, checkCooldown]);
+  }, [connected, publicKey, fetchUserProfile, setUserProfile]);
 
   return (
     <PXBPointsContext.Provider
@@ -75,8 +65,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         placeBet,
         sendPoints,
         generatePxbId,
-        cooldownEnds,
-        checkCooldown,
         fetchUserProfile,
         fetchUserBets,
         fetchLeaderboard

@@ -22,6 +22,4 @@ export interface PXBPointsContextType {
   userBets?: PXBBet[];
   sendPoints?: (recipientId: string, amount: number) => Promise<boolean>;
   generatePxbId?: () => string;
-  cooldownEnds?: number | null;
-  checkCooldown?: () => Promise<number | null>;
 }

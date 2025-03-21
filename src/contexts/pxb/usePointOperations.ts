@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase, isAuthRateLimited, checkSupabaseTables, isAuthDisabled } from '@/integrations/supabase/client';
@@ -6,9 +5,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
 import { Bet, BetPrediction } from '@/types/bet';
-
-// Cooldown duration in milliseconds (6 hours)
-const MINT_COOLDOWN_DURATION = 6 * 60 * 60 * 1000;
 
 export const usePointOperations = (
   userProfile: UserProfile | null,
@@ -20,46 +16,7 @@ export const usePointOperations = (
   const [isMinting, setIsMinting] = useState(false);
   const [isPlacingBet, setIsPlacingBet] = useState(false);
   const [isSendingPoints, setIsSendingPoints] = useState(false);
-  const [cooldownEnds, setCooldownEnds] = useState<number | null>(null);
   const { publicKey } = useWallet();
-
-  // Check cooldown status
-  const checkCooldown = useCallback(async () => {
-    if (!userProfile || !publicKey) return null;
-    
-    try {
-      // Get last mint operation from points_history
-      const { data, error } = await supabase
-        .from('points_history')
-        .select('created_at')
-        .eq('user_id', userProfile.id)
-        .eq('action', 'mint')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) {
-        console.error('Error checking cooldown:', error);
-        return null;
-      }
-      
-      if (data && data.length > 0) {
-        const lastMintTime = new Date(data[0].created_at).getTime();
-        const currentTime = Date.now();
-        const cooldownEndTime = lastMintTime + MINT_COOLDOWN_DURATION;
-        
-        if (currentTime < cooldownEndTime) {
-          setCooldownEnds(cooldownEndTime);
-          return cooldownEndTime;
-        }
-      }
-      
-      setCooldownEnds(null);
-      return null;
-    } catch (error) {
-      console.error('Error in checkCooldown:', error);
-      return null;
-    }
-  }, [userProfile, publicKey]);
 
   // Generate a unique PXB ID based on user's profile
   const generatePxbId = useCallback(() => {
@@ -78,14 +35,6 @@ export const usePointOperations = (
   const mintPoints = useCallback(async (amount: number = 100) => {
     if (!userProfile || !publicKey) {
       toast.error('Connect your wallet to mint PXB points');
-      return;
-    }
-
-    // Check if cooldown is active
-    const remainingCooldown = await checkCooldown();
-    if (remainingCooldown) {
-      const timeRemaining = Math.ceil((remainingCooldown - Date.now()) / 1000 / 60);
-      toast.error(`You can mint more points in ${timeRemaining} minutes`);
       return;
     }
 
@@ -123,10 +72,6 @@ export const usePointOperations = (
         pxbPoints: userProfile.pxbPoints + amount
       });
       
-      // Set cooldown
-      const newCooldownEnd = Date.now() + MINT_COOLDOWN_DURATION;
-      setCooldownEnds(newCooldownEnd);
-      
       toast.success(`Successfully minted ${amount} PXB points!`);
     } catch (error) {
       console.error('Unexpected error in mintPoints:', error);
@@ -134,7 +79,7 @@ export const usePointOperations = (
     } finally {
       setIsMinting(false);
     }
-  }, [userProfile, publicKey, setUserProfile, checkCooldown]);
+  }, [userProfile, publicKey, setUserProfile]);
 
   // Helper function to check if token exists and create it if needed
   const ensureTokenExists = async (
@@ -480,8 +425,6 @@ export const usePointOperations = (
     placeBet,
     sendPoints,
     generatePxbId,
-    cooldownEnds,
-    checkCooldown,
     isMinting,
     isPlacingBet,
     isSendingPoints
