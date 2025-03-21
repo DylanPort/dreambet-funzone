@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Copy, Send, CreditCard, QrCode, Coins, CheckCircle2, Clock, ArrowRight, ArrowUpDown, History, LockClock } from 'lucide-react';
+import { Copy, Send, CreditCard, QrCode, Coins, CheckCircle2, Clock, ArrowRight, ArrowUpDown, History, Lock } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -332,7 +332,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
             >
               {isCooldownActive ? (
                 <>
-                  <LockClock className="w-4 h-4 mr-2 text-gray-400" />
+                  <Lock className="w-4 h-4 mr-2 text-gray-400" />
                   Claim again in {formatCooldownTime(claimCooldown)}
                 </>
               ) : (
