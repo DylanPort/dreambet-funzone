@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Coins, Loader2, Trophy, Clock, Check, X, Send, ArrowUpDown, Sparkles, Orbit, Copy } from 'lucide-react';
 import PXBWallet from '@/components/PXBWallet';
 import { PXBBet } from '@/types/pxb';
+import Navbar from '@/components/Navbar';
 
 interface CombinedBet {
   betType: 'PXB' | 'SOL';
@@ -242,223 +243,226 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      {!connected && (
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold mb-4">Connect your wallet to view your profile</h2>
-          <div className="flex justify-center">
-            <WalletConnectButton />
-          </div>
-        </div>
-      )}
-
-      {connected && (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="col-span-1">
-              <Card className="glass-panel border-dream-accent2/20">
-                <CardHeader>
-                  <CardTitle>Profile</CardTitle>
-                  <CardDescription>Manage your personal information</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="wallet">Wallet Address</Label>
-                    <div className="px-3 py-2 bg-dream-background/40 border border-dream-accent1/10 rounded-md flex items-center">
-                      <span className="text-sm font-mono text-dream-foreground/70 truncate">
-                        {publicKey?.toString()}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        id="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Enter username"
-                      />
-                      <Button 
-                        onClick={handleUpdateUsername}
-                        disabled={isUpdatingUsername}
-                        size="sm"
-                      >
-                        {isUpdatingUsername ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Save"
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="pxb-id">PXB ID</Label>
-                    {!displayedPxbId ? (
-                      <Button
-                        onClick={handleGeneratePxbId}
-                        disabled={isGeneratingId || !generatePxbId}
-                        className="w-full bg-gradient-to-r from-[#6E59A5] to-[#8B5CF6] hover:from-[#7E69AB] hover:to-[#9B87F5] text-white border-none relative overflow-hidden group"
-                      >
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-40 h-40 rounded-full bg-white/10 absolute animate-ping opacity-0 group-hover:opacity-30 duration-1000" />
-                          <div className="w-32 h-32 rounded-full bg-white/20 absolute animate-ping opacity-0 group-hover:opacity-30 delay-100 duration-1000" />
-                          <div className="w-24 h-24 rounded-full bg-white/30 absolute animate-ping opacity-0 group-hover:opacity-30 delay-200 duration-1000" />
-                        </div>
-                        
-                        {isGeneratingId ? (
-                          <div className="flex items-center justify-center relative z-10">
-                            <Orbit className="h-5 w-5 mr-2 animate-spin" />
-                            <span>Generating...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center relative z-10">
-                            <Sparkles className="h-5 w-5 mr-2" />
-                            <span>Generate PXB ID</span>
-                          </div>
-                        )}
-                      </Button>
-                    ) : (
-                      <div className="bg-dream-background/40 border border-dream-accent1/10 rounded-md p-2 flex items-center justify-between group hover:border-purple-500/30 transition-all">
-                        <div className="flex-1">
-                          <span className="text-sm font-mono text-dream-foreground/90 truncate block">
-                            {displayedPxbId}
-                          </span>
-                          <p className="text-xs text-dream-foreground/50 mt-1">Your permanent ID for receiving PXB points</p>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-dream-foreground/50 hover:text-dream-foreground/90 hover:bg-purple-500/10"
-                          onClick={handleCopyPxbId}
-                        >
-                          {pxbIdCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <Separator className="my-4" />
-                  
-                  <div className="space-y-2">
-                    <PXBPointsBalance />
-                  </div>
-                </CardContent>
-              </Card>
+    <>
+      <Navbar />
+      <div className="container mx-auto py-8 px-4">
+        {!connected && (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold mb-4">Connect your wallet to view your profile</h2>
+            <div className="flex justify-center">
+              <WalletConnectButton />
             </div>
-            
-            <div className="md:col-span-2">
-              <div className="space-y-6">
-                <PXBWallet userProfile={userProfile} />
-                
+          </div>
+        )}
+
+        {connected && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="col-span-1">
                 <Card className="glass-panel border-dream-accent2/20">
                   <CardHeader>
-                    <CardTitle>Betting Stats</CardTitle>
-                    <CardDescription>Your betting performance</CardDescription>
+                    <CardTitle>Profile</CardTitle>
+                    <CardDescription>Manage your personal information</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
-                        <p className="text-dream-foreground/60 text-sm">Total Bets</p>
-                        <p className="text-2xl font-bold">{combinedBets.length}</p>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="wallet">Wallet Address</Label>
+                      <div className="px-3 py-2 bg-dream-background/40 border border-dream-accent1/10 rounded-md flex items-center">
+                        <span className="text-sm font-mono text-dream-foreground/70 truncate">
+                          {publicKey?.toString()}
+                        </span>
                       </div>
-                      <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
-                        <p className="text-dream-foreground/60 text-sm">Win Rate</p>
-                        <p className="text-2xl font-bold">
-                          {combinedBets.length > 0 
-                            ? Math.round((combinedBets.filter(bet => bet.status === 'completed').length / combinedBets.length) * 100) 
-                            : 0}%
-                        </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          id="username"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="Enter username"
+                        />
+                        <Button 
+                          onClick={handleUpdateUsername}
+                          disabled={isUpdatingUsername}
+                          size="sm"
+                        >
+                          {isUpdatingUsername ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Save"
+                          )}
+                        </Button>
                       </div>
-                      <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
-                        <p className="text-dream-foreground/60 text-sm">PXB Points</p>
-                        <p className="text-2xl font-bold">{userProfile?.pxbPoints || 0}</p>
-                      </div>
-                      <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
-                        <p className="text-dream-foreground/60 text-sm">Ranking</p>
-                        <div className="flex items-center">
-                          <Trophy className="h-5 w-5 mr-1 text-yellow-500" />
-                          <p className="text-2xl font-bold">#12</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="pxb-id">PXB ID</Label>
+                      {!displayedPxbId ? (
+                        <Button
+                          onClick={handleGeneratePxbId}
+                          disabled={isGeneratingId || !generatePxbId}
+                          className="w-full bg-gradient-to-r from-[#6E59A5] to-[#8B5CF6] hover:from-[#7E69AB] hover:to-[#9B87F5] text-white border-none relative overflow-hidden group"
+                        >
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-40 h-40 rounded-full bg-white/10 absolute animate-ping opacity-0 group-hover:opacity-30 duration-1000" />
+                            <div className="w-32 h-32 rounded-full bg-white/20 absolute animate-ping opacity-0 group-hover:opacity-30 delay-100 duration-1000" />
+                            <div className="w-24 h-24 rounded-full bg-white/30 absolute animate-ping opacity-0 group-hover:opacity-30 delay-200 duration-1000" />
+                          </div>
+                          
+                          {isGeneratingId ? (
+                            <div className="flex items-center justify-center relative z-10">
+                              <Orbit className="h-5 w-5 mr-2 animate-spin" />
+                              <span>Generating...</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center relative z-10">
+                              <Sparkles className="h-5 w-5 mr-2" />
+                              <span>Generate PXB ID</span>
+                            </div>
+                          )}
+                        </Button>
+                      ) : (
+                        <div className="bg-dream-background/40 border border-dream-accent1/10 rounded-md p-2 flex items-center justify-between group hover:border-purple-500/30 transition-all">
+                          <div className="flex-1">
+                            <span className="text-sm font-mono text-dream-foreground/90 truncate block">
+                              {displayedPxbId}
+                            </span>
+                            <p className="text-xs text-dream-foreground/50 mt-1">Your permanent ID for receiving PXB points</p>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-dream-foreground/50 hover:text-dream-foreground/90 hover:bg-purple-500/10"
+                            onClick={handleCopyPxbId}
+                          >
+                            {pxbIdCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
                         </div>
-                      </div>
+                      )}
+                    </div>
+                    
+                    <Separator className="my-4" />
+                    
+                    <div className="space-y-2">
+                      <PXBPointsBalance />
                     </div>
                   </CardContent>
                 </Card>
               </div>
-            </div>
-          </div>
-          
-          <Card className="glass-panel border-dream-accent2/20">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Your Bets</CardTitle>
-                  <CardDescription>History of your token bets</CardDescription>
+              
+              <div className="md:col-span-2">
+                <div className="space-y-6">
+                  <PXBWallet userProfile={userProfile} />
+                  
+                  <Card className="glass-panel border-dream-accent2/20">
+                    <CardHeader>
+                      <CardTitle>Betting Stats</CardTitle>
+                      <CardDescription>Your betting performance</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
+                          <p className="text-dream-foreground/60 text-sm">Total Bets</p>
+                          <p className="text-2xl font-bold">{combinedBets.length}</p>
+                        </div>
+                        <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
+                          <p className="text-dream-foreground/60 text-sm">Win Rate</p>
+                          <p className="text-2xl font-bold">
+                            {combinedBets.length > 0 
+                              ? Math.round((combinedBets.filter(bet => bet.status === 'completed').length / combinedBets.length) * 100) 
+                              : 0}%
+                          </p>
+                        </div>
+                        <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
+                          <p className="text-dream-foreground/60 text-sm">PXB Points</p>
+                          <p className="text-2xl font-bold">{userProfile?.pxbPoints || 0}</p>
+                        </div>
+                        <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
+                          <p className="text-dream-foreground/60 text-sm">Ranking</p>
+                          <div className="flex items-center">
+                            <Trophy className="h-5 w-5 mr-1 text-yellow-500" />
+                            <p className="text-2xl font-bold">#12</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={loadDetailedBets}
-                  disabled={isLoadingAllBets}
-                >
-                  {isLoadingAllBets ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <ArrowUpDown className="h-4 w-4 mr-2" />
-                  )}
-                  Refresh
-                </Button>
               </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="all">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="active">Active</TabsTrigger>
-                  <TabsTrigger value="completed">Completed</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="all">
-                  <BetsTable 
-                    bets={combinedBets} 
-                    isLoading={isLoadingAllBets} 
-                    formatDate={formatDate}
-                    getStatusBadge={getStatusBadge}
-                    getBadgeForBetType={getBadgeForBetType}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="active">
-                  <BetsTable 
-                    bets={combinedBets.filter(bet => 
-                      bet.status === 'open' || bet.status === 'pending'
-                    )} 
-                    isLoading={isLoadingAllBets}
-                    formatDate={formatDate}
-                    getStatusBadge={getStatusBadge}
-                    getBadgeForBetType={getBadgeForBetType}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="completed">
-                  <BetsTable 
-                    bets={combinedBets.filter(bet => 
-                      bet.status === 'completed' || bet.status === 'expired' || bet.status === 'lost'
-                    )} 
-                    isLoading={isLoadingAllBets}
-                    formatDate={formatDate}
-                    getStatusBadge={getStatusBadge}
-                    getBadgeForBetType={getBadgeForBetType}
-                  />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+            </div>
+            
+            <Card className="glass-panel border-dream-accent2/20">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Your Bets</CardTitle>
+                    <CardDescription>History of your token bets</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={loadDetailedBets}
+                    disabled={isLoadingAllBets}
+                  >
+                    {isLoadingAllBets ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <ArrowUpDown className="h-4 w-4 mr-2" />
+                    )}
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="all">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="active">Active</TabsTrigger>
+                    <TabsTrigger value="completed">Completed</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="all">
+                    <BetsTable 
+                      bets={combinedBets} 
+                      isLoading={isLoadingAllBets} 
+                      formatDate={formatDate}
+                      getStatusBadge={getStatusBadge}
+                      getBadgeForBetType={getBadgeForBetType}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="active">
+                    <BetsTable 
+                      bets={combinedBets.filter(bet => 
+                        bet.status === 'open' || bet.status === 'pending'
+                      )} 
+                      isLoading={isLoadingAllBets}
+                      formatDate={formatDate}
+                      getStatusBadge={getStatusBadge}
+                      getBadgeForBetType={getBadgeForBetType}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="completed">
+                    <BetsTable 
+                      bets={combinedBets.filter(bet => 
+                        bet.status === 'completed' || bet.status === 'expired' || bet.status === 'lost'
+                      )} 
+                      isLoading={isLoadingAllBets}
+                      formatDate={formatDate}
+                      getStatusBadge={getStatusBadge}
+                      getBadgeForBetType={getBadgeForBetType}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
