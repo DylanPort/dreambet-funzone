@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Copy, RefreshCw, QrCode, Clock, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { Send, Copy, RefreshCw, QrCode, Clock, ArrowUpRight, ArrowDownLeft, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +20,7 @@ interface Transaction {
 
 const PXBWallet: React.FC = () => {
   const { userProfile, isLoading, sendPoints, generatePxbId, fetchUserProfile } = usePXBPoints();
-  const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'activity'>('send');
+  const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'activity' | 'claim'>('send');
   const [recipientId, setRecipientId] = useState('');
   const [amount, setAmount] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -263,6 +262,15 @@ const PXBWallet: React.FC = () => {
         </button>
         <button
           className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${
+            activeTab === 'claim' ? 'border-b-2 border-purple-500 text-white' : 'text-indigo-300/70 hover:text-white'
+          }`}
+          onClick={() => setActiveTab('claim')}
+        >
+          <Gift className="w-4 h-4" />
+          Claim
+        </button>
+        <button
+          className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${
             activeTab === 'activity' ? 'border-b-2 border-purple-500 text-white' : 'text-indigo-300/70 hover:text-white'
           }`}
           onClick={() => setActiveTab('activity')}
@@ -376,33 +384,36 @@ const PXBWallet: React.FC = () => {
           </motion.div>
         )}
 
-        {activeTab === 'activity' && (
+        {activeTab === 'claim' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            {/* Daily Claim Section */}
-            <div className="mb-6 pb-6 border-b border-indigo-900/30">
-              <div className="text-center mb-4">
+            <div className="flex flex-col items-center py-6">
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                  <Gift className="w-10 h-10 text-green-400" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Daily PXB Points</h3>
                 <p className="text-indigo-300/70">
                   Claim free PXB points once every 6 hours
                 </p>
               </div>
               
               {cooldownRemaining ? (
-                <div className="text-center mb-4">
-                  <p className="text-lg font-medium mb-2">Next claim available in</p>
+                <div className="text-center mb-6 p-6 bg-indigo-900/20 rounded-lg w-full max-w-md">
+                  <p className="text-lg font-medium mb-4">Next claim available in</p>
                   <div className="flex items-center justify-center space-x-2">
                     <Clock className="w-5 h-5 text-indigo-300/70" />
-                    <span className="text-xl font-mono">{formatCooldownTime(cooldownRemaining)}</span>
+                    <span className="text-2xl font-mono">{formatCooldownTime(cooldownRemaining)}</span>
                   </div>
                 </div>
               ) : (
                 <Button 
                   onClick={handleClaimPoints} 
                   disabled={isClaiming}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 mb-4"
+                  className="w-full max-w-md bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 mb-4"
                   size="lg"
                 >
                   {isClaiming ? (
@@ -418,8 +429,20 @@ const PXBWallet: React.FC = () => {
                   )}
                 </Button>
               )}
+              
+              <div className="text-center text-indigo-300/70 text-sm mt-6 max-w-md">
+                <p>Regularly claim your free PXB points to increase your betting power and climb the leaderboards!</p>
+              </div>
             </div>
+          </motion.div>
+        )}
 
+        {activeTab === 'activity' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             {/* Transaction History */}
             <div>
               <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
