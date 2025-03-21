@@ -27,7 +27,7 @@ const MigratingTokenList = () => {
   const [downVotes, setDownVotes] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
-  const [viewMode, setViewMode<'all' | 'highValue'>('all');
+  const [viewMode, setViewMode] = useState<'all' | 'highValue'>('all');
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   
@@ -432,7 +432,7 @@ const MigratingTokenList = () => {
                                   <TooltipTrigger asChild>
                                     <button 
                                       onClick={(e) => {
-                                        e.stopPropagation(); // Prevent row click event
+                                        e.stopPropagation();
                                         copyToClipboard(bet.tokenMint);
                                       }} 
                                       className="hover:text-dream-accent1 transition-colors"
@@ -489,7 +489,7 @@ const MigratingTokenList = () => {
                         <button 
                           className="btn-accept py-1 px-2 text-xs flex items-center gap-1 bg-gradient-to-r from-dream-accent2/20 to-dream-accent2/10 rounded-lg hover:from-dream-accent2/30 hover:to-dream-accent2/20 transition-all"
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent row click event
+                            e.stopPropagation();
                             toast.info("Challenge feature coming soon!");
                           }}
                         >
