@@ -16,6 +16,8 @@ import { Bet, BetStatus } from '@/types/bet';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useNavigate } from 'react-router-dom';
+
 const MigratingTokenList = () => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
@@ -27,6 +29,8 @@ const MigratingTokenList = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState<'all' | 'highValue'>('all');
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       toast.success("Address copied to clipboard");
@@ -35,6 +39,11 @@ const MigratingTokenList = () => {
       toast.error("Failed to copy address");
     });
   };
+  
+  const navigateToBetDetails = (betId: string) => {
+    navigate(`/betting/bet/${betId}`);
+  };
+  
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -71,13 +80,13 @@ const MigratingTokenList = () => {
     const interval = setInterval(fetchAllData, 60000);
     return () => clearInterval(interval);
   }, []);
-  const highValueBets = bets.filter(bet => bet.amount >= 1);
-  const displayBets = viewMode === 'all' ? bets : highValueBets;
+  
   const formatTimeAgo = (timestamp: number) => {
     return formatDistanceToNow(new Date(timestamp), {
       addSuffix: true
     });
   };
+  
   const formatTimeRemaining = (expiresAt: number) => {
     const now = new Date().getTime();
     const timeRemaining = expiresAt - now;
@@ -92,6 +101,7 @@ const MigratingTokenList = () => {
       return `${minutes}m remaining`;
     }
   };
+  
   const getPredictionDetails = (prediction: string) => {
     switch (prediction) {
       case 'migrate':
@@ -117,9 +127,11 @@ const MigratingTokenList = () => {
         };
     }
   };
+  
   const getTokenDetails = (tokenMint: string) => {
     return tokens.find(token => token.token_mint === tokenMint) || null;
   };
+  
   const sortBets = (betsToSort: Bet[]) => {
     const bets = [...betsToSort];
     switch (sortBy) {
@@ -137,6 +149,7 @@ const MigratingTokenList = () => {
         return bets;
     }
   };
+  
   if (loading) {
     return <div className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <div className="text-center py-8">
@@ -147,6 +160,7 @@ const MigratingTokenList = () => {
         </div>
       </div>;
   }
+  
   const renderStats = () => {
     const totalVotes = upVotes + downVotes;
     const upPercentage = totalVotes > 0 ? Math.round(upVotes / totalVotes * 100) : 50;
@@ -202,6 +216,7 @@ const MigratingTokenList = () => {
         </div>
       </div>;
   };
+  
   const renderMobileBetCards = () => {
     return <Carousel opts={{
       align: "start",
@@ -216,7 +231,7 @@ const MigratingTokenList = () => {
             bgColor
           } = getPredictionDetails(bet.prediction);
           return <CarouselItem key={bet.id} className="pl-2 md:pl-0 basis-[85%] sm:basis-[60%] md:basis-full">
-                <div className="glass-panel bg-dream-foreground/5 p-4 rounded-lg border border-dream-accent1/20 h-full hover:bg-dream-accent1/5 transition-colors">
+                <div onClick={() => navigateToBetDetails(bet.id)} className="cursor-pointer glass-panel bg-dream-foreground/5 p-4 rounded-lg border border-dream-accent1/20 h-full hover:bg-dream-accent1/5 transition-colors">
                   <div className="flex items-center mb-3">
                     <div className="w-10 h-10 mr-3 flex items-center justify-center">
                       <img src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" alt="Token" className="w-full h-full object-contain" />
@@ -307,6 +322,10 @@ const MigratingTokenList = () => {
         </div>
       </Carousel>;
   };
+  
+  const highValueBets = bets.filter(bet => bet.amount >= 1);
+  const displayBets = viewMode === 'all' ? bets : highValueBets;
+  
   if (!displayBets || displayBets.length === 0) {
     return <div className="space-y-5">
         {renderStats()}
@@ -320,6 +339,7 @@ const MigratingTokenList = () => {
         </div>
       </div>;
   }
+  
   return <div className="space-y-5">
       {renderStats()}
       
@@ -387,7 +407,11 @@ const MigratingTokenList = () => {
               text,
               bgColor
             } = getPredictionDetails(bet.prediction);
-            return <TableRow key={bet.id} className="hover:bg-dream-accent1/5 transition-colors">
+            return <TableRow 
+                    key={bet.id} 
+                    className="hover:bg-dream-accent1/5 transition-colors cursor-pointer"
+                    onClick={() => navigateToBetDetails(bet.id)}
+                  >
                     <TableCell className="py-3 px-4">
                       <div className="flex items-center">
                         <div className="w-8 h-8 mr-3 flex items-center justify-center">
@@ -432,7 +456,13 @@ const MigratingTokenList = () => {
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <button onClick={() => copyToClipboard(bet.tokenMint)} className="hover:text-dream-accent1 transition-colors">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation(); // Prevent row click event
+                                        copyToClipboard(bet.tokenMint);
+                                      }} 
+                                      className="hover:text-dream-accent1 transition-colors"
+                                    >
                                       <Copy size={12} />
                                     </button>
                                   </TooltipTrigger>
@@ -467,7 +497,13 @@ const MigratingTokenList = () => {
                     </TableCell>
                     <TableCell className="py-3 px-4">
                       <div className="flex justify-center">
-                        <button className="btn-accept py-1 px-2 text-xs flex items-center gap-1 bg-gradient-to-r from-dream-accent2/20 to-dream-accent2/10 rounded-lg hover:from-dream-accent2/30 hover:to-dream-accent2/20 transition-all">
+                        <button 
+                          className="btn-accept py-1 px-2 text-xs flex items-center gap-1 bg-gradient-to-r from-dream-accent2/20 to-dream-accent2/10 rounded-lg hover:from-dream-accent2/30 hover:to-dream-accent2/20 transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent row click event
+                            toast.info("Challenge feature coming soon!");
+                          }}
+                        >
                           <Trophy className="w-3 h-3" />
                           <span>Challenge</span>
                         </button>
@@ -485,4 +521,5 @@ const MigratingTokenList = () => {
         </div>}
     </div>;
 };
+
 export default MigratingTokenList;
