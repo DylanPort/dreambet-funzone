@@ -6,15 +6,10 @@ import {
   TableCell,
   TableRow,
 } from "@/components/ui/table";
+import { TokenData } from '@/hooks/useTokenData';
 
 interface TokenInfoTableProps {
-  token: {
-    token_mint: string;
-    token_name: string;
-    token_symbol: string;
-    initial_market_cap: number;
-    current_market_cap: number;
-  };
+  token: TokenData;
   tokenMetrics: any;
 }
 
@@ -56,6 +51,18 @@ const TokenInfoTable: React.FC<TokenInfoTableProps> = ({ token, tokenMetrics }) 
             <TableRow>
               <TableCell className="font-medium">Market Cap (DexScreener)</TableCell>
               <TableCell>${tokenMetrics.marketCap.toLocaleString()}</TableCell>
+            </TableRow>
+          )}
+          {token.last_trade_price > 0 && (
+            <TableRow>
+              <TableCell className="font-medium">Last Trade Price</TableCell>
+              <TableCell>${token.last_trade_price.toLocaleString()}</TableCell>
+            </TableRow>
+          )}
+          {token.volume_24h > 0 && (
+            <TableRow>
+              <TableCell className="font-medium">24h Volume</TableCell>
+              <TableCell>${token.volume_24h.toLocaleString()}</TableCell>
             </TableRow>
           )}
         </TableBody>
