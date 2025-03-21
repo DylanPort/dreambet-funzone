@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ export const usePointOperations = (
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const [isSendingPoints, setIsSendingPoints] = useState(false);
+  const [pxbIdGenerated, setPxbIdGenerated] = useState(false);
 
   // Mint points
   const mintPoints = useCallback(async (amount: number = 100) => {
@@ -96,19 +98,21 @@ export const usePointOperations = (
       const expiresAt = new Date(Date.now() + duration * 60000).toISOString();
 
       // Create a new bet in the database
+      // Fix: Use the correct field names according to the Supabase schema
       const { data: betData, error } = await supabase
         .from('bets')
         .insert({
-          user_id: userProfile.id,
+          bettor1_id: userProfile.id, // Fixed from user_id to bettor1_id
           token_mint: tokenMint,
           token_name: tokenName,
           token_symbol: tokenSymbol,
-          bet_amount: betAmount,
-          bet_type: betType,
+          sol_amount: betAmount, // Changed from bet_amount to sol_amount
+          prediction_bettor1: betType, // Changed from bet_type to prediction_bettor1
           percentage_change: percentageChange,
           status: 'pending',
+          creator: userProfile.id, // Added creator field which is required
           created_at: new Date().toISOString(),
-          expires_at: expiresAt,
+          duration: duration, // Duration in seconds
         })
         .select()
         .single();
@@ -126,7 +130,7 @@ export const usePointOperations = (
       }
 
       const newBet: PXBBet = {
-        id: betData.id,
+        id: betData.bet_id, // Fixed from id to bet_id
         userId: userProfile.id,
         tokenMint: tokenMint,
         tokenName: tokenName,
@@ -168,10 +172,12 @@ export const usePointOperations = (
     
     // If the user already has an ID, return that (it's permanent)
     if (userProfile.id) {
+      setPxbIdGenerated(true);
       return userProfile.id;
     }
     
     // Just return the existing ID - it was already created when the profile was created
+    setPxbIdGenerated(true);
     return userProfile.id;
   }, [userProfile]);
 
@@ -234,6 +240,7 @@ export const usePointOperations = (
     placeBet,
     sendPoints,
     generatePxbId,
-    isSendingPoints
+    isSendingPoints,
+    pxbIdGenerated
   };
 };
