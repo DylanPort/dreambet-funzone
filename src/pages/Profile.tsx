@@ -414,7 +414,7 @@ const BetsTable: React.FC<BetsTableProps> = ({
               <TableCell>{getBadgeForBetType(bet.betType)}</TableCell>
               <TableCell className="font-medium">{bet.tokenSymbol}</TableCell>
               <TableCell>
-                <Badge variant={bet.prediction === 'migrate' || bet.prediction === 'up' ? "success" : "destructive"} className="capitalize">
+                <Badge variant={bet.prediction === 'migrate' || bet.prediction === 'up' ? "default" : "destructive"} className="capitalize">
                   {bet.prediction === 'migrate' || bet.prediction === 'up' ? 'Up' : 'Down'}
                 </Badge>
               </TableCell>

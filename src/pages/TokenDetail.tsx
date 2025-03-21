@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchTokenById } from '@/services/supabaseService';
@@ -91,10 +92,14 @@ const TokenDetail = () => {
         creatorWalletAddress
       );
 
-      success ? toast("Bet placed successfully!", { className: "bg-green-500" }) : toast("Failed to place bet", { className: "bg-red-500" });
+      if (success) {
+        toast.success("Bet placed successfully!");
+      } else {
+        toast.error("Failed to place bet");
+      }
     } catch (error: any) {
       console.error("Error placing bet:", error);
-      toast(error, { className: "bg-red-500" });
+      toast.error(error.message || "Error placing bet");
     } finally {
       setPlacingBet(false);
     }

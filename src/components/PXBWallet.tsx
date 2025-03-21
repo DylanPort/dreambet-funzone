@@ -17,12 +17,13 @@ interface PXBWalletProps {
 }
 
 const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
-  const { mintPoints, sendPoints, generatePxbId, isSendingPoints } = usePXBPoints();
+  const { mintPoints, sendPoints, generatePxbId } = usePXBPoints();
   const { publicKey } = useWallet();
   const [recipientId, setRecipientId] = useState('');
   const [sendAmount, setSendAmount] = useState<number>(0);
   const [userPxbId, setUserPxbId] = useState<string>('');
   const [showCopied, setShowCopied] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   // Generate PXB ID for the current user on component mount
   useEffect(() => {
@@ -58,11 +59,22 @@ const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
       return;
     }
     
-    const success = await sendPoints(recipientId, sendAmount);
-    
-    if (success) {
-      setRecipientId('');
-      setSendAmount(0);
+    setIsSending(true);
+    try {
+      const success = await sendPoints(recipientId, sendAmount);
+      
+      if (success) {
+        setRecipientId('');
+        setSendAmount(0);
+        toast.success('Points sent successfully!');
+      } else {
+        toast.error('Failed to send points');
+      }
+    } catch (error) {
+      console.error('Error sending points:', error);
+      toast.error('An error occurred while sending points');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -151,10 +163,10 @@ const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
           
           <Button 
             onClick={handleSendPoints} 
-            disabled={isSendingPoints || !recipientId || sendAmount <= 0 || sendAmount > userProfile.pxbPoints}
+            disabled={isSending || !recipientId || sendAmount <= 0 || sendAmount > userProfile.pxbPoints}
             className="w-full bg-gradient-to-r from-[#4B31DD] to-[#1E93FF] hover:from-[#3A28B0] hover:to-[#1776CC] text-white border-none"
           >
-            {isSendingPoints ? (
+            {isSending ? (
               <><Clock className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
             ) : (
               <><Send className="w-4 h-4 mr-2" /> Send PXB Points</>
