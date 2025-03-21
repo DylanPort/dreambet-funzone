@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { UserProfile } from '@/types/pxb';
@@ -48,6 +49,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
   const [claimCooldown, setClaimCooldown] = useState<number>(0);
   const [isCooldownActive, setIsCooldownActive] = useState<boolean>(false);
   const [cooldownEndTime, setCooldownEndTime] = useState<Date | null>(null);
+  const [isClaimButtonLoading, setIsClaimButtonLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (userProfile && generatePxbId) {
@@ -114,6 +116,8 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
         if (timeSinceClaim < sixHoursInMs) {
           setIsCooldownActive(true);
           setClaimCooldown(sixHoursInMs - timeSinceClaim);
+          const cooldownEnd = new Date(lastClaimDate.getTime() + sixHoursInMs);
+          setCooldownEndTime(cooldownEnd);
         }
       }
     } catch (error) {
@@ -192,10 +196,59 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
     }
   };
 
+  const canClaimPoints = async (): Promise<boolean> => {
+    if (!userProfile) return false;
+    
+    try {
+      // Query the most recent mint action
+      const { data, error } = await supabase
+        .from('points_history')
+        .select('created_at')
+        .eq('user_id', userProfile.id)
+        .eq('action', 'mint')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('Error checking claim eligibility:', error);
+        return false;
+      }
+      
+      // If no previous claims, user can claim
+      if (!data || data.length === 0) {
+        return true;
+      }
+      
+      // Check if 6 hours have passed since last claim
+      const lastClaimDate = new Date(data[0].created_at);
+      const now = new Date();
+      const timeSinceClaim = now.getTime() - lastClaimDate.getTime();
+      const sixHoursInMs = 6 * 60 * 60 * 1000;
+      
+      return timeSinceClaim >= sixHoursInMs;
+    } catch (error) {
+      console.error('Error in canClaimPoints:', error);
+      return false;
+    }
+  };
+
   const handleRequestMint = async () => {
     if (!mintPoints) return;
     
+    setIsClaimButtonLoading(true);
+    
     try {
+      // First check if eligible to claim
+      const isEligible = await canClaimPoints();
+      
+      if (!isEligible) {
+        toast.error('You need to wait 6 hours between claims');
+        setIsCooldownActive(true);
+        await fetchLastClaimTime(); // Refresh the cooldown timer
+        return;
+      }
+      
+      // If eligible, proceed with minting
       await mintPoints(100);
       toast.success('You received 100 PXB Points!');
       
@@ -211,6 +264,8 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
     } catch (error) {
       console.error('Error in handleRequestMint:', error);
       toast.error('Failed to claim points');
+    } finally {
+      setIsClaimButtonLoading(false);
     }
   };
 
@@ -336,10 +391,15 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
               variant="outline" 
               size="sm" 
               onClick={handleRequestMint} 
-              disabled={isCooldownActive} 
-              className={`w-full border-dashed border-gray-600 bg-black/20 hover:bg-black/30 text-gray-400 ${isCooldownActive ? 'opacity-75 cursor-not-allowed' : ''}`}
+              disabled={isCooldownActive || isClaimButtonLoading} 
+              className={`w-full border-dashed border-gray-600 bg-black/20 hover:bg-black/30 text-gray-400 ${isCooldownActive || isClaimButtonLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
             >
-              {isCooldownActive && cooldownEndTime ? (
+              {isClaimButtonLoading ? (
+                <div className="w-full flex items-center justify-center">
+                  <Clock className="w-4 h-4 mr-2 animate-spin text-gray-400" />
+                  <span>Processing...</span>
+                </div>
+              ) : isCooldownActive && cooldownEndTime ? (
                 <div className="w-full flex items-center justify-center">
                   <Lock className="w-4 h-4 mr-2 text-gray-400" />
                   <span className="mr-2">Locked:</span>
