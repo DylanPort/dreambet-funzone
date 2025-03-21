@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { UserProfile } from '@/types/pxb';
@@ -7,13 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Copy, Send, CreditCard, QrCode, Coins, CheckCircle2, Clock, ArrowRight } from 'lucide-react';
+import { Copy, Send, CreditCard, QrCode, Coins, CheckCircle2, Clock, ArrowRight, ArrowUpDown } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PXBWalletProps {
   userProfile: UserProfile | null;
+}
+
+interface TransactionHistory {
+  id: string;
+  userId: string;
+  amount: number;
+  action: 'transfer_sent' | 'transfer_received' | 'bet_won' | 'bet_lost' | 'mint';
+  referenceId: string | null;
+  createdAt: string;
 }
 
 const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
@@ -24,13 +33,50 @@ const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
   const [userPxbId, setUserPxbId] = useState<string>('');
   const [showCopied, setShowCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [transactions, setTransactions] = useState<TransactionHistory[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
 
-  // Generate PXB ID for the current user on component mount
   useEffect(() => {
     if (userProfile && generatePxbId) {
       setUserPxbId(userProfile.id);
+      
+      fetchTransactionHistory();
     }
   }, [userProfile, generatePxbId]);
+
+  const fetchTransactionHistory = async () => {
+    if (!userProfile) return;
+    
+    setIsLoadingTransactions(true);
+    try {
+      const { data, error } = await supabase
+        .from('points_history')
+        .select('*')
+        .eq('user_id', userProfile.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (error) {
+        console.error('Error fetching transaction history:', error);
+        return;
+      }
+      
+      const formattedTransactions: TransactionHistory[] = data.map((item) => ({
+        id: item.id,
+        userId: item.user_id,
+        amount: item.amount,
+        action: item.action as 'transfer_sent' | 'transfer_received' | 'bet_won' | 'bet_lost' | 'mint',
+        referenceId: item.reference_id,
+        createdAt: item.created_at
+      }));
+      
+      setTransactions(formattedTransactions);
+    } catch (error) {
+      console.error('Error fetching transaction history:', error);
+    } finally {
+      setIsLoadingTransactions(false);
+    }
+  };
 
   const handleCopyId = () => {
     if (userPxbId) {
@@ -101,6 +147,54 @@ const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
     return `${id.substring(0, 6)}...${id.substring(id.length - 6)}`;
   };
 
+  const getActionLabel = (action: string): string => {
+    switch (action) {
+      case 'transfer_sent':
+        return 'Sent';
+      case 'transfer_received':
+        return 'Received';
+      case 'bet_won':
+        return 'Won Bet';
+      case 'bet_lost':
+        return 'Lost Bet';
+      case 'mint':
+        return 'Minted';
+      default:
+        return 'Transaction';
+    }
+  };
+
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case 'transfer_sent':
+        return <ArrowUpDown className="w-4 h-4 text-orange-500" />;
+      case 'transfer_received':
+        return <ArrowRight className="w-4 h-4 text-green-500" />;
+      case 'bet_won':
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'bet_lost':
+        return <Clock className="w-4 h-4 text-red-500" />;
+      case 'mint':
+        return <Coins className="w-4 h-4 text-purple-500" />;
+      default:
+        return <CreditCard className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const getAmountColor = (action: string): string => {
+    if (action === 'transfer_received' || action === 'bet_won' || action === 'mint') {
+      return 'text-green-500';
+    } else if (action === 'transfer_sent' || action === 'bet_lost') {
+      return 'text-red-500';
+    }
+    return 'text-gray-500';
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
   return (
     <Card className="p-0 overflow-hidden bg-gradient-to-br from-[#1A1A2E] to-[#16213E] border-[#30475E]/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-sm">
       <div className="bg-gradient-to-r from-[#4B31DD]/20 to-[#1E93FF]/20 p-4 flex justify-between items-center border-b border-white/5">
@@ -114,7 +208,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
           </div>
         </div>
         <div className="text-right">
-          <span className="text-2xl font-bold text-white">{userProfile.pxbPoints.toLocaleString()}</span>
+          <span className="text-2xl font-bold text-white">{userProfile?.pxbPoints.toLocaleString()}</span>
           <p className="text-xs text-gray-400">PXB Points</p>
         </div>
       </div>
@@ -222,34 +316,40 @@ const PXBWallet: React.FC<PXBWalletProps> = ({ userProfile }) => {
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-gray-400">Recent Activity</h4>
             
-            <div className="space-y-2">
-              {Array(3).fill(0).map((_, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-black/20 rounded-md">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 rounded-full ${i % 2 === 0 ? 'bg-green-500/20' : 'bg-purple-500/20'} flex items-center justify-center`}>
-                      {i % 2 === 0 ? (
-                        <ArrowRight className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <Coins className="w-4 h-4 text-purple-500" />
-                      )}
+            {isLoadingTransactions ? (
+              <div className="flex justify-center py-4">
+                <Clock className="w-5 h-5 text-gray-400 animate-spin" />
+              </div>
+            ) : transactions.length > 0 ? (
+              <div className="space-y-2">
+                {transactions.map((transaction) => (
+                  <div key={transaction.id} className="flex items-center justify-between p-3 bg-black/20 rounded-md">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center">
+                        {getActionIcon(transaction.action)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          {getActionLabel(transaction.action)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(transaction.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">
-                        {i % 2 === 0 ? 'Received' : 'Minted'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(Date.now() - i * 86400000).toLocaleDateString()}
+                    <div className="text-right">
+                      <p className={`text-sm font-medium ${getAmountColor(transaction.action)}`}>
+                        {transaction.amount > 0 ? '+' : ''}{transaction.amount} PXB
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-medium ${i % 2 === 0 ? 'text-green-500' : 'text-purple-500'}`}>
-                      +{(i + 1) * 50} PXB
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500">No recent transactions</p>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
