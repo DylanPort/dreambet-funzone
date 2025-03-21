@@ -42,7 +42,7 @@ const PXBBetsHistory = () => {
   });
 
   return (
-    <div className="glass-panel p-6 rounded-lg bg-gray-900/50 border border-gray-800">
+    <div className="glass-panel p-6 rounded-lg bg-gray-900/50 border border-gray-800 w-full">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold">Your Bets</h2>

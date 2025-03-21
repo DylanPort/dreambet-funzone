@@ -86,7 +86,12 @@ const Profile = () => {
     <>
       <Navbar />
       <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto bg-black">
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+        {/* PXB Wallet at the top - full width */}
+        <div className="mb-6 w-full">
+          <PXBWallet />
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 mb-6">
           {/* Left column - Profile info */}
           <div className="lg:col-span-3">
             <PXBProfilePanel 
@@ -96,21 +101,18 @@ const Profile = () => {
             />
           </div>
           
-          {/* Right column - PXB Wallet and Stats */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Add PXB Wallet at the top */}
-            <div className="block w-full">
-              <PXBWallet />
-            </div>
-            
+          {/* Right column - Stats */}
+          <div className="lg:col-span-4">
             {/* PXB Stats Panel */}
-            <div className="block w-full">
+            <div className="w-full">
               <PXBStatsPanel userProfile={userProfile} />
             </div>
-            
-            {/* Betting History */}
-            <PXBBetsHistory />
           </div>
+        </div>
+        
+        {/* Betting History - Full width */}
+        <div className="w-full mb-6">
+          <PXBBetsHistory />
         </div>
       </main>
     </>
