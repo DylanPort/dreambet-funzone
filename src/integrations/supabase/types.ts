@@ -61,10 +61,12 @@ export type Database = {
           bettor2_id: string | null
           created_at: string | null
           creator: string
+          current_market_cap: number | null
           duration: number
           end_time: string | null
           initial_market_cap: number | null
           on_chain_id: string | null
+          outcome: string | null
           percentage_change: number | null
           points_won: number | null
           prediction_bettor1: string
@@ -75,6 +77,7 @@ export type Database = {
           token_name: string | null
           token_symbol: string | null
           transaction_signature: string | null
+          winner: string | null
         }
         Insert: {
           bet_id?: string
@@ -82,10 +85,12 @@ export type Database = {
           bettor2_id?: string | null
           created_at?: string | null
           creator: string
+          current_market_cap?: number | null
           duration?: number
           end_time?: string | null
           initial_market_cap?: number | null
           on_chain_id?: string | null
+          outcome?: string | null
           percentage_change?: number | null
           points_won?: number | null
           prediction_bettor1: string
@@ -96,6 +101,7 @@ export type Database = {
           token_name?: string | null
           token_symbol?: string | null
           transaction_signature?: string | null
+          winner?: string | null
         }
         Update: {
           bet_id?: string
@@ -103,10 +109,12 @@ export type Database = {
           bettor2_id?: string | null
           created_at?: string | null
           creator?: string
+          current_market_cap?: number | null
           duration?: number
           end_time?: string | null
           initial_market_cap?: number | null
           on_chain_id?: string | null
+          outcome?: string | null
           percentage_change?: number | null
           points_won?: number | null
           prediction_bettor1?: string
@@ -117,6 +125,7 @@ export type Database = {
           token_name?: string | null
           token_symbol?: string | null
           transaction_signature?: string | null
+          winner?: string | null
         }
         Relationships: [
           {
