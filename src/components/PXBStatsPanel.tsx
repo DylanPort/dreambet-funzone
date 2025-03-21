@@ -15,7 +15,6 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
   const [winRate, setWinRate] = React.useState(0);
   const [ranking, setRanking] = React.useState<number | null>(null);
 
-  // Calculate betting statistics from bets data
   React.useEffect(() => {
     if (bets && bets.length > 0) {
       setTotalBets(bets.length);
@@ -23,57 +22,47 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
       const wins = bets.filter(bet => bet.status === 'won').length;
       const calculatedWinRate = Math.round((wins / bets.length) * 100);
       setWinRate(calculatedWinRate);
-    } else {
-      // Default values when no bets are available
-      setTotalBets(0);
-      setWinRate(0);
     }
   }, [bets]);
 
-  // Fetch leaderboard data when component mounts
   React.useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
 
-  // Determine user's ranking on leaderboard
   React.useEffect(() => {
     if (userProfile && leaderboard && leaderboard.length > 0) {
       const userRanking = leaderboard.findIndex(user => user.id === userProfile.id);
       if (userRanking !== -1) {
         setRanking(userRanking + 1);
-      } else {
-        setRanking(null);
       }
-    } else {
-      setRanking(null);
     }
   }, [userProfile, leaderboard]);
 
   return (
-    <div className="glass-panel p-6 rounded-lg bg-gray-900/50 border border-green-800">
+    <div className="glass-panel p-6 rounded-lg bg-gray-900/50 border border-gray-800">
       <h2 className="text-2xl font-bold mb-1">Betting Stats</h2>
-      <p className="text-green-400 mb-6">Your betting performance</p>
+      <p className="text-gray-400 mb-6">Your betting performance</p>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-green-900/30 rounded-lg">
-          <p className="text-green-400 text-sm mb-1">Total Bets</p>
+        <div className="p-4 bg-gray-800/70 rounded-lg">
+          <p className="text-gray-400 text-sm mb-1">Total Bets</p>
           <p className="text-3xl font-bold">{totalBets}</p>
         </div>
         
-        <div className="p-4 bg-green-900/30 rounded-lg">
-          <p className="text-green-400 text-sm mb-1">Win Rate</p>
+        <div className="p-4 bg-gray-800/70 rounded-lg">
+          <p className="text-gray-400 text-sm mb-1">Win Rate</p>
           <p className="text-3xl font-bold">{winRate}%</p>
         </div>
         
-        <div className="p-4 bg-green-900/30 rounded-lg">
-          <p className="text-green-400 text-sm mb-1">PXB Points</p>
-          <p className="text-3xl font-bold">{userProfile?.pxbPoints?.toLocaleString() || 0}</p>
+        <div className="p-4 bg-gray-800/70 rounded-lg">
+          <p className="text-gray-400 text-sm mb-1">PXB Points</p>
+          <p className="text-3xl font-bold">{userProfile?.pxbPoints.toLocaleString() || 0}</p>
         </div>
         
-        <div className="p-4 bg-green-900/30 rounded-lg">
-          <p className="text-green-400 text-sm mb-1">Ranking</p>
+        <div className="p-4 bg-gray-800/70 rounded-lg">
+          <p className="text-gray-400 text-sm mb-1">Ranking</p>
           <p className="text-3xl font-bold flex items-center">
-            <Trophy className="text-green-500 w-5 h-5 mr-1" />
+            <Trophy className="text-yellow-500 w-5 h-5 mr-1" />
             #{ranking || '--'}
           </p>
         </div>
