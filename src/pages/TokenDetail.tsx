@@ -782,8 +782,100 @@ const TokenDetail = () => {
             }} />
                 </div>}
               
+              {userProfile && tokenPXBBets.length > 0 && (
+                <div className="glass-panel p-6 mb-8">
+                  <h2 className="text-xl font-display font-bold mb-4">Your PXB Bets on this Token</h2>
+                  
+                  <div className="space-y-4">
+                    {tokenPXBBets.map(bet => {
+                      const progress = calculateProgress(bet);
+                      const targetMC = calculateTargetMarketCap(bet);
+                      const changePercent = calculateMarketCapChange(bet);
+                      
+                      return (
+                        <div key={bet.id} className="glass-panel p-4 border border-dream-accent1/10">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${bet.betType === 'up' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                                  {bet.betType === 'up' ? 
+                                    <ArrowUpRight className="w-3 h-3 text-green-400" /> : 
+                                    <ArrowDownRight className="w-3 h-3 text-red-400" />
+                                  }
+                                </div>
+                                <span className="font-semibold">{bet.points} PXB on {bet.betType === 'up' ? 'Growth' : 'Drop'}</span>
+                                {bet.status === 'won' && <CheckCircle className="w-4 h-4 text-green-400" />}
+                                {bet.status === 'lost' && <XCircle className="w-4 h-4 text-red-400" />}
+                              </div>
+                              
+                              <div className="text-sm text-dream-foreground/60 mt-1">
+                                Target: {bet.betType === 'up' ? '+' : '-'}{bet.percentageChange}% market cap
+                                {bet.createdAt && <span className="ml-2">• {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}</span>}
+                              </div>
+                            </div>
+                            
+                            <div className="mt-2 sm:mt-0 text-sm">
+                              {changePercent !== null ? (
+                                <div className={`${changePercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%
+                                </div>
+                              ) : 'Loading...'}
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span>Progress</span>
+                              <span>{Math.round(progress)}%</span>
+                            </div>
+                            <Progress value={progress} className="h-3" />
+                          </div>
+                          
+                          {targetMC && (
+                            <div className="mt-3 flex justify-between text-xs text-dream-foreground/60">
+                              <div>Initial: {formatLargeNumber(marketCapData[bet.id]?.initialMarketCap || bet.initialMarketCap)}</div>
+                              <div>Current: {formatLargeNumber(marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap)}</div>
+                              <div>Target: {formatLargeNumber(targetMC)}</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               
+              <div className="mb-8">
+                <h2 className="text-xl font-display font-bold mb-4">Active Bets on {token.symbol}</h2>
+                {bets.length === 0 ? (
+                  <div className="glass-panel p-6 text-center">
+                    <p className="text-dream-foreground/70">
+                      No active bets on this token yet. Be the first to bet!
+                    </p>
+                    <Button onClick={() => setShowCreateBet(true)} className="mt-4">
+                      Create Bet
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {bets.map(bet => (
+                      <BetCard 
+                        key={bet.id} 
+                        bet={bet} 
+                        onAccept={() => handleAcceptBet(bet)} 
+                        actionLabel={bet.status === 'open' ? 'Accept Bet' : undefined}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
               
-              {userProfile && (
-               
+              <TokenComments tokenId={token.id} />
+            </>}
+        </div>
+      </main>
+    </>
+  );
+};
 
+export default TokenDetail;
