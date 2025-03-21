@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { fetchUserBets } from '@/api/mockData';
 import { Bet } from '@/types/bet';
+import { useBetsData } from '@/contexts/pxb/useBetsData';
 
 const Profile = () => {
   const {
@@ -48,6 +49,8 @@ const Profile = () => {
   
   const [myBetsView, setMyBetsView] = useState<'standard' | 'detailed'>('standard');
   const [activeDetailFilter, setActiveDetailFilter] = useState<string>('all');
+  
+  const { bets: pxbBets, isLoading: isPXBBetsLoading, fetchUserBets: fetchPXBUserBets } = useBetsData(userProfile);
   
   useEffect(() => {
     const loadUserData = async () => {
@@ -164,11 +167,9 @@ const Profile = () => {
     };
     
     loadActiveBets();
-    loadDetailedBets();
     
     const interval = setInterval(() => {
       loadActiveBets();
-      loadDetailedBets();
     }, 30000);
     
     return () => clearInterval(interval);
@@ -201,10 +202,6 @@ const Profile = () => {
           }
           
           setApiActiveBets(allBets);
-          
-          const activeCount = allBets.filter(bet => 
-            bet.status === 'open' || bet.status === 'matched'
-          ).length;
         } else {
           setApiActiveBets([]);
         }
@@ -247,10 +244,10 @@ const Profile = () => {
   }, [userProfile]);
   
   useEffect(() => {
-    if (connected && publicKey) {
-      fetchUserBets();
+    if (connected && publicKey && userProfile) {
+      fetchPXBUserBets();
     }
-  }, [connected, publicKey, fetchUserBets]);
+  }, [connected, publicKey, userProfile, fetchPXBUserBets]);
   
   const handleUpdateProfile = async () => {
     if (!usernameInput.trim()) {
@@ -303,6 +300,10 @@ const Profile = () => {
       setApiActiveBets(apiBets);
       const userStats = calculateUserStats(bettingHistory);
       setStats(userStats);
+      
+      if (userProfile) {
+        fetchPXBUserBets();
+      }
     }).catch(error => {
       console.error("Error refreshing data:", error);
       toast.error("Failed to refresh data");
@@ -344,10 +345,10 @@ const Profile = () => {
   };
   
   const filteredBets = betsFilter === 'all' 
-    ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id)), ...(userProfile?.bets || [])]
+    ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id)), ...pxbBets]
     : betsFilter === 'active' 
-      ? [...activeBets, ...(userProfile?.bets || []).filter(bet => bet.status === 'pending')]
-      : [...bets.filter(bet => bet.result !== 'pending'), ...(userProfile?.bets || []).filter(bet => bet.status !== 'pending')];
+      ? [...activeBets, ...pxbBets.filter(bet => bet.status === 'pending')]
+      : [...bets.filter(bet => bet.result !== 'pending'), ...pxbBets.filter(bet => bet.status !== 'pending')];
   
   const filteredDetailedBets = apiActiveBets.filter(bet => {
     if (activeDetailFilter === 'all') return true;
@@ -753,3 +754,4 @@ const Profile = () => {
 };
 
 export default Profile;
+
