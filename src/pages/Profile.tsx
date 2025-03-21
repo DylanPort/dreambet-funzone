@@ -1,655 +1,507 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
-import Navbar from '@/components/Navbar';
-import { Clock, TrendingUp, TrendingDown, Settings, History, Coins, Activity, Filter, RefreshCw, User, Plus, Save, X, Edit2, ArrowUp, ArrowDown, Zap, Sparkles } from 'lucide-react';
-import OrbitingParticles from '@/components/OrbitingParticles';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { fetchUserProfile, fetchUserBettingHistory, calculateUserStats, updateUsername, UserProfile as UserProfileType, UserBet, UserStats } from '@/services/userService';
-import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
-import { toast } from 'sonner';
-import { formatTimeRemaining } from '@/utils/betUtils';
-import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import WalletConnectButton from '@/components/WalletConnectButton';
 import { Input } from '@/components/ui/input';
-import { fetchUserBets } from '@/api/mockData';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import { Bet } from '@/types/bet';
-import { useBetsData } from '@/contexts/pxb/useBetsData';
+import { useWalletBets } from '@/hooks/useWalletBets';
+import { fetchUserBets } from '@/services/supabaseService';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import PXBPointsBalance from '@/components/PXBPointsBalance';
+import { updateUsername } from '@/services/userService';
+import { Badge } from '@/components/ui/badge';
+import { Coins, Loader2, Trophy, Clock, Check, X, Send, ArrowUpDown, Sparkles, Orbit, Copy, User, Pencil } from 'lucide-react';
 import PXBWallet from '@/components/PXBWallet';
+import { PXBBet } from '@/types/pxb';
+import Navbar from '@/components/Navbar';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
-type ExtendedPXBBet = {
-  isActive?: boolean;
-};
+interface CombinedBet {
+  betType: 'PXB' | 'SOL';
+  id: string;
+  tokenId: string;
+  tokenMint: string;
+  tokenSymbol: string;
+  tokenName: string;
+  initiator: string;
+  amount: number;
+  prediction: string;
+  timestamp: number;
+  expiresAt: number;
+  status: string;
+  duration: number;
+  onChainBetId?: string;
+  transactionSignature?: string;
+  currentMarketCap?: number;
+}
 
-const Profile = () => {
+const ProfilePage = () => {
   const {
-    connected,
-    publicKey
+    publicKey,
+    connected
   } = useWallet();
-  const [user, setUser] = useState<UserProfileType | null>(null);
-  const [bets, setBets] = useState<UserBet[]>([]);
-  const [activeBets, setActiveBets] = useState<UserBet[]>([]);
-  const [apiActiveBets, setApiActiveBets] = useState<Bet[]>([]);
-  const [stats, setStats] = useState<UserStats>({
-    totalBets: 0,
-    winRate: 0,
-    totalProfit: 0,
-    balance: 0
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isActiveBetsLoading, setIsActiveBetsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'history' | 'settings'>('history');
-  const [usernameInput, setUsernameInput] = useState('');
+  const [username, setUsername] = useState('');
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+  const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);
+  const {
+    bets: walletBets,
+    isLoading: isLoadingWalletBets,
+    loadBets
+  } = useWalletBets();
+  const [combinedBets, setCombinedBets] = useState<CombinedBet[]>([]);
+  const [isLoadingAllBets, setIsLoadingAllBets] = useState(true);
+  const [isGeneratingId, setIsGeneratingId] = useState(false);
+  const [pxbIdCopied, setPxbIdCopied] = useState(false);
+  const [displayedPxbId, setDisplayedPxbId] = useState<string>('');
   const {
     userProfile,
-    isLoading: pxbLoading,
-    mintPoints,
-    fetchUserProfile: fetchPXBUserProfile
-  } = usePXBPoints();
-  const [betsFilter, setBetsFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const [isMintingPoints, setIsMintingPoints] = useState(false);
-  const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [isSavingUsername, setIsSavingUsername] = useState(false);
-  const [myBetsView, setMyBetsView] = useState<'standard' | 'detailed'>('standard');
-  const [activeDetailFilter, setActiveDetailFilter] = useState<string>('all');
-  const {
     bets: pxbBets,
-    isLoading: isPXBBetsLoading,
-    fetchUserBets: fetchPXBUserBets
-  } = useBetsData(userProfile);
-
-  useEffect(() => {
-    const loadUserData = async () => {
-      setIsLoading(true);
-      if (!connected || !publicKey) {
-        setIsLoading(false);
-        return;
-      }
-      try {
-        const walletAddress = publicKey.toString();
-        const profileData = await fetchUserProfile(walletAddress);
-        setUser(profileData);
-        if (profileData) {
-          setUsernameInput(profileData.username || '');
-        }
-        const bettingHistory = await fetchUserBettingHistory(walletAddress);
-        setBets(bettingHistory);
-        const userStats = calculateUserStats(bettingHistory);
-        setStats(userStats);
-      } catch (error) {
-        console.error("Error loading user data:", error);
-        toast.error("Failed to load profile data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadUserData();
-  }, [connected, publicKey]);
-
-  useEffect(() => {
-    const loadActiveBets = async () => {
-      setIsActiveBetsLoading(true);
-      if (!connected || !publicKey) {
-        setIsActiveBetsLoading(false);
-        return;
-      }
-      try {
-        const walletAddress = publicKey.toString();
-        const {
-          data: supabaseBets,
-          error
-        } = await supabase.from('bets').select(`
-            bet_id,
-            token_mint,
-            tokens (token_name, token_symbol),
-            prediction_bettor1,
-            sol_amount,
-            status,
-            created_at,
-            duration,
-            creator
-          `).eq('creator', walletAddress).in('status', ['open', 'matched']).order('created_at', {
-          ascending: false
-        });
-        if (error) {
-          console.error("Error fetching active bets:", error);
-          toast.error("Failed to load active bets");
-          return;
-        }
-        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
-        let localBets: any[] = storedBets ? JSON.parse(storedBets) : [];
-        const now = Date.now();
-        localBets = localBets.filter((bet: any) => bet.expiresAt > now && bet.status === 'open' && bet.initiator === walletAddress);
-        const mappedSupabaseBets = supabaseBets.map(bet => {
-          const createdDate = new Date(bet.created_at);
-          const expiryTime = new Date(createdDate.getTime() + bet.duration * 60 * 60 * 1000);
-          let prediction: 'moon' | 'die';
-          if (bet.prediction_bettor1 === 'up' || bet.prediction_bettor1 === 'migrate') {
-            prediction = 'moon';
-          } else {
-            prediction = 'die';
-          }
-          return {
-            id: bet.bet_id,
-            tokenName: bet.tokens?.token_name || 'Unknown Token',
-            tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
-            amount: bet.sol_amount,
-            prediction: prediction,
-            result: 'pending',
-            date: bet.created_at,
-            profit: 0,
-            isActive: true,
-            expiresAt: expiryTime.getTime()
-          } as UserBet;
-        });
-        const mappedLocalBets = localBets.map((bet: any) => {
-          return {
-            id: bet.id,
-            tokenName: bet.tokenName || 'Unknown Token',
-            tokenSymbol: bet.tokenSymbol || 'UNKNOWN',
-            amount: bet.amount,
-            prediction: bet.prediction === 'migrate' ? 'moon' : 'die',
-            result: 'pending',
-            date: new Date(bet.timestamp).toISOString(),
-            profit: 0,
-            isActive: true,
-            expiresAt: bet.expiresAt
-          } as UserBet;
-        });
-        const allActiveBets: UserBet[] = [...mappedSupabaseBets];
-        for (const localBet of mappedLocalBets) {
-          const exists = allActiveBets.some(existingBet => existingBet.id === localBet.id);
-          if (!exists) {
-            allActiveBets.push(localBet);
-          }
-        }
-        setActiveBets(allActiveBets);
-      } catch (error) {
-        console.error("Error loading active bets:", error);
-        toast.error("Failed to load active bets");
-      } finally {
-        setIsActiveBetsLoading(false);
-      }
-    };
-    loadActiveBets();
-    const interval = setInterval(() => {
-      loadActiveBets();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [connected, publicKey]);
+    fetchUserProfile,
+    fetchUserBets,
+    generatePxbId
+  } = usePXBPoints();
 
   const loadDetailedBets = async () => {
+    setIsLoadingAllBets(true);
     try {
-      setIsActiveBetsLoading(true);
-      if (connected && publicKey) {
-        console.log('Fetching bets for user:', publicKey.toString());
-        const userBets = await fetchUserBets(publicKey.toString());
-        const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');
-        let localBets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
-        localBets = localBets.filter(bet => bet.initiator === publicKey.toString());
-        const allBets = [...userBets];
-        for (const localBet of localBets) {
-          const exists = allBets.some(existingBet => existingBet.id === localBet.id || existingBet.onChainBetId && localBet.onChainBetId && existingBet.onChainBetId === localBet.onChainBetId);
-          if (!exists) {
-            allBets.push(localBet);
-          }
-        }
-        setApiActiveBets(allBets);
-      } else {
-        setApiActiveBets([]);
+      if (publicKey) {
+        await loadBets();
+      }
+      if (userProfile) {
+        await fetchUserBets();
       }
     } catch (error) {
-      console.error('Error loading bets:', error);
+      console.error("Error loading bets:", error);
+      toast.error("Failed to load all bets");
     } finally {
-      setIsActiveBetsLoading(false);
+      setIsLoadingAllBets(false);
     }
   };
-
-  useEffect(() => {
-    loadDetailedBets();
-  }, [connected, publicKey]);
 
   useEffect(() => {
     if (connected && publicKey) {
-      fetchPXBUserProfile();
+      fetchUserProfile();
+      loadDetailedBets();
     }
-    if (connected && publicKey) {
-      const walletAddress = publicKey.toString();
-      const usersSubscription = supabase.channel('users-points-changes').on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'users',
-        filter: `wallet_address=eq.${walletAddress}`
-      }, payload => {
-        if (payload.new && typeof payload.new.points === 'number') {
-          setLocalPxbPoints(payload.new.points);
-        }
-      }).subscribe();
-      return () => {
-        supabase.removeChannel(usersSubscription);
-      };
-    }
-  }, [connected, publicKey]);
+  }, [connected, publicKey, userProfile?.id]);
 
   useEffect(() => {
-    if (userProfile && userProfile.pxbPoints !== undefined) {
-      setLocalPxbPoints(userProfile.pxbPoints);
+    if (userProfile?.username) {
+      setUsername(userProfile.username);
+    } else if (publicKey) {
+      setUsername(publicKey.toString().substring(0, 8));
     }
-  }, [userProfile]);
+    if (userProfile?.id) {
+      setDisplayedPxbId(userProfile.id);
+    }
+  }, [userProfile, publicKey]);
 
   useEffect(() => {
-    if (connected && publicKey && userProfile) {
-      fetchPXBUserBets();
+    if (walletBets && pxbBets) {
+      const solBets = walletBets.map(bet => ({
+        ...bet,
+        betType: 'SOL' as const
+      }));
+      const formattedPxbBets = pxbBets.map(bet => ({
+        ...bet,
+        betType: 'PXB' as const,
+        id: bet.id,
+        tokenId: bet.tokenMint,
+        tokenMint: bet.tokenMint,
+        tokenSymbol: bet.tokenSymbol,
+        tokenName: bet.tokenName,
+        initiator: bet.userId,
+        amount: bet.betAmount,
+        prediction: bet.betType === 'up' ? 'migrate' : 'die',
+        timestamp: new Date(bet.createdAt).getTime(),
+        expiresAt: new Date(bet.expiresAt).getTime(),
+        status: bet.status === 'pending' ? 'open' : bet.status === 'won' ? 'completed' : bet.status === 'lost' ? 'expired' : 'open',
+        duration: 30,
+        onChainBetId: `pxb-${bet.id}`,
+        transactionSignature: `pxb-tx-${bet.id}`
+      }));
+      const combined = [...solBets, ...formattedPxbBets].sort((a, b) => b.timestamp - a.timestamp);
+      setCombinedBets(combined);
     }
-  }, [connected, publicKey, userProfile, fetchPXBUserBets]);
+  }, [walletBets, pxbBets]);
 
-  const handleUpdateProfile = async () => {
-    if (!usernameInput.trim()) {
-      toast.error("Username cannot be empty");
-      return;
-    }
-    if (!connected || !publicKey) {
-      toast.error("Please connect your wallet to update your profile");
-      return;
-    }
-    setIsSavingUsername(true);
-    const walletAddress = publicKey.toString();
-    const success = await updateUsername(walletAddress, usernameInput);
-    if (success && user) {
-      setUser({
-        ...user,
-        username: usernameInput
-      });
-      fetchPXBUserProfile();
-      toast.success("Username updated successfully");
-      setIsEditingUsername(false);
-    }
-    setIsSavingUsername(false);
+  const handleOpenUsernameDialog = () => {
+    setIsUsernameDialogOpen(true);
   };
 
-  const startEditingUsername = () => {
-    setUsernameInput(user?.username || userProfile?.username || '');
-    setIsEditingUsername(true);
+  const handleCloseUsernameDialog = () => {
+    setIsUsernameDialogOpen(false);
   };
 
-  const cancelEditingUsername = () => {
-    setIsEditingUsername(false);
-    setUsernameInput(user?.username || userProfile?.username || '');
-  };
-
-  const handleRefresh = () => {
-    if (!connected || !publicKey) return;
-    toast.info("Refreshing bets data...");
-    const walletAddress = publicKey.toString();
-    setIsLoading(true);
-    setIsActiveBetsLoading(true);
-    Promise.all([fetchUserBettingHistory(walletAddress), fetchUserProfile(walletAddress), fetchUserBets(walletAddress)]).then(([bettingHistory, profileData, apiBets]) => {
-      setBets(bettingHistory);
-      setUser(profileData);
-      setApiActiveBets(apiBets);
-      const userStats = calculateUserStats(bettingHistory);
-      setStats(userStats);
-      if (userProfile) {
-        fetchPXBUserBets();
-      }
-    }).catch(error => {
-      console.error("Error refreshing data:", error);
-      toast.error("Failed to refresh data");
-    }).finally(() => {
-      setIsLoading(false);
-      setIsActiveBetsLoading(false);
-    });
-  };
-
-  const handleMintPXBPoints = async () => {
+  const handleUpdateUsernameSubmit = async () => {
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
       return;
     }
-    if (userProfile?.pxbPoints > 0 || localPxbPoints > 0) {
-      toast.error("You've already minted your PXB Points!");
+    if (!username.trim()) {
+      toast.error("Username cannot be empty");
       return;
     }
-    setIsMintingPoints(true);
+    setIsUpdatingUsername(true);
     try {
-      await mintPoints(500);
-      await fetchPXBUserProfile();
-      toast.success("Successfully minted 500 PXB Points!");
+      const walletAddress = publicKey.toString();
+      const success = await updateUsername(walletAddress, username);
+      if (success) {
+        toast.success("Username updated successfully");
+        await fetchUserProfile();
+        handleCloseUsernameDialog();
+      }
     } catch (error) {
-      console.error("Error minting PXB points:", error);
-      toast.error("Failed to mint PXB Points");
+      console.error("Error updating username:", error);
+      toast.error("Failed to update username");
     } finally {
-      setIsMintingPoints(false);
+      setIsUpdatingUsername(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+  const handleGeneratePxbId = async () => {
+    if (!generatePxbId || !publicKey) return;
+    setIsGeneratingId(true);
+    try {
+      const id = generatePxbId();
+      setDisplayedPxbId(id);
+      navigator.clipboard.writeText(id);
+      setPxbIdCopied(true);
+      setTimeout(() => setPxbIdCopied(false), 2000);
+      toast.success("Your permanent PXB ID has been generated and copied to clipboard!");
+      await fetchUserProfile();
+    } catch (error) {
+      console.error("Error generating PXB ID:", error);
+      toast.error("Failed to generate PXB ID");
+    } finally {
+      setIsGeneratingId(false);
+    }
+  };
+
+  const handleCopyPxbId = () => {
+    if (!displayedPxbId) return;
+    navigator.clipboard.writeText(displayedPxbId);
+    setPxbIdCopied(true);
+    toast.success("PXB ID copied to clipboard!");
+    setTimeout(() => setPxbIdCopied(false), 2000);
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
-  const filteredBets = betsFilter === 'all' ? [...bets, ...activeBets.filter(active => !bets.some(bet => bet.id === active.id)), ...pxbBets] : betsFilter === 'active' ? [...activeBets, ...pxbBets.filter(bet => bet.status === 'pending')] : [...bets.filter(bet => bet.result !== 'pending'), ...pxbBets.filter(bet => bet.status !== 'pending')];
-
-  const filteredDetailedBets = apiActiveBets.filter(bet => {
-    if (activeDetailFilter === 'all') return true;
-    if (activeDetailFilter === 'active') return bet.status === 'open' || bet.status === 'matched';
-    return bet.status === activeDetailFilter;
-  });
-
-  const getBetStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'from-yellow-500/20 to-yellow-500/30 text-yellow-400 border-yellow-400/30';
-      case 'matched':
-        return 'from-blue-500/20 to-blue-500/30 text-blue-400 border-blue-400/30';
-      case 'completed':
-        return 'from-green-500/20 to-green-500/30 text-green-400 border-green-400/30';
-      case 'expired':
-        return 'from-red-500/20 to-red-500/30 text-red-400 border-red-400/30';
-      default:
-        return 'from-gray-500/20 to-gray-500/30 text-gray-400 border-gray-400/30';
+  const getStatusBadge = (status: string, prediction: string) => {
+    if (status === 'completed') {
+      return <Badge className="bg-green-500/80 hover:bg-green-500">
+          <Check className="w-3 h-3 mr-1" /> Won
+        </Badge>;
+    } else if (status === 'expired' || status === 'lost') {
+      return <Badge variant="destructive">
+          <X className="w-3 h-3 mr-1" /> Lost
+        </Badge>;
+    } else if (status === 'open' || status === 'pending') {
+      return <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/30">
+          <Clock className="w-3 h-3 mr-1" /> Pending
+        </Badge>;
+    } else {
+      return <Badge variant="secondary">
+          {status}
+        </Badge>;
     }
   };
 
-  if (!connected || !publicKey) {
-    return <>
-        <Navbar />
-        <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center">
-          <div className="glass-panel p-10 flex flex-col items-center">
-            <div className="w-20 h-20 mb-6 bg-dream-foreground/10 rounded-full flex items-center justify-center">
-              <img src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" alt="Profile" className="w-12 h-12" />
-            </div>
-            <h2 className="text-xl font-display font-bold mb-4">Connect Your Wallet</h2>
-            <p className="text-dream-foreground/70 text-center mb-6">You need to connect your wallet to access your profile.</p>
-          </div>
-        </main>
-      </>;
-  }
-
-  if (isLoading) {
-    return <>
-        <Navbar />
-        <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto flex justify-center items-center">
-          <div className="glass-panel p-10 flex flex-col items-center">
-            <div className="w-12 h-12 border-4 border-t-transparent border-dream-accent1 rounded-full animate-spin mb-4"></div>
-            <p className="text-dream-foreground/70">Loading profile...</p>
-          </div>
-        </main>
-      </>;
-  }
+  const getBadgeForBetType = (betType: 'PXB' | 'SOL') => {
+    if (betType === 'PXB') {
+      return <Badge className="bg-purple-500/80 hover:bg-purple-500">
+          <Coins className="w-3 h-3 mr-1" /> PXB
+        </Badge>;
+    } else {
+      return <Badge className="bg-blue-500/80 hover:bg-blue-500">
+          SOL
+        </Badge>;
+    }
+  };
 
   return <>
-      <OrbitingParticles />
       <Navbar />
-      <main className="min-h-screen pt-24 px-4 md:px-8 max-w-7xl mx-auto">
-        
-        <PXBWallet />
-        
-        <div className="glass-panel p-6 mb-6">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
-              <img src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" alt="Profile" className="w-16 h-16" />
+      <div className="container mx-auto py-8 px-4 my-[99px]">
+        {!connected && <div className="text-center py-12">
+            <h2 className="text-2xl font-bold mb-4">Connect your wallet to view your profile</h2>
+            <div className="flex justify-center">
+              <WalletConnectButton />
             </div>
-            
-            <div className="text-center md:text-left">
-              {isEditingUsername ? <div className="flex flex-col md:flex-row gap-2 items-center">
-                  <Input type="text" value={usernameInput} onChange={e => setUsernameInput(e.target.value)} placeholder="Enter new username" className="px-3 py-2 w-full md:w-auto" autoFocus />
-                  <div className="flex gap-2 mt-2 md:mt-0">
-                    <Button onClick={handleUpdateProfile} disabled={isSavingUsername} size="sm" className="bg-dream-accent1 hover:bg-dream-accent1/80">
-                      {isSavingUsername ? <>
-                          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
-                          Saving
-                        </> : <>
-                          <Save className="w-4 h-4 mr-1" />
-                          Save
-                        </>}
-                    </Button>
-                    <Button onClick={cancelEditingUsername} variant="outline" size="sm" className="border-dream-foreground/20 hover:bg-dream-foreground/5">
-                      <X className="w-4 h-4 mr-1" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div> : <div className="flex items-center gap-2">
-                  <h1 className="text-2xl md:text-3xl font-display font-bold">
-                    {user?.username || publicKey.toString().substring(0, 8) || 'DreamPredictor'}
-                  </h1>
-                  <Button onClick={startEditingUsername} variant="ghost" size="sm" className="text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-foreground/10">
-                    <Edit2 className="w-3.5 h-3.5" />
-                    <span className="sr-only">Edit username</span>
-                  </Button>
-                </div>}
-              <p className="text-dream-foreground/60">{publicKey.toString()}</p>
-              <p className="text-dream-foreground/60 text-sm mt-1">
-                <Clock className="inline w-3 h-3 mr-1" />
-                Joined {user?.created_at ? formatDate(user.created_at) : 'Recently'}
-              </p>
-            </div>
-            
-            <div className="ml-auto flex flex-col md:flex-row gap-4">
-              <div className="glass-panel p-4 text-center">
-                <p className="text-dream-foreground/60 text-sm flex items-center justify-center">
-                  <Coins className="w-4 h-4 mr-1 text-yellow-400" />
-                  PXB Points
-                </p>
-                <p className="text-2xl font-display font-bold text-gradient">
-                  {pxbLoading ? <span className="text-sm text-dream-foreground/40">Loading...</span> : localPxbPoints !== null && localPxbPoints > 0 ? `${localPxbPoints.toLocaleString()} PXB` : userProfile !== null && userProfile.pxbPoints > 0 ? `${userProfile.pxbPoints.toLocaleString()} PXB` : <span className="text-sm text-dream-foreground/40">0 PXB</span>}
-                </p>
-                {!userProfile?.pxbPoints && !localPxbPoints ? <Button onClick={handleMintPXBPoints} disabled={isMintingPoints} className="mt-2 text-xs h-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" size="sm">
-                    {isMintingPoints ? <div className="flex items-center">
-                        <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
-                        <span>Minting...</span>
-                      </div> : <>
-                        <Plus className="w-3 h-3 mr-1" />
-                        Mint 500 Points
-                      </>}
-                  </Button> : null}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex border-b border-white/10 mt-6">
-            <button className={`py-3 px-6 font-medium flex items-center ${activeTab === 'history' ? 'border-b-2 border-dream-accent1 text-dream-accent1' : 'text-dream-foreground/60 hover:text-dream-foreground'}`} onClick={() => setActiveTab('history')}>
-              <History className="w-4 h-4 mr-2" />
-              Betting History
-            </button>
-            
-            <button className={`py-3 px-6 font-medium flex items-center ${activeTab === 'settings' ? 'border-b-2 border-dream-accent1 text-dream-accent1' : 'text-dream-foreground/60 hover:text-dream-foreground'}`} onClick={() => setActiveTab('settings')}>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </button>
-          </div>
-        </div>
-        
-        {activeTab === 'history' && <div className="glass-panel p-6">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-4">
-                <h2 className="text-xl font-display font-semibold">Betting History</h2>
-                <div className="flex gap-2">
-                  
-                  
-                </div>
+          </div>}
+
+        {connected && <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="col-span-1">
+                <Card className="glass-panel border-dream-accent2/20">
+                  <CardHeader>
+                    <CardTitle>Profile</CardTitle>
+                    <CardDescription>Manage your personal information</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="wallet">Wallet Address</Label>
+                      <div className="px-3 py-2 bg-dream-background/40 border border-dream-accent1/10 rounded-md flex items-center">
+                        <span className="text-sm font-mono text-dream-foreground/70 truncate">
+                          {publicKey?.toString()}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="username">Username</Label>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={handleOpenUsernameDialog} 
+                          className="h-8 w-8 p-0 text-dream-foreground/50 hover:text-dream-foreground/90 hover:bg-dream-accent1/10"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="px-3 py-2 bg-dream-background/40 border border-dream-accent1/10 rounded-md flex items-center group hover:border-dream-accent1/30 transition-all">
+                        <User className="h-4 w-4 mr-2 text-dream-foreground/50 group-hover:text-dream-foreground/70" />
+                        <span className="text-sm text-dream-foreground/90 font-medium">
+                          {username || "Set your username"}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <Dialog open={isUsernameDialogOpen} onOpenChange={setIsUsernameDialogOpen}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Update Your Username</DialogTitle>
+                          <DialogDescription>
+                            Choose a unique username that others will recognize you by.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="username-input">Username</Label>
+                              <Input
+                                id="username-input"
+                                placeholder="Enter your username"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={handleCloseUsernameDialog}>Cancel</Button>
+                          <Button 
+                            onClick={handleUpdateUsernameSubmit} 
+                            disabled={isUpdatingUsername || !username.trim()}
+                          >
+                            {isUpdatingUsername ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>
+                            ) : (
+                              <>Save</>
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="pxb-id">PXB ID</Label>
+                      {!displayedPxbId ? <Button onClick={handleGeneratePxbId} disabled={isGeneratingId || !generatePxbId} className="w-full bg-gradient-to-r from-[#6E59A5] to-[#8B5CF6] hover:from-[#7E69AB] hover:to-[#9B87F5] text-white border-none relative overflow-hidden group">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-40 h-40 rounded-full bg-white/10 absolute animate-ping opacity-0 group-hover:opacity-30 duration-1000" />
+                            <div className="w-32 h-32 rounded-full bg-white/20 absolute animate-ping opacity-0 group-hover:opacity-30 delay-100 duration-1000" />
+                            <div className="w-24 h-24 rounded-full bg-white/30 absolute animate-ping opacity-0 group-hover:opacity-30 delay-200 duration-1000" />
+                          </div>
+                          
+                          {isGeneratingId ? <div className="flex items-center justify-center relative z-10">
+                              <Orbit className="h-5 w-5 mr-2 animate-spin" />
+                              <span>Generating...</span>
+                            </div> : <div className="flex items-center justify-center relative z-10">
+                              <Sparkles className="h-5 w-5 mr-2" />
+                              <span>Generate PXB ID</span>
+                            </div>}
+                        </Button> : <div className="bg-dream-background/40 border border-dream-accent1/10 rounded-md p-2 flex items-center justify-between group hover:border-purple-500/30 transition-all">
+                          <div className="flex-1">
+                            <span className="text-sm font-mono text-dream-foreground/90 truncate block">
+                              {displayedPxbId}
+                            </span>
+                            <p className="text-xs text-dream-foreground/50 mt-1">Your permanent ID for receiving PXB points</p>
+                          </div>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-dream-foreground/50 hover:text-dream-foreground/90 hover:bg-purple-500/10" onClick={handleCopyPxbId}>
+                            {pxbIdCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>}
+                    </div>
+                    
+                    <Separator className="my-4" />
+                    
+                    <div className="space-y-2">
+                      <PXBPointsBalance />
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
               
-              <div className="flex items-center gap-2">
-                {myBetsView === 'standard' ? <div className="flex items-center gap-1">
-                    <button onClick={() => setBetsFilter('all')} className={`px-2.5 py-1 text-sm rounded-full transition-colors ${betsFilter === 'all' ? 'bg-dream-accent1/20 text-dream-accent1 border border-dream-accent1/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
-                      All
-                    </button>
-                    <button onClick={() => setBetsFilter('active')} className={`px-2.5 py-1 text-sm rounded-full transition-colors flex items-center ${betsFilter === 'active' ? 'bg-dream-accent2/20 text-dream-accent2 border border-dream-accent2/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
-                      <Activity className="w-3 h-3 mr-1" />
-                      Active
-                      {activeBets.length > 0 && <span className="ml-1 bg-dream-accent2/30 text-dream-accent2 text-xs px-1.5 rounded-full">
-                          {activeBets.length}
-                        </span>}
-                    </button>
-                    <button onClick={() => setBetsFilter('completed')} className={`px-2.5 py-1 text-sm rounded-full transition-colors ${betsFilter === 'completed' ? 'bg-green-500/20 text-green-400 border border-green-400/30' : 'bg-dream-background/30 text-dream-foreground/60 border border-dream-foreground/10'}`}>
-                      Completed
-                    </button>
-                  </div> : <div className="flex overflow-x-auto p-1 gap-2">
-                    {['all', 'active', 'open', 'matched', 'completed', 'expired'].map(filter => <motion.button key={filter} whileTap={{
-                scale: 0.97
-              }} whileHover={{
-                scale: 1.03
-              }} onClick={() => setActiveDetailFilter(filter)} className={`px-4 py-2 rounded-md whitespace-nowrap transition-all ${activeDetailFilter === filter ? 'bg-gradient-to-r from-dream-accent1 to-dream-accent2 text-white shadow-lg shadow-dream-accent1/20' : 'bg-dream-surface/50 text-dream-foreground/70 hover:bg-dream-surface'}`}>
-                        {filter === 'active' && <Activity className="w-3.5 h-3.5 inline mr-1" />}
-                        {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                      </motion.button>)}
-                  </div>}
-                
-                <button onClick={handleRefresh} className="p-1.5 rounded-full bg-dream-background/30 text-dream-foreground/60 hover:text-dream-foreground hover:bg-dream-background/50 transition-colors" title="Refresh bets">
-                  <RefreshCw className="w-4 h-4" />
-                </button>
+              <div className="md:col-span-2">
+                <div className="space-y-6">
+                  <PXBWallet userProfile={userProfile} />
+                  
+                  <Card className="glass-panel border-dream-accent2/20">
+                    <CardHeader>
+                      <CardTitle>Betting Stats</CardTitle>
+                      <CardDescription>Your betting performance</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
+                          <p className="text-dream-foreground/60 text-sm">Total Bets</p>
+                          <p className="text-2xl font-bold">{combinedBets.length}</p>
+                        </div>
+                        <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
+                          <p className="text-dream-foreground/60 text-sm">Win Rate</p>
+                          <p className="text-2xl font-bold">
+                            {combinedBets.length > 0 ? Math.round(combinedBets.filter(bet => bet.status === 'completed').length / combinedBets.length * 100) : 0}%
+                          </p>
+                        </div>
+                        <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
+                          <p className="text-dream-foreground/60 text-sm">PXB Points</p>
+                          <p className="text-2xl font-bold">{userProfile?.pxbPoints || 0}</p>
+                        </div>
+                        <div className="bg-dream-background/40 p-4 rounded-lg border border-dream-accent1/10">
+                          <p className="text-dream-foreground/60 text-sm">Ranking</p>
+                          <div className="flex items-center">
+                            <Trophy className="h-5 w-5 mr-1 text-yellow-500" />
+                            <p className="text-2xl font-bold">#12</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </div>
             
-            {myBetsView === 'standard' ? <>
-                {betsFilter === 'active' && isActiveBetsLoading || betsFilter !== 'active' && isLoading ? <div className="flex justify-center py-6">
-                    <div className="flex flex-col items-center">
-                      <div className="w-6 h-6 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin mb-3"></div>
-                      <p className="text-dream-foreground/70 text-sm">Loading bets...</p>
-                    </div>
-                  </div> : filteredBets.length === 0 ? <div className="text-center py-10 text-dream-foreground/60">
-                    <p>No {betsFilter === 'all' ? '' : betsFilter} bets found.</p>
-                    <Link to="/betting" className="mt-4 inline-block">
-                      <Button className="bg-dream-accent1 hover:bg-dream-accent1/80">
-                        Place Your First Bet
-                      </Button>
-                    </Link>
-                  </div> : <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-white/10">
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Token</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Date</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Type</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Prediction</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Amount</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Status</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Remaining</th>
-                          <th className="px-4 py-3 text-left text-dream-foreground/60">Result</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredBets.map(bet => {
-                  const isPXBBet = 'betType' in bet;
-                  const betType = isPXBBet ? 'PXB' : 'SOL';
-                  const prediction = isPXBBet ? (bet as any).betType === 'up' ? 'moon' : 'die' : bet.prediction;
-                  const tokenName = isPXBBet ? (bet as any).tokenName : bet.tokenName;
-                  const tokenSymbol = isPXBBet ? (bet as any).tokenSymbol : bet.tokenSymbol;
-                  const amount = isPXBBet ? (bet as any).betAmount : bet.amount;
-                  const status = isPXBBet ? (bet as any).status : bet.isActive ? 'active' : bet.result;
-                  const date = isPXBBet ? (bet as any).createdAt : bet.date;
-                  const profit = isPXBBet ? (bet as any).status === 'won' ? (bet as any).pointsWon : 0 : bet.profit;
-                  const expiresAt = isPXBBet ? new Date((bet as any).expiresAt).getTime() : bet.expiresAt;
-                  const isActive = isPXBBet ? (bet as any).status === 'pending' : (bet as any).isActive;
+            <Card className="glass-panel border-dream-accent2/20">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Your Bets</CardTitle>
+                    <CardDescription>History of your token bets</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={loadDetailedBets} disabled={isLoadingAllBets}>
+                    {isLoadingAllBets ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ArrowUpDown className="h-4 w-4 mr-2" />}
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="all">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="active">Active</TabsTrigger>
+                    <TabsTrigger value="completed">Completed</TabsTrigger>
+                  </TabsList>
                   
-                  return <motion.tr key={bet.id} className={`border-b border-white/5 hover:bg-white/5 ${isActive ? 'relative' : ''}`} initial={{
-                    opacity: 0,
-                    y: 20
-                  }} animate={{
-                    opacity: 1,
-                    y: 0
-                  }} transition={{
-                    duration: 0.3
-                  }}>
-                              {isActive && <div className="absolute left-0 top-0 h-full w-1 bg-dream-accent2/50"></div>}
-                              <td className="px-4 py-4">
-                                <div className="flex items-center">
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10 mr-3">
-                                    <span className="font-display font-bold text-sm">{tokenSymbol.charAt(0)}</span>
-                                  </div>
-                                  <div>
-                                    <p className="font-medium">{tokenName}</p>
-                                    <p className="text-dream-foreground/60 text-sm">{tokenSymbol}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-4 text-dream-foreground/80">{formatDate(date)}</td>
-                              <td className="px-4 py-4">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${betType === 'PXB' ? 'bg-purple-500/20 text-purple-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                                  {betType}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${prediction === 'moon' ? 'bg-dream-accent1/20 text-dream-accent1' : 'bg-dream-accent2/20 text-dream-accent2'}`}>
-                                  {prediction === 'moon' ? <>
-                                      <TrendingUp className="w-3 h-3 mr-1" />
-                                      Moon
-                                    </> : <>
-                                      <TrendingDown className="w-3 h-3 mr-1" />
-                                      Die
-                                    </>}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 text-dream-foreground/80">{amount} {betType}</td>
-                              <td className="px-4 py-4">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status === 'active' || status === 'pending' ? 'bg-dream-accent2/20 text-dream-accent2' : status === 'win' || status === 'won' ? 'bg-green-500/20 text-green-500' : status === 'loss' || status === 'lost' ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                                  {status === 'active' || status === 'pending' ? 'Active' : status === 'win' || status === 'won' ? 'Win' : status === 'loss' || status === 'lost' ? 'Loss' : 'Pending'}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 text-dream-foreground/80">
-                                {isActive && expiresAt ? <span className="text-sm text-dream-accent2/80">
-                                    {formatTimeRemaining(expiresAt)}
-                                  </span> : <span className="text-sm text-dream-foreground/40">—</span>}
-                              </td>
-                              <td className={`px-4 py-4 font-medium ${profit > 0 ? 'text-green-400' : profit < 0 ? 'text-red-400' : 'text-dream-foreground/40'}`}>
-                                {profit > 0 ? `+${profit.toFixed(2)} ${betType}` : profit < 0 ? `${profit.toFixed(2)} ${betType}` : '—'}
-                              </td>
-                            </motion.tr>;
-                })}
-                      </tbody>
-                    </table>
-                  </div>}
-              </> : <AnimatePresence mode="wait">
-                {filteredDetailedBets.length === 0 ? <motion.div initial={{
-            opacity: 0
-          }} animate={{
-            opacity: 1
-          }} exit={{
-            opacity: 0
-          }} className="text-center py-10 text-dream-foreground/60">
-                    <p>No {activeDetailFilter === 'all' ? '' : activeDetailFilter} bets found.</p>
-                    <Link to="/betting" className="mt-4 inline-block">
-                      <Button className="bg-dream-accent1 hover:bg-dream-accent1/80">
-                        Place Your First Bet
-                      </Button>
-                    </Link>
-                  </motion.div> : <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filteredDetailedBets.map(bet => <motion.div key={bet.id} initial={{
-              opacity: 0,
-              y: 20
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} className={`p-4 rounded-lg bg-gradient-to-r ${getBetStatusColor(bet.status)} border`}>
-                        <div className="flex justify-between mb-2">
-                          <span className="font-medium">{bet.tokenName || 'Unknown Token'}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-black/20">
-                            {bet.status}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm">Amount: {bet.amount || 0} SOL</span>
-                          <span className="text-sm">
-                            {bet.prediction === 'up' ? <span className="flex items-center text-green-400"><ArrowUp className="w-3 h-3 mr-1" /> Up</span> : <span className="flex items-center text-red-400"><ArrowDown className="w-3 h-3 mr-1" /> Down</span>}
-                          </span>
-                        </div>
-                      </motion.div>)}
-                  </div>}
-              </AnimatePresence>}
+                  <TabsContent value="all">
+                    <BetsTable bets={combinedBets} isLoading={isLoadingAllBets} formatDate={formatDate} getStatusBadge={getStatusBadge} getBadgeForBetType={getBadgeForBetType} />
+                  </TabsContent>
+                  
+                  <TabsContent value="active">
+                    <BetsTable bets={combinedBets.filter(bet => bet.status === 'open' || bet.status === 'pending')} isLoading={isLoadingAllBets} formatDate={formatDate} getStatusBadge={getStatusBadge} getBadgeForBetType={getBadgeForBetType} />
+                  </TabsContent>
+                  
+                  <TabsContent value="completed">
+                    <BetsTable bets={combinedBets.filter(bet => bet.status === 'completed' || bet.status === 'expired' || bet.status === 'lost')} isLoading={isLoadingAllBets} formatDate={formatDate} getStatusBadge={getStatusBadge} getBadgeForBetType={getBadgeForBetType} />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           </div>}
-        
-        {activeTab === 'settings' && <div className="glass-panel p-6">
-            <h2 className="text-xl font-display font-semibold mb-4">Profile Settings</h2>
-            <p className="text-dream-foreground/60">Profile settings coming soon...</p>
-          </div>}
-      </main>
+      </div>
     </>;
 };
 
-export default Profile;
+interface BetsTableProps {
+  bets: CombinedBet[];
+  isLoading: boolean;
+  formatDate: (timestamp: number) => string;
+  getStatusBadge: (status: string, prediction: string) => React.ReactNode;
+  getBadgeForBetType: (betType: 'PXB' | 'SOL') => React.ReactNode;
+}
+
+const BetsTable: React.FC<BetsTableProps> = ({
+  bets,
+  isLoading,
+  formatDate,
+  getStatusBadge,
+  getBadgeForBetType
+}) => {
+  if (isLoading) {
+    return <div className="flex justify-center items-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-dream-accent1" />
+        <span className="ml-3 text-dream-foreground/70">Loading bets...</span>
+      </div>;
+  }
+  if (bets.length === 0) {
+    return <div className="text-center py-8">
+        <p className="text-dream-foreground/70">No bets found</p>
+      </div>;
+  }
+  return <div className="rounded-md border border-dream-accent1/10 overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Type</TableHead>
+            <TableHead>Token</TableHead>
+            <TableHead>Prediction</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {bets.map(bet => <TableRow key={`${bet.betType}-${bet.id}`}>
+              <TableCell>{getBadgeForBetType(bet.betType)}</TableCell>
+              <TableCell className="font-medium">{bet.tokenSymbol}</TableCell>
+              <TableCell>
+                <Badge variant={bet.prediction === 'migrate' || bet.prediction === 'up' ? "default" : "destructive"} className="capitalize">
+                  {bet.prediction === 'migrate' || bet.prediction === 'up' ? 'Up' : 'Down'}
+                </Badge>
+              </TableCell>
+              <TableCell>{bet.amount} {bet.betType}</TableCell>
+              <TableCell>{formatDate(bet.timestamp)}</TableCell>
+              <TableCell>{getStatusBadge(bet.status, bet.prediction)}</TableCell>
+            </TableRow>)}
+        </TableBody>
+      </Table>
+    </div>;
+};
+
+export default ProfilePage;
