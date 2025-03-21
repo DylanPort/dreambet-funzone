@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { UserProfile } from '@/types/pxb';
@@ -92,6 +91,8 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
     if (!userProfile) return;
     
     try {
+      console.log("Fetching last claim time for user:", userProfile.id);
+      
       const { data, error } = await supabase
         .from('points_history')
         .select('created_at')
@@ -106,6 +107,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
       }
       
       if (data && data.length > 0) {
+        console.log("Last claim found:", data[0].created_at);
         const lastClaimDate = new Date(data[0].created_at);
         setLastClaimTime(lastClaimDate);
         
@@ -114,11 +116,21 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
         const sixHoursInMs = 6 * 60 * 60 * 1000;
         
         if (timeSinceClaim < sixHoursInMs) {
+          console.log("Cooldown active - time since last claim:", Math.floor(timeSinceClaim / (60 * 1000)), "minutes");
           setIsCooldownActive(true);
           setClaimCooldown(sixHoursInMs - timeSinceClaim);
           const cooldownEnd = new Date(lastClaimDate.getTime() + sixHoursInMs);
           setCooldownEndTime(cooldownEnd);
+        } else {
+          console.log("No cooldown - last claim was", Math.floor(timeSinceClaim / (60 * 1000)), "minutes ago");
+          setIsCooldownActive(false);
+          setClaimCooldown(0);
+          setCooldownEndTime(null);
         }
+      } else {
+        console.log("No previous claims found");
+        setIsCooldownActive(false);
+        setLastClaimTime(null);
       }
     } catch (error) {
       console.error('Error in fetchLastClaimTime:', error);
@@ -200,7 +212,8 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
     if (!userProfile) return false;
     
     try {
-      // Query the most recent mint action
+      console.log("Checking claim eligibility for user:", userProfile.id);
+      
       const { data, error } = await supabase
         .from('points_history')
         .select('created_at')
@@ -214,18 +227,28 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
         return false;
       }
       
-      // If no previous claims, user can claim
       if (!data || data.length === 0) {
+        console.log("No previous claims found, user is eligible");
         return true;
       }
       
-      // Check if 6 hours have passed since last claim
       const lastClaimDate = new Date(data[0].created_at);
       const now = new Date();
       const timeSinceClaim = now.getTime() - lastClaimDate.getTime();
       const sixHoursInMs = 6 * 60 * 60 * 1000;
       
-      return timeSinceClaim >= sixHoursInMs;
+      const isEligible = timeSinceClaim >= sixHoursInMs;
+      console.log("Time since last claim:", Math.floor(timeSinceClaim / (60 * 1000)), "minutes. User is", isEligible ? "eligible" : "not eligible");
+      
+      if (!isEligible) {
+        setLastClaimTime(lastClaimDate);
+        setIsCooldownActive(true);
+        setClaimCooldown(sixHoursInMs - timeSinceClaim);
+        const cooldownEnd = new Date(lastClaimDate.getTime() + sixHoursInMs);
+        setCooldownEndTime(cooldownEnd);
+      }
+      
+      return isEligible;
     } catch (error) {
       console.error('Error in canClaimPoints:', error);
       return false;
@@ -233,34 +256,38 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
   };
 
   const handleRequestMint = async () => {
-    if (!mintPoints) return;
+    if (!mintPoints || !userProfile) {
+      toast.error("Cannot claim points right now");
+      return;
+    }
     
     setIsClaimButtonLoading(true);
     
     try {
-      // First check if eligible to claim
       const isEligible = await canClaimPoints();
       
       if (!isEligible) {
         toast.error('You need to wait 6 hours between claims');
-        setIsCooldownActive(true);
-        await fetchLastClaimTime(); // Refresh the cooldown timer
         return;
       }
       
-      // If eligible, proceed with minting
-      await mintPoints(100);
-      toast.success('You received 100 PXB Points!');
+      const success = await mintPoints(100);
       
-      const now = new Date();
-      setLastClaimTime(now);
-      setIsCooldownActive(true);
-      setClaimCooldown(6 * 60 * 60 * 1000); // 6 hours in milliseconds
-      
-      const cooldownEnd = new Date(now.getTime() + (6 * 60 * 60 * 1000));
-      setCooldownEndTime(cooldownEnd);
-      
-      fetchTransactionHistory();
+      if (success) {
+        toast.success('You received 100 PXB Points!');
+        
+        const now = new Date();
+        setLastClaimTime(now);
+        setIsCooldownActive(true);
+        setClaimCooldown(6 * 60 * 60 * 1000); // 6 hours in milliseconds
+        
+        const cooldownEnd = new Date(now.getTime() + (6 * 60 * 60 * 1000));
+        setCooldownEndTime(cooldownEnd);
+        
+        await fetchTransactionHistory();
+      } else {
+        toast.error('Failed to claim points');
+      }
     } catch (error) {
       console.error('Error in handleRequestMint:', error);
       toast.error('Failed to claim points');
@@ -379,10 +406,10 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
                 PXB
               </div>
             </div>
-            <p className="text-xs text-gray-500">Available: {userProfile.pxbPoints.toLocaleString()} PXB</p>
+            <p className="text-xs text-gray-500">Available: {userProfile?.pxbPoints.toLocaleString()} PXB</p>
           </div>
           
-          <Button onClick={handleSendPoints} disabled={isSending || !recipientId || sendAmount <= 0 || sendAmount > userProfile.pxbPoints} className="w-full bg-gradient-to-r from-[#4B31DD] to-[#1E93FF] hover:from-[#3A28B0] hover:to-[#1776CC] text-white border-none">
+          <Button onClick={handleSendPoints} disabled={isSending || !recipientId || sendAmount <= 0 || (userProfile && sendAmount > userProfile.pxbPoints)} className="w-full bg-gradient-to-r from-[#4B31DD] to-[#1E93FF] hover:from-[#3A28B0] hover:to-[#1776CC] text-white border-none">
             {isSending ? <><Clock className="w-4 h-4 mr-2 animate-spin" /> Processing...</> : <><Send className="w-4 h-4 mr-2" /> Send PXB Points</>}
           </Button>
 

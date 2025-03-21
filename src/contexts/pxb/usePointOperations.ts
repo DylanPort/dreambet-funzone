@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,22 +13,46 @@ export const usePointOperations = (
   const [isSendingPoints, setIsSendingPoints] = useState(false);
   const [pxbIdGenerated, setPxbIdGenerated] = useState(false);
 
-  // Mint points
-  const mintPoints = useCallback(async (amount: number = 100) => {
+  const mintPoints = useCallback(async (amount: number = 100): Promise<boolean> => {
     if (!userProfile) {
       toast.error("You need to be logged in to mint points");
-      return;
+      return false;
     }
 
     setIsLoading(true);
     try {
-      // Optimistically update the user's balance locally
+      const { data, error: claimCheckError } = await supabase
+        .from('points_history')
+        .select('created_at')
+        .eq('user_id', userProfile.id)
+        .eq('action', 'mint')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (claimCheckError) {
+        console.error("Error checking last claim time:", claimCheckError);
+        toast.error("Failed to verify claim eligibility");
+        return false;
+      }
+      
+      if (data && data.length > 0) {
+        const lastClaimDate = new Date(data[0].created_at);
+        const now = new Date();
+        const timeSinceClaim = now.getTime() - lastClaimDate.getTime();
+        const sixHoursInMs = 6 * 60 * 60 * 1000;
+        
+        if (timeSinceClaim < sixHoursInMs) {
+          const remainingTime = Math.ceil((sixHoursInMs - timeSinceClaim) / (60 * 60 * 1000));
+          toast.error(`You need to wait ${remainingTime} more hour${remainingTime !== 1 ? 's' : ''} between claims`);
+          return false;
+        }
+      }
+
       setUserProfile(prev => prev ? {
         ...prev,
         pxbPoints: prev.pxbPoints + amount
       } : null);
 
-      // Update the user's balance in the database
       const { error } = await supabase
         .from('users')
         .update({ points: userProfile.pxbPoints + amount })
@@ -39,30 +62,42 @@ export const usePointOperations = (
         console.error("Error minting points:", error);
         toast.error("Failed to mint points");
 
-        // Revert the optimistic update if the database update fails
         setUserProfile(prev => prev ? {
           ...prev,
           pxbPoints: prev.pxbPoints - amount
         } : null);
+        return false;
       } else {
+        const { error: historyError } = await supabase
+          .from('points_history')
+          .insert({
+            user_id: userProfile.id,
+            amount: amount,
+            action: 'mint'
+          });
+        
+        if (historyError) {
+          console.error("Error recording mint history:", historyError);
+        }
+        
         toast.success(`Successfully minted ${amount} PXB points!`);
         await fetchUserProfile();
+        return true;
       }
     } catch (error) {
       console.error("Exception minting points:", error);
       toast.error("An unexpected error occurred");
 
-      // Revert the optimistic update if an exception occurs
       setUserProfile(prev => prev ? {
         ...prev,
         pxbPoints: prev.pxbPoints - amount
       } : null);
+      return false;
     } finally {
       setIsLoading(false);
     }
   }, [userProfile, setUserProfile, fetchUserProfile, setIsLoading]);
 
-  // Place bet
   const placeBet = useCallback(async (
     tokenMint: string,
     tokenName: string,
@@ -89,7 +124,6 @@ export const usePointOperations = (
 
     setIsLoading(true);
     try {
-      // Optimistically update the user's balance locally
       setUserProfile(prev => prev ? {
         ...prev,
         pxbPoints: prev.pxbPoints - betAmount
@@ -97,22 +131,20 @@ export const usePointOperations = (
 
       const expiresAt = new Date(Date.now() + duration * 60000).toISOString();
 
-      // Create a new bet in the database
-      // Fix: Use the correct field names according to the Supabase schema
       const { data: betData, error } = await supabase
         .from('bets')
         .insert({
-          bettor1_id: userProfile.id, // Fixed from user_id to bettor1_id
+          bettor1_id: userProfile.id,
           token_mint: tokenMint,
           token_name: tokenName,
           token_symbol: tokenSymbol,
-          sol_amount: betAmount, // Changed from bet_amount to sol_amount
-          prediction_bettor1: betType, // Changed from bet_type to prediction_bettor1
+          sol_amount: betAmount,
+          prediction_bettor1: betType,
           percentage_change: percentageChange,
           status: 'pending',
-          creator: userProfile.id, // Added creator field which is required
+          creator: userProfile.id,
           created_at: new Date().toISOString(),
-          duration: duration, // Duration in seconds
+          duration: duration
         })
         .select()
         .single();
@@ -121,7 +153,6 @@ export const usePointOperations = (
         console.error("Error placing bet:", error);
         toast.error("Failed to place bet");
 
-        // Revert the optimistic update if the database update fails
         setUserProfile(prev => prev ? {
           ...prev,
           pxbPoints: prev.pxbPoints + betAmount
@@ -130,7 +161,7 @@ export const usePointOperations = (
       }
 
       const newBet: PXBBet = {
-        id: betData.bet_id, // Fixed from id to bet_id
+        id: betData.bet_id,
         userId: userProfile.id,
         tokenMint: tokenMint,
         tokenName: tokenName,
@@ -141,10 +172,9 @@ export const usePointOperations = (
         status: 'pending',
         pointsWon: 0,
         createdAt: new Date().toISOString(),
-        expiresAt: expiresAt,
+        expiresAt: expiresAt
       };
 
-      // Update the bets state
       setBets(prevBets => [...prevBets, newBet]);
       toast.success(`Successfully placed bet of ${betAmount} PXB points!`);
       await fetchUserProfile();
@@ -153,7 +183,6 @@ export const usePointOperations = (
       console.error("Exception placing bet:", error);
       toast.error("An unexpected error occurred");
 
-      // Revert the optimistic update if an exception occurs
       setUserProfile(prev => prev ? {
         ...prev,
         pxbPoints: prev.pxbPoints + betAmount
@@ -163,25 +192,21 @@ export const usePointOperations = (
     }
   }, [userProfile, setBets, fetchUserProfile, setIsLoading]);
 
-  // Generate a PXB ID for the user - returns the ID so it can be displayed
   const generatePxbId = useCallback(() => {
     if (!userProfile) {
       toast.error("You need to be logged in to generate a PXB ID");
       return "";
     }
     
-    // If the user already has an ID, return that (it's permanent)
     if (userProfile.id) {
       setPxbIdGenerated(true);
       return userProfile.id;
     }
     
-    // Just return the existing ID - it was already created when the profile was created
     setPxbIdGenerated(true);
     return userProfile.id;
   }, [userProfile]);
 
-  // Send points to another user
   const sendPoints = useCallback(async (recipientId: string, amount: number): Promise<boolean> => {
     if (!userProfile) {
       toast.error("You need to be logged in to send points");
@@ -214,7 +239,6 @@ export const usePointOperations = (
       }
       
       if (data === true) {
-        // Update the user's balance locally
         setUserProfile(prev => prev ? {
           ...prev,
           pxbPoints: prev.pxbPoints - amount
