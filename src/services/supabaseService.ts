@@ -151,6 +151,12 @@ export const fetchOpenBets = async () => {
       // Convert status string to BetStatus type
       const status = bet.status as BetStatus;
       
+      // Determine outcome based on status
+      let outcome: 'win' | 'loss' | undefined;
+      if (status === 'completed' || status === 'closed') {
+        outcome = undefined;
+      }
+      
       // Transform bet data with enhanced status information
       const transformedBet: Bet = {
         id: bet.bet_id,
@@ -167,7 +173,7 @@ export const fetchOpenBets = async () => {
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
         transactionSignature: bet.transaction_signature || '',
-        outcome: bet.outcome // Add outcome field to check if bet was won or lost
+        outcome: outcome
       };
       
       console.log('Transformed bet:', transformedBet);
@@ -224,6 +230,12 @@ export const fetchUserBets = async (userWalletAddress: string) => {
       // Convert status string to BetStatus type
       const status = bet.status as BetStatus;
       
+      // Determine outcome based on status
+      let outcome: 'win' | 'loss' | undefined;
+      if (status === 'completed' || status === 'closed') {
+        outcome = undefined;
+      }
+      
       return {
         id: bet.bet_id,
         tokenId: bet.token_mint,
@@ -239,7 +251,7 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
         transactionSignature: bet.transaction_signature || '',
-        outcome: bet.outcome // Add outcome field
+        outcome: outcome
       };
     });
   } catch (error) {
@@ -444,4 +456,3 @@ export const acceptBet = async (betId: string) => {
     transactionSignature: data.transaction_signature || ''
   };
 };
-
