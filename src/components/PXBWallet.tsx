@@ -3,9 +3,21 @@ import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Copy, RefreshCw, QrCode, Clock } from 'lucide-react';
+import { Send, Copy, RefreshCw, QrCode, Clock, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow } from 'date-fns';
+
+// Define transaction types for activity
+interface Transaction {
+  id: string;
+  amount: number;
+  action: string;
+  created_at: string;
+  reference_id: string;
+  reference_name?: string;
+}
 
 const PXBWallet: React.FC = () => {
   const { userProfile, isLoading, sendPoints, generatePxbId, fetchUserProfile } = usePXBPoints();
@@ -17,6 +29,8 @@ const PXBWallet: React.FC = () => {
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const COOLDOWN_TIME = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 
   useEffect(() => {
@@ -47,6 +61,40 @@ const PXBWallet: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [lastClaimTime]);
+
+  // Fetch transaction history when the activity tab is opened
+  useEffect(() => {
+    if (activeTab === 'activity' && userProfile) {
+      fetchTransactionHistory();
+    }
+  }, [activeTab, userProfile]);
+
+  const fetchTransactionHistory = async () => {
+    if (!userProfile) return;
+    
+    setIsLoadingTransactions(true);
+    try {
+      // Fetch points history for the user
+      const { data, error } = await supabase
+        .from('points_history')
+        .select('*')
+        .eq('user_id', userProfile.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+        
+      if (error) {
+        console.error('Error fetching transaction history:', error);
+        toast.error('Failed to load transaction history');
+        return;
+      }
+      
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Unexpected error fetching transactions:', error);
+    } finally {
+      setIsLoadingTransactions(false);
+    }
+  };
 
   const handleSendPoints = async () => {
     if (!sendPoints) return;
@@ -119,6 +167,31 @@ const PXBWallet: React.FC = () => {
     } finally {
       setIsClaiming(false);
     }
+  };
+
+  // Get a friendly description for a transaction
+  const getTransactionDescription = (transaction: Transaction) => {
+    switch (transaction.action) {
+      case 'bet_placed':
+        return 'Placed bet';
+      case 'bet_won':
+        return 'Won bet';
+      case 'bet_lost':
+        return 'Lost bet';
+      case 'mint':
+        return 'Claimed points';
+      case 'transfer_sent':
+        return 'Sent points';
+      case 'transfer_received':
+        return 'Received points';
+      default:
+        return transaction.action.replace(/_/g, ' ');
+    }
+  };
+
+  // Format transaction time
+  const formatTransactionTime = (timestamp: string) => {
+    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   };
 
   if (isLoading) {
@@ -298,48 +371,91 @@ const PXBWallet: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="text-center mb-6">
-              <p className="text-indigo-300/70">
-                Claim free PXB points once every 6 hours
-              </p>
-            </div>
-            
-            {cooldownRemaining ? (
-              <div className="text-center mb-6">
-                <p className="text-xl font-bold mb-2">Next claim available in</p>
-                <div className="flex items-center justify-center space-x-2">
-                  <Clock className="w-5 h-5 text-indigo-300/70" />
-                  <span className="text-2xl font-mono">{formatCooldownTime(cooldownRemaining)}</span>
+            {/* Daily Claim Section */}
+            <div className="mb-6 pb-6 border-b border-indigo-900/30">
+              <div className="text-center mb-4">
+                <p className="text-indigo-300/70">
+                  Claim free PXB points once every 6 hours
+                </p>
+              </div>
+              
+              {cooldownRemaining ? (
+                <div className="text-center mb-4">
+                  <p className="text-lg font-medium mb-2">Next claim available in</p>
+                  <div className="flex items-center justify-center space-x-2">
+                    <Clock className="w-5 h-5 text-indigo-300/70" />
+                    <span className="text-xl font-mono">{formatCooldownTime(cooldownRemaining)}</span>
+                  </div>
                 </div>
-              </div>
-            ) : (
+              ) : (
+                <Button 
+                  onClick={handleClaimPoints} 
+                  disabled={isClaiming}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 mb-4"
+                  size="lg"
+                >
+                  {isClaiming ? (
+                    <div className="flex items-center">
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <span>Claiming...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 mr-2" />
+                      Claim 100 PXB Points
+                    </div>
+                  )}
+                </Button>
+              )}
+            </div>
+
+            {/* Transaction History */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
+              
+              {isLoadingTransactions ? (
+                <div className="flex justify-center py-8">
+                  <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : transactions.length > 0 ? (
+                <div className="space-y-3">
+                  {transactions.map((tx) => (
+                    <div 
+                      key={tx.id} 
+                      className="flex items-center justify-between p-3 bg-indigo-900/20 rounded-lg hover:bg-indigo-800/20 transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+                          tx.amount >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {tx.amount >= 0 ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{getTransactionDescription(tx)}</p>
+                          <p className="text-xs text-indigo-300/70">{formatTransactionTime(tx.created_at)}</p>
+                        </div>
+                      </div>
+                      <div className={`font-medium ${tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {tx.amount >= 0 ? '+' : ''}{tx.amount} PXB
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-indigo-300/50">
+                  <p>No recent transactions</p>
+                </div>
+              )}
+              
               <Button 
-                onClick={handleClaimPoints} 
-                disabled={isClaiming}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 mb-4"
-                size="lg"
+                variant="outline" 
+                className="w-full mt-4 border-indigo-900/50 text-indigo-300/70 hover:text-white hover:bg-indigo-900/30"
+                onClick={fetchTransactionHistory}
+                disabled={isLoadingTransactions}
               >
-                {isClaiming ? (
-                  <div className="flex items-center">
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    <span>Claiming...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 mr-2" />
-                    Claim 100 PXB Points
-                  </div>
-                )}
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh Activity
               </Button>
-            )}
-            
-            <div className="flex justify-between items-center py-2 px-3 bg-indigo-900/20 rounded-lg mt-4">
-              <div className="flex items-center">
-                <span className="text-sm">Locked:</span>
-              </div>
-              <span className="text-sm font-medium">
-                {cooldownRemaining ? formatCooldownTime(cooldownRemaining) : '0:00'}
-              </span>
             </div>
           </motion.div>
         )}
