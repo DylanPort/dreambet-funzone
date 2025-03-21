@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -68,9 +67,9 @@ const BetDetails = () => {
           setBet(betData);
           setTokenDetails(data.tokens);
           
-          // Fetch GMGN data for the token
+          // Fetch real GMGN data for the token
           if (data.token_mint) {
-            fetchGMGNChartData(data.token_mint);
+            fetchTokenChartData(data.token_mint);
           }
         }
       } catch (error) {
@@ -84,35 +83,61 @@ const BetDetails = () => {
     fetchBetDetails();
   }, [id]);
 
-  const fetchGMGNChartData = async (tokenMint: string) => {
+  const fetchTokenChartData = async (tokenMint: string) => {
     setLoadingChart(true);
     try {
-      // Fetch price data from GMGN
-      const tokenData = await fetchGMGNTokenData(tokenMint);
+      // Use the GMGN API to fetch real price history data
+      const corsProxyUrl = 'https://corsproxy.io/?';
+      const apiUrl = `https://www.gmgn.cc/api/token/sol/${tokenMint}/chart?range=1d`;
+      const encodedApiUrl = encodeURIComponent(apiUrl);
       
-      // If we have price data, create sample chart data
-      if (tokenData && tokenData.price) {
-        const now = new Date();
-        const sampleData = [];
-        let currentPrice = tokenData.price;
+      console.log(`Fetching GMGN chart data: ${corsProxyUrl}${encodedApiUrl}`);
+      
+      const response = await fetch(`${corsProxyUrl}${encodedApiUrl}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch chart data: ${response.status}`);
+      }
+      
+      const chartResponse = await response.json();
+      console.log("GMGN chart data:", chartResponse);
+      
+      if (chartResponse.data && Array.isArray(chartResponse.data)) {
+        // Transform the GMGN chart data to our required format
+        const formattedData = chartResponse.data.map((point: any) => ({
+          time: new Date(point.time * 1000).toISOString(),
+          price: point.price || point.market_cap || 0
+        }));
         
-        // Generate sample data points based on the current price
-        for (let i = -30; i <= 0; i++) {
-          // Add some randomness to create a realistic chart
-          const randomFactor = 1 + ((Math.random() - 0.5) * 0.02); // +/- 1% fluctuation
-          const time = new Date(now);
-          time.setMinutes(time.getMinutes() + i * 5);
+        setChartData(formattedData);
+      } else {
+        console.warn("Invalid chart data format from GMGN:", chartResponse);
+        
+        // Fall back to tokenData if chart data is not available
+        const tokenData = await fetchGMGNTokenData(tokenMint);
+        if (tokenData && tokenData.price) {
+          console.log("Using token price data instead:", tokenData);
           
-          sampleData.push({
-            time: time.toISOString(),
-            price: currentPrice * randomFactor
-          });
+          // Create a simple chart with current price repeated
+          const now = new Date();
+          const simpleData = [];
+          
+          for (let i = -10; i <= 0; i++) {
+            const time = new Date(now);
+            time.setMinutes(time.getMinutes() + i * 10);
+            
+            simpleData.push({
+              time: time.toISOString(),
+              price: tokenData.price
+            });
+          }
+          
+          setChartData(simpleData);
         }
-        
-        setChartData(sampleData);
       }
     } catch (error) {
-      console.error('Error fetching GMGN chart data:', error);
+      console.error('Error fetching token chart data:', error);
+      toast.error('Could not load chart data');
     } finally {
       setLoadingChart(false);
     }
@@ -146,13 +171,11 @@ const BetDetails = () => {
     );
   }
   
-  // Determine prediction display
   const isPredictionUp = ['migrate', 'up', 'moon'].includes(bet.prediction);
   const predictionDisplay = isPredictionUp ? 'MOON' : 'DIE';
   const predictionColor = isPredictionUp ? 'text-green-400' : 'text-red-400';
   const predictionBgColor = isPredictionUp ? 'bg-green-400/10' : 'bg-red-400/10';
   
-  // Determine status display
   let statusDisplay = bet.status.toUpperCase();
   let statusClass = 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30';
   
@@ -218,10 +241,11 @@ const BetDetails = () => {
                 <PriceChart 
                   data={chartData.length > 0 ? chartData : undefined} 
                   color={isPredictionUp ? "#10b981" : "#ef4444"} 
+                  isLoading={loadingChart}
                 />
               )}
               <div className="absolute top-2 right-2 text-xs text-dream-foreground/50 bg-dream-background/50 px-2 py-1 rounded">
-                GMGN Data
+                GMGN Live Data
               </div>
             </div>
           </div>
