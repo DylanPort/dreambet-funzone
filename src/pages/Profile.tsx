@@ -17,10 +17,23 @@ import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
 import { updateUsername } from '@/services/userService';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Loader2, Trophy, Clock, Check, X, Send, ArrowUpDown, Sparkles, Orbit, Copy } from 'lucide-react';
+import { Coins, Loader2, Trophy, Clock, Check, X, Send, ArrowUpDown, Sparkles, Orbit, Copy, User, Pencil } from 'lucide-react';
 import PXBWallet from '@/components/PXBWallet';
 import { PXBBet } from '@/types/pxb';
 import Navbar from '@/components/Navbar';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+
 interface CombinedBet {
   betType: 'PXB' | 'SOL';
   id: string;
@@ -39,6 +52,7 @@ interface CombinedBet {
   transactionSignature?: string;
   currentMarketCap?: number;
 }
+
 const ProfilePage = () => {
   const {
     publicKey,
@@ -46,6 +60,7 @@ const ProfilePage = () => {
   } = useWallet();
   const [username, setUsername] = useState('');
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+  const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);
   const {
     bets: walletBets,
     isLoading: isLoadingWalletBets,
@@ -63,6 +78,7 @@ const ProfilePage = () => {
     fetchUserBets,
     generatePxbId
   } = usePXBPoints();
+
   const loadDetailedBets = async () => {
     setIsLoadingAllBets(true);
     try {
@@ -79,12 +95,14 @@ const ProfilePage = () => {
       setIsLoadingAllBets(false);
     }
   };
+
   useEffect(() => {
     if (connected && publicKey) {
       fetchUserProfile();
       loadDetailedBets();
     }
   }, [connected, publicKey, userProfile?.id]);
+
   useEffect(() => {
     if (userProfile?.username) {
       setUsername(userProfile.username);
@@ -95,6 +113,7 @@ const ProfilePage = () => {
       setDisplayedPxbId(userProfile.id);
     }
   }, [userProfile, publicKey]);
+
   useEffect(() => {
     if (walletBets && pxbBets) {
       const solBets = walletBets.map(bet => ({
@@ -123,7 +142,16 @@ const ProfilePage = () => {
       setCombinedBets(combined);
     }
   }, [walletBets, pxbBets]);
-  const handleUpdateUsername = async () => {
+
+  const handleOpenUsernameDialog = () => {
+    setIsUsernameDialogOpen(true);
+  };
+
+  const handleCloseUsernameDialog = () => {
+    setIsUsernameDialogOpen(false);
+  };
+
+  const handleUpdateUsernameSubmit = async () => {
     if (!connected || !publicKey) {
       toast.error("Please connect your wallet first");
       return;
@@ -139,6 +167,7 @@ const ProfilePage = () => {
       if (success) {
         toast.success("Username updated successfully");
         await fetchUserProfile();
+        handleCloseUsernameDialog();
       }
     } catch (error) {
       console.error("Error updating username:", error);
@@ -147,6 +176,7 @@ const ProfilePage = () => {
       setIsUpdatingUsername(false);
     }
   };
+
   const handleGeneratePxbId = async () => {
     if (!generatePxbId || !publicKey) return;
     setIsGeneratingId(true);
@@ -165,6 +195,7 @@ const ProfilePage = () => {
       setIsGeneratingId(false);
     }
   };
+
   const handleCopyPxbId = () => {
     if (!displayedPxbId) return;
     navigator.clipboard.writeText(displayedPxbId);
@@ -172,6 +203,7 @@ const ProfilePage = () => {
     toast.success("PXB ID copied to clipboard!");
     setTimeout(() => setPxbIdCopied(false), 2000);
   };
+
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString(undefined, {
       year: 'numeric',
@@ -181,6 +213,7 @@ const ProfilePage = () => {
       minute: '2-digit'
     });
   };
+
   const getStatusBadge = (status: string, prediction: string) => {
     if (status === 'completed') {
       return <Badge className="bg-green-500/80 hover:bg-green-500">
@@ -200,6 +233,7 @@ const ProfilePage = () => {
         </Badge>;
     }
   };
+
   const getBadgeForBetType = (betType: 'PXB' | 'SOL') => {
     if (betType === 'PXB') {
       return <Badge className="bg-purple-500/80 hover:bg-purple-500">
@@ -211,6 +245,7 @@ const ProfilePage = () => {
         </Badge>;
     }
   };
+
   return <>
       <Navbar />
       <div className="container mx-auto py-8 px-4 my-[99px]">
@@ -240,14 +275,61 @@ const ProfilePage = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <div className="flex gap-2">
-                        <Input id="username" value={username} onChange={e => setUsername(e.target.value)} placeholder="Enter username" />
-                        <Button onClick={handleUpdateUsername} disabled={isUpdatingUsername} size="sm">
-                          {isUpdatingUsername ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="username">Username</Label>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={handleOpenUsernameDialog} 
+                          className="h-8 w-8 p-0 text-dream-foreground/50 hover:text-dream-foreground/90 hover:bg-dream-accent1/10"
+                        >
+                          <Pencil className="h-4 w-4" />
                         </Button>
                       </div>
+                      <div className="px-3 py-2 bg-dream-background/40 border border-dream-accent1/10 rounded-md flex items-center group hover:border-dream-accent1/30 transition-all">
+                        <User className="h-4 w-4 mr-2 text-dream-foreground/50 group-hover:text-dream-foreground/70" />
+                        <span className="text-sm text-dream-foreground/90 font-medium">
+                          {username || "Set your username"}
+                        </span>
+                      </div>
                     </div>
+                    
+                    <Dialog open={isUsernameDialogOpen} onOpenChange={setIsUsernameDialogOpen}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Update Your Username</DialogTitle>
+                          <DialogDescription>
+                            Choose a unique username that others will recognize you by.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="username-input">Username</Label>
+                              <Input
+                                id="username-input"
+                                placeholder="Enter your username"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={handleCloseUsernameDialog}>Cancel</Button>
+                          <Button 
+                            onClick={handleUpdateUsernameSubmit} 
+                            disabled={isUpdatingUsername || !username.trim()}
+                          >
+                            {isUpdatingUsername ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>
+                            ) : (
+                              <>Save</>
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                     
                     <div className="space-y-2">
                       <Label htmlFor="pxb-id">PXB ID</Label>
@@ -365,6 +447,7 @@ const ProfilePage = () => {
       </div>
     </>;
 };
+
 interface BetsTableProps {
   bets: CombinedBet[];
   isLoading: boolean;
@@ -372,6 +455,7 @@ interface BetsTableProps {
   getStatusBadge: (status: string, prediction: string) => React.ReactNode;
   getBadgeForBetType: (betType: 'PXB' | 'SOL') => React.ReactNode;
 }
+
 const BetsTable: React.FC<BetsTableProps> = ({
   bets,
   isLoading,
@@ -419,4 +503,5 @@ const BetsTable: React.FC<BetsTableProps> = ({
       </Table>
     </div>;
 };
+
 export default ProfilePage;
