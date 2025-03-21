@@ -11,6 +11,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import CountdownTimer from './CountdownTimer';
 
 interface PXBWalletProps {
   userProfile: UserProfile | null;
@@ -46,6 +47,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
   const [lastClaimTime, setLastClaimTime] = useState<Date | null>(null);
   const [claimCooldown, setClaimCooldown] = useState<number>(0);
   const [isCooldownActive, setIsCooldownActive] = useState<boolean>(false);
+  const [cooldownEndTime, setCooldownEndTime] = useState<Date | null>(null);
 
   useEffect(() => {
     if (userProfile && generatePxbId) {
@@ -59,6 +61,9 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
     let intervalId: number;
     
     if (isCooldownActive && lastClaimTime) {
+      const cooldownEnd = new Date(lastClaimTime.getTime() + (6 * 60 * 60 * 1000));
+      setCooldownEndTime(cooldownEnd);
+      
       intervalId = window.setInterval(() => {
         const now = new Date();
         const timeSinceClaim = now.getTime() - lastClaimTime.getTime();
@@ -68,6 +73,7 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
         if (remainingTime <= 0) {
           setIsCooldownActive(false);
           setClaimCooldown(0);
+          setCooldownEndTime(null);
           clearInterval(intervalId);
         } else {
           setClaimCooldown(remainingTime);
@@ -197,6 +203,9 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
       setLastClaimTime(now);
       setIsCooldownActive(true);
       setClaimCooldown(6 * 60 * 60 * 1000); // 6 hours in milliseconds
+      
+      const cooldownEnd = new Date(now.getTime() + (6 * 60 * 60 * 1000));
+      setCooldownEndTime(cooldownEnd);
       
       fetchTransactionHistory();
     } catch (error) {
@@ -328,13 +337,20 @@ const PXBWallet: React.FC<PXBWalletProps> = ({
               size="sm" 
               onClick={handleRequestMint} 
               disabled={isCooldownActive} 
-              className={`w-full border-dashed border-gray-600 bg-black/20 hover:bg-black/30 text-gray-400 ${isCooldownActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full border-dashed border-gray-600 bg-black/20 hover:bg-black/30 text-gray-400 ${isCooldownActive ? 'opacity-75 cursor-not-allowed' : ''}`}
             >
-              {isCooldownActive ? (
-                <>
+              {isCooldownActive && cooldownEndTime ? (
+                <div className="w-full flex items-center justify-center">
                   <Lock className="w-4 h-4 mr-2 text-gray-400" />
-                  Claim again in {formatCooldownTime(claimCooldown)}
-                </>
+                  <span className="mr-2">Locked:</span>
+                  <CountdownTimer 
+                    endTime={cooldownEndTime} 
+                    onComplete={() => {
+                      setIsCooldownActive(false);
+                      setClaimCooldown(0);
+                    }} 
+                  />
+                </div>
               ) : (
                 <>
                   <Coins className="w-4 h-4 mr-2 text-gray-400" />
