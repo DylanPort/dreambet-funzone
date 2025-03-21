@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +24,7 @@ import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
 import { updateUsername } from '@/services/userService';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Loader2, Trophy, Clock, Check, X, Send, ArrowUpDown, Sparkles, Orbit } from 'lucide-react';
+import { Coins, Loader2, Trophy, Clock, Check, X, Send, ArrowUpDown, Sparkles, Orbit, Copy } from 'lucide-react';
 import PXBWallet from '@/components/PXBWallet';
 import { PXBBet } from '@/types/pxb';
 
@@ -57,18 +56,17 @@ const ProfilePage = () => {
   const [isLoadingAllBets, setIsLoadingAllBets] = useState(true);
   const [isGeneratingId, setIsGeneratingId] = useState(false);
   const [pxbIdCopied, setPxbIdCopied] = useState(false);
+  const [displayedPxbId, setDisplayedPxbId] = useState<string>('');
 
   const { userProfile, bets: pxbBets, fetchUserProfile, fetchUserBets, generatePxbId } = usePXBPoints();
 
   const loadDetailedBets = async () => {
     setIsLoadingAllBets(true);
     try {
-      // Load regular SOL bets
       if (publicKey) {
         await loadBets();
       }
       
-      // Load PXB bets
       if (userProfile) {
         await fetchUserBets();
       }
@@ -80,7 +78,6 @@ const ProfilePage = () => {
     }
   };
 
-  // Fetch user data and bets when profile loads
   useEffect(() => {
     if (connected && publicKey) {
       fetchUserProfile();
@@ -88,16 +85,18 @@ const ProfilePage = () => {
     }
   }, [connected, publicKey, userProfile?.id]);
 
-  // Set username from user profile
   useEffect(() => {
     if (userProfile?.username) {
       setUsername(userProfile.username);
     } else if (publicKey) {
       setUsername(publicKey.toString().substring(0, 8));
     }
+    
+    if (userProfile?.id) {
+      setDisplayedPxbId(userProfile.id);
+    }
   }, [userProfile, publicKey]);
 
-  // Combine SOL and PXB bets
   useEffect(() => {
     if (walletBets && pxbBets) {
       const solBets = walletBets.map(bet => ({
@@ -121,12 +120,11 @@ const ProfilePage = () => {
         status: bet.status === 'pending' ? 'open' : 
                 bet.status === 'won' ? 'completed' : 
                 bet.status === 'lost' ? 'expired' : 'open',
-        duration: 30, // Default duration in minutes
+        duration: 30,
         onChainBetId: `pxb-${bet.id}`,
         transactionSignature: `pxb-tx-${bet.id}`
       }));
       
-      // Combine and sort by timestamp (newest first)
       const combined = [...solBets, ...formattedPxbBets].sort((a, b) => b.timestamp - a.timestamp);
       setCombinedBets(combined);
     }
@@ -158,24 +156,35 @@ const ProfilePage = () => {
   };
 
   const handleGeneratePxbId = async () => {
-    if (!generatePxbId || !userProfile) return;
+    if (!generatePxbId || !publicKey) return;
     
     setIsGeneratingId(true);
     try {
       const id = generatePxbId();
-      toast.success("New PXB ID generated!");
+      setDisplayedPxbId(id);
       
-      // Show copied notification briefly
       navigator.clipboard.writeText(id);
       setPxbIdCopied(true);
       setTimeout(() => setPxbIdCopied(false), 2000);
       
+      toast.success("Your permanent PXB ID has been generated and copied to clipboard!");
+      
+      await fetchUserProfile();
     } catch (error) {
       console.error("Error generating PXB ID:", error);
       toast.error("Failed to generate PXB ID");
     } finally {
       setIsGeneratingId(false);
     }
+  };
+
+  const handleCopyPxbId = () => {
+    if (!displayedPxbId) return;
+    
+    navigator.clipboard.writeText(displayedPxbId);
+    setPxbIdCopied(true);
+    toast.success("PXB ID copied to clipboard!");
+    setTimeout(() => setPxbIdCopied(false), 2000);
   };
 
   const formatDate = (timestamp: number) => {
@@ -287,34 +296,48 @@ const ProfilePage = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="pxb-id">PXB ID</Label>
-                    <Button
-                      onClick={handleGeneratePxbId}
-                      disabled={isGeneratingId || !generatePxbId}
-                      className="w-full bg-gradient-to-r from-[#6E59A5] to-[#8B5CF6] hover:from-[#7E69AB] hover:to-[#9B87F5] text-white border-none relative overflow-hidden group"
-                    >
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-40 h-40 rounded-full bg-white/10 absolute animate-ping opacity-0 group-hover:opacity-30 duration-1000" />
-                        <div className="w-32 h-32 rounded-full bg-white/20 absolute animate-ping opacity-0 group-hover:opacity-30 delay-100 duration-1000" />
-                        <div className="w-24 h-24 rounded-full bg-white/30 absolute animate-ping opacity-0 group-hover:opacity-30 delay-200 duration-1000" />
+                    {!displayedPxbId ? (
+                      <Button
+                        onClick={handleGeneratePxbId}
+                        disabled={isGeneratingId || !generatePxbId}
+                        className="w-full bg-gradient-to-r from-[#6E59A5] to-[#8B5CF6] hover:from-[#7E69AB] hover:to-[#9B87F5] text-white border-none relative overflow-hidden group"
+                      >
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-40 h-40 rounded-full bg-white/10 absolute animate-ping opacity-0 group-hover:opacity-30 duration-1000" />
+                          <div className="w-32 h-32 rounded-full bg-white/20 absolute animate-ping opacity-0 group-hover:opacity-30 delay-100 duration-1000" />
+                          <div className="w-24 h-24 rounded-full bg-white/30 absolute animate-ping opacity-0 group-hover:opacity-30 delay-200 duration-1000" />
+                        </div>
+                        
+                        {isGeneratingId ? (
+                          <div className="flex items-center justify-center relative z-10">
+                            <Orbit className="h-5 w-5 mr-2 animate-spin" />
+                            <span>Generating...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center relative z-10">
+                            <Sparkles className="h-5 w-5 mr-2" />
+                            <span>Generate PXB ID</span>
+                          </div>
+                        )}
+                      </Button>
+                    ) : (
+                      <div className="bg-dream-background/40 border border-dream-accent1/10 rounded-md p-2 flex items-center justify-between group hover:border-purple-500/30 transition-all">
+                        <div className="flex-1">
+                          <span className="text-sm font-mono text-dream-foreground/90 truncate block">
+                            {displayedPxbId}
+                          </span>
+                          <p className="text-xs text-dream-foreground/50 mt-1">Your permanent ID for receiving PXB points</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-dream-foreground/50 hover:text-dream-foreground/90 hover:bg-purple-500/10"
+                          onClick={handleCopyPxbId}
+                        >
+                          {pxbIdCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </Button>
                       </div>
-                      
-                      {isGeneratingId ? (
-                        <div className="flex items-center justify-center relative z-10">
-                          <Orbit className="h-5 w-5 mr-2 animate-spin" />
-                          <span>Generating...</span>
-                        </div>
-                      ) : pxbIdCopied ? (
-                        <div className="flex items-center justify-center relative z-10">
-                          <Check className="h-5 w-5 mr-2" />
-                          <span>Copied to clipboard!</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center relative z-10">
-                          <Sparkles className="h-5 w-5 mr-2" />
-                          <span>Generate PXB ID</span>
-                        </div>
-                      )}
-                    </Button>
+                    )}
                   </div>
                   
                   <Separator className="my-4" />
