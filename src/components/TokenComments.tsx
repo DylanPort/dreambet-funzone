@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,10 @@ interface Comment {
 
 interface TokenCommentsProps {
   tokenId: string;
-  tokenName: string;
+  tokenName?: string; // Make tokenName optional
 }
 
-const TokenComments: React.FC<TokenCommentsProps> = ({ tokenId, tokenName }) => {
+const TokenComments: React.FC<TokenCommentsProps> = ({ tokenId, tokenName = "this token" }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);

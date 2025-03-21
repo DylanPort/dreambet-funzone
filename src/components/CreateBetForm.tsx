@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -9,10 +10,27 @@ import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import PXBBetsList from './PXBBetsList';
 
-const CreateBetForm = () => {
-  const { tokenId } = useParams();
+interface CreateBetFormProps {
+  tokenId?: string;
+  tokenName?: string;
+  tokenSymbol?: string;
+  onBetCreated?: () => void;
+  onCancel?: () => void;
+  onSuccess?: () => void;
+}
+
+const CreateBetForm: React.FC<CreateBetFormProps> = ({ 
+  tokenId: propTokenId,
+  tokenName,
+  tokenSymbol,
+  onBetCreated,
+  onCancel,
+  onSuccess
+}) => {
+  const { tokenId: routeTokenId } = useParams();
   const navigate = useNavigate();
   const { connected, publicKey } = useWallet();
+  const tokenId = propTokenId || routeTokenId;
 
   const [betType, setBetType] = useState<'up' | 'down'>('up');
   const [percentageChange, setPercentageChange] = useState(5);
@@ -48,8 +66,24 @@ const CreateBetForm = () => {
     toast.success(`Bet placed: ${betType} by ${percentageChange}% with ${amount} PXB`);
     // Example: await createBet(tokenId, betType, percentageChange, amount, publicKey.toString());
 
+    // Call the onBetCreated callback if provided
+    if (onBetCreated) {
+      onBetCreated();
+    }
+
+    // Call onSuccess if provided
+    if (onSuccess) {
+      onSuccess();
+    }
+
     // Redirect or update UI as needed
     navigate('/pxb-space');
+  };
+  
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
   };
   
   return (
@@ -99,7 +133,14 @@ const CreateBetForm = () => {
             />
           </div>
           
-          <Button type="submit" className="w-full">Place Bet</Button>
+          <div className="flex space-x-4">
+            <Button type="submit" className="flex-1">Place Bet</Button>
+            {onCancel && (
+              <Button type="button" variant="outline" onClick={handleCancel} className="flex-1">
+                Cancel
+              </Button>
+            )}
+          </div>
         </form>
       </div>
       

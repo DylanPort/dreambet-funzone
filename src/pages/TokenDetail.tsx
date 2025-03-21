@@ -94,7 +94,7 @@ const TokenDetail = () => {
                   <RecentTokenTrades tokenId={tokenId} />
                 </TabsContent>
                 <TabsContent value="comments">
-                  <TokenComments tokenId={tokenId} />
+                  <TokenComments tokenId={tokenId} tokenName={token.name} />
                 </TabsContent>
               </Tabs>
             </div>
@@ -126,7 +126,7 @@ const TokenDetail = () => {
                 <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
                 Active Bets
               </h2>
-              <OpenBetsList tokenId={tokenId} maxItems={5} />
+              <OpenBetsList />
             </div>
             
             {connected && (
@@ -135,7 +135,7 @@ const TokenDetail = () => {
             
             <div className="glass-panel p-6">
               <h2 className="text-lg font-semibold mb-4">Your Active Bets</h2>
-              <ActiveBetsList tokenId={tokenId} maxItems={5} />
+              <ActiveBetsList />
             </div>
           </div>
         </div>
