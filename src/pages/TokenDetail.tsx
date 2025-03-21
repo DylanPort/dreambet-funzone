@@ -11,7 +11,6 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import CreateBetForm from '@/components/CreateBetForm';
 import BetCard from '@/components/BetCard';
 import { useToast } from '@/hooks/use-toast';
-import { toast as sonnerToast } from 'sonner';
 import { usePumpPortalWebSocket, getLatestPriceFromTrades, formatRawTrade, RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
@@ -32,14 +31,121 @@ const TokenChart = ({
   onPriceUpdate,
   setShowCreateBet
 }) => {
+  const [timeInterval, setTimeInterval] = useState('15');
+  const [chartTheme, setChartTheme] = useState('dark');
+  
+  const handleRefreshChart = () => {
+    refreshData();
+  };
+  
+  useEffect(() => {
+    const handleMessage = event => {
+      try {
+        if (event.data && typeof event.data === 'string') {
+          const data = JSON.parse(event.data);
+          if (data.type === 'price_update' && data.price) {
+            onPriceUpdate(data.price, data.change || 0);
+          }
+        }
+      } catch (error) {
+        console.error("Error handling chart message:", error);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onPriceUpdate]);
+  
+  const chartUrl = `https://www.gmgn.cc/kline/sol/${tokenId}?theme=${chartTheme}&interval=${timeInterval}&send_price=true`;
+  
   return (
-    <div>
-      {/* Placeholder for TokenChart component */}
-      {/* Implement your chart logic here */}
-      <p>Token Chart for {tokenName} (ID: {tokenId})</p>
-      {loading && <p>Loading chart data...</p>}
-      <button onClick={refreshData}>Refresh Data</button>
-      <button onClick={() => setShowCreateBet(true)}>Create Bet</button>
+    <div className="glass-panel p-6 mb-8">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-display font-bold">Price Chart</h2>
+        <div className="flex gap-4">
+          <div className="flex items-center gap-2">
+            <label htmlFor="interval" className="text-sm text-dream-foreground/70">Interval:</label>
+            <select id="interval" value={timeInterval} onChange={e => setTimeInterval(e.target.value)} className="bg-black/20 border border-dream-accent2/20 rounded px-2 py-1 text-sm">
+              <option value="1S">1 Second</option>
+              <option value="1">1 Minute</option>
+              <option value="5">5 Minutes</option>
+              <option value="15">15 Minutes</option>
+              <option value="60">1 Hour</option>
+              <option value="240">4 Hours</option>
+              <option value="720">12 Hours</option>
+              <option value="1D">1 Day</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <a href={`https://dexscreener.com/solana/${tokenId}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm">
+              <ExternalLink className="w-3 h-3 mr-1" />
+              DexScreener
+            </a>
+            <button onClick={handleRefreshChart} className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm" disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="w-full h-[400px] bg-black/10 rounded-lg overflow-hidden relative">
+        <iframe src={chartUrl} className="w-full h-full border-0" title="GMGN Price Chart" loading="lazy"></iframe>
+      </div>
+      
+      <div className="mt-8 grid grid-cols-2 gap-4">
+        <div 
+          className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
+          onClick={() => {
+            const moonPredictionEvent = new CustomEvent('predictionSelected', {
+              detail: {
+                prediction: 'moon',
+                percentageChange: 80,
+                defaultBetAmount: 10,
+                defaultDuration: 30
+              }
+            });
+            window.dispatchEvent(moonPredictionEvent);
+            
+            refreshData('up');
+            setShowCreateBet(true);
+          }}
+        >
+          <img 
+            src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" 
+            alt="MOON" 
+            className="w-20 h-20 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]"
+          />
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-cyan-400/20 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent">MOON</span>
+        </div>
+        
+        <div 
+          className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30"
+          onClick={() => {
+            const dustPredictionEvent = new CustomEvent('predictionSelected', {
+              detail: {
+                prediction: 'die',
+                percentageChange: 50,
+                defaultBetAmount: 10,
+                defaultDuration: 30
+              }
+            });
+            window.dispatchEvent(dustPredictionEvent);
+            
+            refreshData('down');
+            setShowCreateBet(true);
+          }}
+        >
+          <img 
+            src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" 
+            alt="DUST" 
+            className="w-20 h-20 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]"
+          />
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-cyan-400/20 to-magenta-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+          <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent">DUST</span>
+        </div>
+      </div>
     </div>
   );
 };
@@ -122,16 +228,6 @@ const TokenDetail = () => {
       }));
     }
   }, []);
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text)
-      .then(() => {
-        sonnerToast.success(`${label} copied to clipboard`);
-      })
-      .catch(() => {
-        sonnerToast.error('Failed to copy to clipboard');
-      });
-  };
-
   useEffect(() => {
     const loadToken = async () => {
       if (!id) return;
@@ -311,355 +407,699 @@ const TokenDetail = () => {
     };
     loadToken();
   }, [id, toast, pumpPortal.connected, pumpPortal.recentTokens]);
+  useEffect(() => {
+    if (id && pumpPortal.recentTrades[id]) {
+      const trades = pumpPortal.recentTrades[id];
+      if (trades.length > 0) {
+        const latestPrice = getLatestPriceFromTrades(trades);
+        const currentPrice = token?.currentPrice || 0;
+        if (Math.abs(latestPrice - currentPrice) / (currentPrice || 1) > 0.001) {
+          const priceChange = currentPrice > 0 ? (latestPrice - currentPrice) / currentPrice * 100 : 0;
+          updateTokenPrice(latestPrice, priceChange);
+          setPriceData(current => {
+            const newPoint = {
+              time: new Date().toISOString(),
+              price: latestPrice
+            };
+            return [...current, newPoint].slice(-60);
+          });
+        }
+        if (Date.now() - lastMetricsUpdateRef.current > 5000) {
+          if (pumpPortal.tokenMetrics[id]) {
+            const metrics = pumpPortal.tokenMetrics[id];
+            updateTokenMetrics({
+              marketCap: metrics.market_cap,
+              volume24h: metrics.volume_24h,
+              liquidity: metrics.liquidity,
+              holders: metrics.holders
+            });
+          }
+        }
+        const lastPrice = priceData[priceData.length - 1]?.price || 0;
+        if (lastPrice > 0) {
+          const percentChange = (latestPrice - lastPrice) / lastPrice * 100;
+          if (Math.abs(percentChange) > 5) {
+            toast({
+              title: `Price ${percentChange > 0 ? 'up' : 'down'} ${Math.abs(percentChange).toFixed(1)}%`,
+              description: `${token?.symbol || 'Token'} is now $${formatPrice(latestPrice)}`,
+              variant: percentChange > 0 ? "default" : "destructive"
+            });
+          }
+        }
+      }
+    }
+  }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
+  useEffect(() => {
+    if (id && pumpPortal.tokenMetrics[id]) {
+      const metrics = pumpPortal.tokenMetrics[id];
+      updateTokenMetrics({
+        marketCap: metrics.market_cap,
+        volume24h: metrics.volume_24h,
+        liquidity: metrics.liquidity,
+        holders: metrics.holders
+      });
+      console.log("Updated token metrics from WebSocket:", metrics);
+    }
+  }, [id, pumpPortal.tokenMetrics, updateTokenMetrics]);
+  useEffect(() => {
+    if (id) {
+      const stopPolling = startDexScreenerPolling(id, data => {
+        if (data) {
+          updateTokenPrice(data.priceUsd, data.priceChange24h);
+          updateTokenMetrics({
+            marketCap: data.marketCap,
+            volume24h: data.volume24h,
+            liquidity: data.liquidity
+          });
+        }
+      }, 30000);
+      dexScreenerCleanupRef.current = stopPolling;
+      return () => {
+        if (dexScreenerCleanupRef.current) {
+          dexScreenerCleanupRef.current();
+          dexScreenerCleanupRef.current = null;
+        }
+      };
+    }
+  }, [id, updateTokenPrice, updateTokenMetrics]);
+  useEffect(() => {
+    if (bets.length > 0) {
+      const activeBets = bets.filter(bet => bet.status === 'open' || bet.status === 'matched');
+      if (activeBets.length > activeBetsCount) {
+        const latestBet = [...activeBets].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+        setNewActiveBet(latestBet);
+        toast({
+          title: "New Active Bet!",
+          description: `A ${latestBet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`,
+          variant: "default"
+        });
+      }
+      setActiveBetsCount(activeBets.length);
+    }
+  }, [bets, activeBetsCount, toast, token]);
+  const refreshData = useCallback(async (betType = null) => {
+    if (!id) return;
+    
+    try {
+      setLoading(true);
+      
+      const recentTokens = pumpPortal.recentTokens || [];
+      const webSocketToken = recentTokens.find(t => t.token_mint === id);
+      
+      if (webSocketToken) {
+        setToken(current => ({
+          ...current,
+          name: webSocketToken.token_name || current?.name || "New Token",
+          symbol: webSocketToken.token_symbol || current?.symbol || ""
+        }));
+      } else {
+        const tokenData = await fetchTokenById(id);
+        if (tokenData) {
+          setToken({
+            id: tokenData.token_mint,
+            name: tokenData.token_name,
+            symbol: tokenData.token_symbol || '',
+            logo: '🪙',
+            currentPrice: tokenData.last_trade_price || 0,
+            change24h: 0,
+            migrationTime: new Date(tokenData.last_updated_time).getTime()
+          });
+        }
+      }
+      
+      const dexScreenerData = await fetchDexScreenerData(id);
+      if (dexScreenerData) {
+        console.log("Refreshed DexScreener data:", dexScreenerData);
+        
+        if (token && (!token.name || token.name === "New Token")) {
+          setToken(current => ({
+            ...current,
+            currentPrice: dexScreenerData.priceUsd || current?.currentPrice || 0,
+            change24h: dexScreenerData.priceChange24h || current?.change24h || 0
+          }));
+        }
+        
+        updateTokenMetrics({
+          marketCap: dexScreenerData.marketCap,
+          volume24h: dexScreenerData.volume24h,
+          liquidity: dexScreenerData.liquidity
+        });
+      } else if (pumpPortal.connected) {
+        pumpPortal.fetchTokenMetrics(id);
+      }
+      
+      const tokenBets = await fetchBetsByToken(id);
+      setBets(tokenBets);
+      
+      if (betType) {
+        setShowCreateBet(true);
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh failed",
+        description: "Could not refresh token data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [id, pumpPortal, toast, updateTokenMetrics, token]);
+  const handleAcceptBet = async (bet: Bet) => {
+    if (!connected || !publicKey) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to accept a bet",
+        variant: "destructive"
+      });
+      return;
+    }
+    try {
+      await acceptBet(bet, publicKey.toString(), wallet);
+      toast({
+        title: "Bet accepted!",
+        description: `You've successfully accepted the bet on ${bet.tokenSymbol}`
+      });
+      setNewActiveBet(bet);
+      toast({
+        title: "New Active Bet!",
+        description: `A ${bet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`
+      });
+      await refreshData();
+    } catch (error) {
+      console.error("Error accepting bet:", error);
+      toast({
+        title: "Failed to accept bet",
+        description: "There was an error processing the blockchain transaction",
+        variant: "destructive"
+      });
+    }
+  };
+  const formatPrice = (price: number | string) => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(numPrice)) return "0.000000";
+    if (numPrice < 0.01) return numPrice.toFixed(6);
+    if (numPrice < 1) return numPrice.toFixed(4);
+    if (numPrice < 1000) return numPrice.toFixed(2);
+    return numPrice.toLocaleString('en-US', {
+      maximumFractionDigits: 2
+    });
+  };
+  const formatLargeNumber = (num: number | null) => {
+    if (num === null) return "Loading...";
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    }
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    }
+    if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    }
+    return `$${num.toFixed(2)}`;
+  };
+  const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
+  const renderActiveBetBanner = () => {
+    if (!newActiveBet) return null;
+    return <div className="bg-gradient-to-r from-dream-accent1/20 to-dream-accent3/20 border border-dream-accent2/30 rounded-md p-3 mb-4 animate-pulse-slow">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="w-2 h-2 bg-dream-accent2 rounded-full mr-2 animate-pulse"></div>
+            <span className="text-dream-accent2 font-semibold">New Active Bet!</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setNewActiveBet(null)} className="h-6 w-6 p-0">
+            ×
+          </Button>
+        </div>
+        <p className="text-sm mt-1">
+          A {newActiveBet.amount} SOL bet that this token will {newActiveBet.prediction} is now active!
+        </p>
+      </div>;
+  };
+  const {
+    userProfile,
+    bets: userPXBBets,
+    fetchUserBets,
+    isLoading: pxbLoading
+  } = usePXBPoints();
+  
+  const [tokenPXBBets, setTokenPXBBets] = useState([]);
+  const [loadingMarketCaps, setLoadingMarketCaps] = useState({});
+  const [marketCapData, setMarketCapData] = useState({});
+  
+  useEffect(() => {
+    if (userProfile && userPXBBets && userPXBBets.length > 0 && id) {
+      const filteredBets = userPXBBets.filter(bet => bet.tokenMint === id);
+      setTokenPXBBets(filteredBets);
+    } else {
+      setTokenPXBBets([]);
+    }
+  }, [userProfile, userPXBBets, id]);
+  
+  useEffect(() => {
+    const fetchMarketCapData = async () => {
+      if (!tokenPXBBets || tokenPXBBets.length === 0) return;
+
+      for (const bet of tokenPXBBets) {
+        if (!bet.tokenMint) continue;
+        
+        if (marketCapData[bet.id]?.currentMarketCap) continue;
+        
+        setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: true }));
+        
+        try {
+          const data = await fetchDexScreenerData(bet.tokenMint);
+          
+          if (data) {
+            setMarketCapData(prev => ({
+              ...prev,
+              [bet.id]: {
+                initialMarketCap: bet.initialMarketCap || data.marketCap,
+                currentMarketCap: data.marketCap
+              }
+            }));
+          }
+        } catch (error) {
+          console.error(`Error fetching data for token ${bet.tokenSymbol}:`, error);
+        } finally {
+          setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: false }));
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    };
+
+    fetchMarketCapData();
+    
+    const interval = setInterval(() => {
+      const pendingBets = tokenPXBBets.filter(bet => bet.status === 'pending');
+      if (pendingBets.length > 0) {
+        fetchMarketCapData();
+      }
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [tokenPXBBets, marketCapData]);
+  
+  const calculateProgress = (bet) => {
+    if (bet.status !== 'pending') {
+      return bet.status === 'won' ? 100 : 0;
+    }
+    
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
+    
+    if (currentMarketCap && initialMarketCap) {
+      const actualChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
+      const targetChange = bet.percentageChange;
+      
+      if (bet.betType === 'up') {
+        if (actualChange < 0) return 0;
+        return Math.min(100, (actualChange / targetChange) * 100);
+      } else {
+        if (actualChange > 0) return 0;
+        return Math.min(100, (Math.abs(actualChange) / targetChange) * 100);
+      }
+    }
+    
+    return 0;
+  };
+
+  const calculateTargetMarketCap = (bet) => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    if (!initialMarketCap) return null;
+    
+    if (bet.betType === 'up') {
+      return initialMarketCap * (1 + bet.percentageChange / 100);
+    } else {
+      return initialMarketCap * (1 - bet.percentageChange / 100);
+    }
+  };
+
+  const calculateMarketCapChange = (bet) => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
+    
+    if (currentMarketCap && initialMarketCap) {
+      return ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
+    }
+    return null;
+  };
+  
+  useEffect(() => {
+    if (userProfile && id) {
+      fetchUserBets();
+    }
+  }, [userProfile, id, fetchUserBets]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+    <>
+      <OrbitingParticles />
       <Navbar />
-      <div className="container mx-auto pt-8 pb-20 px-4">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center min-h-[50vh]">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-xl">Loading token data...</p>
-          </div>
-        ) : (
-          token ? (
+      
+      <main className="pt-24 min-h-screen px-4 pb-16">
+        <div className="max-w-7xl mx-auto">
+          {loading && !token ? (
+            <div className="flex justify-center py-16">
+              <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : !token ? (
+            <div className="glass-panel p-8 text-center">
+              <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
+              <p className="text-dream-foreground/70 mb-4">
+                The token you're looking for could not be found or has been removed.
+              </p>
+              <Button onClick={() => window.history.back()}>Go Back</Button>
+            </div>
+          ) : (
             <>
-              {/* Back Button */}
-              <div className="mb-6">
-                <Link to="/" className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors">
-                  <ChevronLeft className="mr-1 h-5 w-5" />
-                  Back to Tokens
-                </Link>
-              </div>
-
-              {/* Token Header */}
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 space-y-4 md:space-y-0">
+              <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
+                <ChevronLeft size={20} />
+                <span>Back to Tokens</span>
+              </Link>
+              
+              {renderActiveBetBanner()}
+              
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div className="flex items-center">
-                  <div className="relative mr-4">
-                    <div className="text-4xl">{token.logo}</div>
-                    <OrbitingParticles />
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-3xl border border-white/10 mr-4">
+                    {token.symbol ? token.symbol.charAt(0) : '🪙'}
                   </div>
+                  
                   <div>
-                    <h1 className="text-3xl font-bold flex items-center">
-                      {token.name}
-                      {token.symbol && <span className="ml-2 text-gray-400">({token.symbol})</span>}
-                    </h1>
-                    <div className="flex items-center mt-1 space-x-4">
-                      <div className="flex items-center text-sm">
-                        <button 
-                          onClick={() => copyToClipboard(token.id, 'Token address')}
-                          className="inline-flex items-center text-gray-400 hover:text-white"
-                        >
-                          {token.id.substring(0, 4)}...{token.id.substring(token.id.length - 4)}
-                          <Copy className="ml-1 h-3 w-3" />
-                        </button>
-                      </div>
-                      <a 
-                        href={`https://solscan.io/token/${token.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 inline-flex items-center text-sm"
-                      >
-                        View on Solscan
-                        <ExternalLink className="ml-1 h-3 w-3" />
+                    <h1 className="text-3xl md:text-4xl font-display font-bold">{token.name}</h1>
+                    <div className="flex items-center gap-3">
+                      <span className="text-dream-foreground/70">{token.symbol}</span>
+                      <a href={`https://solscan.io/token/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline inline-flex items-center text-sm">
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        View on SolScan
                       </a>
+                      <span className={`flex items-center gap-1 text-sm ${isLive ? 'text-green-400' : 'text-yellow-400'}`}>
+                        {isLive ? 'Live' : 'Static'}
+                      </span>
                     </div>
                   </div>
                 </div>
+                
                 <div className="flex flex-col items-end">
                   <div className="text-3xl font-bold">
-                    ${typeof token.currentPrice === 'number' ? token.currentPrice.toFixed(6) : '0.00'}
+                    ${formatPrice(token.currentPrice)}
+                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">LIVE</span>
                   </div>
-                  <div className={`flex items-center ${token.change24h > 0 ? 'text-green-500' : token.change24h < 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                    {token.change24h > 0 ? <ArrowUpRight className="mr-1 h-4 w-4" /> : 
-                     token.change24h < 0 ? <ArrowDownRight className="mr-1 h-4 w-4" /> : 
-                     <div className="w-4 mr-1" />}
-                    {token.change24h ? `${token.change24h > 0 ? '+' : ''}${token.change24h.toFixed(2)}%` : '0.00%'} (24h)
+                  <div className={`flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
+                    {Math.abs(token.change24h).toFixed(2)}%
                   </div>
                 </div>
               </div>
-
-              {/* Token Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-gray-400">
-                        <DollarSign className="h-4 w-4 mr-2" />
-                        <span>Market Cap</span>
-                      </div>
-                      <div className="text-right">
-                        {tokenMetrics.marketCap ? 
-                          `$${Number(tokenMetrics.marketCap).toLocaleString()}` : 
-                          <HelpCircle className="h-4 w-4 text-gray-500" />
-                        }
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-gray-400">
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        <span>24h Volume</span>
-                      </div>
-                      <div className="text-right">
-                        {tokenMetrics.volume24h ? 
-                          `$${Number(tokenMetrics.volume24h).toLocaleString()}` : 
-                          <HelpCircle className="h-4 w-4 text-gray-500" />
-                        }
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-gray-400">
-                        <Users className="h-4 w-4 mr-2" />
-                        <span>Liquidity</span>
-                      </div>
-                      <div className="text-right">
-                        {tokenMetrics.liquidity ? 
-                          `$${Number(tokenMetrics.liquidity).toLocaleString()}` : 
-                          <HelpCircle className="h-4 w-4 text-gray-500" />
-                        }
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-gray-400">
-                        <Users className="h-4 w-4 mr-2" />
-                        <span>Holders</span>
-                      </div>
-                      <div className="text-right">
-                        {tokenMetrics.holders ? 
-                          Number(tokenMetrics.holders).toLocaleString() : 
-                          <HelpCircle className="h-4 w-4 text-gray-500" />
-                        }
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Main Content */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Chart and Market Data */}
-                <div className="md:col-span-2 space-y-8">
-                  {/* Price Chart */}
-                  <Card className="bg-gray-800 border-gray-700 overflow-hidden">
-                    <CardHeader className="border-b border-gray-700 p-4">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-semibold">Price Chart</h2>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {/* Refresh chart data */}}
-                          className="h-8 px-2"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-0 h-[300px]">
-                      <PriceChart data={priceData} />
-                    </CardContent>
-                  </Card>
-
-                  {/* Market Data */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <TokenMarketCap tokenId={token.id} />
-                    <TokenVolume tokenId={token.id} />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <TokenMarketCap tokenId={token.id} />
+                <TokenVolume tokenId={token.id} />
+                
+                <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{
+                animationDelay: '0.2s'
+              }}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-dream-accent3/10 to-dream-accent1/10 animate-gradient-move"></div>
+                  <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
+                    <Users size={20} className="mr-3 text-dream-accent3" />
+                    <span className="text-lg font-semibold">Active Bets</span>
                   </div>
+                  <div className="text-3xl font-bold relative z-10">{bets.length}</div>
+                  <div className="absolute top-2 right-2 flex items-center">
+                    <button onClick={() => refreshData()} className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors" title="Refresh Data">
+                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent3 to-dream-accent1 animate-pulse-glow" style={{
+                  width: `${Math.min(100, bets.length / 10 * 100)}%`
+                }}></div>
                 </div>
-
-                {/* Bets and Comments */}
-                <div className="space-y-8">
-                  {/* Create New Bet */}
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader className="border-b border-gray-700 p-4">
-                      <h2 className="text-xl font-semibold">Place a Bet</h2>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                      {showCreateBet ? (
-                        <CreateBetForm 
-                          tokenId={token.id}
-                          tokenName={token.name}
-                          tokenPrice={token.currentPrice}
-                          onBetCreated={(bet) => {
-                            setBets([bet, ...bets]);
-                            setNewActiveBet(bet);
-                            setShowCreateBet(false);
-                          }}
-                          onCancel={() => setShowCreateBet(false)}
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-4">
-                          <p className="text-gray-400 mb-4 text-center">
-                            Think you know where the price is heading? Create a new bet!
-                          </p>
-                          <Button 
-                            onClick={() => setShowCreateBet(true)}
-                            className="w-full bg-blue-600 hover:bg-blue-700"
-                          >
-                            Create New Bet
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Active Bets */}
-                  {bets.length > 0 && (
-                    <Card className="bg-gray-800 border-gray-700">
-                      <CardHeader className="border-b border-gray-700 p-4">
-                        <h2 className="text-xl font-semibold">Active Bets</h2>
-                      </CardHeader>
-                      <CardContent className="p-4">
-                        <div className="space-y-4">
-                          {bets.map((bet) => (
-                            <BetCard 
-                              key={bet.id} 
-                              bet={bet}
-                              isHighlighted={newActiveBet?.id === bet.id}
-                              showTokenInfo={false} 
-                            />
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* PXB Bets Section */}
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader className="border-b border-gray-700 p-4">
-                      <h2 className="text-xl font-semibold">Community Bets</h2>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <div className="space-y-4">
-                        {bets.length > 0 ? bets.map((bet) => (
+              </div>
+              
+              <TokenChart 
+                tokenId={token?.id} 
+                tokenName={token?.name} 
+                refreshData={refreshData} 
+                loading={loading} 
+                onPriceUpdate={handleChartPriceUpdate}
+                setShowCreateBet={setShowCreateBet} 
+              />
+              
+              {showCreateBet && (
+                <div className="glass-panel p-6 mb-8">
+                  <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
+                  <CreateBetForm tokenId={token?.id} tokenName={token?.name} tokenSymbol={token?.symbol || ''} onBetCreated={async () => {
+                    setShowCreateBet(false);
+                    await refreshData();
+                  }} />
+                </div>
+              )}
+              
+              <div className="glass-panel p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-display font-bold">Active Bets</h2>
+                  <div className="text-sm text-dream-foreground/70">{bets.length} bets</div>
+                </div>
+                
+                {bets.length === 0 ? (
+                  <div className="text-center py-8 text-dream-foreground/70">
+                    No active bets for this token yet. Be the first to place a bet!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey ? publicKey.toString() : null} onAcceptBet={handleAcceptBet} />)}
+                  </div>
+                )}
+              </div>
+              
+              {userProfile && (
+                <div className="glass-panel p-6 mb-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-display font-bold flex items-center">
+                      <DollarSign className="w-5 h-5 mr-2 text-dream-accent1" />
+                      Your PXB Bets on this Token
+                    </h2>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => fetchUserBets()}
+                      disabled={pxbLoading}
+                      className="text-xs"
+                    >
+                      <RefreshCw className={`w-3 h-3 mr-1 ${pxbLoading ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
+                  </div>
+                  
+                  {!userProfile ? (
+                    <div className="text-center py-8 text-dream-foreground/70">
+                      <p className="mb-4">Connect your wallet to see your PXB bets</p>
+                      <Button onClick={() => window.scrollTo(0, 0)}>Connect Wallet</Button>
+                    </div>
+                  ) : pxbLoading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="w-8 h-8 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : tokenPXBBets.length === 0 ? (
+                    <div className="text-center py-8 text-dream-foreground/70">
+                      <p className="mb-4">You haven't placed any PXB bets on this token yet</p>
+                      <Button onClick={() => setShowCreateBet(true)}>Place Your First Bet</Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {tokenPXBBets.map((bet) => {
+                        const isActive = bet.status === 'pending';
+                        const expiryDate = new Date(bet.expiresAt);
+                        const timeLeft = isActive ? formatDistanceToNow(expiryDate, { addSuffix: true }) : '';
+                        
+                        let statusIcon;
+                        let statusClass;
+                        
+                        if (bet.status === 'pending') {
+                          statusIcon = <HelpCircle className="h-4 w-4 text-yellow-400" />;
+                          statusClass = 'text-yellow-400';
+                        } else if (bet.status === 'won') {
+                          statusIcon = <CheckCircle className="h-4 w-4 text-green-400" />;
+                          statusClass = 'text-green-400';
+                        } else {
+                          statusIcon = <XCircle className="h-4 w-4 text-red-400" />;
+                          statusClass = 'text-red-400';
+                        }
+                        
+                        const progressPercentage = calculateProgress(bet);
+                        const marketCapChangePercentage = calculateMarketCapChange(bet);
+                        const targetMarketCap = calculateTargetMarketCap(bet);
+                        
+                        const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+                        const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
+                        const isLoading = loadingMarketCaps[bet.id];
+                        
+                        return (
                           <div 
-                            key={bet.id}
-                            className="p-4 rounded-lg bg-gray-750 border border-gray-700 transition-all hover:border-blue-500"
+                            key={bet.id} 
+                            className={`bg-dream-foreground/5 rounded-md p-4 border transition-all ${
+                              isActive 
+                                ? 'border-yellow-400/30 animate-pulse-slow' 
+                                : bet.status === 'won' 
+                                  ? 'border-green-400/30' 
+                                  : 'border-red-400/30'
+                            }`}
                           >
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <div className={`text-sm px-2 py-0.5 rounded ${
-                                    bet.direction === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                                  }`}>
-                                    {bet.direction === 'up' ? 'Price Up' : 'Price Down'}
-                                  </div>
-                                  <div className="text-xs text-gray-400">
-                                    ID: <button
-                                      onClick={() => copyToClipboard(bet.id, 'Bet ID')}
-                                      className="hover:text-white inline-flex items-center"
-                                    >
-                                      {bet.id.substring(0, 6)}...{bet.id.substring(bet.id.length - 4)}
-                                      <Copy className="ml-1 h-3 w-3" />
-                                    </button>
-                                  </div>
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="flex items-center">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2">
+                                  {bet.betType === 'up' 
+                                    ? <ArrowUp className="h-4 w-4 text-green-400" />
+                                    : <ArrowDown className="h-4 w-4 text-red-400" />
+                                  }
                                 </div>
-                                
-                                <div className="mt-2 mb-1 font-medium">
-                                  {bet.amount} PXB on {token.name}
-                                </div>
-                                
-                                <div className="flex items-center gap-2 text-sm">
-                                  <span className="text-gray-400">Bettor:</span>
-                                  <button
-                                    onClick={() => copyToClipboard(bet.createdBy, 'Wallet address')}
-                                    className="text-blue-400 hover:text-blue-300 inline-flex items-center"
-                                  >
-                                    {bet.createdBy.substring(0, 4)}...{bet.createdBy.substring(bet.createdBy.length - 4)}
-                                    <Copy className="ml-1 h-3 w-3" />
-                                  </button>
-                                </div>
-                                
-                                <div className="flex gap-3 mt-2 text-sm">
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-gray-400">Entry:</span>
-                                    <span>${bet.entryPrice.toFixed(6)}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-gray-400">Target:</span>
-                                    <span>${bet.targetPrice.toFixed(6)}</span>
-                                  </div>
+                                <div>
+                                  <p className="font-semibold">{bet.tokenSymbol}</p>
+                                  <p className="text-xs text-dream-foreground/60">{bet.tokenName}</p>
                                 </div>
                               </div>
                               
-                              <div className="flex flex-col items-end">
-                                <div className={`text-sm font-medium ${
-                                  bet.status === 'won' ? 'text-green-400' : 
-                                  bet.status === 'lost' ? 'text-red-400' : 
-                                  bet.status === 'active' ? 'text-blue-400' : 'text-gray-400'
-                                }`}>
-                                  {bet.status === 'won' ? (
-                                    <div className="flex items-center"><CheckCircle className="h-4 w-4 mr-1" /> Won</div>
-                                  ) : bet.status === 'lost' ? (
-                                    <div className="flex items-center"><XCircle className="h-4 w-4 mr-1" /> Lost</div>
-                                  ) : bet.status === 'active' ? (
-                                    <div className="flex items-center"><div className="h-2 w-2 rounded-full bg-blue-400 mr-1" /> Active</div>
-                                  ) : (
-                                    bet.status.charAt(0).toUpperCase() + bet.status.slice(1)
-                                  )}
+                              <div className="text-right">
+                                <p className="font-semibold">{bet.betAmount} PXB</p>
+                                <p className="text-xs text-dream-foreground/60">
+                                  Prediction: {bet.betType === 'up' ? 'MOON' : 'DIE'} by {bet.percentageChange}%
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-2 mb-3 mt-2 text-xs">
+                              <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                                <div className="text-dream-foreground/50 mb-1">Start MCAP</div>
+                                <div className="font-medium">
+                                  {isLoading && !initialMarketCap 
+                                    ? <span className="animate-pulse">Loading...</span>
+                                    : formatLargeNumber(initialMarketCap)
+                                  }
                                 </div>
-                                
-                                <div className="text-xs text-gray-400 mt-1">
-                                  {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
+                              </div>
+                              <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                                <div className="text-dream-foreground/50 mb-1">Current MCAP</div>
+                                <div className="font-medium">
+                                  {isLoading && !currentMarketCap 
+                                    ? <span className="animate-pulse">Loading...</span>
+                                    : formatLargeNumber(currentMarketCap)
+                                  }
                                 </div>
-                                
-                                {/* Progress */}
-                                {bet.status === 'active' && (
-                                  <div className="mt-4 w-full max-w-[120px]">
-                                    <div className="flex justify-between text-xs mb-1">
-                                      <span>${bet.entryPrice.toFixed(2)}</span>
-                                      <span>${bet.targetPrice.toFixed(2)}</span>
-                                    </div>
-                                    <Progress 
-                                      value={Math.min(100, Math.max(0, 
-                                        bet.direction === 'up'
-                                          ? ((token.currentPrice - bet.entryPrice) / (bet.targetPrice - bet.entryPrice)) * 100
-                                          : ((bet.entryPrice - token.currentPrice) / (bet.entryPrice - bet.targetPrice)) * 100
-                                      ))} 
-                                      className={`h-2 ${bet.direction === 'up' ? 'bg-green-950' : 'bg-red-950'}`}
-                                      indicatorClassName={bet.direction === 'up' ? 'bg-green-500' : 'bg-red-500'}
-                                    />
+                              </div>
+                              <div className="bg-dream-foreground/10 px-2 py-1.5 rounded">
+                                <div className="text-dream-foreground/50 mb-1">Target MCAP</div>
+                                <div className="font-medium">
+                                  {isLoading && !targetMarketCap 
+                                    ? <span className="animate-pulse">Loading...</span>
+                                    : formatLargeNumber(targetMarketCap)
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {isActive && (
+                              <div className="mb-3 mt-3">
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span className="text-dream-foreground/60">Progress towards target</span>
+                                  <span className={bet.betType === 'up' ? 'text-green-400' : 'text-red-400'}>
+                                    {progressPercentage.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <Progress value={progressPercentage} className="h-2" />
+                                {marketCapChangePercentage !== null && (
+                                  <div className="text-xs text-dream-foreground/60 mt-1">
+                                    Current change: {marketCapChangePercentage.toFixed(2)}%
+                                    {bet.betType === 'up'
+                                      ? ` / Target: +${bet.percentageChange}%`
+                                      : ` / Target: -${bet.percentageChange}%`
+                                    }
                                   </div>
                                 )}
                               </div>
+                            )}
+                            
+                            <div className="flex justify-between items-center text-xs">
+                              <div className="flex items-center">
+                                {statusIcon}
+                                <span className={`ml-1 ${statusClass}`}>
+                                  {bet.status === 'pending' ? 'Active' : bet.status === 'won' ? 'Won' : 'Lost'}
+                                </span>
+                                {isActive && (
+                                  <span className="ml-2 text-dream-foreground/60">
+                                    Ends {timeLeft}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {bet.status === 'won' && (
+                                <span className="text-green-400 font-semibold">
+                                  +{bet.pointsWon} PXB
+                                </span>
+                              )}
+                              
+                              {!isActive && marketCapChangePercentage !== null && (
+                                <span className="text-dream-foreground/60">
+                                  Final market cap change: {marketCapChangePercentage.toFixed(2)}%
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="mt-2 pt-2 border-t border-dream-foreground/10 flex justify-between items-center">
+                              <div className="text-xs text-dream-foreground/50">
+                                {bet.status === 'pending' ? (
+                                  <p>Betting against the house: If you win, you'll earn {bet.betAmount} PXB from the supply.</p>
+                                ) : bet.status === 'won' ? (
+                                  <p>You won {bet.pointsWon} PXB from the house supply!</p>
+                                ) : (
+                                  <p>Your {bet.betAmount} PXB has returned to the house supply.</p>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center text-xs text-dream-foreground/50">
+                                <span>Bet ID: </span>
+                                <span className="font-mono ml-1">{bet.id.substring(0, 8)}</span>
+                                <button 
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(bet.id)
+                                      .then(() => toast.success('Bet ID copied to clipboard'))
+                                      .catch(() => toast.error('Failed to copy to clipboard'));
+                                  }}
+                                  className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-1 text-xs text-dream-foreground/50 flex items-center">
+                              <span>Bettor: </span>
+                              <span className="font-mono ml-1" title={bet.userId}>
+                                {bet.userId.substring(0, 4)}...{bet.userId.substring(bet.userId.length - 4)}
+                              </span>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(bet.userId)
+                                    .then(() => toast.success('Bettor ID copied to clipboard'))
+                                    .catch(() => toast.error('Failed to copy to clipboard'));
+                                }}
+                                className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
                             </div>
                           </div>
-                        )) : (
-                          <div className="flex flex-col items-center justify-center py-6">
-                            <p className="text-gray-400 text-center">No community bets for this token yet.</p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Community Comments */}
-                  <TokenComments tokenId={token.id} />
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </>
-          ) : (
-            <div className="flex flex-col items-center justify-center min-h-[50vh]">
-              <p className="text-2xl mb-4">Token not found</p>
-              <Link to="/" className="text-blue-400 hover:text-blue-300">
-                Return to Home
-              </Link>
-            </div>
-          )
-        )}
-      </div>
-    </div>
+          )}
+        </div>
+      </main>
+    </>
   );
 };
 
