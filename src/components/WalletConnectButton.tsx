@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -19,17 +20,17 @@ const WalletConnectButton = () => {
   const { connected, publicKey, wallet, connecting, disconnect } = useWallet();
   const [isFullyConnected, setIsFullyConnected] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [walletError, setWalletError] = useState<Error | null>(null);
   const { toast } = useToast();
   
   const authenticateWithSupabase = useCallback(async () => {
+    // Early exit if issues detected with wallet or authentication
+    if (!connected || !publicKey) return;
+    
     const now = Date.now();
     if (globalAuthState.isAuthenticating || 
         globalAuthState.authDisabled || 
         (now - globalAuthState.lastAttemptTime < globalAuthState.cooldownPeriod && globalAuthState.retryCount > 0)) {
-      return;
-    }
-    
-    if (!connected || !publicKey) {
       return;
     }
     
@@ -141,11 +142,13 @@ const WalletConnectButton = () => {
     }
   }, [connected, publicKey, authenticateWithSupabase, isFullyConnected]);
   
+  // Safe wallet verification with error handling
   useEffect(() => {
     const verifyConnection = async () => {
       if (connected && (publicKey || (wallet?.adapter?.publicKey))) {
         try {
           setVerifying(true);
+          setWalletError(null);
           console.log("Verifying wallet connection in WalletConnectButton");
           
           const effectivePublicKey = publicKey || wallet?.adapter?.publicKey;
@@ -166,20 +169,26 @@ const WalletConnectButton = () => {
             console.log("✅ Wallet FULLY CONNECTED with publicKey");
             setIsFullyConnected(true);
             
-            window.dispatchEvent(new CustomEvent('walletReady', { 
-              detail: { 
-                publicKey: effectivePublicKey.toString(),
-                adapter: wallet?.adapter?.name,
-                adapterConnected,
-                connected
-              } 
-            }));
+            // Use try-catch when dispatching events to prevent errors
+            try {
+              window.dispatchEvent(new CustomEvent('walletReady', { 
+                detail: { 
+                  publicKey: effectivePublicKey.toString(),
+                  adapter: wallet?.adapter?.name,
+                  adapterConnected,
+                  connected
+                } 
+              }));
+            } catch (error) {
+              console.error("Error dispatching walletReady event:", error);
+            }
           } else {
             console.warn("❌ Wallet connection issue: missing public key");
             setIsFullyConnected(false);
           }
         } catch (error) {
           console.error("Error verifying wallet:", error);
+          setWalletError(error instanceof Error ? error : new Error('Unknown wallet error'));
           setIsFullyConnected(false);
         } finally {
           setVerifying(false);
@@ -208,14 +217,18 @@ const WalletConnectButton = () => {
           console.log("✅ Secondary check: Wallet NOW fully connected");
           setIsFullyConnected(true);
           
-          window.dispatchEvent(new CustomEvent('walletReady', { 
-            detail: { 
-              publicKey: effectivePublicKey.toString(),
-              adapter: wallet?.adapter?.name,
-              adapterConnected,
-              connected
-            } 
-          }));
+          try {
+            window.dispatchEvent(new CustomEvent('walletReady', { 
+              detail: { 
+                publicKey: effectivePublicKey.toString(),
+                adapter: wallet?.adapter?.name,
+                adapterConnected,
+                connected
+              } 
+            }));
+          } catch (error) {
+            console.error("Error dispatching walletReady event:", error);
+          }
         }
       }, 3000);
       
@@ -240,10 +253,30 @@ const WalletConnectButton = () => {
       globalAuthState.retryCount = 0;
       globalAuthState.authDisabled = false;
       globalAuthState.lastAttemptTime = 0;
+      setWalletError(null);
     } catch (error) {
       console.error("Error disconnecting wallet:", error);
     }
   };
+
+  // Show error state if there's a wallet error
+  if (walletError) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="text-red-500 text-sm px-3 py-1 bg-red-500/10 rounded-full backdrop-blur-sm border border-red-500/30">
+          Wallet Error
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-xs" 
+          onClick={handleForceReconnect}
+        >
+          <RefreshCw className="w-3 h-3 mr-1" /> Reset
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center">
