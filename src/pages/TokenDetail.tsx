@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchTokenById } from '@/services/supabaseService';
-import { fetchTokenMetrics } from '@/services/tokenDataCache';
+import { fetchTokenMetrics, addCustomTokenToCache } from '@/services/tokenDataCache';
 import {
   Card,
   CardContent,
@@ -28,6 +28,8 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import TokenMarketCap from '@/components/TokenMarketCap';
 import TokenVolume from '@/components/TokenVolume';
+import { fetchTokenDataFromSolscan } from '@/services/solscanService';
+import { fetchGMGNTokenData } from '@/services/gmgnService';
 
 const TokenDetail = () => {
   const { tokenId } = useParams<{ tokenId: string }>();
@@ -55,17 +57,75 @@ const TokenDetail = () => {
       setError(null);
       try {
         console.log("Fetching token details for:", tokenId);
-        // Fetch token details from Supabase
-        const tokenData = await fetchTokenById(tokenId);
         
+        // Try to fetch from Supabase first
+        let tokenData = await fetchTokenById(tokenId);
+        
+        // If token not found in Supabase, try searching on Solscan
         if (!tokenData) {
-          console.log(`No token found for ID: ${tokenId}`);
-          setError(`Token with ID ${tokenId} not found`);
-          setLoading(false);
-          return;
+          console.log(`No token found in database for ID: ${tokenId}, trying Solscan...`);
+          const solscanData = await fetchTokenDataFromSolscan(tokenId);
+          
+          if (solscanData) {
+            tokenData = {
+              token_mint: tokenId,
+              token_name: solscanData.name,
+              token_symbol: solscanData.symbol,
+              // Add estimated data for metrics
+              current_market_cap: null,
+              initial_market_cap: null
+            };
+            
+            // Create custom entry in token cache
+            addCustomTokenToCache(tokenId, tokenData);
+          }
         }
         
-        console.log("Token data fetched:", tokenData);
+        // If still no token, try GMGN service for more info
+        if (!tokenData || !tokenData.token_name) {
+          console.log(`No complete token data, trying GMGN for: ${tokenId}`);
+          try {
+            const gmgnData = await fetchGMGNTokenData(tokenId);
+            if (gmgnData.marketCap || gmgnData.price) {
+              if (!tokenData) {
+                tokenData = {
+                  token_mint: tokenId,
+                  token_name: 'Unknown Token',
+                  token_symbol: tokenId.substring(0, 5).toUpperCase(),
+                  current_market_cap: gmgnData.marketCap || null,
+                  initial_market_cap: null
+                };
+              } else {
+                tokenData.current_market_cap = gmgnData.marketCap || null;
+              }
+            }
+          } catch (gmgnError) {
+            console.log("Error getting GMGN data:", gmgnError);
+            // Continue with whatever data we have
+          }
+        }
+        
+        // If still no token, create a minimal placeholder
+        if (!tokenData) {
+          console.log(`Creating minimal placeholder for token: ${tokenId}`);
+          tokenData = {
+            token_mint: tokenId,
+            token_name: 'Unknown Token',
+            token_symbol: tokenId.substring(0, 5).toUpperCase(),
+            current_market_cap: null,
+            initial_market_cap: null
+          };
+        }
+        
+        // Always ensure we have at least token_name and token_symbol
+        if (!tokenData.token_name) {
+          tokenData.token_name = 'Unknown Token';
+        }
+        if (!tokenData.token_symbol) {
+          tokenData.token_symbol = tokenId.substring(0, 5).toUpperCase();
+        }
+        
+        console.log("Final token data:", tokenData);
         setToken(tokenData);
 
         // Fetch token metrics from TokenDataCache
@@ -128,7 +188,7 @@ const TokenDetail = () => {
         token.token_symbol || "UNKNOWN",
         amount,
         prediction === 'migrate' ? 'up' : 'down',
-        5, // Default percentage change
+        10, // Default percentage change (increased from 5 to 10)
         duration
       );
 
@@ -196,6 +256,15 @@ const TokenDetail = () => {
     );
   }
 
+  // Format token mint for display (truncate if too long)
+  const formatTokenMint = (mint: string) => {
+    if (!mint) return "Unknown";
+    if (mint.length > 20) {
+      return `${mint.substring(0, 10)}...${mint.substring(mint.length - 10)}`;
+    }
+    return mint;
+  };
+
   return (
     <div className="container mx-auto p-4">
       <Card className="glass-panel border-dream-accent2/20 mb-6">
@@ -248,6 +317,12 @@ const TokenDetail = () => {
                     <TableRow>
                       <TableCell className="font-medium">Current Market Cap</TableCell>
                       <TableCell>${token.current_market_cap.toLocaleString()}</TableCell>
+                    </TableRow>
+                  )}
+                  {tokenMetrics && tokenMetrics.marketCap && (
+                    <TableRow>
+                      <TableCell className="font-medium">Market Cap (DexScreener)</TableCell>
+                      <TableCell>${tokenMetrics.marketCap.toLocaleString()}</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
