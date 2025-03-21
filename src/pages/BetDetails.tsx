@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Bet } from '@/types/bet';
+import { Bet, BetPrediction, BetStatus } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatNumberWithCommas } from '@/utils/betUtils';
 import { ArrowUp, ArrowDown, Clock, User, Calendar, ExternalLink, ArrowLeft, Coins, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +45,24 @@ const BetDetails = () => {
         }
         
         if (data) {
+          let predictionValue: BetPrediction;
+          if (data.prediction_bettor1 === 'up') {
+            predictionValue = 'migrate';
+          } else if (data.prediction_bettor1 === 'down') {
+            predictionValue = 'die';
+          } else {
+            predictionValue = data.prediction_bettor1 as BetPrediction;
+          }
+          
+          const status = data.status as BetStatus;
+          
+          let outcomeValue: 'win' | 'loss' | undefined = undefined;
+          if (data.outcome === 'win') {
+            outcomeValue = 'win';
+          } else if (data.outcome === 'loss') {
+            outcomeValue = 'loss';
+          }
+          
           const betData: Bet = {
             id: data.bet_id,
             tokenId: data.token_mint,
@@ -52,19 +70,19 @@ const BetDetails = () => {
             tokenSymbol: data.tokens?.token_symbol || 'UNKNOWN',
             tokenMint: data.token_mint,
             initiator: data.creator,
-            counterParty: data.bettor2 || undefined,
+            counterParty: data.bettor2_id || undefined,
             amount: data.sol_amount,
-            prediction: data.prediction_bettor1,
+            prediction: predictionValue,
             timestamp: new Date(data.created_at).getTime(),
             expiresAt: new Date(data.created_at).getTime() + (data.duration * 1000),
-            status: data.status,
+            status: status,
             initialMarketCap: data.initial_market_cap,
             currentMarketCap: data.current_market_cap,
             duration: data.duration,
             winner: data.winner,
             onChainBetId: data.on_chain_id,
             transactionSignature: data.transaction_signature,
-            outcome: data.outcome
+            outcome: outcomeValue
           };
           
           setBet(betData);
@@ -427,4 +445,3 @@ const BetDetails = () => {
 };
 
 export default BetDetails;
-

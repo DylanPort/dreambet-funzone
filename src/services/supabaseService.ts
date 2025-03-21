@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 
@@ -114,7 +115,8 @@ export const fetchOpenBets = async () => {
         status,
         created_at,
         on_chain_id,
-        transaction_signature
+        transaction_signature,
+        outcome
       `)
       .or('status.eq.open,status.eq.matched,status.eq.expired,status.eq.pending')
       .order('created_at', { ascending: false });
@@ -151,6 +153,14 @@ export const fetchOpenBets = async () => {
       // Convert status string to BetStatus type
       const status = bet.status as BetStatus;
       
+      // Map outcome to the correct type or undefined
+      let outcomeValue: 'win' | 'loss' | undefined = undefined;
+      if (bet.outcome === 'win') {
+        outcomeValue = 'win';
+      } else if (bet.outcome === 'loss') {
+        outcomeValue = 'loss';
+      }
+      
       // Transform bet data with enhanced status information
       const transformedBet: Bet = {
         id: bet.bet_id,
@@ -167,7 +177,7 @@ export const fetchOpenBets = async () => {
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
         transactionSignature: bet.transaction_signature || '',
-        outcome: bet.outcome // Add outcome field to check if bet was won or lost
+        outcome: outcomeValue // Add outcome field with proper type
       };
       
       console.log('Transformed bet:', transformedBet);
@@ -198,7 +208,8 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         status,
         created_at,
         on_chain_id,
-        transaction_signature
+        transaction_signature,
+        outcome
       `)
       .eq('creator', userWalletAddress)
       .order('created_at', { ascending: false });
@@ -224,6 +235,14 @@ export const fetchUserBets = async (userWalletAddress: string) => {
       // Convert status string to BetStatus type
       const status = bet.status as BetStatus;
       
+      // Map outcome to the correct type or undefined
+      let outcomeValue: 'win' | 'loss' | undefined = undefined;
+      if (bet.outcome === 'win') {
+        outcomeValue = 'win';
+      } else if (bet.outcome === 'loss') {
+        outcomeValue = 'loss';
+      }
+      
       return {
         id: bet.bet_id,
         tokenId: bet.token_mint,
@@ -239,7 +258,7 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
         transactionSignature: bet.transaction_signature || '',
-        outcome: bet.outcome // Add outcome field
+        outcome: outcomeValue // Add outcome field with proper type
       };
     });
   } catch (error) {
