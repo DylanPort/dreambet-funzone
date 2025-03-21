@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame, Sparkles, Moon } from 'lucide-react';
@@ -53,6 +54,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
   const [selectedPrediction, setSelectedPrediction] = useState<'moon' | 'die' | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  // Format price with appropriate decimals
   const formatPrice = (price: number) => {
     if (price < 0.01) return price.toFixed(6);
     if (price < 1) return price.toFixed(4);
@@ -60,6 +62,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
     return price.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
 
+  // Format time remaining
   const formatTimeRemaining = (minutes: number) => {
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
@@ -69,6 +72,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
     return `${hours}h ${mins}m`;
   };
 
+  // Format large numbers
   const formatLargeNumber = (num: number | undefined) => {
     if (num === undefined) return "-";
     
@@ -84,12 +88,14 @@ const TokenCard: React.FC<TokenCardProps> = ({
     return `$${num.toFixed(2)}`;
   };
 
+  // Custom bet dialog handler
   const handleBetSelection = (type: 'moon' | 'die') => {
     setSelectedPrediction(type);
     
+    // Dispatch prediction event for CreateBetForm to pick up
     const eventData = {
       prediction: type,
-      percentageChange: type === 'moon' ? 80 : 50,
+      percentageChange: type === 'moon' ? 80 : 50, // Default percentage change
       defaultBetAmount: 10,
       defaultDuration: 30
     };
@@ -98,13 +104,18 @@ const TokenCard: React.FC<TokenCardProps> = ({
       new CustomEvent('predictionSelected', { detail: eventData })
     );
     
+    // Automatically open dialog with the form
     setDialogOpen(true);
   };
 
+  // Handle dialog close
   const handleDialogClose = () => {
     setDialogOpen(false);
+    // Don't reset the selection when dialog closes
+    // so the visual indication stays
   };
 
+  // Generate a more unique key by combining id with index if provided
   const uniqueId = index !== undefined ? `${id}-${index}` : id;
 
   return (
@@ -202,7 +213,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <Dialog open={dialogOpen && selectedPrediction === 'moon'} onOpenChange={(open) => !open && handleDialogClose()}>
             <DialogTrigger onClick={(e) => {
-              e.preventDefault();
+              e.preventDefault(); // Prevent navigation
               handleBetSelection('moon');
             }} asChild>
               <button 
@@ -219,21 +230,33 @@ const TokenCard: React.FC<TokenCardProps> = ({
             </DialogTrigger>
             <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-3xl">
               <div className="relative">
+                {/* Animated background effect */}
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-dream-background/80 to-blue-900/30 backdrop-blur-xl rounded-2xl z-0 animate-pulse-slow"></div>
+                
+                {/* Glow effects */}
                 <div className="absolute -top-20 -right-20 w-40 h-40 bg-dream-accent2/20 rounded-full blur-3xl"></div>
                 <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-dream-accent1/20 rounded-full blur-3xl"></div>
+                
+                {/* Scan line effect */}
                 <div className="absolute top-0 left-0 h-full w-full overflow-hidden rounded-2xl pointer-events-none z-10">
                   <div className="absolute h-px w-[120%] bg-gradient-to-r from-transparent via-dream-accent1/50 to-transparent top-[40%] left-[-10%] animate-scan-line"></div>
                 </div>
+                
+                {/* Border with gradient */}
                 <div className="absolute inset-0 rounded-2xl border border-white/10 z-10"></div>
                 <div className="absolute inset-0 border border-gray-800/60 rounded-2xl z-10"></div>
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dream-accent2/50 to-transparent z-20"></div>
                 <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dream-accent1/50 to-transparent z-20"></div>
+                
+                {/* Content wrapper */}
                 <div className="relative z-30 p-1">
                   <CreateBetForm 
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
+                    onBetCreated={handleDialogClose}
+                    onCancel={handleDialogClose}
+                    onSuccess={handleDialogClose}
                   />
                 </div>
               </div>
@@ -242,7 +265,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
 
           <Dialog open={dialogOpen && selectedPrediction === 'die'} onOpenChange={(open) => !open && handleDialogClose()}>
             <DialogTrigger onClick={(e) => {
-              e.preventDefault();
+              e.preventDefault(); // Prevent navigation
               handleBetSelection('die');
             }} asChild>
               <button 
@@ -259,21 +282,33 @@ const TokenCard: React.FC<TokenCardProps> = ({
             </DialogTrigger>
             <DialogContent className="bg-transparent border-none shadow-none p-0 max-w-3xl">
               <div className="relative">
+                {/* Animated background effect */}
                 <div className="absolute inset-0 bg-gradient-to-br from-red-900/30 via-dream-background/80 to-purple-900/30 backdrop-blur-xl rounded-2xl z-0 animate-pulse-slow"></div>
+                
+                {/* Glow effects */}
                 <div className="absolute -top-20 -right-20 w-40 h-40 bg-red-600/20 rounded-full blur-3xl"></div>
                 <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-dream-accent1/20 rounded-full blur-3xl"></div>
+                
+                {/* Scan line effect */}
                 <div className="absolute top-0 left-0 h-full w-full overflow-hidden rounded-2xl pointer-events-none z-10">
                   <div className="absolute h-px w-[120%] bg-gradient-to-r from-transparent via-red-500/50 to-transparent top-[60%] left-[-10%] animate-scan-line"></div>
                 </div>
+                
+                {/* Border with gradient */}
                 <div className="absolute inset-0 rounded-2xl border border-white/10 z-10"></div>
                 <div className="absolute inset-0 border border-gray-800/60 rounded-2xl z-10"></div>
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent z-20"></div>
                 <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dream-accent1/50 to-transparent z-20"></div>
+                
+                {/* Content wrapper */}
                 <div className="relative z-30 p-1">
                   <CreateBetForm 
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
+                    onBetCreated={handleDialogClose}
+                    onCancel={handleDialogClose}
+                    onSuccess={handleDialogClose}
                   />
                 </div>
               </div>

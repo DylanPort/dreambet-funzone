@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -8,23 +9,17 @@ interface PriceChartProps {
   }[];
   color?: string;
   isLoading?: boolean;
-  tokenId?: string;
 }
 
 // Generate sample data if none is provided - memoized to prevent regeneration
-const useSampleData = (tokenId?: string) => {
+const useSampleData = () => {
   return useMemo(() => {
     const data = [];
-    // Use the tokenId as a seed for the random data to make it consistent per token
-    const seed = tokenId ? tokenId.split('').reduce((a, b) => a + b.charCodeAt(0), 0) : Date.now();
-    const randomSeed = seed / 1000;
-    
-    let price = 1.0 + (randomSeed % 1) * 0.5;
+    let price = 1.0 + Math.random() * 0.5;
     
     for (let i = -30; i <= 0; i++) { // Reduced from 60 to 30 points for better performance
       // Create some random movement
-      const noise = Math.sin(i * 0.2 + randomSeed) * 0.1;
-      price = price + noise;
+      price = price + (Math.random() - 0.5) * 0.2;
       // Make sure price doesn't go below 0.1
       price = Math.max(0.1, price);
       
@@ -38,7 +33,7 @@ const useSampleData = (tokenId?: string) => {
     }
     
     return data;
-  }, [tokenId]);
+  }, []);
 };
 
 const MemoizedTooltip = React.memo(({ active, payload, label }: any) => {
@@ -69,19 +64,16 @@ MemoizedTooltip.displayName = 'MemoizedTooltip';
 const PriceChart: React.FC<PriceChartProps> = React.memo(({ 
   data: propData, 
   color = "url(#colorGradient)", 
-  isLoading = false,
-  tokenId
+  isLoading = false 
 }) => {
-  const sampleData = useSampleData(tokenId);
+  const sampleData = useSampleData();
   const [data, setData] = useState(propData || sampleData);
   
   useEffect(() => {
     if (propData) {
       setData(propData);
-    } else {
-      setData(sampleData);
     }
-  }, [propData, sampleData]);
+  }, [propData]);
   
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr);
