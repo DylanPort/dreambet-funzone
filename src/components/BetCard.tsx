@@ -3,7 +3,7 @@ import React from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock } from 'lucide-react';
+import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
@@ -38,6 +38,17 @@ const BetCard: React.FC<BetCardProps> = ({ bet, connected, publicKeyString, onAc
     } finally {
       setAccepting(false);
     }
+  };
+  
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        toast.success(`${label} copied to clipboard`);
+      })
+      .catch(err => {
+        toast.error('Failed to copy to clipboard');
+        console.error('Could not copy text: ', err);
+      });
   };
   
   // Check if bet is expired
@@ -121,8 +132,16 @@ const BetCard: React.FC<BetCardProps> = ({ bet, connected, publicKeyString, onAc
           
           <div className="space-y-2">
             <div className="text-sm text-dream-foreground/70">Created By</div>
-            <div className="text-md font-medium overflow-hidden text-ellipsis">
-              {bet.initiator.substring(0, 4)}...{bet.initiator.substring(bet.initiator.length - 4)}
+            <div className="text-md font-medium overflow-hidden text-ellipsis flex items-center">
+              <span title={bet.initiator}>
+                {bet.initiator.substring(0, 4)}...{bet.initiator.substring(bet.initiator.length - 4)}
+              </span>
+              <button 
+                onClick={() => copyToClipboard(bet.initiator, 'Wallet address')}
+                className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
             </div>
           </div>
           
@@ -134,6 +153,33 @@ const BetCard: React.FC<BetCardProps> = ({ bet, connected, publicKeyString, onAc
               <Clock className="w-4 h-4 mr-1 text-dream-foreground/70" />
               {formatTimeRemaining(bet.expiresAt)}
             </div>
+          </div>
+        </div>
+        
+        <div className="mt-3 pt-2 border-t border-dream-foreground/10">
+          <div className="flex justify-between items-center text-xs text-dream-foreground/60">
+            <div className="flex items-center">
+              <span>Bet ID: </span>
+              <span className="font-mono ml-1">{bet.id?.substring(0, 8) || 'Unknown'}</span>
+              <button 
+                onClick={() => copyToClipboard(bet.id || 'Unknown', 'Bet ID')}
+                className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
+            </div>
+            
+            {bet.transactionSignature && (
+              <a 
+                href={`https://solscan.io/tx/${bet.transactionSignature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-dream-accent2 hover:underline inline-flex items-center"
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                View on Solscan
+              </a>
+            )}
           </div>
         </div>
         

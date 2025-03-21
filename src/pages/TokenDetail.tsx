@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import { fetchTokenById } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
 import { Bet, BetStatus } from '@/types/bet';
-import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, ArrowUpRight, ArrowDownRight, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, ArrowUpRight, ArrowDownRight, HelpCircle, CheckCircle, XCircle, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import CreateBetForm from '@/components/CreateBetForm';
@@ -1045,14 +1045,48 @@ const TokenDetail = () => {
                               )}
                             </div>
                             
-                            <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
-                              {bet.status === 'pending' ? (
-                                <p>Betting against the house: If you win, you'll earn {bet.betAmount} PXB from the supply.</p>
-                              ) : bet.status === 'won' ? (
-                                <p>You won {bet.pointsWon} PXB from the house supply!</p>
-                              ) : (
-                                <p>Your {bet.betAmount} PXB has returned to the house supply.</p>
-                              )}
+                            <div className="mt-2 pt-2 border-t border-dream-foreground/10 flex justify-between items-center">
+                              <div className="text-xs text-dream-foreground/50">
+                                {bet.status === 'pending' ? (
+                                  <p>Betting against the house: If you win, you'll earn {bet.betAmount} PXB from the supply.</p>
+                                ) : bet.status === 'won' ? (
+                                  <p>You won {bet.pointsWon} PXB from the house supply!</p>
+                                ) : (
+                                  <p>Your {bet.betAmount} PXB has returned to the house supply.</p>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center text-xs text-dream-foreground/50">
+                                <span>Bet ID: </span>
+                                <span className="font-mono ml-1">{bet.id.substring(0, 8)}</span>
+                                <button 
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(bet.id)
+                                      .then(() => toast.success('Bet ID copied to clipboard'))
+                                      .catch(() => toast.error('Failed to copy to clipboard'));
+                                  }}
+                                  className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-1 text-xs text-dream-foreground/50 flex items-center">
+                              <span>Bettor: </span>
+                              <span className="font-mono ml-1" title={bet.userId}>
+                                {bet.userId.substring(0, 4)}...{bet.userId.substring(bet.userId.length - 4)}
+                              </span>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(bet.userId)
+                                    .then(() => toast.success('Bettor ID copied to clipboard'))
+                                    .catch(() => toast.error('Failed to copy to clipboard'));
+                                }}
+                                className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
                             </div>
                           </div>
                         );
