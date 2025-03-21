@@ -443,9 +443,7 @@ const Profile = () => {
               <div className="flex items-center gap-4">
                 <h2 className="text-xl font-display font-semibold">Betting History</h2>
                 <div className="flex gap-2">
-                  <button onClick={() => setMyBetsView('standard')} className={`px-3 py-1 text-sm rounded ${myBetsView === 'standard' ? 'bg-dream-accent1 text-white' : 'bg-dream-background/30 text-dream-foreground/60'}`}>
-                    Simple
-                  </button>
+                  
                   
                 </div>
               </div>
