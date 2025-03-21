@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Bet, BetPrediction, BetStatus } from '@/types/bet';
+import { supabase } from "@/integrations/supabase/client";
+import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 import { formatTimeRemaining, formatAddress, formatNumberWithCommas } from '@/utils/betUtils';
 import { ArrowUp, ArrowDown, Clock, User, Calendar, ExternalLink, ArrowLeft, Coins, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -57,7 +57,7 @@ const BetDetails = () => {
             expiresAt: new Date(data.created_at).getTime() + (data.duration * 1000),
             status: data.status as BetStatus,
             initialMarketCap: data.initial_market_cap,
-            currentMarketCap: data.current_market_cap || null,
+            currentMarketCap: data.current_market_cap || undefined,
             duration: data.duration,
             winner: data.winner || undefined,
             onChainBetId: data.on_chain_id,

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 
@@ -115,7 +116,9 @@ export const fetchOpenBets = async () => {
         created_at,
         on_chain_id,
         transaction_signature,
-        outcome
+        outcome,
+        winner,
+        current_market_cap
       `)
       .or('status.eq.open,status.eq.matched,status.eq.expired,status.eq.pending')
       .order('created_at', { ascending: false });
@@ -168,7 +171,9 @@ export const fetchOpenBets = async () => {
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
         transactionSignature: bet.transaction_signature || '',
-        outcome: bet.outcome as 'win' | 'loss' | undefined // Add outcome field to check if bet was won or lost
+        outcome: bet.outcome as 'win' | 'loss' | undefined,
+        winner: bet.winner,
+        currentMarketCap: bet.current_market_cap
       };
       
       console.log('Transformed bet:', transformedBet);
@@ -200,7 +205,9 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         created_at,
         on_chain_id,
         transaction_signature,
-        outcome
+        outcome,
+        winner,
+        current_market_cap
       `)
       .eq('creator', userWalletAddress)
       .order('created_at', { ascending: false });
@@ -241,7 +248,9 @@ export const fetchUserBets = async (userWalletAddress: string) => {
         duration: Math.floor(bet.duration / 60), // Convert seconds to minutes
         onChainBetId: bet.on_chain_id?.toString() || '',
         transactionSignature: bet.transaction_signature || '',
-        outcome: bet.outcome as 'win' | 'loss' | undefined // Add outcome field
+        outcome: bet.outcome as 'win' | 'loss' | undefined,
+        winner: bet.winner,
+        currentMarketCap: bet.current_market_cap
       };
     });
   } catch (error) {
