@@ -70,6 +70,27 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userProfile, publicKe
 
   return (
     <div className="overflow-hidden rounded-xl bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
+      {/* PXB Points Card - Moved to the top */}
+      <div className="p-6 bg-gradient-to-r from-[#131c36] to-[#1a2542] border-b border-indigo-900/30">
+        <div className="relative overflow-hidden rounded-lg p-6 bg-gradient-to-r from-[#131c36] to-[#1a2542] border border-indigo-500/20">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"></div>
+          
+          <div className="flex items-center mb-4 relative z-10">
+            <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-4 border border-indigo-500/20">
+              <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className="text-4xl font-bold text-white">{localPxbPoints.toLocaleString()}</h3>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between text-sm relative z-10">
+            <p className="text-indigo-300">{userProfile?.username || 'User'}</p>
+            <p className="text-indigo-300">#{userProfile?.id?.substring(0, 8) || ''}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="p-6 border-b border-indigo-900/30">
         <h2 className="text-2xl font-bold text-white">Profile</h2>
         <p className="text-indigo-300/70">Manage your account information</p>
@@ -163,27 +184,6 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userProfile, publicKe
             </Button>
           </div>
           <p className="text-xs text-indigo-300/50 mt-1">Your permanent ID for receiving PXB points</p>
-        </div>
-
-        {/* PXB Points Card */}
-        <div className="mt-6">
-          <div className="relative overflow-hidden rounded-lg p-6 bg-gradient-to-r from-[#131c36] to-[#1a2542] border border-indigo-500/20">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"></div>
-            
-            <div className="flex items-center mb-4 relative z-10">
-              <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-4 border border-indigo-500/20">
-                <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="text-4xl font-bold text-white">{localPxbPoints.toLocaleString()}</h3>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm relative z-10">
-              <p className="text-indigo-300">{userProfile?.username || 'User'}</p>
-              <p className="text-indigo-300">#{userProfile?.id?.substring(0, 8) || ''}</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

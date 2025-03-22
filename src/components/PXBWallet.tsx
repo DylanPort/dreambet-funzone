@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Copy, RefreshCw, QrCode, Clock, ArrowUpRight, ArrowDownLeft, Gift } from 'lucide-react';
+import { Send, Copy, RefreshCw, QrCode, Clock, ArrowUpRight, ArrowDownLeft, Gift, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +30,8 @@ const PXBWallet: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const COOLDOWN_TIME = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+  const [recipientValidationStatus, setRecipientValidationStatus] = useState<'initial' | 'checking' | 'valid' | 'invalid'>('initial');
+  const [validatedRecipient, setValidatedRecipient] = useState<{id: string, username: string} | null>(null);
 
   useEffect(() => {
     if (userProfile && generatePxbId) {
@@ -66,6 +68,11 @@ const PXBWallet: React.FC = () => {
     }
   }, [activeTab, userProfile]);
 
+  useEffect(() => {
+    setRecipientValidationStatus('initial');
+    setValidatedRecipient(null);
+  }, [recipientId]);
+
   const fetchTransactionHistory = async () => {
     if (!userProfile) return;
     
@@ -84,7 +91,43 @@ const PXBWallet: React.FC = () => {
         return;
       }
       
-      setTransactions(data || []);
+      const enhancedData = await Promise.all((data || []).map(async (tx) => {
+        if (tx.action === 'transfer_sent' && tx.reference_id) {
+          try {
+            const { data: recipientData } = await supabase
+              .from('users')
+              .select('username')
+              .eq('id', tx.reference_id)
+              .maybeSingle();
+              
+            if (recipientData?.username) {
+              return { ...tx, reference_name: recipientData.username };
+            }
+          } catch (err) {
+            console.warn('Could not fetch recipient name', err);
+          }
+        }
+        
+        if (tx.action === 'transfer_received' && tx.reference_id) {
+          try {
+            const { data: senderData } = await supabase
+              .from('users')
+              .select('username')
+              .eq('id', tx.reference_id)
+              .maybeSingle();
+              
+            if (senderData?.username) {
+              return { ...tx, reference_name: senderData.username };
+            }
+          } catch (err) {
+            console.warn('Could not fetch sender name', err);
+          }
+        }
+        
+        return tx;
+      }));
+      
+      setTransactions(enhancedData || []);
     } catch (error) {
       console.error('Unexpected error fetching transactions:', error);
     } finally {
@@ -92,11 +135,89 @@ const PXBWallet: React.FC = () => {
     }
   };
 
+  const validateRecipient = async () => {
+    if (!recipientId.trim()) return;
+    
+    setRecipientValidationStatus('checking');
+    
+    try {
+      let actualRecipientId = recipientId;
+      let recipientData = null;
+      
+      if (recipientId.startsWith('PXB-')) {
+        const parts = recipientId.split('-');
+        if (parts.length >= 2) {
+          const extractedId = parts[1];
+          
+          const { data } = await supabase
+            .from('users')
+            .select('id, username')
+            .like('id', `${extractedId}%`)
+            .maybeSingle();
+            
+          if (data) {
+            recipientData = data;
+          }
+        }
+      }
+      
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(actualRecipientId);
+      
+      if (!recipientData && isUUID) {
+        const { data } = await supabase
+          .from('users')
+          .select('id, username')
+          .eq('id', actualRecipientId)
+          .maybeSingle();
+          
+        if (data) {
+          recipientData = data;
+        }
+      }
+      
+      if (!recipientData) {
+        const { data } = await supabase
+          .from('users')
+          .select('id, username')
+          .eq('username', actualRecipientId)
+          .maybeSingle();
+          
+        if (data) {
+          recipientData = data;
+        }
+      }
+      
+      if (!recipientData) {
+        const { data } = await supabase
+          .from('users')
+          .select('id, username')
+          .eq('wallet_address', actualRecipientId)
+          .maybeSingle();
+          
+        if (data) {
+          recipientData = data;
+        }
+      }
+      
+      if (recipientData) {
+        setRecipientValidationStatus('valid');
+        setValidatedRecipient(recipientData);
+      } else {
+        setRecipientValidationStatus('invalid');
+        setValidatedRecipient(null);
+      }
+    } catch (error) {
+      console.error('Error validating recipient:', error);
+      setRecipientValidationStatus('invalid');
+      setValidatedRecipient(null);
+    }
+  };
+
   const handleSendPoints = async () => {
     if (!sendPoints) return;
     
     if (!recipientId.trim()) {
-      toast.error('Please enter a recipient PXB ID');
+      toast.error('Please enter a recipient PXB ID, username, or wallet address');
       return;
     }
     
@@ -110,20 +231,31 @@ const PXBWallet: React.FC = () => {
     try {
       let actualUserId = recipientId;
       
-      if (recipientId.startsWith('PXB-')) {
-        const parts = recipientId.split('-');
-        if (parts.length >= 2) {
-          actualUserId = parts[1];
+      if (validatedRecipient) {
+        actualUserId = validatedRecipient.id;
+      }
+      else if (recipientValidationStatus !== 'valid') {
+        await validateRecipient();
+        if (validatedRecipient) {
+          actualUserId = validatedRecipient.id;
         }
       }
       
-      console.log('Extracted user ID for sending:', actualUserId);
+      console.log('Sending to user ID:', actualUserId);
       
       const success = await sendPoints(actualUserId, amountNumber);
       if (success) {
         setRecipientId('');
         setAmount('');
+        setRecipientValidationStatus('initial');
+        setValidatedRecipient(null);
         toast.success(`Successfully sent ${amountNumber} PXB points!`);
+        
+        if (activeTab === 'activity') {
+          setTimeout(() => {
+            fetchTransactionHistory();
+          }, 1000);
+        }
       }
     } finally {
       setIsSending(false);
@@ -135,6 +267,7 @@ const PXBWallet: React.FC = () => {
     
     const newId = generatePxbId();
     setMyPxbId(newId);
+    toast.success('Generated new PXB ID for receiving points');
   };
 
   const copyToClipboard = (text: string) => {
@@ -155,7 +288,21 @@ const PXBWallet: React.FC = () => {
     
     setIsClaiming(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await supabase
+        .from('users')
+        .update({
+          points: userProfile.pxbPoints + 100
+        })
+        .eq('id', userProfile.id);
+      
+      await supabase
+        .from('points_history')
+        .insert({
+          user_id: userProfile.id,
+          amount: 100,
+          action: 'mint',
+          reference_id: 'daily_claim'
+        });
       
       const now = Date.now();
       localStorage.setItem('lastPxbClaim', now.toString());
@@ -165,6 +312,9 @@ const PXBWallet: React.FC = () => {
       toast.success('Successfully claimed 100 PXB points!');
       
       fetchUserProfile();
+    } catch (error) {
+      console.error('Error claiming points:', error);
+      toast.error('Failed to claim points. Please try again.');
     } finally {
       setIsClaiming(false);
     }
@@ -181,9 +331,9 @@ const PXBWallet: React.FC = () => {
       case 'mint':
         return 'Claimed points';
       case 'transfer_sent':
-        return 'Sent points';
+        return `Sent to ${transaction.reference_name || 'user'}`;
       case 'transfer_received':
-        return 'Received points';
+        return `Received from ${transaction.reference_name || 'user'}`;
       default:
         return transaction.action.replace(/_/g, ' ');
     }
@@ -276,13 +426,39 @@ const PXBWallet: React.FC = () => {
           >
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-indigo-300/70 mb-1 block">Recipient PXB ID</label>
-                <Input
-                  value={recipientId}
-                  onChange={(e) => setRecipientId(e.target.value)}
-                  placeholder="Enter PXB ID (e.g., PXB-12345678-abc123)"
-                  className="bg-indigo-900/10 border-indigo-900/30 text-white"
-                />
+                <label className="text-sm text-indigo-300/70 mb-1 block">Recipient</label>
+                <div className="relative">
+                  <Input
+                    value={recipientId}
+                    onChange={(e) => setRecipientId(e.target.value)}
+                    placeholder="Enter PXB ID, username, or wallet address"
+                    className="bg-indigo-900/10 border-indigo-900/30 text-white pr-12"
+                    onBlur={validateRecipient}
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    {recipientValidationStatus === 'checking' && (
+                      <div className="h-4 w-4 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                    {recipientValidationStatus === 'valid' && (
+                      <div className="text-green-400 h-4 w-4">✓</div>
+                    )}
+                    {recipientValidationStatus === 'invalid' && recipientId && (
+                      <div className="text-red-400 h-4 w-4">✗</div>
+                    )}
+                  </div>
+                </div>
+                {validatedRecipient && (
+                  <div className="mt-1 text-xs text-green-400 flex items-center">
+                    <Info className="w-3 h-3 mr-1" />
+                    Sending to: {validatedRecipient.username || validatedRecipient.id.substring(0, 8)}
+                  </div>
+                )}
+                {recipientValidationStatus === 'invalid' && recipientId && (
+                  <div className="mt-1 text-xs text-red-400 flex items-center">
+                    <Info className="w-3 h-3 mr-1" />
+                    Recipient not found
+                  </div>
+                )}
               </div>
               
               <div>
@@ -309,7 +485,7 @@ const PXBWallet: React.FC = () => {
               
               <Button 
                 onClick={handleSendPoints} 
-                disabled={isSending || !recipientId || !amount}
+                disabled={isSending || !recipientId || !amount || recipientValidationStatus === 'invalid'}
                 className="w-full bg-indigo-500 hover:bg-indigo-600 text-white"
               >
                 {isSending ? (
@@ -324,6 +500,15 @@ const PXBWallet: React.FC = () => {
                   </div>
                 )}
               </Button>
+              
+              <div className="p-3 bg-indigo-900/20 rounded-lg border border-indigo-900/30">
+                <p className="text-xs text-indigo-300/70 mb-2">Send PXB Points using:</p>
+                <ul className="text-xs text-indigo-300/70 list-disc pl-4 space-y-1">
+                  <li>PXB ID (e.g., PXB-12345678-abc123)</li>
+                  <li>Username (e.g., SolWarrior)</li>
+                  <li>Wallet Address (e.g., 8ivrMV...3xYS)</li>
+                </ul>
+              </div>
             </div>
           </motion.div>
         )}
@@ -354,9 +539,39 @@ const PXBWallet: React.FC = () => {
               </Button>
             </div>
             
+            <p className="text-sm text-indigo-300/70 mb-2">Your Username</p>
+            <div className="w-full bg-indigo-900/10 rounded-lg p-3 flex justify-between items-center mb-6 border border-indigo-900/30">
+              <code className="text-sm text-indigo-100">{userProfile.username || 'No username set'}</code>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-indigo-300/70 hover:text-white"
+                onClick={() => copyToClipboard(userProfile.username || '')}
+                disabled={!userProfile.username}
+              >
+                <Copy className="w-4 h-4" />
+                <span className="sr-only">Copy Username</span>
+              </Button>
+            </div>
+            
+            <p className="text-sm text-indigo-300/70 mb-2">Your Wallet Address</p>
+            <div className="w-full bg-indigo-900/10 rounded-lg p-3 flex justify-between items-center mb-6 border border-indigo-900/30 overflow-hidden">
+              <code className="text-sm text-indigo-100 font-mono truncate">{userProfile.wallet_address || 'Unknown'}</code>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-indigo-300/70 hover:text-white flex-shrink-0"
+                onClick={() => copyToClipboard(userProfile.wallet_address || '')}
+                disabled={!userProfile.wallet_address}
+              >
+                <Copy className="w-4 h-4" />
+                <span className="sr-only">Copy Wallet</span>
+              </Button>
+            </div>
+            
             <div className="text-center mb-6">
               <p className="text-sm text-indigo-300/70">
-                Share your PXB ID with others to receive PXB points
+                Share any of the above to receive PXB points from other users
               </p>
             </div>
             
@@ -365,7 +580,7 @@ const PXBWallet: React.FC = () => {
               className="bg-indigo-500 hover:bg-indigo-600 text-white"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Generate New ID
+              Generate New PXB ID
             </Button>
           </motion.div>
         )}
@@ -484,3 +699,4 @@ const PXBWallet: React.FC = () => {
 };
 
 export default PXBWallet;
+
