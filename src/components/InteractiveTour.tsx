@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -26,13 +25,18 @@ const InteractiveTour = () => {
     connected
   } = useWallet();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
   useEffect(() => {
+    // Always start from the beginning
+    setCurrentStep(0);
     // Check local storage to see if user has already gone through the tour
     const tourCompleted = localStorage.getItem('pxb-tour-completed');
     if (tourCompleted) {
-      setCurrentStep(0); // Always start from the beginning, even if tour was completed
+      // Even if tour was completed, we always start from the beginning
+      setCurrentStep(0);
     }
   }, []);
+  
   const handleNextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -125,22 +129,28 @@ const InteractiveTour = () => {
     image: "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
   }];
 
-  return <div className="flex justify-center items-center w-full my-12 mx-auto">
-      <motion.div className="relative w-[400px] md:w-[600px] h-[300px] md:h-[400px] flex items-center justify-center rounded-2xl overflow-hidden" style={{
-      perspective: '1000px',
-      transformStyle: 'preserve-3d'
-    }} initial={{
-      opacity: 0
-    }} animate={{
-      opacity: 1
-    }} transition={{
-      duration: 0.8
-    }}>
+  return <div className={`flex justify-center items-center w-full my-4 md:my-12 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
+      <motion.div 
+        className={`relative ${isMobile ? 'w-[300px] h-[400px]' : 'w-[400px] md:w-[600px] h-[300px] md:h-[400px]'} flex items-center justify-center rounded-2xl overflow-hidden`} 
+        style={{
+          perspective: '1000px',
+          transformStyle: 'preserve-3d'
+        }} 
+        initial={{
+          opacity: 0
+        }} 
+        animate={{
+          opacity: 1
+        }} 
+        transition={{
+          duration: 0.8
+        }}
+      >
         {/* 3D container with perspective */}
         <motion.div className="absolute inset-0 w-full h-full" style={{
-        transform: 'rotateX(10deg) rotateY(5deg)',
-        transformStyle: 'preserve-3d'
-      }}>
+          transform: 'rotateX(10deg) rotateY(5deg)',
+          transformStyle: 'preserve-3d'
+        }}>
           {/* Holographic base panel */}
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/90 to-blue-950/90 
                         backdrop-blur-md rounded-2xl border border-indigo-500/30 shadow-[0_0_15px_rgba(79,70,229,0.3)]
@@ -190,74 +200,102 @@ const InteractiveTour = () => {
           
           {/* Content container with 3D effect */}
           <AnimatePresence mode="wait">
-            <motion.div key={currentStep} style={{
-            transformStyle: 'preserve-3d',
-            transform: 'translateZ(20px)'
-          }} initial={{
-            opacity: 0,
-            y: 20,
-            rotateX: -5
-          }} animate={{
-            opacity: 1,
-            y: 0,
-            rotateX: 0
-          }} exit={{
-            opacity: 0,
-            y: -20,
-            rotateX: 5
-          }} transition={{
-            duration: 0.5
-          }} className="relative z-10 text-center p-6 sm:p-8 w-full h-full flex flex-col justify-center bg-black/65">
-              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
-                {/* Step image - always visible, adjust size for mobile */}
-                <motion.div className="w-full md:w-1/2 flex justify-center items-center mb-4 md:mb-0" style={{
+            <motion.div 
+              key={currentStep} 
+              style={{
                 transformStyle: 'preserve-3d',
-                transform: 'translateZ(40px)'
-              }}>
-                    <img src={steps[currentStep].image} alt={steps[currentStep].title} className="w-[120px] md:w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" style={{
-                  transformStyle: 'preserve-3d',
-                  transform: 'translateZ(10px) rotateY(-5deg)'
-                }} />
-                  </motion.div>
+                transform: 'translateZ(20px)'
+              }} 
+              initial={{
+                opacity: 0,
+                y: 20,
+                rotateX: -5
+              }} 
+              animate={{
+                opacity: 1,
+                y: 0,
+                rotateX: 0
+              }} 
+              exit={{
+                opacity: 0,
+                y: -20,
+                rotateX: 5
+              }} 
+              transition={{
+                duration: 0.5
+              }} 
+              className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-black/65"
+            >
+              <div className={`flex ${isMobile ? 'flex-col' : 'flex-col md:flex-row'} items-center justify-center gap-3 md:gap-6`}>
+                {/* Step image - always visible, adjust size for mobile */}
+                <motion.div 
+                  className={`w-full ${isMobile ? 'w-[120px]' : 'md:w-1/2'} flex justify-center items-center mb-2 md:mb-0`} 
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: 'translateZ(40px)'
+                  }}
+                >
+                  <img 
+                    src={steps[currentStep].image} 
+                    alt={steps[currentStep].title} 
+                    className={`${isMobile ? 'w-[100px]' : 'w-[120px] md:w-[200px]'} h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]`} 
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: 'translateZ(10px) rotateY(-5deg)'
+                    }} 
+                  />
+                </motion.div>
                 
                 {/* Text content */}
-                <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
-                  <div className="mb-3 md:mb-4 flex justify-center md:justify-start">
-                    <motion.div className="p-2 md:p-3 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" whileHover={{
-                    scale: 1.1,
-                    rotate: 5
-                  }} style={{
-                    transformStyle: 'preserve-3d',
-                    transform: 'translateZ(30px)'
-                  }}>
+                <div className={`w-full ${isMobile ? 'mt-2' : 'md:w-1/2'} flex flex-col items-center md:items-start`}>
+                  <div className="mb-2 md:mb-4 flex justify-center md:justify-start">
+                    <motion.div 
+                      className="p-2 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
+                      whileHover={{
+                        scale: 1.1,
+                        rotate: 5
+                      }} 
+                      style={{
+                        transformStyle: 'preserve-3d',
+                        transform: 'translateZ(30px)'
+                      }}
+                    >
                       {steps[currentStep].icon}
                     </motion.div>
                   </div>
                   
-                  <motion.h2 className="text-xl md:text-2xl font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent" style={{
-                  transformStyle: 'preserve-3d',
-                  transform: 'translateZ(20px)'
-                }}>
+                  <motion.h2 
+                    className={`${isMobile ? 'text-lg' : 'text-xl md:text-2xl'} font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent`} 
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: 'translateZ(20px)'
+                    }}
+                  >
                     {steps[currentStep].title}
                   </motion.h2>
                   
-                  <motion.p className="text-indigo-200/80 text-xs md:text-sm mb-3 md:mb-4" style={{
-                  transformStyle: 'preserve-3d',
-                  transform: 'translateZ(15px)'
-                }}>
+                  <motion.p 
+                    className={`text-indigo-200/80 ${isMobile ? 'text-xs' : 'text-xs md:text-sm'} mb-2 md:mb-4`} 
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: 'translateZ(15px)'
+                    }}
+                  >
                     {steps[currentStep].description}
                   </motion.p>
                   
-                  <motion.div style={{
-                  transformStyle: 'preserve-3d',
-                  transform: 'translateZ(25px)'
-                }}>
+                  <motion.div 
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: 'translateZ(25px)'
+                    }}
+                  >
                     {steps[currentStep].action}
                   </motion.div>
                 </div>
               </div>
               
-              <div className="mt-4 md:mt-6 flex justify-center space-x-2">
+              <div className="mt-3 md:mt-6 flex justify-center space-x-2">
                 {/* Tour navigation dots */}
                 {steps.map((_, index) => <motion.button key={index} className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400 scale-125' : 'bg-gray-600 hover:bg-gray-500'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
                 scale: 1.2
@@ -268,6 +306,7 @@ const InteractiveTour = () => {
               </div>
               
               <div className="absolute bottom-2 md:bottom-4 right-2 md:right-4 flex space-x-2">
+                {/* Tour navigation buttons */}
                 {currentStep > 0 && <Button variant="ghost" size="sm" className="text-xs md:text-sm text-white/70 hover:text-white hover:bg-indigo-600/30 z-10 px-2 py-1 md:px-4 md:py-2" onClick={handlePrevStep} style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(20px)'

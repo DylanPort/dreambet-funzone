@@ -102,27 +102,14 @@ const Index = () => {
           <FloatingImages />
           
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
-            <div className="text-center md:text-left md:flex-1">
-              <InteractiveTour />
+            <div className="flex flex-row flex-wrap md:flex-nowrap gap-6 w-full">
+              <div className="w-full md:w-1/2 flex justify-center">
+                <InteractiveTour />
+              </div>
               
-              {isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
-                  bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
-                  backdrop-blur-[1px] rounded-xl border border-white/5
-                  animate-entrance overflow-hidden
-                  before:content-[''] before:absolute before:inset-0 
-                  before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
-                  before:animate-pulse-glow">
-                  
-                  
-                  
-                  
-                  
-                  
-                </div>}
-            </div>
-            
-            <div className="md:flex-1 flex justify-center mt-8 md:mt-0">
-              <FuturisticTokenDisplay tokens={latestTokens} />
+              <div className="w-full md:w-1/2 flex justify-center">
+                <FuturisticTokenDisplay tokens={latestTokens} />
+              </div>
             </div>
           </div>
           
