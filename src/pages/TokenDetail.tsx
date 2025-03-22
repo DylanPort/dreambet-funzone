@@ -875,5 +875,12 @@ const TokenDetail = () => {
                 tokenId={token.id} 
                 tokenName={token.name} 
               />
+            </>}
+        </div>
+      </main>
+    </>
+  );
+};
 
+export default TokenDetail;
 
