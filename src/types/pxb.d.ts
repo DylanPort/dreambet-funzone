@@ -1,5 +1,4 @@
 
-
 export interface UserProfile {
   id: string;
   pxb_id: string;
@@ -13,6 +12,9 @@ export interface UserProfile {
   instagram_username: string | null;
   website_url: string | null;
   bio: string | null;
+  username?: string;
+  pxbPoints?: number;
+  createdAt?: string;
 }
 
 export interface PXBBet {
@@ -39,6 +41,9 @@ export interface LeaderboardEntry {
   avatar_url?: string;
   points: number;
   rank: number;
+  id?: string;
+  username?: string;
+  pxbPoints?: number;
 }
 
 export interface WinRateLeaderboardEntry {
@@ -49,6 +54,9 @@ export interface WinRateLeaderboardEntry {
   won_bets: number;
   win_rate: number;
   rank: number;
+  id?: string;
+  username?: string;
+  winRate?: number;
 }
 
 export interface ReferralStats {
@@ -69,4 +77,3 @@ export interface Referral {
   referredUsername?: string;
   createdAt?: string;
 }
-

@@ -1,17 +1,20 @@
+
 import React, { useState } from 'react';
 import { UserProfile } from '@/types/pxb';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Edit2, Copy, User } from 'lucide-react';
+import { Edit2, Copy, User, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { PublicKey } from '@solana/web3.js';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
+
 interface PXBProfilePanelProps {
   userProfile: UserProfile | null;
   publicKey: PublicKey;
   localPxbPoints: number;
 }
+
 const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
   userProfile,
   publicKey,
@@ -22,19 +25,32 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
   const [isSavingUsername, setIsSavingUsername] = useState(false);
   const {
     generatePxbId,
-    fetchUserProfile
+    fetchUserProfile,
+    leaderboard
   } = usePXBPoints();
   const [myPxbId, setMyPxbId] = useState<string>('');
+
+  // Get user rank from leaderboard
+  const userRank = React.useMemo(() => {
+    if (!userProfile || !leaderboard?.length) return null;
+    const userEntry = leaderboard.find(entry => 
+      entry.id === userProfile.id || entry.user_id === userProfile.id
+    );
+    return userEntry ? userEntry.rank : null;
+  }, [userProfile, leaderboard]);
+
   React.useEffect(() => {
     if (userProfile && generatePxbId) {
       setMyPxbId(generatePxbId());
     }
   }, [userProfile, generatePxbId]);
+
   React.useEffect(() => {
     if (userProfile) {
       setUsernameInput(userProfile.username);
     }
   }, [userProfile]);
+
   const handleUpdateUsername = async () => {
     if (!usernameInput.trim() || !userProfile) {
       toast.error("Username cannot be empty");
@@ -62,10 +78,12 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
       setIsSavingUsername(false);
     }
   };
+
   const copyToClipboard = (text: string, message: string) => {
     navigator.clipboard.writeText(text);
     toast.success(message);
   };
+
   return <div className="overflow-hidden rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
       <div className="p-6 border-b border-indigo-900/30 bg-black/0">
         <h2 className="text-2xl font-bold text-white">Profile</h2>
@@ -133,13 +151,22 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
           <div className="relative overflow-hidden rounded-lg p-6 bg-gradient-to-r from-[#131c36] to-[#1a2542] border border-indigo-500/20">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"></div>
             
-            <div className="flex items-center mb-4 relative z-10">
-              <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-4 border border-indigo-500/20">
-                <img src="/lovable-uploads/b29e7031-78f0-44be-b383-e5d1dd184bb4.png" alt="PXB Logo" className="w-10 h-10 object-contain filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" />
+            <div className="flex items-center justify-between mb-4 relative z-10">
+              <div className="flex items-center">
+                <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-4 border border-indigo-500/20">
+                  <img src="/lovable-uploads/b29e7031-78f0-44be-b383-e5d1dd184bb4.png" alt="PXB Logo" className="w-10 h-10 object-contain filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" />
+                </div>
+                <div>
+                  <h3 className="text-4xl font-bold text-white">{localPxbPoints.toLocaleString()}</h3>
+                </div>
               </div>
-              <div>
-                <h3 className="text-4xl font-bold text-white">{localPxbPoints.toLocaleString()}</h3>
-              </div>
+              
+              {userRank !== null && (
+                <div className="flex items-center bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-500/30">
+                  <Trophy className="w-4 h-4 text-yellow-400 mr-1" />
+                  <span className="text-white font-medium">Rank #{userRank}</span>
+                </div>
+              )}
             </div>
             
             <div className="flex items-center justify-between text-sm relative z-10">
@@ -151,4 +178,5 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
       </div>
     </div>;
 };
+
 export default PXBProfilePanel;

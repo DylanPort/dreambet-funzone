@@ -9,6 +9,7 @@ export interface PXBPointsContextType {
   winRateLeaderboard: WinRateLeaderboardEntry[];
   isLeaderboardLoading: boolean;
   isLoadingWinRate: boolean;
+  isLoadingBets?: boolean;
   mintPoints: (amount?: number) => Promise<void>;
   placeBet: (
     tokenMint: string,
