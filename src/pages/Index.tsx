@@ -126,8 +126,8 @@ const Index = () => {
                     <div className="relative overflow-hidden group transition-all duration-500
                       transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
                       
-                      <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
-                        transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" />
+                      <img alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
+                        transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" src="/lovable-uploads/75b9d39b-4705-4e43-8bf5-99c97463da79.png" />
                       
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/10 to-dream-accent1/10 
                         opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
