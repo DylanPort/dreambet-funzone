@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -6,6 +7,7 @@ import { X, Settings, Info, Gamepad } from 'lucide-react';
 import TourVideoManager from './TourVideoManager';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link } from 'react-router-dom';
+import CountdownTimer from './CountdownTimer';
 
 interface PXBOnboardingProps {
   onClose?: () => void;
@@ -16,6 +18,8 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
   const [showTour, setShowTour] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [pointAmount, setPointAmount] = useState(2000);
+  const [lastMintTime, setLastMintTime] = useState<Date | null>(null);
+  const [showCountdown, setShowCountdown] = useState(false);
 
   const tourSteps = [
     { id: 'welcome', title: 'Welcome to PXB', description: 'Introduction to the PXB platform' },
@@ -50,9 +54,27 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
   const handleMintPoints = async () => {
     try {
       await mintPoints(pointAmount);
+      // Set last mint time and show countdown
+      setLastMintTime(new Date());
+      setShowCountdown(true);
     } catch (error) {
       console.error("Failed to mint points:", error);
     }
+  };
+
+  // Calculate next mint time (24 hours from last mint)
+  const getNextMintTime = (): Date | null => {
+    if (!lastMintTime) return null;
+    
+    const nextMintTime = new Date(lastMintTime);
+    nextMintTime.setHours(nextMintTime.getHours() + 24);
+    return nextMintTime;
+  };
+
+  // Reset countdown when timer completes
+  const handleCountdownComplete = () => {
+    setShowCountdown(false);
+    setLastMintTime(null);
   };
 
   const renderPXBInfo = () => {
@@ -89,13 +111,23 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
                 </Tooltip>
               </TooltipProvider>
               
-              <Button 
-                onClick={handleMintPoints}
-                disabled={mintingPoints}
-                className="w-full bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800"
-              >
-                {mintingPoints ? 'Minting...' : `Mint ${pointAmount} PXB Points`}
-              </Button>
+              {showCountdown && getNextMintTime() ? (
+                <div className="bg-amber-900/30 p-3 rounded-md mb-2">
+                  <p className="text-xs text-amber-300 mb-2">Next mint available in:</p>
+                  <CountdownTimer 
+                    endTime={getNextMintTime()!} 
+                    onComplete={handleCountdownComplete}
+                  />
+                </div>
+              ) : (
+                <Button 
+                  onClick={handleMintPoints}
+                  disabled={mintingPoints}
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800"
+                >
+                  {mintingPoints ? 'Minting...' : `Mint ${pointAmount} PXB Points`}
+                </Button>
+              )}
               
               <div className="mt-6 pt-6 border-t border-white/10">
                 <p className="text-sm text-white/70 mb-3">Ready to use your PXB Points?</p>
