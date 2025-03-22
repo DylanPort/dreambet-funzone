@@ -3,9 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
 import { formatTimeRemaining, formatAddress, formatNumberWithCommas } from '@/utils/betUtils';
-import { ArrowUp, ArrowDown, Clock, User, Calendar, ExternalLink, ArrowLeft, Coins, Trophy } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, User, Calendar, ExternalLink, ArrowLeft, Coins, Trophy, Rocket, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import PriceChart from '@/components/PriceChart';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { fetchGMGNTokenData, subscribeToGMGNTokenData } from '@/services/gmgnService';
@@ -269,14 +268,33 @@ const BetDetails = () => {
             </div>
           </div>
           
-          <div className="mb-8">
-            <div className="h-64">
-              <PriceChart 
-                data={chartData.length > 0 ? chartData : undefined} 
-                color={isPredictionUp ? "#10b981" : "#ef4444"} 
-                isLoading={chartLoading}
-              />
-            </div>
+          {/* Replacing chart with a futuristic token details button */}
+          <div className="mb-8 flex justify-center">
+            <Link to={`/token/${bet.tokenMint}`} className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-dream-accent1 to-dream-accent2 rounded-lg blur-lg opacity-60 group-hover:opacity-100 transition-all duration-300"></div>
+              <div className="relative flex items-center justify-center px-8 py-4 bg-black/70 rounded-lg border border-dream-accent1/30 overflow-hidden">
+                {/* Tech circuits corners */}
+                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-dream-accent1/60"></div>
+                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-dream-accent2/60"></div>
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-dream-accent1/60"></div>
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-dream-accent2/60"></div>
+                
+                {/* Pulsing background effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/5 to-dream-accent2/5 opacity-50 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                {/* Futuristic button content */}
+                <div className="flex items-center gap-3 text-white">
+                  <Rocket className="w-5 h-5 text-dream-accent1 group-hover:animate-pulse" />
+                  <span className="font-medium text-lg">View Token Details</span>
+                  <Zap className="w-5 h-5 text-dream-accent2 group-hover:animate-pulse" />
+                </div>
+                
+                {/* Animated border light effect */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50 group-hover:opacity-100 animate-[border-flow_3s_linear_infinite] transition-opacity duration-300"></div>
+                </div>
+              </div>
+            </Link>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
