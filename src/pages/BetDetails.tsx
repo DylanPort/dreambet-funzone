@@ -8,10 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { fetchGMGNTokenData, subscribeToGMGNTokenData } from '@/services/gmgnService';
+
 interface PriceChartDataPoint {
   time: string;
   price: number;
 }
+
 const BetDetails = () => {
   const {
     id
@@ -23,6 +25,7 @@ const BetDetails = () => {
   const [tokenDetails, setTokenDetails] = useState<any>(null);
   const [chartData, setChartData] = useState<PriceChartDataPoint[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
+
   useEffect(() => {
     const fetchBetDetails = async () => {
       if (!id) return;
@@ -92,6 +95,7 @@ const BetDetails = () => {
     };
     fetchBetDetails();
   }, [id]);
+
   const fetchTokenChartData = async (tokenMint: string) => {
     setChartLoading(true);
     try {
@@ -133,6 +137,7 @@ const BetDetails = () => {
       setChartLoading(false);
     }
   };
+
   useEffect(() => {
     if (!bet?.tokenMint) return;
     const unsubscribe = subscribeToGMGNTokenData(bet.tokenMint, data => {
@@ -152,6 +157,7 @@ const BetDetails = () => {
       unsubscribe();
     };
   }, [bet?.tokenMint, chartData.length]);
+
   if (loading) {
     return <div className="min-h-screen bg-dream-background text-dream-foreground p-6">
         <div className="max-w-4xl mx-auto">
@@ -161,6 +167,7 @@ const BetDetails = () => {
         </div>
       </div>;
   }
+
   if (!bet) {
     return <div className="min-h-screen bg-dream-background text-dream-foreground p-6">
         <div className="max-w-4xl mx-auto">
@@ -174,10 +181,12 @@ const BetDetails = () => {
         </div>
       </div>;
   }
+
   const isPredictionUp = ['migrate', 'up', 'moon'].includes(bet.prediction);
   const predictionDisplay = isPredictionUp ? 'MOON' : 'DIE';
   const predictionColor = isPredictionUp ? 'text-green-400' : 'text-red-400';
   const predictionBgColor = isPredictionUp ? 'bg-green-400/10' : 'bg-red-400/10';
+
   let statusDisplay = bet.status.toUpperCase();
   let statusClass = 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30';
   if (bet.status === 'pending') {
@@ -196,6 +205,7 @@ const BetDetails = () => {
   } else if (bet.status === 'matched') {
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
+
   return <div className="min-h-screen bg-dream-background text-dream-foreground p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
@@ -230,28 +240,23 @@ const BetDetails = () => {
             </div>
           </div>
           
-          {/* Replacing chart with a futuristic token details button */}
           <div className="mb-8 flex justify-center">
             <Link to={`/token/${bet.tokenMint}`} className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-dream-accent1 to-dream-accent2 rounded-lg blur-lg opacity-60 group-hover:opacity-100 transition-all duration-300"></div>
               <div className="relative flex items-center justify-center px-8 py-4 bg-black/70 rounded-lg border border-dream-accent1/30 overflow-hidden">
-                {/* Tech circuits corners */}
                 <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-dream-accent1/60"></div>
                 <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-dream-accent2/60"></div>
                 <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-dream-accent1/60"></div>
                 <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-dream-accent2/60"></div>
                 
-                {/* Pulsing background effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/5 to-dream-accent2/5 opacity-50 group-hover:opacity-100 transition-opacity duration-300"></div>
                 
-                {/* Futuristic button content */}
                 <div className="flex items-center gap-3 text-white">
                   <Rocket className="w-5 h-5 text-dream-accent1 group-hover:animate-pulse" />
                   <span className="font-medium text-lg">View Token Details</span>
                   <Zap className="w-5 h-5 text-dream-accent2 group-hover:animate-pulse" />
                 </div>
                 
-                {/* Animated border light effect */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50 group-hover:opacity-100 animate-[border-flow_3s_linear_infinite] transition-opacity duration-300"></div>
                 </div>
@@ -298,18 +303,13 @@ const BetDetails = () => {
                 </div>
               </div>
               
-              {bet.initialMarketCap && <div>
-                  <h3 className="text-lg font-semibold mb-3">Market Data</h3>
+              {bet.currentMarketCap && <div>
+                  <h3 className="text-lg font-semibold mb-3">Current Market Data</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                      <div className="text-dream-foreground/70">Initial Market Cap</div>
-                      <div className="font-medium">${formatNumberWithCommas(bet.initialMarketCap)}</div>
+                      <div className="text-dream-foreground/70">Current Market Cap</div>
+                      <div className="font-medium">${formatNumberWithCommas(bet.currentMarketCap)}</div>
                     </div>
-                    
-                    {bet.currentMarketCap && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                        <div className="text-dream-foreground/70">Current Market Cap</div>
-                        <div className="font-medium">${formatNumberWithCommas(bet.currentMarketCap)}</div>
-                      </div>}
                     
                     {bet.initialMarketCap && bet.currentMarketCap && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
                         <div className="text-dream-foreground/70">Market Cap Change</div>
@@ -390,4 +390,6 @@ const BetDetails = () => {
       </div>
     </div>;
 };
-export default BetDetails;
+
+
+
