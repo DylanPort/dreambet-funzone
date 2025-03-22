@@ -1,12 +1,13 @@
-
 import React, { useState } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Trophy, Coins, BarChart3, Users, Zap, PartyPopper, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
+import type { CarouselApi } from "@/components/ui/carousel";
 
 const WebsiteTour = () => {
   const [activeSlide, setActiveSlide] = useState(0);
+  const [api, setApi] = useState<CarouselApi | null>(null);
   
   const features = [
     {
@@ -46,6 +47,23 @@ const WebsiteTour = () => {
     }
   ];
 
+  React.useEffect(() => {
+    if (!api) {
+      return;
+    }
+    
+    const handleSelect = () => {
+      setActiveSlide(api.selectedScrollSnap());
+    };
+    
+    api.on("select", handleSelect);
+    
+    // Cleanup
+    return () => {
+      api.off("select", handleSelect);
+    };
+  }, [api]);
+
   return (
     <div className="w-full max-w-3xl mx-auto px-4 py-4">
       <div className="text-center mb-4 animate-fade-in">
@@ -60,11 +78,7 @@ const WebsiteTour = () => {
           loop: true,
           align: "center"
         }} 
-        onSelect={(api) => {
-          if (api) {
-            setActiveSlide(api.selectedScrollSnap());
-          }
-        }}
+        setApi={setApi}
         className="w-full mx-0 py-0 my-0 px-[106px]"
       >
         <CarouselContent>
@@ -130,11 +144,11 @@ const WebsiteTour = () => {
               transition={{
                 duration: 0.5
               }}
-              onClick={() => document.querySelector<HTMLElement>(`.embla__container > *:nth-child(${index + 1})`)?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest',
-                inline: 'center'
-              })} 
+              onClick={() => {
+                if (api) {
+                  api.scrollTo(index);
+                }
+              }} 
             />
           ))}
         </div>
