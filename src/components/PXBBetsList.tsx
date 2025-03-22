@@ -117,10 +117,10 @@ const PXBBetsList = () => {
       
       if (bet.betType === 'up') {
         if (actualChange < 0) return 0;
-        return Math.min(100, actualChange / targetChange * 100);
+        return Math.min(100, (actualChange / targetChange) * 100);
       } else {
         if (actualChange > 0) return 0;
-        return Math.min(100, Math.abs(actualChange) / targetChange * 100);
+        return Math.min(100, (Math.abs(actualChange) / targetChange) * 100);
       }
     }
     
