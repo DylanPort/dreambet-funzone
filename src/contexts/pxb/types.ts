@@ -1,13 +1,12 @@
 
-import { UserProfile, PXBBet } from "@/types/pxb";
-import { LeaderboardUser } from "./useLeaderboardData";
+import { UserProfile, PXBBet, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from "@/types/pxb";
 
 export interface PXBPointsContextType {
   userProfile: UserProfile | null;
   isLoading: boolean;
   bets: PXBBet[];
-  leaderboard: LeaderboardUser[];
-  winRateLeaderboard: LeaderboardUser[];
+  leaderboard: LeaderboardEntry[];
+  winRateLeaderboard: WinRateLeaderboardEntry[];
   isLeaderboardLoading: boolean;
   isLoadingWinRate: boolean;
   mintPoints: (amount?: number) => Promise<void>;
@@ -28,4 +27,10 @@ export interface PXBPointsContextType {
   fetchWinRateLeaderboard: () => Promise<void>;
   addPointsToUser: (amount: number, reason: string) => Promise<boolean | undefined>;
   mintingPoints: boolean;
+  // Referral system
+  generateReferralLink: () => Promise<string>;
+  checkAndProcessReferral: (referralCode: string) => Promise<void>;
+  referralStats: ReferralStats;
+  fetchReferralStats: () => Promise<void>;
+  isLoadingReferrals: boolean;
 }

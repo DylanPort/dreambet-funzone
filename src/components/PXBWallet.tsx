@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
@@ -88,7 +87,6 @@ const PXBWallet: React.FC = () => {
     }
   }, [activeTab, userProfile, fetchReferralStats]);
   
-  // Check for referral code in URL when component loads
   useEffect(() => {
     const refCode = searchParams.get('ref');
     if (refCode && activeTab !== 'referrals') {
@@ -490,7 +488,7 @@ const PXBWallet: React.FC = () => {
                       <div key={referral.id} className="flex items-center justify-between p-3 bg-indigo-900/10 rounded-lg hover:bg-indigo-900/20 transition-colors border border-indigo-900/20">
                         <div className="flex items-center">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                            <User className="w-4 h-4" />
+                            <Users className="w-4 h-4" />
                           </div>
                           <div>
                             <p className="font-medium text-sm text-white">{referral.referredUsername}</p>
