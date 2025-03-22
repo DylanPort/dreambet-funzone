@@ -159,7 +159,11 @@ const PXBLeaderboard: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-green-500/5 to-yellow-500/5 animate-gradient-move"></div>
       
       <div className="flex items-center mb-4 relative z-10">
-        <Trophy className="w-6 h-6 mr-2 text-yellow-400 animate-bob" />
+        <img 
+          src="/lovable-uploads/a940715f-922f-4c71-88e5-de8d93fce0c2.png" 
+          alt="Colorful flame" 
+          className="w-6 h-6 mr-2 animate-bob" 
+        />
         <h2 className="text-xl font-bold bg-gradient-to-r from-green-400 via-yellow-300 to-orange-500 bg-clip-text text-transparent">Leaderboard</h2>
       </div>
       
