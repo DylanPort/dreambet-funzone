@@ -70,37 +70,31 @@ export interface ReferralStats {
   referralCode: string | null;
 }
 
-// Context types
-export interface PXBPointsContextType {
-  userProfile: UserProfile | null;
-  isLoading: boolean;
-  bets: PXBBet[];
-  leaderboard: LeaderboardEntry[];
-  winRateLeaderboard: WinRateLeaderboardEntry[];
-  mintPoints: (amount?: number) => Promise<void>;
-  placeBet: (
-    tokenMint: string,
-    tokenName: string,
-    tokenSymbol: string,
-    betAmount: number,
-    betType: 'up' | 'down',
-    percentageChange: number,
-    duration: number
-  ) => Promise<PXBBet | void>;
-  sendPoints: (recipientId: string, amount: number) => Promise<boolean>;
-  generatePxbId: () => string;
-  fetchUserProfile: () => Promise<void>;
-  fetchUserBets: () => Promise<void>;
-  fetchLeaderboard: () => Promise<void>;
-  fetchWinRateLeaderboard: () => Promise<void>;
-  addPointsToUser: (amount: number, reason: string) => Promise<void>;
-  mintingPoints: boolean;
-  isLeaderboardLoading: boolean;
-  isLoadingWinRate: boolean;
-  // Referral system
-  generateReferralLink: () => Promise<string>;
-  checkAndProcessReferral: (referralCode: string) => Promise<void>;
-  referralStats: ReferralStats;
-  fetchReferralStats: () => Promise<void>;
-  isLoadingReferrals: boolean;
+// Database schema interfaces for type safety with Supabase
+export interface SupabaseBetsRow {
+  bet_id: string;
+  bettor1_id: string;
+  bettor2_id?: string;
+  creator: string;
+  token_mint: string;
+  token_name?: string; 
+  token_symbol?: string;
+  sol_amount: number;
+  prediction_bettor1: 'up' | 'down';
+  percentage_change: number;
+  status: string;
+  points_won?: number;
+  created_at: string;
+  duration: number;
+  initial_market_cap?: number;
+  current_market_cap?: number;
+  tokens?: {
+    token_name: string;
+    token_symbol: string;
+  };
+  // Include all other columns from the bets table
+  on_chain_id?: string;
+  transaction_signature?: string;
+  end_time?: string;
+  start_time?: string;
 }
