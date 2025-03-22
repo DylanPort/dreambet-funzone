@@ -1,15 +1,18 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Trophy, Medal, User, ArrowUp, Flame, Star, BarChart } from 'lucide-react';
+import { Trophy, Medal, User, ArrowUp, Flame, Star, BarChart, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { LeaderboardUser } from '@/contexts/pxb/useLeaderboardData';
 
 const PXBLeaderboard: React.FC = () => {
-  const { leaderboard, fetchLeaderboard, userProfile } = usePXBPoints();
+  const { leaderboard, winRateLeaderboard, fetchLeaderboard, fetchWinRateLeaderboard, userProfile } = usePXBPoints();
   const [animate, setAnimate] = useState(false);
   const [leaderboardTab, setLeaderboardTab] = useState<'points' | 'winrate'>('points');
+  const [showAllUsers, setShowAllUsers] = useState(false);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -20,12 +23,12 @@ const PXBLeaderboard: React.FC = () => {
     return () => clearTimeout(timer);
   }, [fetchLeaderboard]);
 
-  // This is a placeholder for winrate data - in a real implementation
-  // this would be fetched from your backend
-  const winrateLeaderboard = leaderboard.map(user => ({
-    ...user,
-    winRate: Math.round(Math.random() * 100) // Replace with actual win rate data
-  })).sort((a, b) => b.winRate - a.winRate);
+  // Fetch win rate data when the win rate tab is selected
+  useEffect(() => {
+    if (leaderboardTab === 'winrate') {
+      fetchWinRateLeaderboard();
+    }
+  }, [leaderboardTab, fetchWinRateLeaderboard]);
 
   const getLeaderIcon = (position: number) => {
     switch(position) {
@@ -63,8 +66,11 @@ const PXBLeaderboard: React.FC = () => {
     }
   };
 
-  const renderLeaderboardContent = (data: any[], valueKey: string, valueLabel: string) => (
-    <ScrollArea className="h-[320px] pr-4">
+  const displayedPointsUsers = showAllUsers ? leaderboard : leaderboard.slice(0, 10);
+  const displayedWinRateUsers = showAllUsers ? winRateLeaderboard : winRateLeaderboard.slice(0, 10);
+
+  const renderLeaderboardContent = (data: LeaderboardUser[], valueKey: string, valueLabel: string) => (
+    <ScrollArea className={showAllUsers ? "h-[420px] pr-4" : "h-[320px] pr-4"}>
       <div className="space-y-3">
         {data.map((trader, index) => {
           const isCurrentUser = trader.id === userProfile?.id;
@@ -160,13 +166,25 @@ const PXBLeaderboard: React.FC = () => {
         </TabsList>
         
         <TabsContent value="points" className="mt-0">
-          {renderLeaderboardContent(leaderboard, 'pxbPoints', 'PXB')}
+          {renderLeaderboardContent(displayedPointsUsers, 'pxbPoints', 'PXB')}
         </TabsContent>
         
         <TabsContent value="winrate" className="mt-0">
-          {renderLeaderboardContent(winrateLeaderboard, 'winRate', '')}
+          {renderLeaderboardContent(displayedWinRateUsers, 'winRate', '')}
         </TabsContent>
       </Tabs>
+      
+      <div className="mt-3 text-center">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowAllUsers(!showAllUsers)}
+          className="w-full bg-dream-foreground/5 border-dream-foreground/20"
+        >
+          {showAllUsers ? "Show Less" : "Show All Top 50"}
+          <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${showAllUsers ? 'rotate-180' : ''}`} />
+        </Button>
+      </div>
     </div>
   );
 };

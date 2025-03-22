@@ -32,7 +32,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   } = useProfileData();
   
   const { bets, setBets, fetchUserBets } = useBetsData(userProfile);
-  const { leaderboard, fetchLeaderboard } = useLeaderboardData();
+  const { 
+    leaderboard, 
+    winRateLeaderboard,
+    fetchLeaderboard,
+    fetchWinRateLeaderboard,
+    isLoading: isLeaderboardLoading,
+    isLoadingWinRate
+  } = useLeaderboardData();
   
   // Set up operations
   const { 
@@ -87,6 +94,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isLoading,
         bets,
         leaderboard,
+        winRateLeaderboard,
         mintPoints: mintPointsWrapper,
         placeBet: placeBetWrapper,
         sendPoints,
@@ -94,8 +102,11 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fetchUserProfile,
         fetchUserBets,
         fetchLeaderboard,
+        fetchWinRateLeaderboard,
         addPointsToUser,
-        mintingPoints // Expose the mintingPoints state
+        mintingPoints,
+        isLeaderboardLoading,
+        isLoadingWinRate
       }}
     >
       {children}

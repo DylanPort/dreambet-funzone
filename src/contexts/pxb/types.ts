@@ -1,11 +1,15 @@
 
 import { UserProfile, PXBBet } from "@/types/pxb";
+import { LeaderboardUser } from "./useLeaderboardData";
 
 export interface PXBPointsContextType {
   userProfile: UserProfile | null;
   isLoading: boolean;
   bets: PXBBet[];
-  leaderboard: UserProfile[];
+  leaderboard: LeaderboardUser[];
+  winRateLeaderboard: LeaderboardUser[];
+  isLeaderboardLoading: boolean;
+  isLoadingWinRate: boolean;
   mintPoints: (amount?: number) => Promise<void>;
   placeBet: (
     tokenMint: string,
@@ -21,6 +25,7 @@ export interface PXBPointsContextType {
   fetchUserProfile: () => Promise<void>;
   fetchUserBets: () => Promise<void>;
   fetchLeaderboard: () => Promise<void>;
+  fetchWinRateLeaderboard: () => Promise<void>;
   addPointsToUser: (amount: number, reason: string) => Promise<boolean | undefined>;
-  mintingPoints: boolean; // Add this property to fix the error
+  mintingPoints: boolean;
 }
