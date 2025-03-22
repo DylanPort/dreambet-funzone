@@ -81,9 +81,7 @@ const PXBBetsList = () => {
   const handleRefresh = async () => {
     if (isRefreshing) return;
     
-    toast({
-      description: "Fetching the latest market cap information for your bets"
-    });
+    toast.success("Fetching the latest market cap information for your bets");
     
     await fetchMarketCapData();
   };
@@ -297,7 +295,7 @@ const PXBBetsList = () => {
             className="w-full text-sm" 
             onClick={() => setShowAllBets(!showAllBets)}
           >
-            {showAllUsers ? 'Show Less' : `Show All (${bets.length})`}
+            {showAllBets ? 'Show Less' : `Show All (${bets.length})`}
             <ChevronRight className={`ml-2 h-4 w-4 transition-transform ${showAllBets ? 'rotate-90' : ''}`} />
           </Button>
         )}
