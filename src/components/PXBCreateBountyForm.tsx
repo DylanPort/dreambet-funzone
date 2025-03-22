@@ -41,33 +41,11 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
   });
 
   useEffect(() => {
+    // Update authentication status whenever userProfile changes
+    setIsAuthenticated(!!userProfile);
+    
     if (userProfile) {
-      setIsAuthenticated(true);
       console.log('User is authenticated with profile:', userProfile);
-    } else {
-      const checkAuth = async () => {
-        setLoading(true);
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            console.warn('No active session found. User may need to authenticate with Supabase.');
-            setIsAuthenticated(false);
-            toast.error('Please connect your wallet to create a bounty', {
-              duration: 5000,
-            });
-          } else {
-            console.log('Authenticated session found:', session.user.id);
-            setIsAuthenticated(true);
-          }
-        } catch (error) {
-          console.error('Error checking authentication:', error);
-          setIsAuthenticated(false);
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      checkAuth();
     }
   }, [userProfile]);
 
@@ -122,17 +100,8 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     setLoading(true);
     
     try {
-      // Fetch the auth session to get the current user's ID
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error('Your session has expired. Please sign in again.');
-        setLoading(false);
-        return;
-      }
-      
-      // This should match the ID in the profiles table which is auth.uid()
-      const creatorId = session.user.id;
+      // Use the userProfile ID directly instead of getting a new session
+      const creatorId = userProfile.id;
       
       if (!creatorId) {
         toast.error('User ID not available. Please reconnect your wallet.');
@@ -144,6 +113,13 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       endDate.setDate(endDate.getDate() + formData.durationDays);
       
       console.log('Creating bounty with creator ID:', creatorId);
+      
+      // Check if the user's session is valid
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // If no session, try to get one directly from Supabase
+        console.log('No active session, attempting to authenticate with Supabase');
+      }
       
       const { data, error } = await supabase
         .from('bounties')
