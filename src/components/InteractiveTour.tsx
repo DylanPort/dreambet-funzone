@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
@@ -8,28 +9,43 @@ import PXBOnboarding from '@/components/PXBOnboarding';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Upload } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+
 interface PXBOnboardingProps {
   onClose: () => void;
 }
+
 const InteractiveTour = () => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
   const [hasClaimedPoints, setHasClaimedPoints] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [videoSources, setVideoSources] = useState<string[]>([
+    "/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png",
+    "/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png",
+    "/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png",
+    "/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png",
+    "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
+  ]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const {
     userProfile,
     addPointsToUser
   } = usePXBPoints();
+  
   const {
     connected
   } = useWallet();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
+  
   useEffect(() => {
     setCurrentStep(0);
     const tourCompleted = localStorage.getItem('pxb-tour-completed');
@@ -37,6 +53,7 @@ const InteractiveTour = () => {
       setCurrentStep(0);
     }
   }, []);
+  
   const handleNextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -44,11 +61,13 @@ const InteractiveTour = () => {
       localStorage.setItem('pxb-tour-completed', 'true');
     }
   };
+  
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
+  
   const handleClaimPoints = async () => {
     if (!connected) {
       toast.error("Please connect your wallet first!");
@@ -67,13 +86,39 @@ const InteractiveTour = () => {
       toast.error("Failed to claim points. Please try again later.");
     }
   };
+
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Check if file is a video
+    if (!file.type.startsWith('video/')) {
+      toast.error("Please upload a video file");
+      return;
+    }
+    
+    // Create object URL for the video
+    const objectUrl = URL.createObjectURL(file);
+    
+    // Update the video source for the current step
+    const newVideoSources = [...videoSources];
+    newVideoSources[currentStep] = objectUrl;
+    setVideoSources(newVideoSources);
+    
+    toast.success(`Video uploaded for Step ${currentStep + 1}`);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+  
   const steps = [{
     title: "Welcome, Explorer!",
     description: "You've stumbled upon a treasure chest of opportunity in the wild Trenches!",
     icon: <img src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" className="w-8 h-8" alt="Welcome" />,
     highlight: null,
     action: null,
-    image: "/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png"
+    image: videoSources[0]
   }, {
     title: "Mint Your Magic Points",
     description: "Grab some free points – your trusty in-game currency. You can only mint once per wallet!",
@@ -92,7 +137,7 @@ const InteractiveTour = () => {
         }} />
         </DialogContent>
       </Dialog>,
-    image: "/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png"
+    image: videoSources[1]
   }, {
     title: "Bet Like a Boss",
     description: "Wager your points on any Solana chain token. Crank up the multiplier and watch your points soar!",
@@ -103,7 +148,7 @@ const InteractiveTour = () => {
           Go to Playground
         </Button>
       </Link>,
-    image: "/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png"
+    image: videoSources[2]
   }, {
     title: "Climb the Trader's Throne",
     description: "Show off your betting skills and rise through the leaderboard ranks to reach legendary status!",
@@ -114,7 +159,7 @@ const InteractiveTour = () => {
           View Leaderboard
         </Button>
       </Link>,
-    image: "/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png"
+    image: videoSources[3]
   }, {
     title: "Unlock Elite Powers",
     description: "Visit your profile and earn PXB points as a welcome bonus!",
@@ -125,9 +170,22 @@ const InteractiveTour = () => {
           Go to Profile
         </Button>
       </Link>,
-    image: "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
+    image: videoSources[4]
   }];
+
+  // Hidden file input for video uploads
+  const fileInput = (
+    <Input 
+      ref={fileInputRef}
+      type="file"
+      accept="video/*"
+      onChange={handleVideoUpload}
+      className="hidden"
+    />
+  );
+  
   return <div className={`flex justify-center items-center w-full my-4 md:my-12 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
+      {fileInput}
       <motion.div className={`relative ${isMobile ? 'w-[300px] h-[400px]' : 'w-[400px] md:w-[600px] h-[300px] md:h-[400px]'} flex items-center justify-center rounded-2xl overflow-hidden`} style={{
       perspective: '1000px',
       transformStyle: 'preserve-3d'
@@ -211,11 +269,37 @@ const InteractiveTour = () => {
           }} className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-black/85">
               {isMobile ? <ScrollArea className="h-full pr-2">
                   <div className="flex flex-col items-center justify-start py-2">
-                    <div className="w-full w-[120px] flex justify-center items-center mb-4">
-                      <img src={steps[currentStep].image} alt={steps[currentStep].title} className="w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" style={{
-                    transformStyle: 'preserve-3d',
-                    transform: 'translateZ(10px) rotateY(-5deg)'
-                  }} />
+                    <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
+                      {steps[currentStep].image && steps[currentStep].image.startsWith('/lovable-uploads') ? (
+                        <img src={steps[currentStep].image} alt={steps[currentStep].title} 
+                          className="w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" 
+                          style={{
+                            transformStyle: 'preserve-3d',
+                            transform: 'translateZ(10px) rotateY(-5deg)'
+                          }} 
+                        />
+                      ) : (
+                        <video 
+                          src={steps[currentStep].image} 
+                          className="w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
+                          style={{
+                            transformStyle: 'preserve-3d',
+                            transform: 'translateZ(10px) rotateY(-5deg)'
+                          }}
+                          autoPlay 
+                          loop 
+                          muted 
+                          playsInline
+                        />
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="absolute bottom-0 right-0 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full w-7 h-7 p-1"
+                        onClick={triggerFileInput}
+                      >
+                        <Upload className="h-4 w-4" />
+                      </Button>
                     </div>
                     
                     <div className="w-full mt-2 flex flex-col items-center">
@@ -253,14 +337,42 @@ const InteractiveTour = () => {
                     </div>
                   </div>
                 </ScrollArea> : <div className="flex flex-row items-center justify-center gap-6">
-                  <motion.div className="w-1/2 flex justify-center items-center mb-0" style={{
+                  <motion.div className="w-1/2 flex justify-center items-center mb-0 relative" style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(40px)'
               }}>
-                    <img src={steps[currentStep].image} alt={steps[currentStep].title} className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" style={{
-                  transformStyle: 'preserve-3d',
-                  transform: 'translateZ(10px) rotateY(-5deg)'
-                }} />
+                    {steps[currentStep].image && steps[currentStep].image.startsWith('/lovable-uploads') ? (
+                      <img 
+                        src={steps[currentStep].image} 
+                        alt={steps[currentStep].title} 
+                        className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" 
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: 'translateZ(10px) rotateY(-5deg)'
+                        }} 
+                      />
+                    ) : (
+                      <video 
+                        src={steps[currentStep].image} 
+                        className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: 'translateZ(10px) rotateY(-5deg)'
+                        }}
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline
+                      />
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="absolute bottom-2 right-2 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full"
+                      onClick={triggerFileInput}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
                   </motion.div>
                   
                   <div className="w-1/2 flex flex-col items-start">
@@ -343,4 +455,5 @@ const InteractiveTour = () => {
       </motion.div>
     </div>;
 };
+
 export default InteractiveTour;
