@@ -351,14 +351,14 @@ const InteractiveTour = () => {
                 duration: 0.3,
                 ease: "easeInOut"
               }} 
-              className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-gradient-to-b from-black/95 to-black/85 backdrop-blur-md">
+              className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-gradient-to-b from-indigo-950/90 to-blue-950/80 backdrop-blur-lg">
               {isMobile ? <ScrollArea className="h-full pr-2">
                   <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
                       {renderVideo(currentStep, 'small')}
                       
                       <motion.div 
-                        className="absolute -bottom-1 -right-1 h-3 w-3 bg-cyan-400 rounded-full"
+                        className="absolute -bottom-1 -right-1 h-3 w-3 bg-cyan-400/80 rounded-full"
                         animate={{ opacity: [0.5, 1, 0.5] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
                       />
@@ -367,14 +367,14 @@ const InteractiveTour = () => {
                     <div className="w-full mt-2 flex flex-col items-center">
                       
                       
-                      <motion.h2 className="text-lg font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent" style={{
+                      <motion.h2 className="text-lg font-bold mb-2 text-white/90" style={{
                     transformStyle: 'preserve-3d',
                     transform: 'translateZ(20px)'
                   }}>
                         {steps[currentStep].title}
                       </motion.h2>
                       
-                      <motion.p className="text-indigo-200/80 text-xs mb-2" style={{
+                      <motion.p className="text-indigo-100/70 text-xs mb-2" style={{
                     transformStyle: 'preserve-3d',
                     transform: 'translateZ(15px)'
                   }}>
@@ -395,17 +395,17 @@ const InteractiveTour = () => {
                 transform: 'translateZ(40px)'
               }}>
                     {renderVideo(currentStep, 'large')}
-                    <Button variant="outline" size="icon" className="absolute bottom-2 right-2 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full" onClick={triggerFileInput} disabled={isUploading}>
+                    <Button variant="outline" size="icon" className="absolute bottom-2 right-2 bg-indigo-900/60 hover:bg-indigo-800/80 z-10 rounded-full border-indigo-400/30" onClick={triggerFileInput} disabled={isUploading}>
                       {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     </Button>
                     
                     <motion.div 
-                      className="absolute -top-1 -left-1 h-2 w-8 bg-gradient-to-r from-cyan-400 to-transparent rounded-full"
+                      className="absolute -top-1 -left-1 h-2 w-8 bg-gradient-to-r from-cyan-400/70 to-transparent rounded-full"
                       animate={{ opacity: [0.3, 0.7, 0.3] }}
                       transition={{ duration: 2, repeat: Infinity }}
                     />
                     <motion.div 
-                      className="absolute -bottom-1 -right-1 h-8 w-2 bg-gradient-to-t from-indigo-400 to-transparent rounded-full"
+                      className="absolute -bottom-1 -right-1 h-8 w-2 bg-gradient-to-t from-indigo-400/70 to-transparent rounded-full"
                       animate={{ opacity: [0.3, 0.7, 0.3] }}
                       transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
                     />
@@ -414,23 +414,23 @@ const InteractiveTour = () => {
                   <div className="w-1/2 flex flex-col items-start">
                     <div className="mb-4 flex items-center justify-start">
                       <motion.div 
-                        className="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-900 border border-indigo-500/50"
-                        animate={{ borderColor: ['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.7)', 'rgba(99, 102, 241, 0.3)'] }}
+                        className="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-900/80 border border-indigo-500/30"
+                        animate={{ borderColor: ['rgba(99, 102, 241, 0.2)', 'rgba(99, 102, 241, 0.4)', 'rgba(99, 102, 241, 0.2)'] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
                       >
-                        <Zap className="h-2.5 w-2.5 text-indigo-300" />
+                        <Zap className="h-2.5 w-2.5 text-indigo-300/90" />
                       </motion.div>
-                      <div className="h-[1px] w-12 bg-gradient-to-r from-indigo-500/80 to-transparent"></div>
+                      <div className="h-[1px] w-12 bg-gradient-to-r from-indigo-500/50 to-transparent"></div>
                     </div>
                     
-                    <motion.h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent" style={{
+                    <motion.h2 className="text-2xl font-bold mb-2 text-white/90" style={{
                   transformStyle: 'preserve-3d',
                   transform: 'translateZ(20px)'
                 }}>
                       {steps[currentStep].title}
                     </motion.h2>
                     
-                    <motion.p className="text-indigo-200/80 text-sm mb-4" style={{
+                    <motion.p className="text-indigo-100/70 text-sm mb-4" style={{
                   transformStyle: 'preserve-3d',
                   transform: 'translateZ(15px)'
                 }}>
@@ -447,7 +447,7 @@ const InteractiveTour = () => {
                 </div>}
               
               <div className="mt-3 md:mt-5 flex justify-center space-x-2">
-                {steps.map((_, index) => <motion.button key={index} className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400 scale-125' : 'bg-gray-600 hover:bg-gray-500'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
+                {steps.map((_, index) => <motion.button key={index} className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400/90 scale-125' : 'bg-gray-600/50 hover:bg-gray-500/70'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
                 scale: 1.2
               }} style={{
                 transformStyle: 'preserve-3d',
@@ -456,19 +456,19 @@ const InteractiveTour = () => {
               </div>
               
               <div className="absolute bottom-2 md:bottom-4 right-2 md:right-4 flex space-x-2">
-                {currentStep > 0 && <Button variant="ghost" size="sm" className="text-xs md:text-sm text-white/70 hover:text-white hover:bg-indigo-600/30 z-10 px-2 py-1 md:px-4 md:py-2" onClick={handlePrevStep} style={{
+                {currentStep > 0 && <Button variant="ghost" size="sm" className="text-xs md:text-sm text-white/60 hover:text-white/90 hover:bg-indigo-600/20 z-10 px-2 py-1 md:px-4 md:py-2" onClick={handlePrevStep} style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(20px)'
               }}>
                     Back
                   </Button>}
                 
-                {currentStep < steps.length - 1 ? <Button variant="default" size="sm" className="text-xs md:text-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white z-10 px-2 py-1 md:px-4 md:py-2 flex items-center" onClick={handleNextStep} style={{
+                {currentStep < steps.length - 1 ? <Button variant="default" size="sm" className="text-xs md:text-sm bg-gradient-to-r from-indigo-600/90 to-purple-600/90 hover:from-indigo-700 hover:to-purple-700 text-white/90 z-10 px-2 py-1 md:px-4 md:py-2 flex items-center" onClick={handleNextStep} style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(20px)'
               }}>
                     Next <ChevronRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
-                  </Button> : <Button variant="default" size="sm" className="text-xs md:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white z-10 px-2 py-1 md:px-4 md:py-2" onClick={handleNextStep} style={{
+                  </Button> : <Button variant="default" size="sm" className="text-xs md:text-sm bg-gradient-to-r from-green-500/90 to-emerald-600/90 hover:from-green-600 hover:to-emerald-700 text-white/90 z-10 px-2 py-1 md:px-4 md:py-2" onClick={handleNextStep} style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(20px)'
               }}>
