@@ -27,7 +27,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    requiredProof: '',
+    requiredProof: 'none', // Changed from empty string to 'none'
     projectName: '',
     projectUrl: '',
     telegramUrl: '',
@@ -95,7 +95,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
         .insert({
           title: formData.title,
           description: formData.description,
-          required_proof: formData.requiredProof || null, // Now optional
+          required_proof: formData.requiredProof === 'none' ? null : formData.requiredProof, // Convert 'none' to null
           project_name: formData.projectName,
           project_url: formData.projectUrl || null,
           telegram_url: formData.telegramUrl || null,
@@ -265,7 +265,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
                 <SelectValue placeholder="Select proof type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No proof required</SelectItem>
+                <SelectItem value="none">No proof required</SelectItem>
                 <SelectItem value="screenshot">Screenshot</SelectItem>
                 <SelectItem value="wallet_address">Wallet Address</SelectItem>
                 <SelectItem value="social_handle">Social Media Handle</SelectItem>
