@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
@@ -102,7 +103,7 @@ const Index = () => {
           <FloatingImages />
           
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
-            <div className="flex flex-row flex-wrap md:flex-nowrap gap-6 w-full">
+            <div className="flex flex-row-reverse md:flex-row flex-wrap md:flex-nowrap gap-6 w-full">
               <div className="w-full md:w-1/2 flex justify-center">
                 <InteractiveTour />
               </div>
