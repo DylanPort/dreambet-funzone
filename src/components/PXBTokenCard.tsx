@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ExternalLink, Flame } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 interface PXBTokenCardProps {
   id: string;
@@ -78,28 +78,11 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
     }
     
     try {
-      toast.dismiss();
-      
-      const toastId = `bet-${id}-${Date.now()}`;
-      toast.loading(`Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${symbol}...`, {
-        id: toastId
+      toast({
+        title: `Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${symbol}`,
+        description: `Starting MCAP: ${formatLargeNumber(marketCap)}
+        Target: ${betType === 'up' ? formatLargeNumber(marketCap * 1.1) : formatLargeNumber(marketCap * 0.9)}`,
       });
-      
-      const currentMcap = formatLargeNumber(marketCap);
-      const percentChange = 10;
-      
-      let targetMcap;
-      if (betType === 'up') {
-        targetMcap = formatLargeNumber(marketCap * 1.1);
-      } else {
-        targetMcap = formatLargeNumber(marketCap * 0.9);
-      }
-      
-      toast.loading(`Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${symbol}...
-        Starting MCAP: ${currentMcap}
-        Target MCAP: ${targetMcap}`, 
-        { id: toastId }
-      );
       
       await placeBet(id, name, symbol, 10, betType, 10, 30);
     } catch (error) {

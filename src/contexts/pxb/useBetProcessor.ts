@@ -1,8 +1,7 @@
-
 import { useEffect, useCallback } from 'react';
 import { UserProfile, PXBBet, SupabaseBetsRow } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
 
 export const useBetProcessor = (
@@ -129,12 +128,12 @@ export const useBetProcessor = (
               pxbPoints: updatedPoints
             });
             
-            // Show win notification
+            // Show win notification - keep this toast
             toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points from the house.`);
           } else {
-            // Show loss notification with a less alarming tone
-            toast(`Your bet on ${bet.tokenSymbol} didn't win this time.`, {
-              description: `Your ${bet.betAmount} PXB Points have returned to the house supply. Market cap changed by ${actualChange.toFixed(2)}%, which didn't meet your ${bet.percentageChange}% prediction.`
+            // Show loss notification - keep this toast
+            toast.error(`Your bet on ${bet.tokenSymbol} didn't win this time.`, {
+              description: `Your ${bet.betAmount} PXB Points have returned to the house supply.`
             });
           }
           
@@ -145,7 +144,7 @@ export const useBetProcessor = (
               : b
           ));
         } else {
-          // For active bets, update the current market cap for progress tracking
+          // For active bets, update the current market cap for progress tracking - NO TOAST FOR THESE UPDATES
           try {
             const tokenData = await fetchDexScreenerData(bet.tokenMint);
             if (tokenData && tokenData.marketCap && bet.initialMarketCap) {
