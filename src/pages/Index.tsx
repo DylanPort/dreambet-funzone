@@ -131,8 +131,7 @@ const Index = () => {
                   <div className="flex flex-col items-center transform transition-all duration-500 hover:scale-105 animate-float-delayed">
                     <img 
                       alt="Mint PXB Points" 
-                      className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
-                      transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" 
+                      className="w-64 h-auto transition-all duration-500" 
                       src="/lovable-uploads/75b9d39b-4705-4e43-8bf5-99c97463da79.png" 
                     />
                     <div className="mt-4 text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
