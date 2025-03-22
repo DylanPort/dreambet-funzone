@@ -12,11 +12,9 @@ import { ChevronRight, Upload, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-
 interface PXBOnboardingProps {
   onClose: () => void;
 }
-
 const InteractiveTour = () => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
@@ -38,7 +36,6 @@ const InteractiveTour = () => {
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
-
   useEffect(() => {
     setCurrentStep(0);
     const tourCompleted = localStorage.getItem('pxb-tour-completed');
@@ -52,7 +49,6 @@ const InteractiveTour = () => {
     }
     setVideoSources(newVideoSources);
   }, []);
-
   const playVideoIfVisible = (index: number) => {
     if (index === currentStep && videoRefs.current[index]) {
       const videoElement = videoRefs.current[index];
@@ -66,11 +62,9 @@ const InteractiveTour = () => {
       }
     }
   };
-
   useEffect(() => {
     playVideoIfVisible(currentStep);
   }, [currentStep, videoSources]);
-
   const handleNextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -78,13 +72,11 @@ const InteractiveTour = () => {
       localStorage.setItem('pxb-tour-completed', 'true');
     }
   };
-
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
-
   const handleClaimPoints = async () => {
     if (!connected) {
       toast.error("Please connect your wallet first!");
@@ -103,7 +95,6 @@ const InteractiveTour = () => {
       toast.error("Failed to claim points. Please try again later.");
     }
   };
-
   const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -146,11 +137,9 @@ const InteractiveTour = () => {
       }
     }
   };
-
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
-
   const steps = [{
     title: "Welcome, Explorer!",
     description: "You've stumbled upon a treasure chest of opportunity in the wild Trenches!",
@@ -193,17 +182,15 @@ const InteractiveTour = () => {
     description: "Show off your betting skills and rise through the leaderboard ranks to reach legendary status!",
     icon: <img src="/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png" className="w-8 h-8" alt="Leaderboard" />,
     highlight: "leaderboard",
-    action: <Button 
-      variant="default" 
-      className="mt-4 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700" 
-      onClick={() => {
-        handleNextStep();
-        const leaderboardSection = document.getElementById('leaderboard');
-        if (leaderboardSection) {
-          leaderboardSection.scrollIntoView({ behavior: 'smooth' });
-        }
-      }}
-    >
+    action: <Button variant="default" className="mt-4 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700" onClick={() => {
+      handleNextStep();
+      const leaderboardSection = document.getElementById('leaderboard');
+      if (leaderboardSection) {
+        leaderboardSection.scrollIntoView({
+          behavior: 'smooth'
+        });
+      }
+    }}>
       View Leaderboard
     </Button>,
     image: videoSources[3]
@@ -219,9 +206,7 @@ const InteractiveTour = () => {
       </Link>,
     image: videoSources[4]
   }];
-
   const fileInput = <Input ref={fileInputRef} type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />;
-
   const renderVideo = (index: number, size: 'small' | 'large') => {
     const videoUrl = videoSources[index];
     const videoClassName = size === 'small' ? "w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" : "w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]";
@@ -246,7 +231,6 @@ const InteractiveTour = () => {
         </div>;
     }
   };
-
   return <div className={`flex justify-center items-center w-full my-4 md:my-12 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
       {fileInput}
       <motion.div className={`relative ${isMobile ? 'w-[300px] h-[400px]' : 'w-[400px] md:w-[600px] h-[300px] md:h-[400px]'} flex items-center justify-center rounded-2xl overflow-hidden`} style={{
@@ -334,22 +318,11 @@ const InteractiveTour = () => {
                   <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
                       {renderVideo(currentStep, 'small')}
-                      <Button variant="outline" size="icon" className="absolute bottom-0 right-0 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full w-7 h-7 p-1" onClick={triggerFileInput} disabled={isUploading}>
-                        {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      </Button>
+                      
                     </div>
                     
                     <div className="w-full mt-2 flex flex-col items-center">
-                      <div className="mb-2 md:mb-4 flex justify-center">
-                        <motion.div className="p-2 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" whileHover={{
-                      scale: 1.1
-                    }} style={{
-                      transformStyle: 'preserve-3d',
-                      transform: 'translateZ(30px)'
-                    }}>
-                          {steps[currentStep].icon}
-                        </motion.div>
-                      </div>
+                      
                       
                       <motion.h2 className="text-lg font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent" style={{
                     transformStyle: 'preserve-3d',
@@ -457,5 +430,4 @@ const InteractiveTour = () => {
       </motion.div>
     </div>;
 };
-
 export default InteractiveTour;
