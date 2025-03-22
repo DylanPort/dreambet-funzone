@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronsRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SearchedToken } from '@/types/token-search';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TrendingToken {
   tokenMint: string;
@@ -35,7 +35,7 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
   const topSearchedRef = useRef<HTMLDivElement>(null);
   const recentSearchedRef = useRef<HTMLDivElement>(null);
   
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   // Number of items to display in each slide
   const itemsPerSlide = isMobile ? 1 : 3;
@@ -77,7 +77,7 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
   }, []);
 
   // Handle carousel scrolling
-  const scrollCarousel = (ref: React.RefObject<HTMLDivElement>, direction: 'next' | 'prev') => {
+  const scrollCarousel = (direction: 'next' | 'prev', ref: React.RefObject<HTMLDivElement>) => {
     if (!ref.current) return;
     
     const container = ref.current;
@@ -202,14 +202,14 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
                     variant="outline" 
                     size="sm" 
                     className="mr-2"
-                    onClick={() => scrollCarousel(topSearchedRef, 'prev')}
+                    onClick={() => scrollCarousel('prev', topSearchedRef)}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => scrollCarousel(topSearchedRef, 'next')}
+                    onClick={() => scrollCarousel('next', topSearchedRef)}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -261,14 +261,14 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
                     variant="outline" 
                     size="sm" 
                     className="mr-2"
-                    onClick={() => scrollCarousel(recentSearchedRef, 'prev')}
+                    onClick={() => scrollCarousel('prev', recentSearchedRef)}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => scrollCarousel(recentSearchedRef, 'next')}
+                    onClick={() => scrollCarousel('next', recentSearchedRef)}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>

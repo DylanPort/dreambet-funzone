@@ -513,7 +513,7 @@ export const fetchTopSearchedTokens = async (limit = 10): Promise<SearchedToken[
       throw error;
     }
     
-    return data as SearchedToken[];
+    return data || [];
   } catch (error) {
     console.error('Error in fetchTopSearchedTokens:', error);
     return [];
@@ -534,7 +534,7 @@ export const fetchRecentlySearchedTokens = async (limit = 10): Promise<SearchedT
       throw error;
     }
     
-    return data as SearchedToken[];
+    return data || [];
   } catch (error) {
     console.error('Error in fetchRecentlySearchedTokens:', error);
     return [];

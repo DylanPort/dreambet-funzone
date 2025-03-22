@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchTokenById, trackTokenSearch } from '@/services/supabaseService';
@@ -61,7 +62,7 @@ const TokenDetail: React.FC = () => {
       <Card className="w-full max-w-3xl mx-auto">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">
-            {loading ? <Skeleton width={200} /> : (token ? token.tokenName : 'Token Not Found')}
+            {loading ? <Skeleton className="h-8 w-[200px]" /> : (token ? token.tokenName : 'Token Not Found')}
           </CardTitle>
         </CardHeader>
         <CardContent>
