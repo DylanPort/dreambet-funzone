@@ -356,6 +356,48 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          points_awarded: number
+          referred_id: string
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          referred_id: string
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          referred_id?: string
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
           accept_transaction: string | null
@@ -522,6 +564,8 @@ export type Database = {
           created_at: string | null
           id: string
           points: number | null
+          referral_code: string | null
+          referred_by: string | null
           updated_at: string | null
           username: string | null
           wallet_address: string
@@ -530,6 +574,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           points?: number | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string | null
           username?: string | null
           wallet_address: string
@@ -538,22 +584,43 @@ export type Database = {
           created_at?: string | null
           id?: string
           points?: number | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string | null
           username?: string | null
           wallet_address?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["referral_code"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       increment_bounty_views: {
         Args: {
           bounty_id: string
         }
         Returns: undefined
+      }
+      process_referral_reward: {
+        Args: {
+          referrer_id: string
+          referred_id: string
+        }
+        Returns: boolean
       }
       transfer_pxb_points: {
         Args: {

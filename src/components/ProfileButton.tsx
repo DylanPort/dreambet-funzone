@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -8,10 +8,11 @@ import { User } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ProfileButton = () => {
-  const { userProfile, addPointsToUser } = usePXBPoints();
+  const { userProfile, addPointsToUser, checkAndProcessReferral } = usePXBPoints();
   const { publicKey, connected } = useWallet();
   const [hasClaimedBonus, setHasClaimedBonus] = useState(false);
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isActive = location.pathname === '/profile';
   
   // Show username if available, otherwise show wallet address or default text
@@ -25,6 +26,16 @@ const ProfileButton = () => {
       setHasClaimedBonus(true);
     }
   }, []);
+
+  // Check for referral parameter
+  useEffect(() => {
+    if (connected && userProfile) {
+      const referralCode = searchParams.get('ref');
+      if (referralCode) {
+        checkAndProcessReferral(referralCode);
+      }
+    }
+  }, [connected, userProfile, searchParams, checkAndProcessReferral]);
 
   const handleProfileClick = async () => {
     if (connected && userProfile && !hasClaimedBonus) {

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -5,6 +6,7 @@ import { useBetsData } from './useBetsData';
 import { useLeaderboardData } from './useLeaderboardData';
 import { usePointOperations } from './usePointOperations';
 import { useBetProcessor } from './useBetProcessor';
+import { useReferralSystem } from './useReferralSystem';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 const PXBPointsContext = createContext<PXBPointsContextType | undefined>(undefined);
@@ -46,7 +48,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     placeBet, 
     sendPoints, 
     generatePxbId,
-    mintingPoints // Get the mintingPoints state from usePointOperations
+    mintingPoints
   } = usePointOperations(
     userProfile,
     setUserProfile,
@@ -54,6 +56,15 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     fetchUserProfile,
     setIsLoading
   );
+
+  // Set up referral system
+  const {
+    generateReferralLink,
+    checkAndProcessReferral,
+    referralStats,
+    fetchReferralStats,
+    isLoadingReferrals
+  } = useReferralSystem(userProfile, fetchUserProfile);
   
   // Handle bet processing
   useBetProcessor(bets, userProfile, setUserProfile, setBets);
@@ -105,7 +116,13 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addPointsToUser,
         mintingPoints,
         isLeaderboardLoading,
-        isLoadingWinRate
+        isLoadingWinRate,
+        // Referral system
+        generateReferralLink,
+        checkAndProcessReferral,
+        referralStats,
+        fetchReferralStats,
+        isLoadingReferrals
       }}
     >
       {children}
