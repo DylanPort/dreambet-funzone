@@ -22,4 +22,5 @@ export interface PXBPointsContextType {
   userBets?: PXBBet[];
   sendPoints?: (recipientId: string, amount: number) => Promise<boolean>;
   generatePxbId?: () => string;
+  addPointsToUser: (amount: number, reason: string) => Promise<boolean>;
 }

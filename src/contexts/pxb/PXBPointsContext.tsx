@@ -27,7 +27,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setUserProfile, 
     isLoading, 
     setIsLoading, 
-    fetchUserProfile 
+    fetchUserProfile,
+    addPointsToUser
   } = useProfileData();
   
   const { bets, setBets, fetchUserBets } = useBetsData(userProfile);
@@ -67,7 +68,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         generatePxbId,
         fetchUserProfile,
         fetchUserBets,
-        fetchLeaderboard
+        fetchLeaderboard,
+        addPointsToUser
       }}
     >
       {children}

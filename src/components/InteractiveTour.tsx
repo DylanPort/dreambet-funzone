@@ -11,6 +11,14 @@ import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
 
+// Add Props type that includes onClose function
+interface PXBOnboardingProps {
+  onClose: () => void;
+}
+
+// We'll assume PXBOnboarding now accepts an onClose prop
+// You'll need to update the PXBOnboarding component separately if needed
+
 const InteractiveTour = () => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
