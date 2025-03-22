@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle, Users } from 'lucide-react';
@@ -23,7 +24,7 @@ interface PXBCreateBountyFormProps {
 const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!userProfile);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -40,12 +41,20 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
   });
 
   useEffect(() => {
-    // Update authentication status whenever userProfile changes
-    setIsAuthenticated(!!userProfile);
+    // Check authentication status on mount and when userProfile changes
+    const checkAuthStatus = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const hasSession = !!data.session;
+        console.log('Auth check - has session:', hasSession);
+        setIsAuthenticated(hasSession && !!userProfile);
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        setIsAuthenticated(false);
+      }
+    };
     
-    if (userProfile) {
-      console.log('User is authenticated with profile:', userProfile);
-    }
+    checkAuthStatus();
   }, [userProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -112,8 +121,16 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       
       console.log('Creating bounty with creator ID:', creatorId);
       
-      // Create a direct insert without checking the session again
-      // This uses the existing authentication from the Supabase client
+      // Verify session before submission
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        console.log('No active session, refreshing the page might help');
+        toast.error('Your session has expired. Please refresh the page and try again.');
+        setLoading(false);
+        return;
+      }
+      
+      // Create bounty with verified session
       const { data, error } = await supabase
         .from('bounties')
         .insert({
