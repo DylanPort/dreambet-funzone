@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Coins } from 'lucide-react';
@@ -69,11 +68,13 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-1.5">
           <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/a2975835-e669-4129-b2d9-c4ec405cf5c5.png" 
-              alt="PumpBounty" 
-              className="h-18" // Changed from h-12 to h-18 to make it larger
-            />
+            <div className="h-16 w-auto flex items-center">
+              <img 
+                src="/lovable-uploads/a2975835-e669-4129-b2d9-c4ec405cf5c5.png" 
+                alt="PumpBounty" 
+                className="h-auto w-48"
+              />
+            </div>
           </Link>
           
           <nav className="hidden md:flex space-x-4 items-center">
@@ -111,7 +112,6 @@ const Navbar = () => {
           </nav>
           
           <div className="md:hidden flex items-center gap-3">
-            {/* Mobile PXB Points display */}
             {userProfile && pxbPoints !== null && (
               <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400">
                 <div className="w-4 h-4 flex items-center justify-center">
