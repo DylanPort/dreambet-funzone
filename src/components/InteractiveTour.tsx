@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -31,6 +32,7 @@ const InteractiveTour = () => {
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null, null, null]);
   
   const {
     userProfile,
@@ -80,6 +82,7 @@ const InteractiveTour = () => {
                   .getPublicUrl(file.name);
                 
                 newVideoSources[stepIndex] = publicUrl;
+                console.log(`Loaded video for step ${stepIndex + 1}:`, publicUrl);
               }
             }
           }
@@ -93,6 +96,29 @@ const InteractiveTour = () => {
 
     loadSupabaseVideos();
   }, []);
+  
+  // Helper function to play videos when they're visible
+  const playVideoIfVisible = (index: number) => {
+    if (index === currentStep && videoRefs.current[index]) {
+      const videoElement = videoRefs.current[index];
+      if (videoElement) {
+        // Try to play the video
+        const playPromise = videoElement.play();
+        
+        // Handle play() promise to avoid DOMException
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.warn('Error playing video:', error);
+          });
+        }
+      }
+    }
+  };
+  
+  // Effect to handle playing videos when step changes
+  useEffect(() => {
+    playVideoIfVisible(currentStep);
+  }, [currentStep, videoSources]);
   
   const handleNextStep = () => {
     if (currentStep < steps.length - 1) {
@@ -163,6 +189,12 @@ const InteractiveTour = () => {
       setVideoSources(newVideoSources);
       
       toast.success(`Video uploaded for Step ${currentStep + 1}`);
+      
+      // Attempt to play the newly uploaded video
+      setTimeout(() => {
+        playVideoIfVisible(currentStep);
+      }, 500);
+      
     } catch (error) {
       console.error('Error uploading video:', error);
       toast.error("Failed to upload video. Please try again.");
@@ -250,6 +282,52 @@ const InteractiveTour = () => {
     />
   );
   
+  // Render video with fallback
+  const renderVideo = (index: number, size: 'small' | 'large') => {
+    const videoUrl = videoSources[index];
+    const videoClassName = size === 'small' 
+      ? "w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
+      : "w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]";
+    
+    const placeholderClassName = size === 'small'
+      ? "w-[100px] h-[100px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30"
+      : "w-[200px] h-[150px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30";
+    
+    const uploadIconSize = size === 'small' ? "w-8 h-8" : "w-12 h-12";
+    
+    if (videoUrl) {
+      return (
+        <video 
+          ref={el => videoRefs.current[index] = el}
+          src={videoUrl} 
+          className={videoClassName}
+          style={{
+            transformStyle: 'preserve-3d',
+            transform: 'translateZ(10px) rotateY(-5deg)'
+          }}
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          onError={(e) => {
+            console.error(`Error loading video for step ${index + 1}:`, e);
+            // If there's an error, try again with a timestamp to bust cache
+            const target = e.target as HTMLVideoElement;
+            if (videoUrl && !videoUrl.includes('?')) {
+              target.src = `${videoUrl}?t=${Date.now()}`;
+            }
+          }}
+        />
+      );
+    } else {
+      return (
+        <div className={placeholderClassName}>
+          <Upload className={`${uploadIconSize} text-indigo-400/50`} />
+        </div>
+      );
+    }
+  };
+  
   return <div className={`flex justify-center items-center w-full my-4 md:my-12 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
       {fileInput}
       <motion.div className={`relative ${isMobile ? 'w-[300px] h-[400px]' : 'w-[400px] md:w-[600px] h-[300px] md:h-[400px]'} flex items-center justify-center rounded-2xl overflow-hidden`} style={{
@@ -336,24 +414,7 @@ const InteractiveTour = () => {
               {isMobile ? <ScrollArea className="h-full pr-2">
                   <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
-                      {videoSources[currentStep] ? (
-                        <video 
-                          src={videoSources[currentStep]} 
-                          className="w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
-                          style={{
-                            transformStyle: 'preserve-3d',
-                            transform: 'translateZ(10px) rotateY(-5deg)'
-                          }}
-                          autoPlay 
-                          loop 
-                          muted 
-                          playsInline
-                        />
-                      ) : (
-                        <div className="w-[100px] h-[100px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30">
-                          <Upload className="w-8 h-8 text-indigo-400/50" />
-                        </div>
-                      )}
+                      {renderVideo(currentStep, 'small')}
                       <Button 
                         variant="outline" 
                         size="icon" 
@@ -404,24 +465,7 @@ const InteractiveTour = () => {
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(40px)'
               }}>
-                    {videoSources[currentStep] ? (
-                      <video 
-                        src={videoSources[currentStep]} 
-                        className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
-                        style={{
-                          transformStyle: 'preserve-3d',
-                          transform: 'translateZ(10px) rotateY(-5deg)'
-                        }}
-                        autoPlay 
-                        loop 
-                        muted 
-                        playsInline
-                      />
-                    ) : (
-                      <div className="w-[200px] h-[150px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30">
-                        <Upload className="w-12 h-12 text-indigo-400/50" />
-                      </div>
-                    )}
+                    {renderVideo(currentStep, 'large')}
                     <Button 
                       variant="outline" 
                       size="icon" 
