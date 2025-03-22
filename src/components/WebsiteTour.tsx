@@ -1,9 +1,7 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import Autoplay from 'embla-carousel-autoplay';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -35,7 +33,6 @@ const WebsiteTour = () => {
   const navigate = useNavigate();
 
   const handleReward = async (stepIndex: number) => {
-    // Only reward once per step
     if (earnedRewards[stepIndex]) return;
 
     try {
@@ -114,12 +111,10 @@ const WebsiteTour = () => {
   const handleNext = (stepIndex: number) => {
     if (!canProgress) return;
     
-    // If this step has a reward, give it
     if (tourSteps[stepIndex].reward) {
       handleReward(stepIndex);
     }
     
-    // Execute any custom action for this step
     if (tourSteps[stepIndex].action) {
       tourSteps[stepIndex].action();
     }
@@ -129,13 +124,11 @@ const WebsiteTour = () => {
     if (nextStep < tourSteps.length) {
       setCurrentStep(nextStep);
     } else {
-      // Tour completed
       setTourCompleted(true);
       handleReward(stepIndex);
     }
   };
 
-  // Return null if on mobile device
   if (isMobile) {
     return null;
   }
@@ -231,7 +224,6 @@ const WebsiteTour = () => {
           </CarouselContent>
         </Carousel>
         
-        {/* Progress indicator dots */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
           {tourSteps.map((_, index) => (
             <button
@@ -247,7 +239,6 @@ const WebsiteTour = () => {
         </div>
       </motion.div>
       
-      {/* Mint Dialog */}
       <Dialog open={showMintDialog} onOpenChange={setShowMintDialog}>
         <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
           <PXBOnboarding />
