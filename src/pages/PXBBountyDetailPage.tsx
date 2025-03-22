@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Award, ArrowLeft, Globe, MessageSquare, Twitter, ExternalLink, Calendar, Clock, User, Check, X, AlertTriangle, Info } from 'lucide-react';
@@ -59,11 +60,18 @@ const PXBBountyDetailPage = () => {
     if (id) {
       fetchBounty(id);
       fetchSubmissions(id);
-      supabase.rpc('increment_bounty_views', { bounty_id: id }).then(() => {
-        console.log("View count incremented");
-      }).catch((error: Error) => {
-        console.error("Error incrementing view count:", error);
-      });
+      
+      // Fix the Promise handling for supabase.rpc call
+      const incrementViewCount = async () => {
+        try {
+          await supabase.rpc('increment_bounty_views', { bounty_id: id });
+          console.log("View count incremented");
+        } catch (error) {
+          console.error("Error incrementing view count:", error);
+        }
+      };
+      
+      incrementViewCount();
     }
   }, [id, userProfile]);
 
