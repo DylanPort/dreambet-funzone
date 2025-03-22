@@ -6,7 +6,6 @@ import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import PXBCreateBountyForm from '@/components/PXBCreateBountyForm';
-import { toast } from 'sonner';
 
 const PXBCreateBountyPage = () => {
   const navigate = useNavigate();

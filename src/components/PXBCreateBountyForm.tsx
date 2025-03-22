@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, Globe, BrandTelegram, Twitter, Calendar, Clock, CheckCircle } from 'lucide-react';
+import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/pxb';
 import { Button } from '@/components/ui/button';

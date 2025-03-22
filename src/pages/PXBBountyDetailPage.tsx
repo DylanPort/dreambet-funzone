@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Award, ArrowLeft, Globe, BrandTelegram, Twitter, ExternalLink, Calendar, Clock, User, Check } from 'lucide-react';
+import { Award, ArrowLeft, Globe, MessageSquare, Twitter, ExternalLink, Calendar, Clock, User, Check, X, AlertTriangle, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -61,7 +60,11 @@ const PXBBountyDetailPage = () => {
       fetchBounty(id);
       fetchSubmissions(id);
       // Increment view count
-      supabase.rpc('increment_bounty_views', { bounty_id: id }).catch(console.error);
+      supabase.rpc('increment_bounty_views', { bounty_id: id }).then(() => {
+        console.log("View count incremented");
+      }).catch(error => {
+        console.error("Error incrementing view count:", error);
+      });
     }
   }, [id, userProfile]);
 
@@ -116,7 +119,13 @@ const PXBBountyDetailPage = () => {
         throw error;
       }
       
-      setBounty(data);
+      // Type assertion to match our Bounty type
+      const typedBounty: Bounty = {
+        ...data,
+        status: data.status as 'open' | 'closed' | 'expired'
+      };
+      
+      setBounty(typedBounty);
       
       // Check if the current user is the creator
       if (userProfile && data.creator_id === userProfile.id) {
@@ -145,11 +154,17 @@ const PXBBountyDetailPage = () => {
         throw error;
       }
       
-      setSubmissions(data || []);
+      // Type assertion to match our Submission type
+      const typedSubmissions: Submission[] = data?.map(sub => ({
+        ...sub,
+        status: sub.status as 'pending' | 'approved' | 'rejected'
+      })) || [];
+      
+      setSubmissions(typedSubmissions);
       
       // Check if the current user has a submission
       if (userProfile) {
-        const userSub = data?.find(sub => sub.submitter_id === userProfile.id) || null;
+        const userSub = typedSubmissions.find(sub => sub.submitter_id === userProfile.id) || null;
         setUserSubmission(userSub);
       }
     } catch (error) {
@@ -253,33 +268,33 @@ const PXBBountyDetailPage = () => {
         <div className="w-full md:w-2/3">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-3">
-              {bounty.status === 'open' ? (
+              {bounty?.status === 'open' ? (
                 <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20">
                   Active
                 </Badge>
               ) : (
                 <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20">
-                  {bounty.status === 'expired' ? 'Expired' : 'Closed'}
+                  {bounty?.status === 'expired' ? 'Expired' : 'Closed'}
                 </Badge>
               )}
               
               <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
-                {bounty.task_type === 'website_visit' ? 'Visit Website' : 
-                 bounty.task_type === 'telegram_join' ? 'Join Telegram' :
-                 bounty.task_type === 'twitter_follow' ? 'Follow Twitter' : 'Multiple Tasks'}
+                {bounty?.task_type === 'website_visit' ? 'Visit Website' : 
+                 bounty?.task_type === 'telegram_join' ? 'Join Telegram' :
+                 bounty?.task_type === 'twitter_follow' ? 'Follow Twitter' : 'Multiple Tasks'}
               </Badge>
               
               <span className="text-dream-foreground/50 text-sm flex items-center gap-1">
                 <User className="h-3.5 w-3.5" />
-                {bounty.views} views
+                {bounty?.views} views
               </span>
             </div>
             
-            <h1 className="text-3xl font-bold text-dream-foreground mb-3">{bounty.title}</h1>
+            <h1 className="text-3xl font-bold text-dream-foreground mb-3">{bounty?.title}</h1>
             
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center">
-                {bounty.project_logo ? (
+                {bounty?.project_logo ? (
                   <img 
                     src={bounty.project_logo} 
                     alt={bounty.project_name} 
@@ -290,7 +305,7 @@ const PXBBountyDetailPage = () => {
                     <Globe className="h-3 w-3 text-indigo-400" />
                   </div>
                 )}
-                <span className="font-medium">{bounty.project_name}</span>
+                <span className="font-medium">{bounty?.project_name}</span>
               </div>
               
               <span className="text-dream-foreground/50">|</span>
@@ -326,14 +341,14 @@ const PXBBountyDetailPage = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-dream-foreground/80 whitespace-pre-line mb-6">
-                    {bounty.description}
+                    {bounty?.description}
                   </p>
                   
                   <h3 className="font-medium text-lg mb-3">Required Proof</h3>
                   <p className="text-dream-foreground/80 mb-6">
-                    {bounty.required_proof === 'screenshot' ? 
+                    {bounty?.required_proof === 'screenshot' ? 
                       'Submit a screenshot showing you completed the task.' :
-                     bounty.required_proof === 'wallet_address' ?
+                     bounty?.required_proof === 'wallet_address' ?
                       'Provide your wallet address used to interact with the project.' :
                       'Share your social media handle/username that followed or joined.'
                     }
@@ -341,7 +356,7 @@ const PXBBountyDetailPage = () => {
                   
                   <h3 className="font-medium text-lg mb-3">Project Links</h3>
                   <div className="space-y-3">
-                    {bounty.project_url && (
+                    {bounty?.project_url && (
                       <a 
                         href={bounty.project_url} 
                         target="_blank" 
@@ -354,20 +369,20 @@ const PXBBountyDetailPage = () => {
                       </a>
                     )}
                     
-                    {bounty.telegram_url && (
+                    {bounty?.telegram_url && (
                       <a 
                         href={bounty.telegram_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
                       >
-                        <BrandTelegram className="h-4 w-4" />
+                        <MessageSquare className="h-4 w-4" />
                         <span>Telegram Group</span>
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     )}
                     
-                    {bounty.twitter_url && (
+                    {bounty?.twitter_url && (
                       <a 
                         href={bounty.twitter_url} 
                         target="_blank" 
@@ -497,14 +512,16 @@ const PXBBountyDetailPage = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <PXBBountySubmissionForm 
-                      bounty={bounty} 
-                      userProfile={userProfile}
-                      onSubmissionComplete={() => {
-                        fetchSubmissions(bounty.id);
-                        setActiveTab('details');
-                      }}
-                    />
+                    {bounty && (
+                      <PXBBountySubmissionForm 
+                        bounty={bounty} 
+                        userProfile={userProfile}
+                        onSubmissionComplete={() => {
+                          fetchSubmissions(bounty.id);
+                          setActiveTab('details');
+                        }}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -527,7 +544,7 @@ const PXBBountyDetailPage = () => {
                   alt="PXB Coin" 
                   className="w-10 h-10 mr-3" 
                 />
-                <div className="text-3xl font-bold text-yellow-400">{bounty.pxb_reward} PXB</div>
+                <div className="text-3xl font-bold text-yellow-400">{bounty?.pxb_reward} PXB</div>
               </div>
               
               {userSubmission ? (
@@ -550,7 +567,7 @@ const PXBBountyDetailPage = () => {
                         <Check className="h-5 w-5 text-green-400" />
                         <div>
                           <div className="font-medium text-green-400">Submission Approved</div>
-                          <div className="text-sm text-dream-foreground/70">You earned {bounty.pxb_reward} PXB points!</div>
+                          <div className="text-sm text-dream-foreground/70">You earned {bounty?.pxb_reward} PXB points!</div>
                         </div>
                       </div>
                     ) : (
@@ -572,7 +589,7 @@ const PXBBountyDetailPage = () => {
                 </div>
               ) : (
                 <>
-                  {!isCreator && bounty.status === 'open' ? (
+                  {!isCreator && bounty?.status === 'open' ? (
                     <div className="space-y-4">
                       <p className="text-dream-foreground/80">
                         Complete the tasks required in the bounty description and submit your proof to earn the reward.
@@ -621,7 +638,7 @@ const PXBBountyDetailPage = () => {
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="h-5 w-5 text-red-400" />
                           <div>
-                            <div className="font-medium text-red-400">Bounty {bounty.status.charAt(0).toUpperCase() + bounty.status.slice(1)}</div>
+                            <div className="font-medium text-red-400">Bounty {bounty?.status.charAt(0).toUpperCase() + bounty?.status.slice(1)}</div>
                             <div className="text-sm text-dream-foreground/70">
                               This bounty is no longer accepting submissions.
                             </div>

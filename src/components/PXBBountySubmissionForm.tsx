@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Globe, MessageSquare, Twitter } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Bounty {
@@ -110,6 +110,7 @@ const PXBBountySubmissionForm: React.FC<PXBBountySubmissionFormProps> = ({
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
             >
+              <Globe className="h-4 w-4" />
               <span>Visit the project website</span>
               <ExternalLink className="h-3 w-3" />
             </a>
@@ -122,6 +123,7 @@ const PXBBountySubmissionForm: React.FC<PXBBountySubmissionFormProps> = ({
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
             >
+              <MessageSquare className="h-4 w-4" />
               <span>Join the Telegram group</span>
               <ExternalLink className="h-3 w-3" />
             </a>
@@ -134,6 +136,7 @@ const PXBBountySubmissionForm: React.FC<PXBBountySubmissionFormProps> = ({
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
             >
+              <Twitter className="h-4 w-4" />
               <span>Follow on Twitter</span>
               <ExternalLink className="h-3 w-3" />
             </a>
@@ -148,6 +151,7 @@ const PXBBountySubmissionForm: React.FC<PXBBountySubmissionFormProps> = ({
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
                 >
+                  <Globe className="h-4 w-4" />
                   <span>Visit the project website</span>
                   <ExternalLink className="h-3 w-3" />
                 </a>
@@ -160,6 +164,7 @@ const PXBBountySubmissionForm: React.FC<PXBBountySubmissionFormProps> = ({
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
                 >
+                  <MessageSquare className="h-4 w-4" />
                   <span>Join the Telegram group</span>
                   <ExternalLink className="h-3 w-3" />
                 </a>
@@ -172,6 +177,7 @@ const PXBBountySubmissionForm: React.FC<PXBBountySubmissionFormProps> = ({
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
                 >
+                  <Twitter className="h-4 w-4" />
                   <span>Follow on Twitter</span>
                   <ExternalLink className="h-3 w-3" />
                 </a>
