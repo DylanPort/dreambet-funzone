@@ -5,11 +5,13 @@ import { RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
 
 const PXBBetsHistory = () => {
   const { bets, fetchUserBets } = usePXBPoints();
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadBets();
@@ -33,6 +35,10 @@ const PXBBetsHistory = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleTokenClick = (tokenMint: string) => {
+    navigate(`/token/${tokenMint}`);
   };
 
   const filteredBets = bets.filter(bet => {
@@ -122,7 +128,10 @@ const PXBBetsHistory = () => {
                       PXB
                     </span>
                   </td>
-                  <td className="py-4 px-4">
+                  <td 
+                    className="py-4 px-4 cursor-pointer hover:text-dream-accent1 transition-colors"
+                    onClick={() => bet.tokenMint && handleTokenClick(bet.tokenMint)}
+                  >
                     <div className="flex items-center">
                       <span className="font-medium">{bet.tokenSymbol}</span>
                     </div>
