@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Zap, Trophy, Play, Gift, PartyPopper, Rocket, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -69,14 +69,14 @@ const InteractiveTour = () => {
   const steps = [{
     title: "Welcome, Explorer!",
     description: "You've stumbled upon a treasure chest of opportunity in the wild Trenches!",
-    icon: <Rocket className="w-8 h-8 text-purple-400" />,
+    icon: <img src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" className="w-8 h-8" alt="Welcome" />,
     highlight: null,
     action: null,
     image: "/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png"
   }, {
     title: "Mint Your Magic Points",
     description: "Grab some free points – your trusty in-game currency. No need to risk your own gold yet!",
-    icon: <Coins className="w-8 h-8 text-yellow-400" />,
+    icon: <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" className="w-8 h-8" alt="Mint Points" />,
     highlight: "mint",
     action: <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
@@ -95,7 +95,7 @@ const InteractiveTour = () => {
   }, {
     title: "Bet Like a Boss",
     description: "Wager your points on any Solana chain token. Crank up the multiplier and watch your points soar!",
-    icon: <Play className="w-8 h-8 text-green-400" />,
+    icon: <img src="/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png" className="w-8 h-8" alt="Betting" />,
     highlight: "playground",
     action: <Link to="/betting">
         <Button variant="default" className="mt-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700" onClick={handleNextStep}>
@@ -106,7 +106,7 @@ const InteractiveTour = () => {
   }, {
     title: "Climb the Trader's Throne",
     description: "Show off your betting skills and rise through the leaderboard ranks to reach legendary status!",
-    icon: <Trophy className="w-8 h-8 text-amber-400" />,
+    icon: <img src="/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png" className="w-8 h-8" alt="Leaderboard" />,
     highlight: "leaderboard",
     action: <Link to="/#leaderboard">
         <Button variant="default" className="mt-4 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700" onClick={handleNextStep}>
@@ -117,7 +117,7 @@ const InteractiveTour = () => {
   }, {
     title: "Unlock Elite Powers",
     description: "Visit your profile and earn 2000 PXB points as a welcome bonus!",
-    icon: <Gift className="w-8 h-8 text-pink-400" />,
+    icon: <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" className="w-8 h-8" alt="Gift" />,
     highlight: "profile",
     action: <Button variant="default" className="mt-4 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700" onClick={handleClaimPoints} disabled={hasClaimedPoints}>
         {hasClaimedPoints ? "Points Claimed!" : "Claim 2000 PXB"}
@@ -125,10 +125,6 @@ const InteractiveTour = () => {
     image: "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
   }];
 
-  // If on mobile, return null to match AnimatedLogo behavior
-  if (isMobile) {
-    return null;
-  }
   return <div className="flex justify-center items-center w-full my-12 mx-auto">
       <motion.div className="relative w-[400px] md:w-[600px] h-[300px] md:h-[400px] flex items-center justify-center rounded-2xl overflow-hidden" style={{
       perspective: '1000px',
