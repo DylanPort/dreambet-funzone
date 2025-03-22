@@ -55,6 +55,25 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [connected, publicKey, fetchUserProfile, setUserProfile]);
 
+  // Create wrapper functions to match expected types in PXBPointsContextType
+  const mintPointsWrapper = async (amount?: number) => {
+    if (amount) {
+      await mintPoints(amount);
+    }
+  };
+
+  const placeBetWrapper = async (
+    tokenMint: string, 
+    tokenName: string, 
+    tokenSymbol: string, 
+    betAmount: number, 
+    betType: 'up' | 'down', 
+    percentageChange: number,
+    duration: number
+  ) => {
+    return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
+  };
+
   return (
     <PXBPointsContext.Provider
       value={{
@@ -62,8 +81,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isLoading,
         bets,
         leaderboard,
-        mintPoints,
-        placeBet,
+        mintPoints: mintPointsWrapper,
+        placeBet: placeBetWrapper,
         sendPoints,
         generatePxbId,
         fetchUserProfile,

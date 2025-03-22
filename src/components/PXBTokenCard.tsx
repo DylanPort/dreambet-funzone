@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ExternalLink, Flame } from 'lucide-react';
@@ -37,7 +36,6 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
   const { userProfile, placeBet, isLoading } = usePXBPoints();
   const isPositive = priceChange >= 0;
 
-  // Format price with appropriate decimals
   const formatPrice = (price: number) => {
     if (price < 0.01) return price.toFixed(6);
     if (price < 1) return price.toFixed(4);
@@ -45,7 +43,6 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
     return price.toLocaleString('en-US', { maximumFractionDigits: 2 });
   };
 
-  // Format large numbers
   const formatLargeNumber = (num: number | undefined) => {
     if (num === undefined) return "-";
     
@@ -61,10 +58,9 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
     return `$${num.toFixed(2)}`;
   };
 
-  // Handle bet placement
   const handlePlaceBet = async (betType: 'up' | 'down', e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation when betting
-    e.stopPropagation(); // Stop event propagation
+    e.preventDefault();
+    e.stopPropagation();
     
     if (!userProfile) {
       toast.error('You must be logged in to place a bet');
@@ -82,25 +78,21 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
     }
     
     try {
-      // Clear notification of previous bets
       toast.dismiss();
       
-      // Show initial betting notification
       const toastId = `bet-${id}-${Date.now()}`;
       toast.loading(`Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${symbol}...`, {
         id: toastId
       });
       
-      // Show the current market cap in the toast
       const currentMcap = formatLargeNumber(marketCap);
-      const percentChange = 10; // Default 10% change
+      const percentChange = 10;
       
-      // Calculate the target market cap based on bet type
       let targetMcap;
       if (betType === 'up') {
-        targetMcap = formatLargeNumber(marketCap * 1.1); // 10% increase
+        targetMcap = formatLargeNumber(marketCap * 1.1);
       } else {
-        targetMcap = formatLargeNumber(marketCap * 0.9); // 10% decrease
+        targetMcap = formatLargeNumber(marketCap * 0.9);
       }
       
       toast.loading(`Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${symbol}...
@@ -109,10 +101,7 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
         { id: toastId }
       );
       
-      // Add a default percentage change of 10% for quick betting
       await placeBet(id, name, symbol, 10, betType, 10, 30);
-      
-      // Success notification is handled by placeBet function
     } catch (error) {
       console.error('Error placing bet:', error);
       toast.error('Failed to place bet. Please try again.');
@@ -144,7 +133,7 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
                   href={pairAddress ? `https://dexscreener.com/solana/${pairAddress}` : `https://dexscreener.com/solana/${id}`} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  onClick={(e) => e.stopPropagation()} // Prevent the Link click when clicking on the external link
+                  onClick={(e) => e.stopPropagation()}
                   className="text-dream-foreground/40"
                 >
                   <ExternalLink className="w-3.5 h-3.5 text-dream-foreground/40" />

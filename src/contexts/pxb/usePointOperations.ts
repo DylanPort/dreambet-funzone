@@ -1,26 +1,27 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '@/types/pxb';
+import { UserProfile, PXBBet } from '@/types/pxb';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Bet } from '@/types/bet';
+import { Bet, BetPrediction } from '@/types/bet';
 import { createSupabaseBet } from '@/services/supabaseService';
 import { toast } from 'sonner';
 
 export const usePointOperations = (
   userProfile: UserProfile | null,
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>,
-  setBets: React.Dispatch<React.SetStateAction<Bet[]>>,
+  setBets: React.Dispatch<React.SetStateAction<PXBBet[]>>,
   fetchUserProfile: () => Promise<void>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const { publicKey } = useWallet();
   const [mintingPoints, setMintingPoints] = useState(false);
 
-  const mintPoints = useCallback(async (amount: number) => {
+  const mintPoints = useCallback(async (amount: number): Promise<void> => {
     if (!publicKey || !userProfile) {
       toast.error('Connect your wallet to mint points');
-      return false;
+      return;
     }
 
     const walletAddress = publicKey.toString();
@@ -29,7 +30,7 @@ export const usePointOperations = (
     const mintedWallets = JSON.parse(localStorage.getItem('pxbMintedWallets') || '{}');
     if (mintedWallets[walletAddress]) {
       toast.error('You have already minted your free PXB points');
-      return false;
+      return;
     }
     
     setMintingPoints(true);
@@ -63,7 +64,6 @@ export const usePointOperations = (
         pxbPoints: userProfile.pxbPoints + amount
       });
 
-      return true;
     } catch (error) {
       console.error('Error in mintPoints:', error);
       throw error;
@@ -73,21 +73,22 @@ export const usePointOperations = (
   }, [publicKey, userProfile, setUserProfile]);
 
   const placeBet = useCallback(async (
-    tokenId: string,
+    tokenMint: string,
     tokenName: string,
     tokenSymbol: string,
-    prediction: string,
-    duration: number,
-    amount: number
-  ) => {
+    betAmount: number,
+    betType: 'up' | 'down',
+    percentageChange: number,
+    duration: number
+  ): Promise<PXBBet | void> => {
     if (!userProfile || !publicKey) {
       toast.error('Please connect your wallet to place a bet.');
-      return null;
+      return;
     }
 
-    if (amount > userProfile.pxbPoints) {
+    if (betAmount > userProfile.pxbPoints) {
       toast.error('Insufficient PXB points to place this bet.');
-      return null;
+      return;
     }
 
     const walletAddress = publicKey.toString();
@@ -97,16 +98,19 @@ export const usePointOperations = (
       setIsLoading(true);
 
       // Optimistically update user profile
-      setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints - amount } : null);
+      setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints - betAmount } : null);
+
+      // Convert betType to a valid BetPrediction
+      const prediction: BetPrediction = betType === 'up' ? 'up' : 'down';
 
       // Create the bet in Supabase
       const newBet = await createSupabaseBet(
-        tokenId,
+        tokenMint,
         tokenName,
         tokenSymbol,
         prediction,
         duration,
-        amount,
+        betAmount,
         walletAddress,
         pxbId
       );
@@ -118,36 +122,54 @@ export const usePointOperations = (
       // Update user points in Supabase
       const { error: updateError } = await supabase
         .from('users')
-        .update({ points: userProfile.pxbPoints - amount })
+        .update({ points: userProfile.pxbPoints - betAmount })
         .eq('wallet_address', walletAddress);
 
       if (updateError) {
         console.error('Error updating user points after bet:', updateError);
         // Revert optimistic update if update fails
-        setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + amount } : null);
+        setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
         throw new Error('Failed to update points after bet');
       }
 
       // Record the bet in points history
       await supabase.from('points_history').insert({
         user_id: userProfile.id,
-        amount: -amount,
+        amount: -betAmount,
         action: 'bet_placed',
         reference_id: newBet.id,
         reference_name: tokenName
       });
 
+      // Convert Bet to PXBBet
+      const pxbBet: PXBBet = {
+        id: newBet.id,
+        userId: userProfile.id,
+        tokenMint: newBet.tokenMint,
+        tokenName: newBet.tokenName,
+        tokenSymbol: newBet.tokenSymbol,
+        betAmount: newBet.amount,
+        betType: betType,
+        percentageChange: percentageChange,
+        status: 'pending',
+        pointsWon: 0,
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + duration * 1000).toISOString(),
+        initialMarketCap: undefined,
+        currentMarketCap: undefined
+      };
+
       // Update bets state
-      setBets(prevBets => [...prevBets, newBet]);
+      setBets(prevBets => [...prevBets, pxbBet]);
 
       toast.success(`Bet placed successfully!`);
-      return newBet;
+      return pxbBet;
     } catch (error: any) {
       console.error('Error placing bet:', error);
       toast.error(error.message || 'Failed to place bet');
       // Revert optimistic update if any error occurs
-      setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + amount } : null);
-      return null;
+      setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
+      return;
     } finally {
       setIsLoading(false);
     }
@@ -249,7 +271,7 @@ export const usePointOperations = (
   }, [userProfile, publicKey, setUserProfile, fetchUserProfile, setIsLoading]);
 
   const generatePxbId = useCallback(() => {
-    if (!userProfile) return null;
+    if (!userProfile) return "";
     const shortId = userProfile.id.substring(0, 8).toUpperCase();
     const uniqueId = uuidv4().substring(0, 3);
     return `PXB-${shortId}-${uniqueId}`;
