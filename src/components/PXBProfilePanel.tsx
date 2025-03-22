@@ -33,9 +33,17 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
   // Get user rank from leaderboard
   const userRank = React.useMemo(() => {
     if (!userProfile || !leaderboard?.length) return null;
+    
+    // Find the user in the leaderboard by matching either id or user_id
     const userEntry = leaderboard.find(entry => 
-      entry.id === userProfile.id || entry.user_id === userProfile.id
+      (entry.id && entry.id === userProfile.id) || 
+      (entry.user_id && entry.user_id === userProfile.id)
     );
+    
+    console.log("User profile ID:", userProfile.id);
+    console.log("Leaderboard entries:", leaderboard);
+    console.log("Found user entry:", userEntry);
+    
     return userEntry ? userEntry.rank : null;
   }, [userProfile, leaderboard]);
 
