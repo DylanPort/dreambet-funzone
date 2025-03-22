@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Coins, PartyPopper, AlertCircle, CheckCircle, UserCheck } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -24,6 +25,7 @@ const PXBOnboarding: React.FC = () => {
   const [alreadyMinted, setAlreadyMinted] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   const [hasMintedPoints, setHasMintedPoints] = useState(false);
+  const [isMinting, setIsMinting] = useState(false);
   const {
     connected,
     publicKey
@@ -67,15 +69,60 @@ const PXBOnboarding: React.FC = () => {
     }
 
     const finalUsername = username.trim() || publicKey.toString().substring(0, 8);
+    setIsMinting(true);
     setHasMintedPoints(true);
     
     try {
+      console.log('Starting mint process for 500 PXB points');
+      
+      // First check if user exists in database
+      const walletAddress = publicKey.toString();
+      const { data: existingUser, error: userCheckError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .maybeSingle();
+      
+      // If user doesn't exist, create one first
+      if (!existingUser && !userCheckError) {
+        console.log('User does not exist yet, creating new user');
+        const { data: newUser, error: createUserError } = await supabase
+          .from('users')
+          .insert({
+            wallet_address: walletAddress,
+            username: finalUsername,
+            points: 0
+          })
+          .select()
+          .single();
+          
+        if (createUserError) {
+          console.error('Error creating user:', createUserError);
+          throw new Error(`Failed to create user: ${createUserError.message}`);
+        }
+        
+        console.log('New user created:', newUser);
+        // Fetch profile again to get the newly created user
+        await fetchUserProfile();
+      }
+      
+      // Now mint the points
       await mintPoints(500);
+      console.log('Successfully minted 500 PXB points');
+      
+      // Update username if needed
+      if (finalUsername && finalUsername !== publicKey.toString().substring(0, 8)) {
+        console.log('Updating username to:', finalUsername);
+        await updateUsername(walletAddress, finalUsername);
+      }
+      
       setShowSuccess(true);
     } catch (error) {
       console.error('Error minting points:', error);
       setHasMintedPoints(false);
-      toast.error('Failed to mint PXB Points');
+      toast.error('Failed to mint PXB Points. Please try again.');
+    } finally {
+      setIsMinting(false);
     }
   };
 
@@ -173,9 +220,9 @@ const PXBOnboarding: React.FC = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300" 
-                  disabled={isLoading || hasMintedPoints || alreadyMinted}
+                  disabled={isLoading || hasMintedPoints || alreadyMinted || isMinting}
                 >
-                  {isLoading ? <div className="flex items-center justify-center">
+                  {isMinting ? <div className="flex items-center justify-center">
                       <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                       <span>Minting...</span>
                     </div> : hasMintedPoints ? "Points Minted!" : 'Mint 500 PXB Points'}

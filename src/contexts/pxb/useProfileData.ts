@@ -43,17 +43,51 @@ export const useProfileData = () => {
           createdAt: supabaseUser.created_at
         });
       } else {
-        console.log('User not found in database yet');
+        console.log('User not found in database, will create temporary profile');
         
-        // Instead of setting to null, create a temporary profile with default values
-        // This helps prevent the "Connect wallet" message when already connected
+        // Create a new user in the database
         if (connected && publicKey) {
-          setUserProfile({
-            id: 'temporary-' + publicKey.toString().substring(0, 8),
-            username: publicKey.toString().substring(0, 8),
-            pxbPoints: 0,
-            createdAt: new Date().toISOString()
-          });
+          try {
+            console.log('Creating new user in database');
+            const { data: newUser, error: createError } = await supabase
+              .from('users')
+              .insert({
+                wallet_address: walletAddress,
+                username: walletAddress.substring(0, 8),
+                points: 0
+              })
+              .select()
+              .single();
+              
+            if (createError) {
+              console.warn('Could not create user profile:', createError);
+              // Fall back to temporary profile
+              setUserProfile({
+                id: 'temporary-' + walletAddress.substring(0, 8),
+                username: walletAddress.substring(0, 8),
+                pxbPoints: 0,
+                createdAt: new Date().toISOString()
+              });
+            } else if (newUser) {
+              console.log('New user created:', newUser);
+              // Set the new user profile
+              setUserProfile({
+                id: newUser.id,
+                username: newUser.username || walletAddress.substring(0, 8),
+                pxbPoints: newUser.points || 0,
+                createdAt: newUser.created_at
+              });
+            }
+          } catch (createError) {
+            console.error('Error creating user profile:', createError);
+            // Fall back to temporary profile
+            setUserProfile({
+              id: 'temporary-' + walletAddress.substring(0, 8),
+              username: walletAddress.substring(0, 8),
+              pxbPoints: 0,
+              createdAt: new Date().toISOString()
+            });
+          }
         } else {
           setUserProfile(null);
         }
