@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Award, ArrowLeft, Globe, MessageSquare, Twitter, ExternalLink, Calendar, Clock, User, Check, X, AlertTriangle, Info } from 'lucide-react';
@@ -16,7 +15,7 @@ type Bounty = {
   id: string;
   title: string;
   description: string;
-  required_proof: string;
+  required_proof: string | null;
   project_name: string;
   project_url?: string;
   telegram_url?: string;
@@ -29,6 +28,7 @@ type Bounty = {
   views: number;
   creator_id: string;
   task_type: string;
+  max_participants: number;
 };
 
 type Submission = {
@@ -61,7 +61,6 @@ const PXBBountyDetailPage = () => {
       fetchBounty(id);
       fetchSubmissions(id);
       
-      // Fix the Promise handling for supabase.rpc call
       const incrementViewCount = async () => {
         try {
           await supabase.rpc('increment_bounty_views', { bounty_id: id });
