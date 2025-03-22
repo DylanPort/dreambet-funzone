@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';

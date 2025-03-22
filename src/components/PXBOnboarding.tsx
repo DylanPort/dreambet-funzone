@@ -18,7 +18,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
   const [showTour, setShowTour] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [pointAmount, setPointAmount] = useState(2000);
-  const [lastMintTime, setLastMintTime] = useState<Date | null>(null);
+  const [nextMintTime, setNextMintTime] = useState<Date | null>(null);
   const [showCountdown, setShowCountdown] = useState(false);
 
   const tourSteps = [
@@ -27,6 +27,24 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
     { id: 'betting', title: 'Placing Bets', description: 'How to place bets with your PXB points' },
     { id: 'leaderboard', title: 'Leaderboard', description: 'Compete with others on the leaderboard' },
   ];
+
+  // Load mint countdown state from localStorage on initial render
+  useEffect(() => {
+    if (userProfile) {
+      const savedNextMintTime = localStorage.getItem(`nextMintTime_${userProfile.id}`);
+      if (savedNextMintTime) {
+        const nextTime = new Date(savedNextMintTime);
+        // Only use saved time if it's in the future
+        if (nextTime.getTime() > Date.now()) {
+          setNextMintTime(nextTime);
+          setShowCountdown(true);
+        } else {
+          // If the time has passed, clear the storage
+          localStorage.removeItem(`nextMintTime_${userProfile.id}`);
+        }
+      }
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     const hasCompletedTour = localStorage.getItem('pxbTourCompleted');
@@ -54,27 +72,31 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
   const handleMintPoints = async () => {
     try {
       await mintPoints(pointAmount);
-      // Set last mint time and show countdown
-      setLastMintTime(new Date());
+      
+      // Set next mint time to 24 hours from now
+      const now = new Date();
+      const nextTime = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+      
+      // Save to state and localStorage
+      setNextMintTime(nextTime);
       setShowCountdown(true);
+      
+      if (userProfile) {
+        localStorage.setItem(`nextMintTime_${userProfile.id}`, nextTime.toISOString());
+      }
     } catch (error) {
       console.error("Failed to mint points:", error);
     }
   };
 
-  // Calculate next mint time (24 hours from last mint)
-  const getNextMintTime = (): Date | null => {
-    if (!lastMintTime) return null;
-    
-    const nextMintTime = new Date(lastMintTime);
-    nextMintTime.setHours(nextMintTime.getHours() + 24);
-    return nextMintTime;
-  };
-
   // Reset countdown when timer completes
   const handleCountdownComplete = () => {
     setShowCountdown(false);
-    setLastMintTime(null);
+    setNextMintTime(null);
+    
+    if (userProfile) {
+      localStorage.removeItem(`nextMintTime_${userProfile.id}`);
+    }
   };
 
   const renderPXBInfo = () => {
@@ -111,11 +133,11 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
                 </Tooltip>
               </TooltipProvider>
               
-              {showCountdown && getNextMintTime() ? (
+              {showCountdown && nextMintTime ? (
                 <div className="bg-amber-900/30 p-3 rounded-md mb-2">
                   <p className="text-xs text-amber-300 mb-2">Next mint available in:</p>
                   <CountdownTimer 
-                    endTime={getNextMintTime()!} 
+                    endTime={nextMintTime} 
                     onComplete={handleCountdownComplete}
                   />
                 </div>
