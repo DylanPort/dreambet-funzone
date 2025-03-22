@@ -12,64 +12,48 @@ import { ChevronRight, Upload, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-
 interface PXBOnboardingProps {
   onClose: () => void;
 }
-
 const InteractiveTour = () => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
   const [hasClaimedPoints, setHasClaimedPoints] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const [videoSources, setVideoSources] = useState<string[]>([
-    "/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png",
-    "/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png",
-    "/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png",
-    "/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png",
-    "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
-  ]);
+  const [videoSources, setVideoSources] = useState<string[]>(["/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png", "/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png", "/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png", "/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png", "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null, null, null]);
-  
   const {
     userProfile,
     addPointsToUser
   } = usePXBPoints();
-  
   const {
     connected
   } = useWallet();
-  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
-  
   useEffect(() => {
     setCurrentStep(0);
     const tourCompleted = localStorage.getItem('pxb-tour-completed');
     if (tourCompleted) {
       setCurrentStep(0);
     }
-
     const mainVideoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/sign/tourvideo/Untitled%20video%20-%20Made%20with%20Clipchamp%20(7)%20(online-video-cutter.com).mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJ0b3VydmlkZW8vVW50aXRsZWQgdmlkZW8gLSBNYWRlIHdpdGggQ2xpcGNoYW1wICg3KSAob25saW5lLXZpZGVvLWN1dHRlci5jb20pLm1wNCIsImlhdCI6MTc0MjY2NTY1MiwiZXhwIjoxNzc0MjAxNjUyfQ.FOnoYScf0r244PUOjega7OzIC0KEEmB2O6l4T-_UY9E";
-    
     const newVideoSources = [...videoSources];
     for (let i = 0; i < newVideoSources.length; i++) {
       newVideoSources[i] = mainVideoUrl;
     }
     setVideoSources(newVideoSources);
   }, []);
-  
   const playVideoIfVisible = (index: number) => {
     if (index === currentStep && videoRefs.current[index]) {
       const videoElement = videoRefs.current[index];
       if (videoElement) {
         const playPromise = videoElement.play();
-        
         if (playPromise !== undefined) {
           playPromise.catch(error => {
             console.warn('Error playing video:', error);
@@ -78,11 +62,9 @@ const InteractiveTour = () => {
       }
     }
   };
-  
   useEffect(() => {
     playVideoIfVisible(currentStep);
   }, [currentStep, videoSources]);
-  
   const handleNextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -90,13 +72,11 @@ const InteractiveTour = () => {
       localStorage.setItem('pxb-tour-completed', 'true');
     }
   };
-  
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
-  
   const handleClaimPoints = async () => {
     if (!connected) {
       toast.error("Please connect your wallet first!");
@@ -115,64 +95,51 @@ const InteractiveTour = () => {
       toast.error("Failed to claim points. Please try again later.");
     }
   };
-
   const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
     if (!file.type.startsWith('video/')) {
       toast.error("Please upload a video file");
       return;
     }
-
     setIsUploading(true);
-    
     try {
       const fileName = `step-${currentStep + 1}.${file.name.split('.').pop()}`;
-      
-      const { data, error } = await supabase
-        .storage
-        .from('tour-videos')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-      
+      const {
+        data,
+        error
+      } = await supabase.storage.from('tour-videos').upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
       if (error) {
         throw error;
       }
-      
-      const { data: { publicUrl } } = supabase
-        .storage
-        .from('tour-videos')
-        .getPublicUrl(fileName);
-      
+      const {
+        data: {
+          publicUrl
+        }
+      } = supabase.storage.from('tour-videos').getPublicUrl(fileName);
       const newVideoSources = [...videoSources];
       newVideoSources[currentStep] = publicUrl;
       setVideoSources(newVideoSources);
-      
       toast.success(`Video uploaded for Step ${currentStep + 1}`);
-      
       setTimeout(() => {
         playVideoIfVisible(currentStep);
       }, 500);
-      
     } catch (error) {
       console.error('Error uploading video:', error);
       toast.error("Failed to upload video. Please try again.");
     } finally {
       setIsUploading(false);
-      
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
   };
-
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
-  
   const steps = [{
     title: "Welcome, Explorer!",
     description: "You've stumbled upon a treasure chest of opportunity in the wild Trenches!",
@@ -233,63 +200,31 @@ const InteractiveTour = () => {
       </Link>,
     image: videoSources[4]
   }];
-
-  const fileInput = (
-    <Input 
-      ref={fileInputRef}
-      type="file"
-      accept="video/*"
-      onChange={handleVideoUpload}
-      className="hidden"
-    />
-  );
-  
+  const fileInput = <Input ref={fileInputRef} type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />;
   const renderVideo = (index: number, size: 'small' | 'large') => {
     const videoUrl = videoSources[index];
-    const videoClassName = size === 'small' 
-      ? "w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
-      : "w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]";
-    
-    const placeholderClassName = size === 'small'
-      ? "w-[100px] h-[100px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30"
-      : "w-[200px] h-[150px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30";
-    
+    const videoClassName = size === 'small' ? "w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" : "w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]";
+    const placeholderClassName = size === 'small' ? "w-[100px] h-[100px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30" : "w-[200px] h-[150px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30";
     const uploadIconSize = size === 'small' ? "w-8 h-8" : "w-12 h-12";
-    
     if (videoUrl) {
-      return (
-        <video 
-          ref={el => videoRefs.current[index] = el}
-          src={videoUrl} 
-          className={videoClassName}
-          style={{
-            transformStyle: 'preserve-3d',
-            transform: 'translateZ(10px) rotateY(-5deg)'
-          }}
-          autoPlay 
-          loop 
-          muted 
-          playsInline
-          onError={(e) => {
-            console.error(`Error loading video for step ${index + 1}:`, e);
-            const target = e.target as HTMLVideoElement;
-            if (videoUrl && !videoUrl.includes('?')) {
-              target.src = `${videoUrl}?t=${Date.now()}`;
-            } else if (videoUrl && videoUrl.includes('?')) {
-              target.src = `${videoUrl}&t=${Date.now()}`;
-            }
-          }}
-        />
-      );
+      return <video ref={el => videoRefs.current[index] = el} src={videoUrl} className={videoClassName} style={{
+        transformStyle: 'preserve-3d',
+        transform: 'translateZ(10px) rotateY(-5deg)'
+      }} autoPlay loop muted playsInline onError={e => {
+        console.error(`Error loading video for step ${index + 1}:`, e);
+        const target = e.target as HTMLVideoElement;
+        if (videoUrl && !videoUrl.includes('?')) {
+          target.src = `${videoUrl}?t=${Date.now()}`;
+        } else if (videoUrl && videoUrl.includes('?')) {
+          target.src = `${videoUrl}&t=${Date.now()}`;
+        }
+      }} />;
     } else {
-      return (
-        <div className={placeholderClassName}>
+      return <div className={placeholderClassName}>
           <Upload className={`${uploadIconSize} text-indigo-400/50`} />
-        </div>
-      );
+        </div>;
     }
   };
-  
   return <div className={`flex justify-center items-center w-full my-4 md:my-12 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
       {fileInput}
       <motion.div className={`relative ${isMobile ? 'w-[300px] h-[400px]' : 'w-[400px] md:w-[600px] h-[300px] md:h-[400px]'} flex items-center justify-center rounded-2xl overflow-hidden`} style={{
@@ -377,13 +312,7 @@ const InteractiveTour = () => {
                   <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
                       {renderVideo(currentStep, 'small')}
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="absolute bottom-0 right-0 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full w-7 h-7 p-1"
-                        onClick={triggerFileInput}
-                        disabled={isUploading}
-                      >
+                      <Button variant="outline" size="icon" className="absolute bottom-0 right-0 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full w-7 h-7 p-1" onClick={triggerFileInput} disabled={isUploading}>
                         {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -428,27 +357,14 @@ const InteractiveTour = () => {
                 transform: 'translateZ(40px)'
               }}>
                     {renderVideo(currentStep, 'large')}
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="absolute bottom-2 right-2 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full"
-                      onClick={triggerFileInput}
-                      disabled={isUploading}
-                    >
+                    <Button variant="outline" size="icon" className="absolute bottom-2 right-2 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full" onClick={triggerFileInput} disabled={isUploading}>
                       {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     </Button>
                   </motion.div>
                   
                   <div className="w-1/2 flex flex-col items-start">
                     <div className="mb-4 flex justify-start">
-                      <motion.div className="p-2 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" whileHover={{
-                    scale: 1.1
-                  }} style={{
-                    transformStyle: 'preserve-3d',
-                    transform: 'translateZ(30px)'
-                  }}>
-                        {steps[currentStep].icon}
-                      </motion.div>
+                      
                     </div>
                     
                     <motion.h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent" style={{
@@ -519,5 +435,4 @@ const InteractiveTour = () => {
       </motion.div>
     </div>;
 };
-
 export default InteractiveTour;
