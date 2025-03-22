@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, ArrowLeft, Info } from 'lucide-react';
+import { Award, ArrowLeft, Info, Users } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -56,9 +56,9 @@ const PXBCreateBountyPage = () => {
           <div>
             <h3 className="font-medium text-blue-400 mb-1">How bounties work</h3>
             <p className="text-dream-foreground/80 text-sm">
-              Bounties are a way to reward users with PXB points for completing tasks related to your project.
-              When a user completes a task, they'll submit proof. If the proof is valid, they'll receive the PXB points reward you've set.
-              You can create multiple bounties for different tasks.
+              Bounties reward users with PXB points for completing tasks related to your project.
+              You can now set a maximum number of participants, and the rewards will be distributed equally among them.
+              For website visits, users can earn rewards automatically when they click on your link.
             </p>
           </div>
         </div>

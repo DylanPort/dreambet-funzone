@@ -162,12 +162,13 @@ export type Database = {
           description_cid: string | null
           end_date: string
           id: string
+          max_participants: number | null
           project_description: string | null
           project_logo: string | null
           project_name: string
           project_url: string | null
           pxb_reward: number
-          required_proof: string
+          required_proof: string | null
           start_date: string
           status: string
           tags: string[] | null
@@ -189,12 +190,13 @@ export type Database = {
           description_cid?: string | null
           end_date: string
           id?: string
+          max_participants?: number | null
           project_description?: string | null
           project_logo?: string | null
           project_name?: string
           project_url?: string | null
           pxb_reward?: number
-          required_proof: string
+          required_proof?: string | null
           start_date?: string
           status?: string
           tags?: string[] | null
@@ -216,12 +218,13 @@ export type Database = {
           description_cid?: string | null
           end_date?: string
           id?: string
+          max_participants?: number | null
           project_description?: string | null
           project_logo?: string | null
           project_name?: string
           project_url?: string | null
           pxb_reward?: number
-          required_proof?: string
+          required_proof?: string | null
           start_date?: string
           status?: string
           tags?: string[] | null

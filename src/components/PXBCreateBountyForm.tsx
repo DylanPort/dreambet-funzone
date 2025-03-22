@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle } from 'lucide-react';
+import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/pxb';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    requiredProof: 'screenshot',
+    requiredProof: '',
     projectName: '',
     projectUrl: '',
     telegramUrl: '',
@@ -35,7 +35,8 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     projectLogo: '',
     pxbReward: 100,
     durationDays: 7,
-    taskType: 'website_visit'
+    taskType: 'website_visit',
+    maxParticipants: 10
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -61,6 +62,13 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     }
   };
 
+  const handleMaxParticipantsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value > 0) {
+      setFormData(prev => ({ ...prev, maxParticipants: value }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -69,7 +77,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       return;
     }
     
-    // Validate form
+    // Validate form - required_proof is now optional
     if (!formData.title || !formData.description || !formData.projectName) {
       toast.error('Please fill in all required fields');
       return;
@@ -87,7 +95,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
         .insert({
           title: formData.title,
           description: formData.description,
-          required_proof: formData.requiredProof,
+          required_proof: formData.requiredProof || null, // Now optional
           project_name: formData.projectName,
           project_url: formData.projectUrl || null,
           telegram_url: formData.telegramUrl || null,
@@ -99,7 +107,8 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
           end_date: endDate.toISOString(),
           task_type: formData.taskType,
           views: 0, // Initialize with zero views
-          status: 'open'
+          status: 'open',
+          max_participants: formData.maxParticipants // Add the new field
         })
         .select()
         .single();
@@ -247,7 +256,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
           </div>
           
           <div className="space-y-3">
-            <Label htmlFor="requiredProof">Required Proof</Label>
+            <Label htmlFor="requiredProof">Required Proof (optional)</Label>
             <Select
               defaultValue={formData.requiredProof}
               onValueChange={(value) => handleSelectChange('requiredProof', value)}
@@ -256,15 +265,34 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
                 <SelectValue placeholder="Select proof type" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">No proof required</SelectItem>
                 <SelectItem value="screenshot">Screenshot</SelectItem>
                 <SelectItem value="wallet_address">Wallet Address</SelectItem>
                 <SelectItem value="social_handle">Social Media Handle</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-sm text-dream-foreground/60">Leave empty for automatic reward when users click the website link</p>
           </div>
           
           <div className="space-y-3">
-            <Label htmlFor="pxbReward">PXB Points Reward</Label>
+            <Label htmlFor="maxParticipants">Maximum Participants</Label>
+            <div className="flex items-center">
+              <Users className="w-5 h-5 mr-2 text-dream-foreground/50" />
+              <Input
+                id="maxParticipants"
+                name="maxParticipants"
+                type="number"
+                min="1"
+                value={formData.maxParticipants}
+                onChange={handleMaxParticipantsChange}
+                className="bg-dream-background/70"
+              />
+            </div>
+            <p className="text-sm text-dream-foreground/60">PXB rewards will be divided equally among participants</p>
+          </div>
+          
+          <div className="space-y-3">
+            <Label htmlFor="pxbReward">PXB Points Reward (Total)</Label>
             <div className="flex items-center">
               <img 
                 src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" 
@@ -281,6 +309,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
                 className="bg-dream-background/70"
               />
             </div>
+            <p className="text-sm text-dream-foreground/60">Each participant will receive {formData.maxParticipants > 0 ? Math.floor(formData.pxbReward / formData.maxParticipants) : 0} PXB</p>
           </div>
           
           <div className="space-y-3">
