@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -6,7 +7,6 @@ import Navbar from '@/components/Navbar';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
-import PXBLeaderboard from '@/components/PXBLeaderboard';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
 import PXBBetsList from '@/components/PXBBetsList';
 import PXBSupplyProgress from '@/components/PXBSupplyProgress';
@@ -152,7 +152,7 @@ const PXBSpace = () => {
                 </div>
               </div>
               
-              {/* Right column - Bets & Leaderboard */}
+              {/* Right column - Bets & Referrals */}
               <div className="md:col-span-8 space-y-6">
                 <PXBBetsList />
                 
@@ -215,13 +215,13 @@ const PXBSpace = () => {
                       <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
                         <p className="text-sm text-dream-foreground/60 mb-1">Total Referrals</p>
                         <p className="text-2xl font-display font-bold text-gradient">
-                          {isLoadingReferrals ? "..." : referralStats?.totalReferrals || 0}
+                          {isLoadingReferrals ? "..." : referralStats?.referrals_count || 0}
                         </p>
                       </div>
                       <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
                         <p className="text-sm text-dream-foreground/60 mb-1">Points Earned</p>
                         <p className="text-2xl font-display font-bold text-gradient">
-                          {isLoadingReferrals ? "..." : (referralStats?.totalPointsEarned || 0).toLocaleString()}
+                          {isLoadingReferrals ? "..." : (referralStats?.points_earned || 0).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -235,8 +235,6 @@ const PXBSpace = () => {
                     </div>
                   </div>
                 </div>
-                
-                <PXBLeaderboard />
               </div>
             </div>}
         </div>
