@@ -9,6 +9,7 @@ interface CountdownTimerProps {
 
 const CountdownTimer: React.FC<CountdownTimerProps> = ({ endTime, onComplete }) => {
   const [timeLeft, setTimeLeft] = useState({
+    hours: 0,
     minutes: 0,
     seconds: 0,
   });
@@ -23,13 +24,15 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ endTime, onComplete }) 
       if (difference <= 0) {
         setIsComplete(true);
         if (onComplete) onComplete();
-        return { minutes: 0, seconds: 0 };
+        return { hours: 0, minutes: 0, seconds: 0 };
       }
       
-      const minutes = Math.floor(difference / (1000 * 60));
+      // Calculate hours, minutes, seconds
+      const hours = Math.floor(difference / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((difference % (1000 * 60)) / 1000);
       
-      return { minutes, seconds };
+      return { hours, minutes, seconds };
     };
     
     // Initial calculation
@@ -56,6 +59,8 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ endTime, onComplete }) 
           <span>Time's up!</span>
         ) : (
           <span className="flex items-baseline">
+            <span className="text-dream-accent3">{formatTime(timeLeft.hours)}</span>
+            <span className="mx-1">:</span>
             <span className="text-dream-accent1">{formatTime(timeLeft.minutes)}</span>
             <span className="mx-1">:</span>
             <span className="text-dream-accent2">{formatTime(timeLeft.seconds)}</span>
