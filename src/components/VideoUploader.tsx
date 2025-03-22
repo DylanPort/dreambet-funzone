@@ -48,16 +48,23 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `tour_videos/${fileName}`;
       
+      // Track upload progress manually
+      let lastLoaded = 0;
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percent);
+        }
+      });
+      
       // Upload file to Supabase Storage
       const { data, error: uploadError } = await supabase.storage
         .from('tour-videos')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            const percent = Math.round((progress.loaded / progress.total) * 100);
-            setUploadProgress(percent);
-          }
+          upsert: false
         });
       
       if (uploadError) {

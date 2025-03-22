@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -55,7 +54,6 @@ const InteractiveTour = () => {
       setCurrentStep(0);
     }
 
-    // Load video sources from Supabase if available
     const loadSupabaseVideos = async () => {
       try {
         const { data, error } = await supabase
@@ -133,7 +131,6 @@ const InteractiveTour = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     
-    // Check if file is a video
     if (!file.type.startsWith('video/')) {
       toast.error("Please upload a video file");
       return;
@@ -142,7 +139,6 @@ const InteractiveTour = () => {
     setIsUploading(true);
     
     try {
-      // Upload to Supabase storage
       const fileName = `step-${currentStep + 1}.${file.name.split('.').pop()}`;
       
       const { data, error } = await supabase
@@ -157,13 +153,11 @@ const InteractiveTour = () => {
         throw error;
       }
       
-      // Get the public URL for the uploaded file
       const { data: { publicUrl } } = supabase
         .storage
         .from('tour-videos')
         .getPublicUrl(fileName);
       
-      // Update the video sources
       const newVideoSources = [...videoSources];
       newVideoSources[currentStep] = publicUrl;
       setVideoSources(newVideoSources);
@@ -175,7 +169,6 @@ const InteractiveTour = () => {
     } finally {
       setIsUploading(false);
       
-      // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -247,7 +240,6 @@ const InteractiveTour = () => {
     image: videoSources[4]
   }];
 
-  // Hidden file input for video uploads
   const fileInput = (
     <Input 
       ref={fileInputRef}

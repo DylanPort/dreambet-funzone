@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -5,7 +6,11 @@ import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { X, Settings } from 'lucide-react';
 import TourVideoManager from './TourVideoManager';
 
-const PXBOnboarding = () => {
+interface PXBOnboardingProps {
+  onClose?: () => void;
+}
+
+const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
   const { userProfile } = usePXBPoints();
   const [showTour, setShowTour] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -27,6 +32,7 @@ const PXBOnboarding = () => {
   const completeTour = () => {
     localStorage.setItem('pxbTourCompleted', 'true');
     setShowTour(false);
+    if (onClose) onClose();
   };
 
   const tourStepTitle = (step: number) => {
