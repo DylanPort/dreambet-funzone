@@ -26,33 +26,60 @@ export const usePointOperations = (
 
     const walletAddress = publicKey.toString();
     
-    // Check if the wallet has already minted points before
-    const mintedWallets = JSON.parse(localStorage.getItem('pxbMintedWallets') || '{}');
-    if (mintedWallets[walletAddress]) {
-      toast.error('You have already minted your free PXB points');
-      return;
-    }
-    
     setMintingPoints(true);
     try {
+      // Check if the wallet has already minted points before
+      const mintedWallets = JSON.parse(localStorage.getItem('pxbMintedWallets') || '{}');
+      
+      // Allow multiple mints - removing the restriction
+      // if (mintedWallets[walletAddress]) {
+      //   toast.error('You have already minted your free PXB points');
+      //   return;
+      // }
+      
+      // Get the current user profile to ensure we have the latest data
+      const { data: userData, error: fetchError } = await supabase
+        .from('users')
+        .select('points')
+        .eq('wallet_address', walletAddress)
+        .single();
+        
+      if (fetchError) {
+        console.error('Error fetching current points:', fetchError);
+        toast.error('Failed to mint points');
+        return;
+      }
+      
+      const currentPoints = userData?.points || userProfile.pxbPoints;
+      const newPointsTotal = currentPoints + amount;
+      
+      // Update the points in the database
       const { data, error } = await supabase
         .from('users')
-        .update({ points: userProfile.pxbPoints + amount })
+        .update({ points: newPointsTotal })
         .eq('wallet_address', walletAddress)
         .select();
 
       if (error) {
         console.error('Error minting points:', error);
-        throw new Error('Failed to mint points');
+        toast.error('Failed to mint points');
+        return;
       }
 
+      console.log('Points updated in database:', data);
+
       // Add record to points history
-      await supabase.from('points_history').insert({
+      const { error: historyError } = await supabase.from('points_history').insert({
         user_id: userProfile.id,
         amount: amount,
         action: 'mint',
-        reference_id: 'one_time_mint'
+        reference_id: `mint_${Date.now()}`  // Use timestamp to make each mint unique
       });
+
+      if (historyError) {
+        console.error('Error recording points history:', historyError);
+        // Continue anyway since the points were already added
+      }
 
       // Mark this wallet as having minted
       mintedWallets[walletAddress] = true;
@@ -61,12 +88,14 @@ export const usePointOperations = (
       // Update the user profile with new points
       setUserProfile({
         ...userProfile,
-        pxbPoints: userProfile.pxbPoints + amount
+        pxbPoints: newPointsTotal
       });
+      
+      toast.success(`Successfully minted ${amount} PXB points!`);
 
     } catch (error) {
       console.error('Error in mintPoints:', error);
-      throw error;
+      toast.error('Failed to mint points');
     } finally {
       setMintingPoints(false);
     }
