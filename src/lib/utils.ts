@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -38,3 +37,28 @@ const customAnimations = {
 };
 
 export { customKeyframes, customAnimations };
+
+// Add confetti function
+export const confetti = (options?: {
+  particleCount?: number;
+  spread?: number;
+  startVelocity?: number;
+  decay?: number;
+  scalar?: number;
+  ticks?: number;
+  origin?: { x?: number; y?: number };
+  colors?: string[];
+  shapes?: string[];
+  gravity?: number;
+  drift?: number;
+  random?: () => number;
+}) => {
+  // This is just a placeholder that manages the type signature
+  // When we add the actual confetti library through a script tag,
+  // this will just pass through to the global function
+  
+  if (typeof window !== 'undefined' && (window as any).confetti) {
+    return (window as any).confetti(options);
+  }
+  return null;
+};
