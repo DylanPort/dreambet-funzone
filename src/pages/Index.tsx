@@ -102,16 +102,37 @@ const Index = () => {
         <section className="relative px-6 py-16 md:py-24 max-w-7xl mx-auto">
           <FloatingImages />
           
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
-            <div className="flex flex-row-reverse md:flex-row flex-wrap md:flex-nowrap gap-6 w-full">
-              <div className="w-full md:w-1/2 flex justify-center">
-                <InteractiveTour />
+          {/* Modified layout to show components in different order on mobile */}
+          <div className="flex flex-col mb-16 animate-fade-in relative z-10">
+            {!isMobile && (
+              <div className="flex flex-row flex-wrap md:flex-nowrap gap-6 w-full mb-16">
+                <div className="w-full md:w-1/2 flex justify-center">
+                  <InteractiveTour />
+                </div>
+                
+                <div className="w-full md:w-1/2 flex justify-center">
+                  <FuturisticTokenDisplay tokens={latestTokens} />
+                </div>
               </div>
-              
-              <div className="w-full md:w-1/2 flex justify-center">
-                <FuturisticTokenDisplay tokens={latestTokens} />
-              </div>
+            )}
+            
+            {/* RecentTokenTrades section */}
+            <div className="max-w-5xl mx-auto mb-16">
+              <RecentTokenTrades />
             </div>
+            
+            {/* On mobile, show FuturisticTokenDisplay and InteractiveTour after RecentTokenTrades */}
+            {isMobile && (
+              <div className="flex flex-col gap-10 w-full mb-16">
+                <div className="w-full flex justify-center">
+                  <FuturisticTokenDisplay tokens={latestTokens} />
+                </div>
+                
+                <div className="w-full flex justify-center">
+                  <InteractiveTour />
+                </div>
+              </div>
+            )}
           </div>
           
           {!isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
@@ -121,12 +142,6 @@ const Index = () => {
               before:content-[''] before:absolute before:inset-0 
               before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
               before:animate-pulse-glow">
-              
-              
-              
-              
-              
-              
             </div>}
           
           <div className="flex justify-center gap-4 mt-10 mb-16">
@@ -172,10 +187,6 @@ const Index = () => {
                 </DialogContent>
               </Dialog>
             </div>
-          </div>
-          
-          <div className="max-w-5xl mx-auto mb-16">
-            <RecentTokenTrades />
           </div>
           
           <div className="max-w-7xl mx-auto px-4 py-10">
