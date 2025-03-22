@@ -299,7 +299,7 @@ const BetDetails = () => {
               </div>
               
               {bet.initialMarketCap && <div>
-                  <h3 className="text-lg font-semibold mb-3">Market Data</h3>
+                  
                   <div className="space-y-3">
                     
                     
