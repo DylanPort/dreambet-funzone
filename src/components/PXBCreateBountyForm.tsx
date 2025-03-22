@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle, Users } from 'lucide-react';
@@ -100,7 +99,6 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     setLoading(true);
     
     try {
-      // Use the userProfile ID directly instead of getting a new session
       const creatorId = userProfile.id;
       
       if (!creatorId) {
@@ -114,13 +112,8 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       
       console.log('Creating bounty with creator ID:', creatorId);
       
-      // Check if the user's session is valid
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        // If no session, try to get one directly from Supabase
-        console.log('No active session, attempting to authenticate with Supabase');
-      }
-      
+      // Create a direct insert without checking the session again
+      // This uses the existing authentication from the Supabase client
       const { data, error } = await supabase
         .from('bounties')
         .insert({
