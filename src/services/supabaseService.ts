@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
+import { SearchedToken } from "@/types/token-search";
 
 // User related functions
 export const getCurrentUser = async () => {
@@ -467,11 +468,11 @@ export const acceptBet = async (betId: string) => {
 export const trackTokenSearch = async (tokenMint: string, tokenName: string, tokenSymbol: string) => {
   try {
     // Check if token exists in token_searches table
-    const { data: existingSearch } = await supabase
+    const { data: existingSearch, error } = await supabase
       .from('token_searches')
       .select('search_count')
       .eq('token_mint', tokenMint)
-      .single();
+      .maybeSingle();
     
     if (existingSearch) {
       // Increment search count
@@ -499,7 +500,7 @@ export const trackTokenSearch = async (tokenMint: string, tokenName: string, tok
 };
 
 // Function to fetch top searched tokens
-export const fetchTopSearchedTokens = async (limit = 10) => {
+export const fetchTopSearchedTokens = async (limit = 10): Promise<SearchedToken[]> => {
   try {
     const { data, error } = await supabase
       .from('token_searches')
@@ -512,7 +513,7 @@ export const fetchTopSearchedTokens = async (limit = 10) => {
       throw error;
     }
     
-    return data;
+    return data as SearchedToken[];
   } catch (error) {
     console.error('Error in fetchTopSearchedTokens:', error);
     return [];
@@ -520,7 +521,7 @@ export const fetchTopSearchedTokens = async (limit = 10) => {
 };
 
 // Function to fetch recently searched tokens
-export const fetchRecentlySearchedTokens = async (limit = 10) => {
+export const fetchRecentlySearchedTokens = async (limit = 10): Promise<SearchedToken[]> => {
   try {
     const { data, error } = await supabase
       .from('token_searches')
@@ -533,7 +534,7 @@ export const fetchRecentlySearchedTokens = async (limit = 10) => {
       throw error;
     }
     
-    return data;
+    return data as SearchedToken[];
   } catch (error) {
     console.error('Error in fetchRecentlySearchedTokens:', error);
     return [];

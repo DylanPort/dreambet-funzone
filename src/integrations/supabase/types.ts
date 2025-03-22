@@ -389,6 +389,36 @@ export type Database = {
           },
         ]
       }
+      token_searches: {
+        Row: {
+          first_searched_at: string
+          id: string
+          last_searched_at: string
+          search_count: number
+          token_mint: string
+          token_name: string
+          token_symbol: string
+        }
+        Insert: {
+          first_searched_at?: string
+          id?: string
+          last_searched_at?: string
+          search_count?: number
+          token_mint: string
+          token_name: string
+          token_symbol: string
+        }
+        Update: {
+          first_searched_at?: string
+          id?: string
+          last_searched_at?: string
+          search_count?: number
+          token_mint?: string
+          token_name?: string
+          token_symbol?: string
+        }
+        Relationships: []
+      }
       token_volume_history: {
         Row: {
           created_at: string | null
