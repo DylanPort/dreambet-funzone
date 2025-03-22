@@ -587,7 +587,7 @@ const TokenDetail = () => {
           </Button>
         </div>
         <p className="text-sm mt-1">
-          A {newActiveBet.amount} SOL bet that this token will {newActiveBet.prediction} is now active!
+          A {newActiveBet.amount} PXB bet that this token will {newActiveBet.prediction} is now active!
         </p>
       </div>;
   };
