@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,7 +26,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    requiredProof: 'none', // Changed from empty string to 'none'
+    requiredProof: 'none',
     projectName: '',
     projectUrl: '',
     telegramUrl: '',
@@ -38,6 +37,19 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     taskType: 'website_visit',
     maxParticipants: 10
   });
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('No active session found. User may need to authenticate with Supabase.');
+      } else {
+        console.log('Authenticated session found:', session.user.id);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -77,7 +89,6 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       return;
     }
     
-    // Validate form - required_proof is now optional
     if (!formData.title || !formData.description || !formData.projectName) {
       toast.error('Please fill in all required fields');
       return;
@@ -86,34 +97,45 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     setLoading(true);
     
     try {
-      // Calculate end date (current date + duration in days)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active Supabase session. Please sign in.');
+      }
+      
+      if (userProfile.id !== session.user.id) {
+        console.warn('User profile ID does not match authenticated user ID');
+      }
+      
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + formData.durationDays);
+      
+      console.log('Creating bounty with creator ID:', session.user.id);
       
       const { data, error } = await supabase
         .from('bounties')
         .insert({
           title: formData.title,
           description: formData.description,
-          required_proof: formData.requiredProof === 'none' ? null : formData.requiredProof, // Convert 'none' to null
+          required_proof: formData.requiredProof === 'none' ? null : formData.requiredProof,
           project_name: formData.projectName,
           project_url: formData.projectUrl || null,
           telegram_url: formData.telegramUrl || null,
           twitter_url: formData.twitterUrl || null,
           project_logo: formData.projectLogo || null,
           pxb_reward: formData.pxbReward,
-          creator_id: userProfile.id,
-          budget: formData.pxbReward, // Initial budget equals the reward
+          creator_id: session.user.id,
+          budget: formData.pxbReward,
           end_date: endDate.toISOString(),
           task_type: formData.taskType,
-          views: 0, // Initialize with zero views
+          views: 0,
           status: 'open',
-          max_participants: formData.maxParticipants // Add the new field
+          max_participants: formData.maxParticipants
         })
         .select()
         .single();
       
       if (error) {
+        console.error('Supabase error details:', error);
         throw error;
       }
       
