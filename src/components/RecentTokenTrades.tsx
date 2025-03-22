@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { ArrowUpRight, ArrowDownRight, Clock, TrendingUp, User, Users, Layers, DollarSign, Loader2, ExternalLink } from 'lucide-react';
@@ -10,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { BetPrediction, BetStatus } from '@/types/bet';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
+import { fetchTokenMetrics } from '@/services/tokenDataCache';
 
 const RecentTokenTrades: React.FC = () => {
   const { isConnected } = usePumpPortal();
@@ -22,6 +24,8 @@ const RecentTokenTrades: React.FC = () => {
   const [page, setPage] = useState(0);
   const pageSize = 5;
   const navigate = useNavigate();
+  const [marketCapData, setMarketCapData] = useState<Record<string, { initialMarketCap: number | null, currentMarketCap: number | null }>>({});
+  const [loadingProgress, setLoadingProgress] = useState<Record<string, boolean>>({});
 
   const formatTimeAgo = (timestamp: string) => {
     try {
@@ -48,7 +52,8 @@ const RecentTokenTrades: React.FC = () => {
           sol_amount,
           status,
           created_at,
-          percentage_change
+          percentage_change,
+          initial_market_cap
         `)
         .order('created_at', { ascending: false })
         .range(pageNum * pageSize, (pageNum * pageSize) + pageSize - 1);
@@ -83,7 +88,8 @@ const RecentTokenTrades: React.FC = () => {
           predictionDisplay,
           percentageChange: bet.percentage_change || 0,
           timestamp: bet.created_at,
-          status: bet.status
+          status: bet.status,
+          initialMarketCap: bet.initial_market_cap
         };
       });
       
@@ -92,6 +98,11 @@ const RecentTokenTrades: React.FC = () => {
       } else {
         setRecentBets(formattedBets);
       }
+
+      // Fetch market cap data for each bet
+      formattedBets.forEach(bet => {
+        fetchBetMarketCapData(bet);
+      });
     } catch (error) {
       console.error('Error in fetchRecentBets:', error);
     } finally {
@@ -99,8 +110,52 @@ const RecentTokenTrades: React.FC = () => {
     }
   };
 
+  const fetchBetMarketCapData = async (bet: any) => {
+    if (!bet.tokenMint || marketCapData[bet.id]?.currentMarketCap) return;
+    
+    setLoadingProgress(prev => ({ ...prev, [bet.id]: true }));
+    
+    try {
+      const metrics = await fetchTokenMetrics(bet.tokenMint);
+      
+      if (metrics && metrics.marketCap !== null) {
+        setMarketCapData(prev => ({
+          ...prev,
+          [bet.id]: {
+            initialMarketCap: bet.initialMarketCap || metrics.marketCap,
+            currentMarketCap: metrics.marketCap
+          }
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching market cap data for token ${bet.tokenSymbol}:`, error);
+    } finally {
+      setLoadingProgress(prev => ({ ...prev, [bet.id]: false }));
+    }
+  };
+
   const calculateProgress = (bet: any) => {
-    return Math.floor(Math.random() * 100);
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    const currentMarketCap = marketCapData[bet.id]?.currentMarketCap;
+    
+    if (!initialMarketCap || !currentMarketCap) {
+      return 0;
+    }
+    
+    if (bet.status !== 'open') {
+      return bet.status === 'won' ? 100 : 0;
+    }
+    
+    const percentageChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
+    const targetChange = bet.percentageChange || 30; // Default to 30% if not specified
+    
+    if (bet.prediction === 'up') {
+      if (percentageChange < 0) return 0;
+      return Math.min(100, (percentageChange / targetChange) * 100);
+    } else {
+      if (percentageChange > 0) return 0;
+      return Math.min(100, (Math.abs(percentageChange) / targetChange) * 100);
+    }
   };
 
   useEffect(() => {
@@ -135,6 +190,36 @@ const RecentTokenTrades: React.FC = () => {
 
   const handleNavigateToBetting = () => {
     navigate('/betting');
+  };
+
+  // Format market cap values
+  const formatMarketCap = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return "N/A";
+    
+    if (value >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(2)}B`;
+    }
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(2)}M`;
+    }
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(2)}K`;
+    }
+    return `$${value.toFixed(2)}`;
+  };
+
+  // Calculate target market cap based on prediction and percentage change
+  const calculateTargetMarketCap = (bet: any) => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    if (!initialMarketCap) return null;
+    
+    const percentageChange = bet.percentageChange || 30; // Default to 30% if not specified
+    
+    if (bet.prediction === 'up') {
+      return initialMarketCap * (1 + percentageChange / 100);
+    } else {
+      return initialMarketCap * (1 - percentageChange / 100);
+    }
   };
 
   if (isLoading) {
@@ -224,13 +309,35 @@ const RecentTokenTrades: React.FC = () => {
                 
                 <div className="mb-3 mt-2">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-dream-foreground/60">Bet Progress</span>
-                    <span className="text-green-400 font-medium">{calculateProgress(bet)}%</span>
+                    <span className="text-dream-foreground/60">Progress</span>
+                    <div className="flex space-x-2">
+                      <span className="text-dream-foreground/60">
+                        Initial: {formatMarketCap(bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap)}
+                      </span>
+                      <span className="text-dream-foreground/60">→</span>
+                      <span className="text-green-400">
+                        Target: {formatMarketCap(calculateTargetMarketCap(bet))}
+                      </span>
+                    </div>
                   </div>
-                  <Progress 
-                    value={calculateProgress(bet)} 
-                    className="h-2 bg-black/30 backdrop-blur-sm" 
-                  />
+                  
+                  {loadingProgress[bet.id] ? (
+                    <div className="h-2 bg-black/30 backdrop-blur-sm rounded-full animate-pulse"></div>
+                  ) : (
+                    <Progress 
+                      value={calculateProgress(bet)} 
+                      className="h-2 bg-black/30 backdrop-blur-sm" 
+                    />
+                  )}
+                  
+                  <div className="flex justify-between text-xs mt-1">
+                    <span className="text-dream-foreground/60">
+                      Current: {formatMarketCap(marketCapData[bet.id]?.currentMarketCap)}
+                    </span>
+                    <span className={`${bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'} font-medium`}>
+                      {calculateProgress(bet).toFixed(1)}% complete
+                    </span>
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
