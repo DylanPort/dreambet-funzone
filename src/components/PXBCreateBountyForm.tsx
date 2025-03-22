@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle, Users } from 'lucide-react';
@@ -41,7 +40,6 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
   });
 
   useEffect(() => {
-    // More reliable authentication check
     const checkAuthStatus = async () => {
       if (userProfile && userProfile.id) {
         console.log('User profile found with ID:', userProfile.id);
@@ -100,79 +98,9 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!userProfile) {
-      toast.error('You need to be signed in to create a bounty');
-      return;
-    }
-    
-    if (!isAuthenticated) {
-      toast.error('Please connect your wallet and sign in to create a bounty');
-      return;
-    }
-    
-    if (!formData.title || !formData.description || !formData.projectName) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      // Use the userProfile.id directly
-      const creatorId = userProfile.id;
-      
-      if (!creatorId) {
-        toast.error('User ID not available. Please reconnect your wallet.');
-        setLoading(false);
-        return;
-      }
-      
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + formData.durationDays);
-      
-      console.log('Creating bounty with creator ID:', creatorId);
-      
-      // Create bounty directly with userProfile.id
-      const { data, error } = await supabase
-        .from('bounties')
-        .insert({
-          title: formData.title,
-          description: formData.description,
-          required_proof: formData.requiredProof === 'none' ? null : formData.requiredProof,
-          project_name: formData.projectName,
-          project_url: formData.projectUrl || null,
-          telegram_url: formData.telegramUrl || null,
-          twitter_url: formData.twitterUrl || null,
-          project_logo: formData.projectLogo || null,
-          pxb_reward: formData.pxbReward,
-          creator_id: creatorId,
-          budget: formData.pxbReward,
-          end_date: endDate.toISOString(),
-          task_type: formData.taskType,
-          views: 0,
-          status: 'open',
-          max_participants: formData.maxParticipants
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Supabase error details:', error);
-        throw error;
-      }
-      
-      toast.success('Bounty created successfully!');
-      navigate(`/bounties/${data.id}`);
-    } catch (error) {
-      console.error('Error creating bounty:', error);
-      toast.error(`Failed to create bounty: ${error.message || 'Please try again'}`);
-    } finally {
-      setLoading(false);
-    }
+    toast.info("Coming soon! Bounty creation will be available shortly.");
   };
 
-  // Only show auth warning if we're really sure there's no profile
   const showAuthWarning = !userProfile && !isAuthenticated;
 
   return (
@@ -388,17 +316,11 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       <div className="mt-10 flex justify-end">
         <Button 
           type="submit" 
-          disabled={loading || showAuthWarning}
-          className="gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 px-8"
+          disabled={loading}
+          className="gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-8"
         >
-          {loading ? (
-            <>Creating...</>
-          ) : (
-            <>
-              <Award className="h-4 w-4" />
-              Create Bounty
-            </>
-          )}
+          <Award className="h-4 w-4" />
+          Coming Soon
         </Button>
       </div>
     </form>
