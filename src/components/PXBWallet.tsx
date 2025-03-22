@@ -231,7 +231,7 @@ const PXBWallet: React.FC = () => {
         </button>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 bg-slate-950">
         {activeTab === 'send' && <motion.div initial={{
         opacity: 0
       }} animate={{
