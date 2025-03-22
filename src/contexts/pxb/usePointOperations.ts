@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -6,7 +5,7 @@ import { UserProfile, PXBBet } from '@/types/pxb';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet, BetPrediction } from '@/types/bet';
 import { createSupabaseBet } from '@/services/supabaseService';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 // Constants for minting limits
 const MINT_LIMIT_PER_PERIOD = 2000; // Max tokens per period
@@ -166,67 +165,74 @@ export const usePointOperations = (
       // Convert betType to a valid BetPrediction
       const prediction: BetPrediction = betType === 'up' ? 'up' : 'down';
 
-      // Create the bet in Supabase
-      const newBet = await createSupabaseBet(
-        tokenMint,
-        tokenName,
-        tokenSymbol,
-        prediction,
-        duration,
-        betAmount,
-        walletAddress,
-        pxbId
-      );
+      try {
+        // Create the bet in Supabase
+        const newBet = await createSupabaseBet(
+          tokenMint,
+          tokenName,
+          tokenSymbol,
+          prediction,
+          duration,
+          betAmount,
+          walletAddress,
+          pxbId
+        );
 
-      if (!newBet) {
-        throw new Error('Failed to create bet');
-      }
+        if (!newBet) {
+          throw new Error('Failed to create bet');
+        }
 
-      // Update user points in Supabase
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ points: userProfile.pxbPoints - betAmount })
-        .eq('wallet_address', walletAddress);
+        // Update user points in Supabase
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ points: userProfile.pxbPoints - betAmount })
+          .eq('wallet_address', walletAddress);
 
-      if (updateError) {
-        console.error('Error updating user points after bet:', updateError);
-        // Revert optimistic update if update fails
+        if (updateError) {
+          console.error('Error updating user points after bet:', updateError);
+          // Revert optimistic update if update fails
+          setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
+          throw new Error('Failed to update points after bet');
+        }
+
+        // Record the bet in points history
+        await supabase.from('points_history').insert({
+          user_id: userProfile.id,
+          amount: -betAmount,
+          action: 'bet_placed',
+          reference_id: newBet.id,
+          reference_name: tokenName
+        });
+
+        // Convert Bet to PXBBet
+        const pxbBet: PXBBet = {
+          id: newBet.id,
+          userId: userProfile.id,
+          tokenMint: newBet.tokenMint,
+          tokenName: newBet.tokenName,
+          tokenSymbol: newBet.tokenSymbol,
+          betAmount: newBet.amount,
+          betType: betType,
+          percentageChange: percentageChange,
+          status: 'pending',
+          pointsWon: 0,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + duration * 1000).toISOString(),
+          initialMarketCap: newBet.initialMarketCap,
+          currentMarketCap: newBet.initialMarketCap
+        };
+
+        // Update bets state
+        setBets(prevBets => [...prevBets, pxbBet]);
+
+        toast.success(`Bet placed successfully!`);
+        return pxbBet;
+      } catch (supabaseError: any) {
+        console.error('Error with Supabase operations:', supabaseError);
+        // Revert optimistic update if Supabase operations fail
         setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
-        throw new Error('Failed to update points after bet');
+        throw new Error(supabaseError.message || 'Failed to place bet in database');
       }
-
-      // Record the bet in points history
-      await supabase.from('points_history').insert({
-        user_id: userProfile.id,
-        amount: -betAmount,
-        action: 'bet_placed',
-        reference_id: newBet.id,
-        reference_name: tokenName
-      });
-
-      // Convert Bet to PXBBet
-      const pxbBet: PXBBet = {
-        id: newBet.id,
-        userId: userProfile.id,
-        tokenMint: newBet.tokenMint,
-        tokenName: newBet.tokenName,
-        tokenSymbol: newBet.tokenSymbol,
-        betAmount: newBet.amount,
-        betType: betType,
-        percentageChange: percentageChange,
-        status: 'pending',
-        pointsWon: 0,
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + duration * 1000).toISOString(),
-        initialMarketCap: undefined,
-        currentMarketCap: undefined
-      };
-
-      // Update bets state
-      setBets(prevBets => [...prevBets, pxbBet]);
-
-      toast.success(`Bet placed successfully!`);
-      return pxbBet;
     } catch (error: any) {
       console.error('Error placing bet:', error);
       toast.error(error.message || 'Failed to place bet');
@@ -236,7 +242,7 @@ export const usePointOperations = (
     } finally {
       setIsLoading(false);
     }
-  }, [userProfile, publicKey, setUserProfile, setBets, setIsLoading]);
+  }, [userProfile, publicKey, setUserProfile, setBets, setIsLoading, generatePxbId]);
 
   const sendPoints = useCallback(async (recipientId: string, amount: number) => {
     if (!userProfile || !publicKey) {

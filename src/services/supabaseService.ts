@@ -389,16 +389,50 @@ export const createSupabaseBet = async (
     // Convert duration to seconds for database
     const durationInSeconds = duration * 60;
     
-    // Get token data to store initial market cap
-    const { data: tokenData } = await supabase
-      .from('tokens')
-      .select('current_market_cap, token_name, token_symbol')
-      .eq('token_mint', tokenMint)
-      .single();
+    // Get token data to store initial market cap, or use default if not found
+    let initialMarketCap = 0;
+    let fetchedTokenName = tokenName;
+    let fetchedTokenSymbol = tokenSymbol;
     
-    if (!tokenData) throw new Error('Token not found');
-    
-    console.log('Token data for bet:', tokenData);
+    try {
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('tokens')
+        .select('current_market_cap, token_name, token_symbol')
+        .eq('token_mint', tokenMint)
+        .maybeSingle();
+      
+      if (tokenData) {
+        console.log('Token data for bet:', tokenData);
+        initialMarketCap = tokenData.current_market_cap || 0;
+        fetchedTokenName = tokenData.token_name || tokenName;
+        fetchedTokenSymbol = tokenData.token_symbol || tokenSymbol;
+      } else {
+        console.log('Token not found in database, using provided data');
+        // Check if we need to add the token to the database
+        const { error: insertError } = await supabase
+          .from('tokens')
+          .insert({
+            token_mint: tokenMint,
+            token_name: tokenName,
+            token_symbol: tokenSymbol,
+            current_market_cap: 0, // Default value
+            last_trade_price: 0,    // Default value
+            total_supply: 1000000000 // Default supply for PumpFun tokens
+          })
+          .select()
+          .single();
+          
+        if (insertError) {
+          console.log('Error inserting new token:', insertError);
+          // Continue anyway with the provided data
+        } else {
+          console.log('Added new token to database');
+        }
+      }
+    } catch (tokenError) {
+      console.log('Error fetching token data:', tokenError);
+      // Continue with the provided token data
+    }
     
     // Map frontend prediction to database format
     let dbPrediction: string;
@@ -445,8 +479,8 @@ export const createSupabaseBet = async (
       .from('bets')
       .insert({
         token_mint: tokenMint,
-        token_name: tokenName,
-        token_symbol: tokenSymbol,
+        token_name: fetchedTokenName,
+        token_symbol: fetchedTokenSymbol,
         creator: userId, // Use UUID instead of wallet address
         bettor1_id: userId, // Use UUID instead of wallet address
         prediction_bettor1: dbPrediction,
@@ -454,7 +488,8 @@ export const createSupabaseBet = async (
         sol_amount: amount,
         status: 'open',
         on_chain_id: onChainId,
-        transaction_signature: transactionSignature
+        transaction_signature: transactionSignature,
+        initial_market_cap: initialMarketCap
       })
       .select('bet_id, created_at')
       .single();
@@ -476,7 +511,7 @@ export const createSupabaseBet = async (
             action: 'created',
             user_id: userId, // Use UUID instead of wallet address
             details: { prediction: dbPrediction, amount: amount },
-            market_cap_at_action: tokenData.current_market_cap || 0
+            market_cap_at_action: initialMarketCap
           });
       } catch (historyError) {
         console.error('Error creating bet history:', historyError);
@@ -489,8 +524,8 @@ export const createSupabaseBet = async (
       id: data.bet_id,
       tokenId: tokenMint,
       tokenMint: tokenMint,
-      tokenName: tokenName,
-      tokenSymbol: tokenSymbol,
+      tokenName: fetchedTokenName,
+      tokenSymbol: fetchedTokenSymbol,
       initiator: creatorWalletAddress, // Keep using wallet address for frontend
       amount: amount,
       prediction: prediction,
@@ -499,7 +534,8 @@ export const createSupabaseBet = async (
       status: 'open' as BetStatus,
       duration: duration,
       onChainBetId: onChainId || '',
-      transactionSignature: transactionSignature || ''
+      transactionSignature: transactionSignature || '',
+      initialMarketCap: initialMarketCap
     };
     
     console.log('Returning new bet:', newBet);
@@ -602,4 +638,3 @@ export const acceptBet = async (betId: string) => {
     transactionSignature: data.transaction_signature || ''
   };
 };
-
