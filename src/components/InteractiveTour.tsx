@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -266,8 +265,8 @@ const InteractiveTour = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/90 to-blue-950/90 
                         backdrop-blur-md rounded-2xl border border-indigo-500/30 shadow-[0_0_15px_rgba(79,70,229,0.3)]
                         overflow-hidden z-0" style={{
-          boxShadow: isHovering ? '0 0 25px rgba(125, 97, 255, 0.7)' : '0 0 15px rgba(79, 70, 229, 0.3)',
-          borderColor: isHovering ? 'rgba(125, 97, 255, 0.5)' : 'rgba(79, 70, 229, 0.3)',
+          boxShadow: isHovering ? '0 0 25px rgba(125, 97, 229, 0.7)' : '0 0 15px rgba(79, 70, 229, 0.3)',
+          borderColor: isHovering ? 'rgba(125, 97, 229, 0.5)' : 'rgba(79, 70, 229, 0.3)',
           transition: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
         }}>
             
@@ -341,27 +340,24 @@ const InteractiveTour = () => {
               }} 
               initial={{
                 opacity: 0,
-                y: 20,
-                rotateX: -5,
+                scale: 0.95,
                 filter: 'blur(10px)'
               }} 
               animate={{
                 opacity: 1,
-                y: 0,
-                rotateX: 0,
+                scale: 1,
                 filter: 'blur(0px)'
               }} 
               exit={{
                 opacity: 0,
-                y: -20,
-                rotateX: 5,
+                scale: 0.95,
                 filter: 'blur(10px)'
               }} 
               transition={{
-                duration: 0.4,
-                ease: [0.19, 1, 0.22, 1]
+                duration: 0.5,
+                ease: [0.22, 1, 0.36, 1]
               }} 
-              className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-black/85">
+              className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-gradient-to-b from-black/95 to-black/85 backdrop-blur-md">
               {isMobile ? <ScrollArea className="h-full pr-2">
                   <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
