@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Carousel, 
@@ -29,6 +28,7 @@ import { Progress } from "@/components/ui/progress";
 import useEmblaCarousel from "embla-carousel-react";
 import { usePXBPoints } from "@/contexts/pxb/PXBPointsContext";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const WebsiteTour = () => {
   const [activeSlide, setActiveSlide] = useState(0);
@@ -40,8 +40,8 @@ const WebsiteTour = () => {
   const [quizAnswers, setQuizAnswers] = useState<{[key: string]: boolean}>({});
   const [tourCompleted, setTourCompleted] = useState(false);
   const { userProfile, mintPoints } = usePXBPoints();
+  const navigate = useNavigate();
   
-  // Define quiz questions for each slide
   const quizQuestions = {
     1: {
       question: "What can you earn by completing activities in PumpXBounty?",
@@ -92,13 +92,11 @@ const WebsiteTour = () => {
         setActiveSlide(currentSlide);
         setProgress(((currentSlide + 1) / features.length) * 100);
         
-        // Add XP when advancing to a new slide
         if (!achievements.includes(`slide_${currentSlide}`)) {
           const newAchievements = [...achievements, `slide_${currentSlide}`];
           setAchievements(newAchievements);
           setXp(prev => prev + 25);
           
-          // Unlock next slide
           if (!unlockedSlides.includes(currentSlide + 1) && currentSlide + 1 < features.length) {
             setUnlockedSlides(prev => [...prev, currentSlide + 1]);
           }
@@ -107,45 +105,81 @@ const WebsiteTour = () => {
     }
   }, [emblaApi, achievements]);
   
-  // Award user 10000 PXB points when tour is completed
   const handleCompleteJourney = async () => {
     if (userProfile && mintPoints) {
-      // Award bonus XP for completing the tour
       setXp(prev => prev + 100);
       setAchievements(prev => [...prev, "journey_complete"]);
       setTourCompleted(true);
       
       try {
-        // Award 10000 PXB points when the tour is completed
         await mintPoints(10000);
         toast.success("🎉 Congratulations! You've earned 10,000 PXB Points for completing the tour!", {
           duration: 5000
         });
+        
+        setTimeout(() => {
+          navigate('/betting');
+        }, 3000);
       } catch (error) {
         console.error("Error awarding points:", error);
         toast.error("There was an issue awarding your points. Please try again later.");
       }
     } else {
       toast.info("Connect your wallet to earn 10,000 PXB Points!");
-      // Still mark as completed for the UI
       setXp(prev => prev + 100);
       setAchievements(prev => [...prev, "journey_complete"]);
       setTourCompleted(true);
+      
+      setTimeout(() => {
+        navigate('/profile');
+      }, 2000);
+    }
+  };
+  
+  const handleContinueNavigation = () => {
+    if (tourCompleted) {
+      navigate('/betting');
+      return;
+    }
+    
+    if (activeSlide === features.length - 1 || activeSlide === unlockedSlides[unlockedSlides.length - 1]) {
+      if (!userProfile) {
+        toast.info("Let's get your wallet set up to earn PXB Points!", { duration: 3000 });
+        navigate('/profile');
+      } else {
+        if (unlockedSlides.includes(activeSlide + 1)) {
+          emblaApi?.scrollNext();
+        } else {
+          if (activeSlide === 4) {
+            toast.info("Answer the quiz correctly to unlock the final stage!");
+          } else {
+            toast.info("Complete the current stage to unlock the next one!");
+          }
+        }
+      }
+      return;
+    }
+    
+    if (unlockedSlides.includes(activeSlide + 1)) {
+      emblaApi?.scrollNext();
+    } else {
+      if (activeSlide === 4) {
+        toast.info("Answer the quiz correctly to unlock the final stage!");
+      } else {
+        toast.info("Complete the current stage to unlock the next one!");
+      }
     }
   };
   
   const handleQuizAnswer = (slideIndex: number, optionId: string, isCorrect: boolean) => {
-    // Track quiz answers
     setQuizAnswers({...quizAnswers, [slideIndex]: isCorrect});
     
     if (isCorrect) {
-      // Award extra XP for correct answers
       setXp(prev => prev + 15);
       toast.success("Correct answer! +15 XP", {
         duration: 2000
       });
       
-      // If answering correctly for slide 5, allow moving to final slide
       if (slideIndex === 4 && !unlockedSlides.includes(5)) {
         setUnlockedSlides(prev => [...prev, 5]);
       }
@@ -219,15 +253,12 @@ const WebsiteTour = () => {
     }
   ];
   
-  // Function to render the quiz for each slide
   const renderQuiz = (slideIndex: number) => {
-    // Only show quiz for slides 1-5 (index 0-4)
     if (slideIndex < 1 || slideIndex > 5) return null;
     
     const quiz = quizQuestions[slideIndex as keyof typeof quizQuestions];
     if (!quiz) return null;
     
-    // If already answered correctly, show success message
     if (quizAnswers[slideIndex] === true) {
       return (
         <div className="mt-3 p-3 bg-green-500/20 rounded-lg border border-green-500/30">
@@ -269,7 +300,6 @@ const WebsiteTour = () => {
         <p className="text-white/70 mt-2">Complete the interactive tour to master the platform and earn 10,000 PXB Points!</p>
       </div>
       
-      {/* Game UI Elements */}
       <div className="flex justify-between items-center mb-4 glass-panel rounded-lg p-3">
         <div className="flex items-center gap-2">
           <Star className="h-5 w-5 text-yellow-400" />
@@ -289,7 +319,6 @@ const WebsiteTour = () => {
         </div>
       </div>
       
-      {/* Tour completion celebration - only shown after completing the tour */}
       {tourCompleted && (
         <motion.div 
           className="mb-6 p-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-center"
@@ -317,6 +346,14 @@ const WebsiteTour = () => {
           <h3 className="text-2xl font-bold text-white mb-2">Congratulations! Tour Completed!</h3>
           <p className="text-white/80 mb-3">You've unlocked 10,000 PXB Points to start your journey!</p>
           <p className="text-xs text-white/60">Continue exploring the platform to discover more features and earn rewards.</p>
+          
+          <Button 
+            onClick={() => navigate('/betting')}
+            className="mt-3 bg-white text-purple-700 hover:bg-white/90"
+          >
+            Start Betting Now!
+            <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
         </motion.div>
       )}
       
@@ -376,10 +413,8 @@ const WebsiteTour = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                     </div>
                     
-                    {/* Quiz section for slides 1-5 */}
                     {index > 0 && index < 6 && renderQuiz(index)}
                     
-                    {/* Achievement & Tip */}
                     <div className="bg-black/30 rounded-lg p-3 mb-3 text-xs">
                       <div className="flex items-center gap-2 mb-1">
                         <Trophy className="h-4 w-4 text-yellow-400" />
@@ -410,18 +445,7 @@ const WebsiteTour = () => {
                       ) : (
                         <Button 
                           className="flex-1 bg-white/10 hover:bg-white/20 text-white"
-                          onClick={() => {
-                            if (unlockedSlides.includes(index + 1)) {
-                              emblaApi?.scrollNext();
-                            } else {
-                              // Show hint about what's needed to unlock
-                              if (index === 4) {
-                                toast.info("Answer the quiz correctly to unlock the final stage!");
-                              } else {
-                                toast.info("Complete the current stage to unlock the next one!");
-                              }
-                            }
-                          }}
+                          onClick={handleContinueNavigation}
                         >
                           Continue
                           <ArrowRight className="h-4 w-4 ml-1" />
@@ -429,7 +453,6 @@ const WebsiteTour = () => {
                       )}
                     </div>
                     
-                    {/* Help button */}
                     {index > 0 && index < features.length - 1 && (
                       <button 
                         className="absolute bottom-4 right-4 p-1 rounded-full bg-white/10 hover:bg-white/20"
@@ -462,7 +485,6 @@ const WebsiteTour = () => {
           ))}
         </div>
         
-        {/* Achievements unlocked notification */}
         {achievements.length > 0 && (
           <div className="mt-4 text-center text-xs text-white/70">
             <span className="text-green-400 font-medium">Achievements unlocked:</span> {achievements.filter(a => a !== "journey_complete").map(a => a.replace('slide_', 'Stage ')).join(', ')}
@@ -470,7 +492,6 @@ const WebsiteTour = () => {
           </div>
         )}
         
-        {/* Next steps for users who completed the tour */}
         {tourCompleted && (
           <div className="mt-6 p-4 rounded-lg bg-indigo-900/20 border border-indigo-900/30">
             <h3 className="text-lg font-bold text-white mb-2">What's Next?</h3>
@@ -494,6 +515,16 @@ const WebsiteTour = () => {
                 <p className="text-white/80 text-sm">Check the leaderboard to see your current ranking</p>
               </li>
             </ul>
+            
+            <div className="mt-4 flex justify-center">
+              <Button 
+                onClick={() => navigate('/betting')}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              >
+                Start Betting Now
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </div>
         )}
       </Carousel>
