@@ -38,15 +38,18 @@ export interface PXBBet {
 
 // Leaderboard types
 export interface LeaderboardEntry {
-  userId: string;
+  id: string;
   username: string;
+  pxbPoints: number;
+  createdAt: string;
   walletAddress?: string;
-  points: number;
-  rank: number;
+  points?: number;
+  rank?: number;
+  winRate?: number;
 }
 
 export interface WinRateLeaderboardEntry {
-  userId: string;
+  id: string;
   username: string;
   walletAddress?: string;
   totalBets: number;
