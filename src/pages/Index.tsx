@@ -162,7 +162,7 @@ const Index = () => {
                     <div className="mt-4 text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
                       drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
                       {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
-                      <Sparkles className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                     </div>
                   </div>
                 </DialogTrigger>
