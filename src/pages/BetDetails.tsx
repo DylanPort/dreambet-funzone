@@ -301,22 +301,14 @@ const BetDetails = () => {
               {bet.initialMarketCap && <div>
                   <h3 className="text-lg font-semibold mb-3">Market Data</h3>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                      <div className="text-dream-foreground/70">Initial Market Cap</div>
-                      <div className="font-medium">${formatNumberWithCommas(bet.initialMarketCap)}</div>
-                    </div>
+                    
                     
                     {bet.currentMarketCap && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
                         <div className="text-dream-foreground/70">Current Market Cap</div>
                         <div className="font-medium">${formatNumberWithCommas(bet.currentMarketCap)}</div>
                       </div>}
                     
-                    {bet.initialMarketCap && bet.currentMarketCap && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                        <div className="text-dream-foreground/70">Market Cap Change</div>
-                        <div className={bet.currentMarketCap > bet.initialMarketCap ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
-                          {((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap * 100).toFixed(2)}%
-                        </div>
-                      </div>}
+                    {bet.initialMarketCap && bet.currentMarketCap}
                   </div>
                 </div>}
             </div>
@@ -350,7 +342,7 @@ const BetDetails = () => {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3">Blockchain Info</h3>
+                
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
                     <div className="text-dream-foreground/70">Bet ID</div>
