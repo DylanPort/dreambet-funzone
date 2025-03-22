@@ -694,20 +694,18 @@ const TokenDetail = () => {
                     <div className="flex items-center text-dream-foreground/70">
                       <span className="mr-2">{token.symbol}</span>
                       <button onClick={() => {
-                    navigator.clipboard.writeText(token.id);
-                    toast({
-                      title: "Copied!",
-                      description: "Token address copied to clipboard"
-                    });
-                  }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
+                        navigator.clipboard.writeText(token.id);
+                        toast({
+                          title: "Copied!",
+                          description: "Token address copied to clipboard"
+                        });
+                      }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
                         {token.id.substring(0, 4)}...{token.id.substring(token.id.length - 4)}
                         <Copy className="w-3 h-3 ml-1" />
                       </button>
                     </div>
                   </div>
                 </div>
-                
-                
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
