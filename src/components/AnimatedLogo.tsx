@@ -27,12 +27,11 @@ const AnimatedLogo = () => {
           animate={{ 
             opacity: 1, 
             scale: 1.2,
-            rotateY: [20, 0, -10, 0],
-            z: [30, 0, -30, 0],
+            rotateY: [-10, 10],
+            z: [-15, 15],
             filter: [
               "drop-shadow(0 0 10px rgba(51, 195, 240, 0.4))",
-              "drop-shadow(0 0 25px rgba(14, 165, 233, 0.7))",
-              "drop-shadow(0 0 10px rgba(51, 195, 240, 0.4))"
+              "drop-shadow(0 0 25px rgba(14, 165, 233, 0.7))"
             ]
           }}
           transition={{ 
@@ -79,16 +78,15 @@ const AnimatedLogo = () => {
             }}
             initial={{ opacity: 0 }}
             animate={{ 
-              opacity: [0, 0.8, 0],
+              opacity: [0, 0.8],
               y: [0, -30 - Math.random() * 40],
-              x: [0, (Math.random() - 0.5) * 60],
-              z: [0, Math.random() * 50]
+              x: [0, (Math.random() - 0.5) * 60]
             }}
             transition={{
               duration: 2 + Math.random() * 3,
               repeat: Infinity,
-              delay: Math.random() * 5,
-              repeatDelay: Math.random() * 3
+              repeatType: "reverse",
+              delay: Math.random() * 5
             }}
           />
         ))}

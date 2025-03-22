@@ -189,11 +189,11 @@ const InteractiveTour = () => {
             top: '0%',
             left: 0
           }} animate={{
-            top: ['0%', '100%', '0%']
+            top: ['0%', '100%']
           }} transition={{
             duration: 10,
             repeat: Infinity,
-            ease: 'linear'
+            ease: "linear"
           }} />
             
             {[...Array(10)].map((_, i) => <motion.div key={i} className="absolute rounded-full" style={{
@@ -263,8 +263,7 @@ const InteractiveTour = () => {
                         <motion.div 
                           className="p-2 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
                           whileHover={{
-                            scale: 1.1,
-                            rotate: 5
+                            scale: 1.1
                           }} 
                           style={{
                             transformStyle: 'preserve-3d',
@@ -331,8 +330,7 @@ const InteractiveTour = () => {
                       <motion.div 
                         className="p-2 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
                         whileHover={{
-                          scale: 1.1,
-                          rotate: 5
+                          scale: 1.1
                         }} 
                         style={{
                           transformStyle: 'preserve-3d',

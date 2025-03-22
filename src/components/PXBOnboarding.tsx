@@ -102,14 +102,15 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
                 transition={{ 
                   duration: 3,
                   repeat: Infinity,
-                  repeatType: "reverse"
+                  repeatType: "reverse",
+                  ease: "easeInOut"
                 }}
               />
               <div className="relative bg-card border border-purple-500/30 p-6 rounded-lg shadow-xl z-10">
                 <div className="flex flex-col items-center text-center">
                   <motion.div 
                     initial={{ scale: 0 }}
-                    animate={{ scale: 1, rotate: [0, 10, 0] }}
+                    animate={{ scale: 1 }}
                     transition={{ 
                       duration: 0.6,
                       delay: 0.2,
