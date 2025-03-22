@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,8 @@ import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy } from 'lu
 import { toast } from 'sonner';
 import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
+import { Progress } from '@/components/ui/progress';
+import { fetchTokenMetrics } from '@/services/tokenDataCache';
 
 interface BetCardProps {
   bet: Bet;
@@ -17,6 +19,44 @@ interface BetCardProps {
 
 const BetCard: React.FC<BetCardProps> = ({ bet, connected, publicKeyString, onAcceptBet }) => {
   const [accepting, setAccepting] = React.useState(false);
+  const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(bet.currentMarketCap || null);
+  const [progressValue, setProgressValue] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Fetch the latest market cap data when component mounts
+  useEffect(() => {
+    const fetchMarketCap = async () => {
+      if (bet.tokenMint) {
+        try {
+          const metrics = await fetchTokenMetrics(bet.tokenMint);
+          if (metrics && metrics.marketCap !== null) {
+            setCurrentMarketCap(metrics.marketCap);
+            setIsLoading(false);
+            
+            // Calculate progress based on prediction type and target
+            if (bet.initialMarketCap && bet.prediction === 'moon') {
+              // For moon bets, progress is % of growth toward target (capped at 100%)
+              const targetIncrease = bet.initialMarketCap * 0.3; // Assuming 30% increase target
+              const currentIncrease = Math.max(0, metrics.marketCap - bet.initialMarketCap);
+              const progress = Math.min(100, (currentIncrease / targetIncrease) * 100);
+              setProgressValue(progress);
+            } else if (bet.initialMarketCap && bet.prediction === 'die') {
+              // For dust bets, progress is % of decline toward target (capped at 100%)
+              const targetDecrease = bet.initialMarketCap * 0.3; // Assuming 30% decrease target
+              const currentDecrease = Math.max(0, bet.initialMarketCap - metrics.marketCap);
+              const progress = Math.min(100, (currentDecrease / targetDecrease) * 100);
+              setProgressValue(progress);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching token metrics:', error);
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    fetchMarketCap();
+  }, [bet.tokenMint, bet.initialMarketCap, bet.prediction]);
   
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
@@ -77,6 +117,22 @@ const BetCard: React.FC<BetCardProps> = ({ bet, connected, publicKeyString, onAc
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
   
+  // Format market cap for display
+  const formatMarketCap = (value: number | null) => {
+    if (value === null) return "N/A";
+    
+    if (value >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(2)}B`;
+    }
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(2)}M`;
+    }
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(2)}K`;
+    }
+    return `$${value.toFixed(2)}`;
+  };
+  
   return (
     <div className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${
       bet.status === 'open' ? 'bg-black/20 border-dream-accent1/30' : 
@@ -107,17 +163,17 @@ const BetCard: React.FC<BetCardProps> = ({ bet, connected, publicKeyString, onAc
           <div className="space-y-2">
             <div className="text-sm text-dream-foreground/70">Prediction</div>
             <div className={`text-lg font-medium flex items-center ${
-              bet.prediction === 'migrate' ? 'text-green-400' : 'text-red-400'
+              bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'text-green-400' : 'text-red-400'
             }`}>
-              {bet.prediction === 'migrate' ? (
+              {bet.prediction === 'moon' || bet.prediction === 'migrate' ? (
                 <>
                   <ArrowUp className="w-5 h-5 mr-1" />
-                  MIGRATE
+                  MOON
                 </>
               ) : (
                 <>
                   <ArrowDown className="w-5 h-5 mr-1" />
-                  DIE
+                  DUST
                 </>
               )}
             </div>
@@ -207,8 +263,30 @@ const BetCard: React.FC<BetCardProps> = ({ bet, connected, publicKeyString, onAc
         )}
         
         {(bet.status !== 'open' || isExpired) && (
-          <div className="mt-4 flex justify-center">
-            <div className={`text-sm px-3 py-1.5 rounded-md ${
+          <div className="mt-4 space-y-3">
+            {bet.initialMarketCap !== null && bet.initialMarketCap !== undefined && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs mb-1">
+                  <div className="text-green-400">Initial: {formatMarketCap(bet.initialMarketCap)}</div>
+                  <div className="text-dream-foreground/70">Current: {formatMarketCap(currentMarketCap)}</div>
+                  <div className={bet.prediction === 'moon' || bet.prediction === 'migrate' ? "text-green-400" : "text-red-400"}>
+                    Target: {formatMarketCap(bet.initialMarketCap * (bet.prediction === 'moon' || bet.prediction === 'migrate' ? 1.3 : 0.7))}
+                  </div>
+                </div>
+                
+                <Progress value={progressValue} className="h-3" />
+                
+                <div className="text-xs text-center text-dream-foreground/60">
+                  {isLoading ? "Fetching market cap data..." : (
+                    bet.prediction === 'moon' || bet.prediction === 'migrate' 
+                      ? `${progressValue.toFixed(1)}% toward 30% gain target` 
+                      : `${progressValue.toFixed(1)}% toward 30% loss target`
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <div className={`text-sm px-3 py-1.5 rounded-md text-center ${
               bet.status === 'matched' ? 'bg-purple-500/10 text-purple-400' :
               bet.outcome === 'win' ? 'bg-green-500/10 text-green-400' :
               bet.outcome === 'loss' ? 'bg-red-500/10 text-red-400' :
