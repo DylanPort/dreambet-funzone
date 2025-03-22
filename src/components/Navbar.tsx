@@ -68,8 +68,12 @@ const Navbar = () => {
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-1.5">
-          <Link to="/" className="text-lg font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-dream-accent1 to-dream-accent2 mx-px px-[3px] my-[1px] py-[6px]">
-            PumpXBounty
+          <Link to="/" className="flex items-center py-2">
+            <img 
+              src="/lovable-uploads/c1eb3c6e-eec2-4e22-957e-f11585370fb6.png" 
+              alt="PumpXBounty" 
+              className="h-14 filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]"
+            />
           </Link>
           
           <nav className="hidden md:flex space-x-4 items-center">
@@ -126,6 +130,13 @@ const Navbar = () => {
       
       {isOpen && <div className="md:hidden glass-panel p-3">
           <nav className="flex flex-col space-y-2">
+            <Link to="/" className="flex items-center justify-center mb-2">
+              <img 
+                src="/lovable-uploads/c1eb3c6e-eec2-4e22-957e-f11585370fb6.png" 
+                alt="PumpXBounty" 
+                className="h-10 filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]"
+              />
+            </Link>
             <Link to="/betting" className={`py-1 flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
