@@ -791,13 +791,7 @@ const TokenDetail = () => {
               
               {showCreateBet && <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol} onClose={() => setShowCreateBet(false)} onSuccess={refreshData} />}
               
-              <div className="grid md:grid-cols-2 gap-8 mb-8">
-                {/* Market cap chart */}
-                <TokenMarketCap tokenId={token.id} />
-                
-                {/* Volume chart */}
-                <TokenVolume tokenId={token.id} />
-              </div>
+              
               
               {/* Comments section */}
               <TokenComments tokenId={token.id} />
