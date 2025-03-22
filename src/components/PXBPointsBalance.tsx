@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Coins, RefreshCw, User } from 'lucide-react';
+import { RefreshCw, User } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+
 const PXBPointsBalance: React.FC = () => {
   const {
     userProfile,
@@ -15,17 +16,18 @@ const PXBPointsBalance: React.FC = () => {
     publicKey
   } = useWallet();
 
-  // Fetch user profile when component mounts
   useEffect(() => {
     if (connected) {
       fetchUserProfile();
     }
   }, [connected, fetchUserProfile]);
+
   const handleRefresh = () => {
     if (!connected) return;
     toast.info("Refreshing PXB points...");
     fetchUserProfile();
   };
+
   if (isLoading) {
     return <div className="glass-panel animate-pulse p-3 rounded-lg flex items-center space-x-3">
         <div className="w-10 h-10 bg-dream-accent2/20 rounded-full"></div>
@@ -35,20 +37,24 @@ const PXBPointsBalance: React.FC = () => {
         </div>
       </div>;
   }
+
   if (!userProfile) {
     return <div className="glass-panel p-3 rounded-lg">
         <p className="text-sm text-dream-foreground/70">Connect to see your PXB Points</p>
       </div>;
   }
 
-  // Get the display name - use username if available
   const displayName = userProfile.username || (publicKey ? publicKey.toString().substring(0, 8) : 'User');
   return <div className="rounded-lg relative overflow-hidden border border-indigo-900/30 bg-[#0f1628] backdrop-blur-lg">
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-indigo-600/5 bg-[#00ae00]/[0.41]"></div>
       
       <div className="p-4 flex items-center space-x-4 relative z-10">
         <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-          <Coins className="w-6 h-6 text-indigo-400" />
+          <img 
+            src="/lovable-uploads/7f9c6138-566d-4719-b676-8b60ca81ec73.png" 
+            alt="PXB Logo" 
+            className="w-10 h-10 object-contain filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" 
+          />
         </div>
         
         <div className="flex-1">
@@ -70,4 +76,5 @@ const PXBPointsBalance: React.FC = () => {
       </div>
     </div>;
 };
+
 export default PXBPointsBalance;
