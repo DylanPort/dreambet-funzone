@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import BetReel from '@/components/BetReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import FloatingImages from '@/components/FloatingImages';
-import AnimatedLogo from '@/components/AnimatedLogo';
+import InteractiveTour from '@/components/InteractiveTour';
 import FuturisticTokenDisplay from '@/components/FuturisticTokenDisplay';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
@@ -103,7 +103,7 @@ const Index = () => {
           
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
             <div className="text-center md:text-left md:flex-1">
-              <AnimatedLogo />
+              <InteractiveTour />
               
               {isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
                   bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
@@ -191,7 +191,7 @@ const Index = () => {
           </div>
           
           <div className="max-w-7xl mx-auto px-4 py-10">
-            <h2 className="text-2xl font-bold text-center mb-8 
+            <h2 id="leaderboard" className="text-2xl font-bold text-center mb-8 
                 bg-gradient-to-r from-white via-green-300 to-blue-400 bg-clip-text text-transparent 
                 flex items-center justify-center gap-2 text-shadow-sm filter drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">
               <img src="/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png" alt="Crown" className="h-16 w-16" />

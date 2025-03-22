@@ -1,21 +1,45 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { User } from 'lucide-react';
+import { toast } from 'sonner';
 
 const ProfileButton = () => {
-  const { userProfile } = usePXBPoints();
+  const { userProfile, addPointsToUser } = usePXBPoints();
   const { publicKey, connected } = useWallet();
+  const [hasClaimedBonus, setHasClaimedBonus] = useState(false);
   
   // Show username if available, otherwise show wallet address or default text
   const displayName = userProfile?.username || 
                      (publicKey ? publicKey.toString().substring(0, 8) + '...' : 'Profile');
 
+  useEffect(() => {
+    // Check if the user has already claimed the bonus
+    const profileBonusClaimed = localStorage.getItem('profile-bonus-claimed');
+    if (profileBonusClaimed) {
+      setHasClaimedBonus(true);
+    }
+  }, []);
+
+  const handleProfileClick = async () => {
+    if (connected && userProfile && !hasClaimedBonus) {
+      try {
+        // Only award bonus points if user hasn't claimed them before
+        await addPointsToUser(2000, "Profile visit bonus");
+        toast.success("You've earned 2000 PXB points for visiting your profile!");
+        localStorage.setItem('profile-bonus-claimed', 'true');
+        setHasClaimedBonus(true);
+      } catch (error) {
+        console.error("Error awarding profile visit bonus:", error);
+      }
+    }
+  };
+
   return (
-    <Link to="/profile">
+    <Link to="/profile" onClick={handleProfileClick}>
       <Button 
         variant="ghost"
         className="flex items-center gap-2 text-white transition-all duration-300 hover:bg-white/10"
