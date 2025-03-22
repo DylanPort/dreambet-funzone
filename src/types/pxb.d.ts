@@ -1,96 +1,65 @@
 
-// Types for PXB Points system
-declare module '@/types/pxb' {
-  interface PXBPointsContextType {
-    userProfile: UserProfile | null;
-    isLoading: boolean;
-    error: Error | null;
-    points: number;
-    bets: PXBBet[];
-    totalBets: number;
-    wonBets: number;
-    lostBets: number;
-    pendingBets: number;
-    winRate: number;
-    fetchUserProfile: (walletAddress: string) => Promise<UserProfile | null>;
-    fetchUserBets: () => Promise<void>;
-    createBet: (betData: PXBBetCreateParams) => Promise<string | null>;
-    refreshBets: () => Promise<void>;
-  }
-  
-  interface UserProfile {
-    id: string;
-    username: string | null;
-    wallet_address: string;
-    points: number;
-    created_at: string;
-    updated_at: string;
-    referral_code: string | null;
-    referred_by: string | null;
-  }
-  
-  interface PXBBet {
-    id: string;
-    userId: string;
-    tokenId: string;
-    tokenMint: string;
-    tokenName: string;
-    tokenSymbol: string;
-    amount: number;
-    betType: 'up' | 'down';
-    percentageChange: number;
-    targetPrice?: number;
-    initialPrice?: number;
-    initialMarketCap?: number;
-    currentMarketCap?: number;
-    status: 'pending' | 'won' | 'lost' | 'cancelled';
-    expiresAt: string;
-    createdAt: string;
-    resolvedAt?: string;
-  }
-  
-  interface PXBBetCreateParams {
-    tokenId: string;
-    tokenMint: string;
-    tokenName: string;
-    tokenSymbol: string;
-    amount: number;
-    betType: 'up' | 'down';
-    percentageChange: number;
-    initialMarketCap?: number;
-  }
+export interface UserProfile {
+  id: string;
+  pxb_id: string;
+  wallet_address: string;
+  display_name: string;
+  avatar_url: string | null;
+  points: number;
+  created_at: string;
+  updated_at: string;
+  twitter_username: string | null;
+  instagram_username: string | null;
+  website_url: string | null;
+  bio: string | null;
+}
 
-  interface LeaderboardEntry {
-    id: string;
-    username: string | null;
-    wallet_address: string;
-    points: number;
-    bets_count: number;
-    wins_count: number;
-  }
+export interface PXBBet {
+  id: string;
+  userId: string;
+  tokenMint: string;
+  tokenName: string;
+  tokenSymbol: string;
+  betAmount: number;
+  betType: "up" | "down";
+  percentageChange: number;
+  status: "open" | "pending" | "won" | "lost";
+  pointsWon: number;
+  createdAt: string;
+  expiresAt: string;
+  initialMarketCap: number | null;
+  currentMarketCap: number | null;
+  userRole: 'creator' | 'participant';
+}
 
-  interface WinRateLeaderboardEntry {
-    id: string;
-    username: string | null;
-    wallet_address: string;
-    win_rate: number;
-    bets_count: number;
-    wins_count: number;
-  }
+export interface LeaderboardEntry {
+  user_id: string;
+  display_name: string;
+  avatar_url?: string;
+  points: number;
+  rank: number;
+}
 
-  interface ReferralStats {
-    total_referrals: number;
-    points_earned: number;
-    active_referrals: number;
-  }
+export interface WinRateLeaderboardEntry {
+  user_id: string;
+  display_name: string;
+  avatar_url?: string;
+  total_bets: number;
+  won_bets: number;
+  win_rate: number;
+  rank: number;
+}
 
-  interface Referral {
-    id: string;
-    referrer_id: string;
-    referee_id: string;
-    referee_username: string | null;
-    referee_wallet: string;
-    points_earned: number;
-    created_at: string;
-  }
+export interface ReferralStats {
+  referrals_count: number;
+  points_earned: number;
+  referral_code: string | null;
+}
+
+export interface Referral {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  created_at: string;
+  points_awarded: number;
 }
