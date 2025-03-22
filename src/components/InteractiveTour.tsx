@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -124,17 +125,18 @@ const InteractiveTour = () => {
     image: "/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png"
   }, {
     title: "Unlock Elite Powers",
-    description: "Visit your profile and earn 2000 PXB points as a welcome bonus!",
+    description: "Visit your profile and earn PXB points as a welcome bonus!",
     icon: <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" className="w-8 h-8" alt="Gift" />,
     highlight: "profile",
-    action: <Button 
-      variant="default" 
-      className="mt-4 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700" 
-      onClick={handleClaimPoints} 
-      disabled={hasClaimedPoints}
-    >
-      {hasClaimedPoints ? "Points Claimed!" : "Claim 2000 PXB"}
-    </Button>,
+    action: <Link to="/profile">
+        <Button 
+          variant="default" 
+          className="mt-4 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700" 
+          onClick={handleNextStep}
+        >
+          Go to Profile
+        </Button>
+      </Link>,
     image: "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
   }];
 
