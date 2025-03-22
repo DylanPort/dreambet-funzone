@@ -238,7 +238,7 @@ const TrendingBetsList = () => {
                           <div className="flex items-center justify-between gap-2">
                             <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
                               <div className="text-xs text-dream-foreground/60 mb-1">Total Bet Amount</div>
-                              <div className="text-sm font-medium text-dream-accent2">
+                              <div className="text-sm font-medium text-dream-accent2 bg-[#022202]">
                                 {token.total_amount.toFixed(2)} PXB
                               </div>
                             </div>
