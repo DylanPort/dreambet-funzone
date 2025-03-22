@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,6 +12,14 @@ import { toast } from '@/hooks/use-toast';
 const MINT_LIMIT_PER_PERIOD = 2000; // Max tokens per period
 const MINT_PERIOD_HOURS = 24; // Period in hours
 const MINT_PERIOD_MS = MINT_PERIOD_HOURS * 60 * 60 * 1000; // Period in milliseconds
+
+// Define generatePxbId at the top level to avoid using it before declaration
+const generatePxbId = (userProfile: UserProfile | null): string => {
+  if (!userProfile) return "";
+  const shortId = userProfile.id.substring(0, 8).toUpperCase();
+  const uniqueId = uuidv4().substring(0, 3);
+  return `PXB-${shortId}-${uniqueId}`;
+};
 
 export const usePointOperations = (
   userProfile: UserProfile | null,
@@ -66,7 +75,11 @@ export const usePointOperations = (
       // If requested amount exceeds remaining allowance, limit it
       const mintAmount = Math.min(amount, remainingAllowance);
       if (mintAmount < amount) {
-        toast.info(`You can only mint ${mintAmount} more PXB within this ${MINT_PERIOD_HOURS}-hour period`);
+        toast({
+          title: `Mint limit reached`,
+          description: `You can only mint ${mintAmount} more PXB within this ${MINT_PERIOD_HOURS}-hour period`,
+          variant: "default"
+        });
       }
       
       // Get the current user profile to ensure we have the latest data
@@ -154,7 +167,7 @@ export const usePointOperations = (
     }
 
     const walletAddress = publicKey.toString();
-    const pxbId = generatePxbId();
+    const pxbId = generatePxbId(userProfile);
 
     try {
       setIsLoading(true);
@@ -242,7 +255,7 @@ export const usePointOperations = (
     } finally {
       setIsLoading(false);
     }
-  }, [userProfile, publicKey, setUserProfile, setBets, setIsLoading, generatePxbId]);
+  }, [userProfile, publicKey, setUserProfile, setBets, setIsLoading]);
 
   const sendPoints = useCallback(async (recipientId: string, amount: number) => {
     if (!userProfile || !publicKey) {
@@ -339,18 +352,11 @@ export const usePointOperations = (
     }
   }, [userProfile, publicKey, setUserProfile, fetchUserProfile, setIsLoading]);
 
-  const generatePxbId = useCallback(() => {
-    if (!userProfile) return "";
-    const shortId = userProfile.id.substring(0, 8).toUpperCase();
-    const uniqueId = uuidv4().substring(0, 3);
-    return `PXB-${shortId}-${uniqueId}`;
-  }, [userProfile]);
-
   return {
     mintPoints,
     placeBet,
     sendPoints,
-    generatePxbId,
+    generatePxbId: useCallback(() => generatePxbId(userProfile), [userProfile]),
     mintingPoints // Expose the mintingPoints state
   };
 };
