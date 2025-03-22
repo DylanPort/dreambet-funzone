@@ -1,24 +1,18 @@
-
-// User profile types
 export interface UserProfile {
   id: string;
-  username: string;
-  pxbPoints: number;
-  createdAt: string;
-  referralCode?: string;
-}
-
-export interface SupabaseUserProfile {
-  id: string;
+  pxb_id: string;
   wallet_address: string;
-  username: string | null;
+  display_name: string;
+  avatar_url: string | null;
   points: number;
   created_at: string;
-  referral_code?: string;
-  referred_by?: string | null;
+  updated_at: string;
+  twitter_username: string | null;
+  instagram_username: string | null;
+  website_url: string | null;
+  bio: string | null;
 }
 
-// PXB Bet types
 export interface PXBBet {
   id: string;
   userId: string;
@@ -26,78 +20,45 @@ export interface PXBBet {
   tokenName: string;
   tokenSymbol: string;
   betAmount: number;
-  betType: 'up' | 'down';
+  betType: "up" | "down";
   percentageChange: number;
-  status: 'pending' | 'active' | 'won' | 'lost';
+  status: "open" | "pending" | "won" | "lost";
   pointsWon: number;
   createdAt: string;
   expiresAt: string;
-  initialMarketCap?: number;
-  currentMarketCap?: number;
+  initialMarketCap: number | null;
+  currentMarketCap: number | null;
+  userRole: 'creator' | 'participant';
 }
 
-// Leaderboard types
 export interface LeaderboardEntry {
-  id: string;
-  username: string;
-  pxbPoints: number;
-  createdAt: string;
-  walletAddress?: string;
-  points?: number;
-  rank?: number;
-  winRate?: number;
-}
-
-export interface WinRateLeaderboardEntry {
-  id: string;
-  username: string;
-  walletAddress?: string;
-  totalBets: number;
-  wonBets: number;
-  winRate: number;
+  user_id: string;
+  display_name: string;
+  avatar_url?: string;
+  points: number;
   rank: number;
 }
 
-// Referral types
-export interface Referral {
-  id: string;
-  referredUsername: string;
-  pointsAwarded: number;
-  createdAt: string;
+export interface WinRateLeaderboardEntry {
+  user_id: string;
+  display_name: string;
+  avatar_url?: string;
+  total_bets: number;
+  won_bets: number;
+  win_rate: number;
+  rank: number;
 }
 
 export interface ReferralStats {
-  totalReferrals: number;
-  totalPointsEarned: number;
-  referrals: Referral[];
-  referralCode: string | null;
+  referrals_count: number;
+  points_earned: number;
+  referral_code: string | null;
 }
 
-// Database schema interfaces for type safety with Supabase
-export interface SupabaseBetsRow {
-  bet_id: string;
-  bettor1_id: string;
-  bettor2_id?: string;
-  creator: string;
-  token_mint: string;
-  token_name?: string; 
-  token_symbol?: string;
-  sol_amount: number;
-  prediction_bettor1: 'up' | 'down';
-  percentage_change: number;
-  status: string;
-  points_won?: number;
+export interface Referral {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
   created_at: string;
-  duration: number;
-  initial_market_cap?: number;
-  current_market_cap?: number;
-  tokens?: {
-    token_name: string;
-    token_symbol: string;
-  };
-  // Include all other columns from the bets table
-  on_chain_id?: string;
-  transaction_signature?: string;
-  end_time?: string;
-  start_time?: string;
+  points_awarded: number;
 }

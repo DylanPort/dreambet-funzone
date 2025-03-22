@@ -131,6 +131,7 @@ const PXBBetsList = () => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     if (!initialMarketCap) return null;
     
+    // Calculate target market cap based on bet type
     if (bet.betType === 'up') {
       return initialMarketCap * (1 + bet.percentageChange / 100);
     } else {
