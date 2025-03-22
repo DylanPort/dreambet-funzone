@@ -22,6 +22,7 @@ import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
+
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -89,6 +90,7 @@ const TokenChart = ({
       
     </div>;
 };
+
 const TokenDetail = () => {
   const {
     id
@@ -752,7 +754,7 @@ const TokenDetail = () => {
                           </div>
                         </div>
                         
-                        <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
+                        <Button className="w-full" variant="green" onClick={() => setShowCreateBet(true)}>
                           Place a Bet
                         </Button>
                       </div>
@@ -850,9 +852,10 @@ const TokenDetail = () => {
               <div className="mb-8">
                 <TokenComments tokenId={id} tokenName={token.name} />
               </div>
-            </>}
+            </>
         </div>
       </main>
     </>;
 };
+
 export default TokenDetail;
