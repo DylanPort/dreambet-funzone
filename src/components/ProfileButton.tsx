@@ -8,11 +8,11 @@ import { User } from 'lucide-react';
 
 const ProfileButton = () => {
   const { userProfile } = usePXBPoints();
-  const { publicKey } = useWallet();
+  const { publicKey, connected } = useWallet();
   
   // Show username if available, otherwise show wallet address or default text
   const displayName = userProfile?.username || 
-                     (publicKey ? publicKey.toString().substring(0, 8) : 'Profile');
+                     (publicKey ? publicKey.toString().substring(0, 8) + '...' : 'Profile');
 
   return (
     <Link to="/profile">
@@ -27,7 +27,7 @@ const ProfileButton = () => {
             className="w-full h-full object-contain"
           />
         </div>
-        <span className="text-white/90 hover:text-white">{displayName}</span>
+        <span className="text-white/90 hover:text-white">{connected ? displayName : 'Profile'}</span>
       </Button>
     </Link>
   );

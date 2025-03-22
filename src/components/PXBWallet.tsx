@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 interface Transaction {
   id: string;
@@ -19,6 +21,7 @@ interface Transaction {
 
 const PXBWallet: React.FC = () => {
   const { userProfile, isLoading, sendPoints, generatePxbId, fetchUserProfile } = usePXBPoints();
+  const { connected } = useWallet();
   const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'activity' | 'claim'>('send');
   const [recipientId, setRecipientId] = useState('');
   const [amount, setAmount] = useState('');
@@ -202,10 +205,23 @@ const PXBWallet: React.FC = () => {
     );
   }
 
-  if (!userProfile) {
+  // Check if wallet is connected first, regardless of userProfile
+  if (!connected) {
     return (
       <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
         <p className="text-center text-gray-400">Connect your wallet to view your PXB balance</p>
+      </div>
+    );
+  }
+  
+  // Now we can check for userProfile separately
+  if (!userProfile) {
+    return (
+      <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
+        <div className="text-center space-y-4">
+          <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-400">Loading your profile data...</p>
+        </div>
       </div>
     );
   }

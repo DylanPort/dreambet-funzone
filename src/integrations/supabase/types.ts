@@ -162,12 +162,21 @@ export type Database = {
           description_cid: string | null
           end_date: string
           id: string
-          required_proof: string
+          max_participants: number | null
+          project_description: string | null
+          project_logo: string | null
+          project_name: string
+          project_url: string | null
+          pxb_reward: number
+          required_proof: string | null
           start_date: string
           status: string
           tags: string[] | null
+          task_type: string
+          telegram_url: string | null
           title: string
           transaction_signature: string | null
+          twitter_url: string | null
           updated_at: string
           views: number | null
         }
@@ -181,12 +190,21 @@ export type Database = {
           description_cid?: string | null
           end_date: string
           id?: string
-          required_proof: string
+          max_participants?: number | null
+          project_description?: string | null
+          project_logo?: string | null
+          project_name?: string
+          project_url?: string | null
+          pxb_reward?: number
+          required_proof?: string | null
           start_date?: string
           status?: string
           tags?: string[] | null
+          task_type?: string
+          telegram_url?: string | null
           title: string
           transaction_signature?: string | null
+          twitter_url?: string | null
           updated_at?: string
           views?: number | null
         }
@@ -200,12 +218,21 @@ export type Database = {
           description_cid?: string | null
           end_date?: string
           id?: string
-          required_proof?: string
+          max_participants?: number | null
+          project_description?: string | null
+          project_logo?: string | null
+          project_name?: string
+          project_url?: string | null
+          pxb_reward?: number
+          required_proof?: string | null
           start_date?: string
           status?: string
           tags?: string[] | null
+          task_type?: string
+          telegram_url?: string | null
           title?: string
           transaction_signature?: string | null
+          twitter_url?: string | null
           updated_at?: string
           views?: number | null
         }
@@ -338,6 +365,7 @@ export type Database = {
           id: string
           proof_cid: string | null
           proof_link: string
+          pxb_earned: number | null
           status: string
           submitter_id: string
           transaction_signature: string | null
@@ -352,6 +380,7 @@ export type Database = {
           id?: string
           proof_cid?: string | null
           proof_link: string
+          pxb_earned?: number | null
           status?: string
           submitter_id: string
           transaction_signature?: string | null
@@ -366,6 +395,7 @@ export type Database = {
           id?: string
           proof_cid?: string | null
           proof_link?: string
+          pxb_earned?: number | null
           status?: string
           submitter_id?: string
           transaction_signature?: string | null

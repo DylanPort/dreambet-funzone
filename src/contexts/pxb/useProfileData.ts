@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { UserProfile, SupabaseUserProfile } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -44,7 +44,19 @@ export const useProfileData = () => {
         });
       } else {
         console.log('User not found in database yet');
-        setUserProfile(null);
+        
+        // Instead of setting to null, create a temporary profile with default values
+        // This helps prevent the "Connect wallet" message when already connected
+        if (connected && publicKey) {
+          setUserProfile({
+            id: 'temporary-' + publicKey.toString().substring(0, 8),
+            username: publicKey.toString().substring(0, 8),
+            pxbPoints: 0,
+            createdAt: new Date().toISOString()
+          });
+        } else {
+          setUserProfile(null);
+        }
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
@@ -53,6 +65,16 @@ export const useProfileData = () => {
       setIsLoading(false);
     }
   }, [connected, publicKey]);
+
+  // Re-fetch when connection state changes
+  useEffect(() => {
+    if (connected && publicKey) {
+      fetchUserProfile();
+    } else {
+      setUserProfile(null);
+      setIsLoading(false);
+    }
+  }, [connected, publicKey, fetchUserProfile]);
 
   return {
     userProfile,
