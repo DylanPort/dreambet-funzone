@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ExternalLink, Flame } from 'lucide-react';

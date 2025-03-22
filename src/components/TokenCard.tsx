@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame, Sparkles, Moon } from 'lucide-react';
@@ -254,7 +253,6 @@ const TokenCard: React.FC<TokenCardProps> = ({
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
-                    onBetCreated={handleDialogClose}
                     onCancel={handleDialogClose}
                     onSuccess={handleDialogClose}
                   />
@@ -306,7 +304,6 @@ const TokenCard: React.FC<TokenCardProps> = ({
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
-                    onBetCreated={handleDialogClose}
                     onCancel={handleDialogClose}
                     onSuccess={handleDialogClose}
                   />

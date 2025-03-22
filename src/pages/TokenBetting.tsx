@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -330,7 +331,7 @@ const TokenBetting = () => {
                 tokenId={token.id}
                 tokenName={token.name}
                 tokenSymbol={token.symbol}
-                onBetCreated={handleBetCreated}
+                onSuccess={handleBetCreated}
               />
             ) : (
               <div className="glass-panel p-6 space-y-4">

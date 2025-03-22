@@ -50,8 +50,9 @@ interface CreateBetFormProps {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  onCancel: () => void;
-  onSuccess: (betType?: string) => void;
+  onCancel?: () => void;
+  onSuccess?: (betType?: string) => void;
+  onBetCreated?: () => void;
 }
 
 const CreateBetForm: React.FC<CreateBetFormProps> = ({
@@ -59,7 +60,8 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   tokenName,
   tokenSymbol,
   onCancel,
-  onSuccess
+  onSuccess,
+  onBetCreated
 }) => {
   const [amount, setAmount] = useState<string>('10');
   const [prediction, setPrediction] = useState<BetPrediction | null>(null);
@@ -92,18 +94,13 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
   const maxPointsAvailable = userProfile?.pxbPoints || 0;
 
   useEffect(() => {
-    if (token) {
-      setTokenData({
-        name: token.name || tokenName,
-        symbol: token.symbol || tokenSymbol
-      });
-    } else if (tokenId) {
+    if (tokenId) {
       setTokenData({
         name: tokenName || "Unknown Token",
         symbol: tokenSymbol || "UNKNOWN"
       });
     }
-  }, [token, tokenId, tokenName, tokenSymbol]);
+  }, [tokenId, tokenName, tokenSymbol]);
 
   // Fetch the token's market cap from DexScreener
   useEffect(() => {
@@ -492,11 +489,7 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         setTransactionStatus('');
         setSuccessMessage(null);
         
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          onBetCreated();
-        }
+        handleBetCreated();
       }, 3000);
       
     } catch (error: any) {
@@ -566,6 +559,16 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       return `$${(value / 1000).toFixed(2)}K`;
     } else {
       return `$${value.toFixed(2)}`;
+    }
+  };
+
+  const handleBetCreated = () => {
+    if (onBetCreated) {
+      onBetCreated();
+    }
+    
+    if (onSuccess) {
+      onSuccess();
     }
   };
 
