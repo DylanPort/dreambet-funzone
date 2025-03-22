@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { motion } from 'framer-motion';
-import { Loader2, AlertTriangle, CheckCircle2, InfoIcon, Clock } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle2, InfoIcon, Clock, Lock } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 interface PXBOnboardingProps {
   onClose?: () => void;
@@ -17,37 +18,22 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
   const [minting, setMinting] = useState<boolean>(false);
   const [minted, setMinted] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
+  const [hasMintedBefore, setHasMintedBefore] = useState<boolean>(false);
   const { mintPoints } = usePXBPoints();
+  const { publicKey } = useWallet();
 
   const MAX_MINT_AMOUNT = 500;
-  const COOLDOWN_PERIOD = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
+  
   useEffect(() => {
-    // Check if there's a cooldown in localStorage
-    const lastMintTime = localStorage.getItem('lastPXBMintTime');
-    if (lastMintTime) {
-      const lastMint = parseInt(lastMintTime, 10);
-      const now = Date.now();
-      const elapsed = now - lastMint;
-      
-      if (elapsed < COOLDOWN_PERIOD) {
-        setCooldownRemaining(COOLDOWN_PERIOD - elapsed);
-        const interval = setInterval(() => {
-          const newNow = Date.now();
-          const newElapsed = newNow - lastMint;
-          if (newElapsed >= COOLDOWN_PERIOD) {
-            setCooldownRemaining(null);
-            clearInterval(interval);
-          } else {
-            setCooldownRemaining(COOLDOWN_PERIOD - newElapsed);
-          }
-        }, 1000);
-        
-        return () => clearInterval(interval);
+    // Check if this wallet has ever minted before
+    if (publicKey) {
+      const walletAddress = publicKey.toString();
+      const mintedWallets = JSON.parse(localStorage.getItem('pxbMintedWallets') || '{}');
+      if (mintedWallets[walletAddress]) {
+        setHasMintedBefore(true);
       }
     }
-  }, []);
+  }, [publicKey]);
 
   const handleMintAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
@@ -58,25 +44,22 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
     }
   };
 
-  const formatTimeRemaining = (ms: number): string => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
   const handleMintPoints = async () => {
+    if (!publicKey) return;
+    
     setMinting(true);
     setError(null);
     try {
       await mintPoints(mintAmount);
       setMinted(true);
       
-      // Set the cooldown timestamp
-      localStorage.setItem('lastPXBMintTime', Date.now().toString());
-      setCooldownRemaining(COOLDOWN_PERIOD);
+      // Mark this wallet as having minted
+      const walletAddress = publicKey.toString();
+      const mintedWallets = JSON.parse(localStorage.getItem('pxbMintedWallets') || '{}');
+      mintedWallets[walletAddress] = true;
+      localStorage.setItem('pxbMintedWallets', JSON.stringify(mintedWallets));
+      setHasMintedBefore(true);
+      
     } catch (err: any) {
       setError(err.message || 'Failed to mint points');
     } finally {
@@ -96,6 +79,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
         <DialogTitle>Mint Free PXB Points</DialogTitle>
         <DialogDescription>
           Get started with free PXB points to explore the platform.
+          You can only mint points once per wallet.
         </DialogDescription>
       </DialogHeader>
       <div className="grid gap-4 py-4">
@@ -112,23 +96,23 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
               className="w-full"
               min="1"
               max={MAX_MINT_AMOUNT}
-              disabled={minting || cooldownRemaining !== null}
+              disabled={minting || hasMintedBefore}
             />
             <p className="text-xs text-muted-foreground flex items-center">
               <InfoIcon className="h-3 w-3 mr-1" />
-              Maximum {MAX_MINT_AMOUNT} PXB points per mint every 24 hours
+              Maximum {MAX_MINT_AMOUNT} PXB points per wallet. One-time only!
             </p>
           </div>
         </div>
         
-        {cooldownRemaining !== null && (
-          <div className="bg-slate-800 p-3 rounded-md border border-slate-700">
-            <div className="text-sm text-muted-foreground mb-2 flex items-center">
-              <Clock className="h-4 w-4 mr-2 text-amber-500" />
-              <span>Next mint available in:</span>
+        {hasMintedBefore && (
+          <div className="bg-amber-950/30 p-3 rounded-md border border-amber-900/50">
+            <div className="text-sm text-amber-300 mb-2 flex items-center">
+              <Lock className="h-4 w-4 mr-2" />
+              <span>You've already minted your free PXB points.</span>
             </div>
-            <div className="text-center font-mono text-amber-400 text-lg">
-              {formatTimeRemaining(cooldownRemaining)}
+            <div className="text-center text-amber-200/70 text-xs">
+              Each wallet can only mint free points once.
             </div>
           </div>
         )}
@@ -162,15 +146,15 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
         <Button 
           type="submit" 
           onClick={handleMintPoints} 
-          disabled={minting || cooldownRemaining !== null}
+          disabled={minting || hasMintedBefore}
         >
           {minting ? (
             <>
               Minting...
               <Loader2 className="ml-2 h-4 w-4 animate-spin" />
             </>
-          ) : cooldownRemaining !== null ? (
-            "Cooldown Active"
+          ) : hasMintedBefore ? (
+            "Already Minted"
           ) : (
             "Mint Points"
           )}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -80,7 +79,7 @@ const InteractiveTour = () => {
     image: "/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png"
   }, {
     title: "Mint Your Magic Points",
-    description: "Grab some free points – your trusty in-game currency. No need to risk your own gold yet!",
+    description: "Grab some free points – your trusty in-game currency. You can only mint once per wallet!",
     icon: <img src="/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png" className="w-8 h-8" alt="Mint Points" />,
     highlight: "mint",
     action: <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -124,9 +123,14 @@ const InteractiveTour = () => {
     description: "Visit your profile and earn 2000 PXB points as a welcome bonus!",
     icon: <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" className="w-8 h-8" alt="Gift" />,
     highlight: "profile",
-    action: <Button variant="default" className="mt-4 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700" onClick={handleClaimPoints} disabled={hasClaimedPoints}>
-        {hasClaimedPoints ? "Points Claimed!" : "Claim 2000 PXB"}
-      </Button>,
+    action: <Button 
+      variant="default" 
+      className="mt-4 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700" 
+      onClick={handleClaimPoints} 
+      disabled={hasClaimedPoints}
+    >
+      {hasClaimedPoints ? "Points Claimed!" : "Claim 2000 PXB"}
+    </Button>,
     image: "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
   }];
 
