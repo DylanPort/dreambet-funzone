@@ -12,9 +12,11 @@ import { ChevronRight, Upload, Loader2, Cpu, Zap } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
+
 interface PXBOnboardingProps {
   onClose: () => void;
 }
+
 const InteractiveTour = () => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
@@ -36,6 +38,7 @@ const InteractiveTour = () => {
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
+
   useEffect(() => {
     setCurrentStep(0);
     const tourCompleted = localStorage.getItem('pxb-tour-completed');
@@ -49,6 +52,7 @@ const InteractiveTour = () => {
     }
     setVideoSources(newVideoSources);
   }, []);
+
   const playVideoIfVisible = (index: number) => {
     if (index === currentStep && videoRefs.current[index]) {
       const videoElement = videoRefs.current[index];
@@ -62,9 +66,11 @@ const InteractiveTour = () => {
       }
     }
   };
+
   useEffect(() => {
     playVideoIfVisible(currentStep);
   }, [currentStep, videoSources]);
+
   const handleNextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -72,11 +78,13 @@ const InteractiveTour = () => {
       localStorage.setItem('pxb-tour-completed', 'true');
     }
   };
+
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
+
   const handleClaimPoints = async () => {
     if (!connected) {
       toast.error("Please connect your wallet first!");
@@ -95,6 +103,7 @@ const InteractiveTour = () => {
       toast.error("Failed to claim points. Please try again later.");
     }
   };
+
   const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -137,9 +146,11 @@ const InteractiveTour = () => {
       }
     }
   };
+
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
+
   const steps = [{
     title: "Welcome, Explorer!",
     description: "You've stumbled upon a treasure chest of opportunity in the wild Trenches!",
@@ -206,7 +217,9 @@ const InteractiveTour = () => {
       </Link>,
     image: videoSources[4]
   }];
+
   const fileInput = <Input ref={fileInputRef} type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />;
+
   const renderVideo = (index: number, size: 'small' | 'large') => {
     const videoUrl = videoSources[index];
     const videoClassName = size === 'small' ? "w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" : "w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]";
@@ -231,6 +244,7 @@ const InteractiveTour = () => {
         </div>;
     }
   };
+
   return <div className={`flex justify-center items-center w-full my-4 md:my-8 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
       {fileInput}
       <motion.div className={`relative ${isMobile ? 'w-[300px] h-[350px]' : 'w-[400px] md:w-[600px] h-[250px] md:h-[330px]'} flex items-center justify-center rounded-2xl overflow-hidden`} style={{
@@ -301,49 +315,53 @@ const InteractiveTour = () => {
           </div>
           
           <div className="absolute top-3 left-3 z-20">
-            <motion.div className="h-4 w-4 rounded-full bg-cyan-400/70" animate={{
-            opacity: [0.5, 1, 0.5]
-          }} transition={{
-            duration: 2,
-            repeat: Infinity
-          }} />
+            <motion.div 
+              className="h-4 w-4 rounded-full bg-cyan-400/70"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
           </div>
           <div className="absolute top-3 right-3 z-20">
-            <motion.div className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-900/70 border border-indigo-500/50" animate={{
-            borderColor: ['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.7)', 'rgba(99, 102, 241, 0.3)']
-          }} transition={{
-            duration: 3,
-            repeat: Infinity
-          }}>
+            <motion.div 
+              className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-900/70 border border-indigo-500/50"
+              animate={{ borderColor: ['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.7)', 'rgba(99, 102, 241, 0.3)'] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
               <Cpu className="h-3 w-3 text-indigo-300" />
             </motion.div>
           </div>
           
           <AnimatePresence mode="wait">
-            <motion.div key={currentStep} style={{
-            transformStyle: 'preserve-3d',
-            transform: 'translateZ(20px)'
-          }} initial={{
-            opacity: 0
-          }} animate={{
-            opacity: 1
-          }} exit={{
-            opacity: 0
-          }} transition={{
-            duration: 0.3,
-            ease: "easeInOut"
-          }} className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-gradient-to-b from-black/95 to-black/85 backdrop-blur-md bg-black/0">
+            <motion.div 
+              key={currentStep} 
+              style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(20px)'
+              }} 
+              initial={{
+                opacity: 0
+              }} 
+              animate={{
+                opacity: 1
+              }} 
+              exit={{
+                opacity: 0
+              }} 
+              transition={{
+                duration: 0.3,
+                ease: "easeInOut"
+              }} 
+              className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-gradient-to-b from-black/95 to-black/85 backdrop-blur-md">
               {isMobile ? <ScrollArea className="h-full pr-2">
                   <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
                       {renderVideo(currentStep, 'small')}
                       
-                      <motion.div className="absolute -bottom-1 -right-1 h-3 w-3 bg-cyan-400 rounded-full" animate={{
-                    opacity: [0.5, 1, 0.5]
-                  }} transition={{
-                    duration: 1.5,
-                    repeat: Infinity
-                  }} />
+                      <motion.div 
+                        className="absolute -bottom-1 -right-1 h-3 w-3 bg-cyan-400 rounded-full"
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      />
                     </div>
                     
                     <div className="w-full mt-2 flex flex-col items-center">
@@ -381,29 +399,25 @@ const InteractiveTour = () => {
                       {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     </Button>
                     
-                    <motion.div className="absolute -top-1 -left-1 h-2 w-8 bg-gradient-to-r from-cyan-400 to-transparent rounded-full" animate={{
-                  opacity: [0.3, 0.7, 0.3]
-                }} transition={{
-                  duration: 2,
-                  repeat: Infinity
-                }} />
-                    <motion.div className="absolute -bottom-1 -right-1 h-8 w-2 bg-gradient-to-t from-indigo-400 to-transparent rounded-full" animate={{
-                  opacity: [0.3, 0.7, 0.3]
-                }} transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  delay: 0.5
-                }} />
+                    <motion.div 
+                      className="absolute -top-1 -left-1 h-2 w-8 bg-gradient-to-r from-cyan-400 to-transparent rounded-full"
+                      animate={{ opacity: [0.3, 0.7, 0.3] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                    <motion.div 
+                      className="absolute -bottom-1 -right-1 h-8 w-2 bg-gradient-to-t from-indigo-400 to-transparent rounded-full"
+                      animate={{ opacity: [0.3, 0.7, 0.3] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                    />
                   </motion.div>
                   
                   <div className="w-1/2 flex flex-col items-start">
                     <div className="mb-4 flex items-center justify-start">
-                      <motion.div className="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-900 border border-indigo-500/50" animate={{
-                    borderColor: ['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.7)', 'rgba(99, 102, 241, 0.3)']
-                  }} transition={{
-                    duration: 1.5,
-                    repeat: Infinity
-                  }}>
+                      <motion.div 
+                        className="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-900 border border-indigo-500/50"
+                        animate={{ borderColor: ['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.7)', 'rgba(99, 102, 241, 0.3)'] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
                         <Zap className="h-2.5 w-2.5 text-indigo-300" />
                       </motion.div>
                       <div className="h-[1px] w-12 bg-gradient-to-r from-indigo-500/80 to-transparent"></div>
@@ -482,4 +496,5 @@ const InteractiveTour = () => {
       </motion.div>
     </div>;
 };
+
 export default InteractiveTour;
