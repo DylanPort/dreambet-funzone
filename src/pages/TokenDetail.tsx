@@ -862,20 +862,18 @@ const TokenDetail = () => {
                       <BetCard 
                         key={bet.id} 
                         bet={bet} 
-                        onAccept={() => handleAcceptBet(bet)} 
-                        actionLabel={bet.status === 'open' ? 'Accept Bet' : undefined}
+                        onAcceptBet={handleAcceptBet}
+                        connected={connected}
+                        publicKeyString={publicKey ? publicKey.toString() : null}
                       />
                     ))}
                   </div>
                 )}
               </div>
               
-              <TokenComments tokenId={token.id} />
-            </>}
-        </div>
-      </main>
-    </>
-  );
-};
+              <TokenComments 
+                tokenId={token.id} 
+                tokenName={token.name} 
+              />
 
-export default TokenDetail;
+
