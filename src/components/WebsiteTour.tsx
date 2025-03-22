@@ -62,12 +62,12 @@ const WebsiteTour = () => {
   ];
   
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8">
-      <div className="text-center mb-6 animate-fade-in">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-green-300 to-yellow-300 bg-clip-text text-transparent">
+    <div className="w-full max-w-3xl mx-auto px-4 py-4">
+      <div className="text-center mb-4 animate-fade-in">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-green-300 to-yellow-300 bg-clip-text text-transparent">
           How PumpXBounty Works
         </h2>
-        <p className="text-white/70 mt-2">Navigate through our gamified tour to learn the features</p>
+        <p className="text-white/70 mt-1 text-sm">Navigate through our gamified tour to learn the features</p>
       </div>
       
       <Carousel
@@ -77,15 +77,15 @@ const WebsiteTour = () => {
           align: "center",
         }}
         onSelect={(api) => {
-          const selectedIndex = api?.selectedScrollSnap();
-          if (selectedIndex !== undefined) {
+          if (api) {
+            const selectedIndex = api.selectedScrollSnap();
             setActiveSlide(selectedIndex);
           }
         }}
       >
         <CarouselContent>
           {features.map((feature, index) => (
-            <CarouselItem key={index} className="md:basis-4/5 lg:basis-3/4">
+            <CarouselItem key={index} className="md:basis-3/5 lg:basis-1/2">
               <div className="p-1">
                 <motion.div 
                   className="glass-panel h-full rounded-xl overflow-hidden flex flex-col"
@@ -93,21 +93,21 @@ const WebsiteTour = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <div className={`bg-gradient-to-r ${feature.color} p-6 flex items-center gap-3`}>
-                    <div className="p-2 rounded-full bg-white/10">
+                  <div className={`bg-gradient-to-r ${feature.color} p-4 flex items-center gap-3`}>
+                    <div className="p-1.5 rounded-full bg-white/10">
                       {feature.icon}
                     </div>
-                    <h3 className="text-xl font-bold text-white">{feature.title}</h3>
+                    <h3 className="text-lg font-bold text-white">{feature.title}</h3>
                   </div>
                   
-                  <div className="relative p-6 flex-grow">
-                    <div className="absolute -top-4 right-4 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold">
+                  <div className="relative p-4 flex-grow">
+                    <div className="absolute -top-3 right-3 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-bold">
                       {index + 1}/{features.length}
                     </div>
                     
-                    <p className="text-white/80 mb-4">{feature.description}</p>
+                    <p className="text-white/80 mb-3 text-sm">{feature.description}</p>
                     
-                    <div className="relative h-48 md:h-60 lg:h-72 overflow-hidden rounded-lg border border-white/10 mb-4">
+                    <div className="relative h-32 md:h-40 lg:h-48 overflow-hidden rounded-lg border border-white/10 mb-3">
                       <img
                         src={feature.image}
                         alt={feature.title}
@@ -116,9 +116,9 @@ const WebsiteTour = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                     </div>
                     
-                    <Button className="mt-auto bg-white/10 hover:bg-white/20 text-white">
+                    <Button className="mt-auto bg-white/10 hover:bg-white/20 text-white text-xs p-2">
                       {index === features.length - 1 ? "Get Started!" : "Learn More"}
-                      <ChevronRight className="h-4 w-4 ml-1" />
+                      <ChevronRight className="h-3 w-3 ml-1" />
                     </Button>
                   </div>
                 </motion.div>
@@ -127,11 +127,11 @@ const WebsiteTour = () => {
           ))}
         </CarouselContent>
         
-        <div className="flex justify-center mt-6 gap-2">
+        <div className="flex justify-center mt-4 gap-1.5">
           {features.map((_, index) => (
             <motion.div
               key={index}
-              className={`h-2 rounded-full cursor-pointer ${activeSlide === index ? 'w-8 bg-green-400' : 'w-2 bg-white/20'}`}
+              className={`h-1.5 rounded-full cursor-pointer ${activeSlide === index ? 'w-6 bg-green-400' : 'w-1.5 bg-white/20'}`}
               initial={{ scale: 1 }}
               animate={{ scale: activeSlide === index ? [1, 1.2, 1] : 1 }}
               transition={{ duration: 0.5 }}
@@ -144,7 +144,7 @@ const WebsiteTour = () => {
           ))}
         </div>
         
-        <div className="flex justify-center mt-4">
+        <div className="flex justify-center mt-3">
           <CarouselPrevious className="relative static mr-2 translate-y-0" />
           <CarouselNext className="relative static ml-2 translate-y-0" />
         </div>
