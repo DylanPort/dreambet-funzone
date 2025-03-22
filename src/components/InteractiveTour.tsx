@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -8,7 +9,7 @@ import PXBOnboarding from '@/components/PXBOnboarding';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
-import { ChevronRight, Upload, Loader2, Cpu, Circuit, Zap } from 'lucide-react';
+import { ChevronRight, Upload, Loader2, Cpu, Zap } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
