@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/pxb';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,26 +26,58 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
   const {
     generatePxbId,
     fetchUserProfile,
-    leaderboard
+    leaderboard,
+    fetchLeaderboard
   } = usePXBPoints();
   const [myPxbId, setMyPxbId] = useState<string>('');
+  const [userRank, setUserRank] = useState<number | null>(null);
+
+  // Fetch leaderboard on component mount
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   // Get user rank from leaderboard
-  const userRank = React.useMemo(() => {
-    if (!userProfile || !leaderboard?.length) return null;
+  useEffect(() => {
+    if (!userProfile || !leaderboard?.length) {
+      setUserRank(null);
+      return;
+    }
     
-    // Find the user in the leaderboard by matching either id or user_id
-    const userEntry = leaderboard.find(entry => 
-      (entry.id && entry.id === userProfile.id) || 
-      (entry.user_id && entry.user_id === userProfile.id)
-    );
-    
-    console.log("User profile ID:", userProfile.id);
+    console.log("Finding rank for user ID:", userProfile.id);
     console.log("Leaderboard entries:", leaderboard);
+    
+    // Find the user in the leaderboard by matching any available ID field
+    const userEntry = leaderboard.find(entry => {
+      const entryId = entry.id || entry.user_id;
+      const userId = userProfile.id;
+      
+      console.log(`Comparing entry ID: ${entryId} with user ID: ${userId}`);
+      return entryId === userId;
+    });
+    
     console.log("Found user entry:", userEntry);
     
-    return userEntry ? userEntry.rank : null;
-  }, [userProfile, leaderboard]);
+    if (userEntry) {
+      console.log("Setting user rank to:", userEntry.rank);
+      setUserRank(userEntry.rank);
+    } else {
+      // If user not found in leaderboard, try to calculate rank based on points
+      const userPoints = localPxbPoints || userProfile.pxbPoints || 0;
+      const higherRankedUsers = leaderboard.filter(entry => {
+        const entryPoints = entry.points || entry.pxbPoints || 0;
+        return entryPoints > userPoints;
+      });
+      
+      if (higherRankedUsers.length < leaderboard.length) {
+        const estimatedRank = higherRankedUsers.length + 1;
+        console.log("Estimated rank based on points:", estimatedRank);
+        setUserRank(estimatedRank);
+      } else {
+        setUserRank(null);
+      }
+    }
+  }, [userProfile, leaderboard, localPxbPoints]);
 
   React.useEffect(() => {
     if (userProfile && generatePxbId) {
