@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle, Users } from 'lucide-react';
@@ -24,7 +23,7 @@ interface PXBCreateBountyFormProps {
 const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!userProfile);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -41,24 +40,35 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
   });
 
   useEffect(() => {
-    const checkAuth = async () => {
-      setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.warn('No active session found. User may need to authenticate with Supabase.');
-        setIsAuthenticated(false);
-        toast.error('Please connect your wallet to create a bounty', {
-          duration: 5000,
-        });
-      } else {
-        console.log('Authenticated session found:', session.user.id);
-        setIsAuthenticated(true);
-      }
-      setLoading(false);
-    };
-    
-    checkAuth();
-  }, []);
+    if (userProfile) {
+      setIsAuthenticated(true);
+      console.log('User is authenticated with profile:', userProfile);
+    } else {
+      const checkAuth = async () => {
+        setLoading(true);
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            console.warn('No active session found. User may need to authenticate with Supabase.');
+            setIsAuthenticated(false);
+            toast.error('Please connect your wallet to create a bounty', {
+              duration: 5000,
+            });
+          } else {
+            console.log('Authenticated session found:', session.user.id);
+            setIsAuthenticated(true);
+          }
+        } catch (error) {
+          console.error('Error checking authentication:', error);
+          setIsAuthenticated(false);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      checkAuth();
+    }
+  }, [userProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -111,21 +121,18 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     setLoading(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Please connect your wallet and sign in to create a bounty');
+      const userId = userProfile.id;
+      
+      if (!userId) {
+        toast.error('User ID not available. Please reconnect your wallet.');
         setLoading(false);
         return;
-      }
-      
-      if (userProfile.id !== session.user.id) {
-        console.warn('User profile ID does not match authenticated user ID');
       }
       
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + formData.durationDays);
       
-      console.log('Creating bounty with creator ID:', session.user.id);
+      console.log('Creating bounty with creator ID:', userId);
       
       const { data, error } = await supabase
         .from('bounties')
@@ -139,7 +146,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
           twitter_url: formData.twitterUrl || null,
           project_logo: formData.projectLogo || null,
           pxb_reward: formData.pxbReward,
-          creator_id: session.user.id,
+          creator_id: userId,
           budget: formData.pxbReward,
           end_date: endDate.toISOString(),
           task_type: formData.taskType,
@@ -165,9 +172,11 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     }
   };
 
+  const showAuthWarning = !userProfile && !isAuthenticated;
+
   return (
     <form onSubmit={handleSubmit}>
-      {!isAuthenticated && (
+      {showAuthWarning && (
         <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500">
           <p className="font-medium">Please connect your wallet and sign in to create a bounty.</p>
         </div>
@@ -378,7 +387,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       <div className="mt-10 flex justify-end">
         <Button 
           type="submit" 
-          disabled={loading || !isAuthenticated}
+          disabled={loading || showAuthWarning}
           className="gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 px-8"
         >
           {loading ? (
