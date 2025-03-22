@@ -97,11 +97,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
   };
 
-  // Make sure generateReferralLink always returns a Promise<string>
-  const generateReferralLinkWrapper = async (): Promise<string> => {
-    return await generateReferralLink();
-  };
-
   return (
     <PXBPointsContext.Provider
       value={{
@@ -123,7 +118,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isLeaderboardLoading,
         isLoadingWinRate,
         // Referral system
-        generateReferralLink: generateReferralLinkWrapper,
+        generateReferralLink,
         checkAndProcessReferral,
         referralStats,
         fetchReferralStats,

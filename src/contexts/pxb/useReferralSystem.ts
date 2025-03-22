@@ -1,22 +1,7 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { UserProfile } from '@/types/pxb';
+import { UserProfile, ReferralStats, Referral } from '@/types/pxb';
 import { toast } from 'sonner';
-
-export interface ReferralStats {
-  totalReferrals: number;
-  totalPointsEarned: number;
-  referrals: Referral[];
-  referralCode: string | null;
-}
-
-export interface Referral {
-  id: string;
-  referredUsername: string;
-  pointsAwarded: number;
-  createdAt: string;
-}
 
 export const useReferralSystem = (
   userProfile: UserProfile | null,
@@ -31,36 +16,31 @@ export const useReferralSystem = (
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
 
   // Generate a referral link based on user's referral code
-  const generateReferralLink = useCallback(() => {
-    if (!userProfile) return '';
+  const generateReferralLink = useCallback(async (): Promise<string> => {
+    if (!userProfile) return Promise.resolve('');
     
-    // Get user's referral code from database
-    const fetchReferralCode = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('referral_code')
-          .eq('id', userProfile.id)
-          .single();
-          
-        if (error) {
-          console.error('Error fetching referral code:', error);
-          return '';
-        }
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('referral_code')
+        .eq('id', userProfile.id)
+        .single();
         
-        if (data && data.referral_code) {
-          const baseUrl = window.location.origin;
-          return `${baseUrl}?ref=${data.referral_code}`;
-        }
-        
-        return '';
-      } catch (error) {
-        console.error('Error in generateReferralLink:', error);
-        return '';
+      if (error) {
+        console.error('Error fetching referral code:', error);
+        return Promise.resolve('');
       }
-    };
-    
-    return fetchReferralCode();
+      
+      if (data && data.referral_code) {
+        // Use pumpxbounty.fun domain for referrals
+        return `https://pumpxbounty.fun?ref=${data.referral_code}`;
+      }
+      
+      return Promise.resolve('');
+    } catch (error) {
+      console.error('Error in generateReferralLink:', error);
+      return Promise.resolve('');
+    }
   }, [userProfile]);
 
   // Check if a referral code is valid and process the referral
