@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -9,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PXBOnboardingProps {
   onClose: () => void;
@@ -231,72 +233,137 @@ const InteractiveTour = () => {
               }} 
               className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-black/65"
             >
-              <div className={`flex ${isMobile ? 'flex-col' : 'flex-col md:flex-row'} items-center justify-center gap-3 md:gap-6`}>
-                <motion.div 
-                  className={`w-full ${isMobile ? 'w-[120px]' : 'md:w-1/2'} flex justify-center items-center mb-2 md:mb-0`} 
-                  style={{
-                    transformStyle: 'preserve-3d',
-                    transform: 'translateZ(40px)'
-                  }}
-                >
-                  <img 
-                    src={steps[currentStep].image} 
-                    alt={steps[currentStep].title} 
-                    className={`${isMobile ? 'w-[100px]' : 'w-[120px] md:w-[200px]'} h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]`} 
+              {isMobile ? (
+                <ScrollArea className="h-full pr-2">
+                  <div className="flex flex-col items-center justify-start py-2">
+                    <div className="w-full w-[120px] flex justify-center items-center mb-4">
+                      <img 
+                        src={steps[currentStep].image} 
+                        alt={steps[currentStep].title} 
+                        className="w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" 
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: 'translateZ(10px) rotateY(-5deg)'
+                        }} 
+                      />
+                    </div>
+                    
+                    <div className="w-full mt-2 flex flex-col items-center">
+                      <div className="mb-2 md:mb-4 flex justify-center">
+                        <motion.div 
+                          className="p-2 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
+                          whileHover={{
+                            scale: 1.1,
+                            rotate: 5
+                          }} 
+                          style={{
+                            transformStyle: 'preserve-3d',
+                            transform: 'translateZ(30px)'
+                          }}
+                        >
+                          {steps[currentStep].icon}
+                        </motion.div>
+                      </div>
+                      
+                      <motion.h2 
+                        className="text-lg font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent"
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: 'translateZ(20px)'
+                        }}
+                      >
+                        {steps[currentStep].title}
+                      </motion.h2>
+                      
+                      <motion.p 
+                        className="text-indigo-200/80 text-xs mb-2"
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: 'translateZ(15px)'
+                        }}
+                      >
+                        {steps[currentStep].description}
+                      </motion.p>
+                      
+                      <motion.div 
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: 'translateZ(25px)'
+                        }}
+                      >
+                        {steps[currentStep].action}
+                      </motion.div>
+                    </div>
+                  </div>
+                </ScrollArea>
+              ) : (
+                <div className="flex flex-row items-center justify-center gap-6">
+                  <motion.div 
+                    className="w-1/2 flex justify-center items-center mb-0" 
                     style={{
                       transformStyle: 'preserve-3d',
-                      transform: 'translateZ(10px) rotateY(-5deg)'
-                    }} 
-                  />
-                </motion.div>
-                
-                <div className={`w-full ${isMobile ? 'mt-2' : 'md:w-1/2'} flex flex-col items-center md:items-start`}>
-                  <div className="mb-2 md:mb-4 flex justify-center md:justify-start">
-                    <motion.div 
-                      className="p-2 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
-                      whileHover={{
-                        scale: 1.1,
-                        rotate: 5
-                      }} 
+                      transform: 'translateZ(40px)'
+                    }}
+                  >
+                    <img 
+                      src={steps[currentStep].image} 
+                      alt={steps[currentStep].title} 
+                      className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" 
                       style={{
                         transformStyle: 'preserve-3d',
-                        transform: 'translateZ(30px)'
+                        transform: 'translateZ(10px) rotateY(-5deg)'
+                      }} 
+                    />
+                  </motion.div>
+                  
+                  <div className="w-1/2 flex flex-col items-start">
+                    <div className="mb-4 flex justify-start">
+                      <motion.div 
+                        className="p-2 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
+                        whileHover={{
+                          scale: 1.1,
+                          rotate: 5
+                        }} 
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: 'translateZ(30px)'
+                        }}
+                      >
+                        {steps[currentStep].icon}
+                      </motion.div>
+                    </div>
+                    
+                    <motion.h2 
+                      className="text-2xl font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent" 
+                      style={{
+                        transformStyle: 'preserve-3d',
+                        transform: 'translateZ(20px)'
                       }}
                     >
-                      {steps[currentStep].icon}
+                      {steps[currentStep].title}
+                    </motion.h2>
+                    
+                    <motion.p 
+                      className="text-indigo-200/80 text-sm mb-4" 
+                      style={{
+                        transformStyle: 'preserve-3d',
+                        transform: 'translateZ(15px)'
+                      }}
+                    >
+                      {steps[currentStep].description}
+                    </motion.p>
+                    
+                    <motion.div 
+                      style={{
+                        transformStyle: 'preserve-3d',
+                        transform: 'translateZ(25px)'
+                      }}
+                    >
+                      {steps[currentStep].action}
                     </motion.div>
                   </div>
-                  
-                  <motion.h2 
-                    className={`${isMobile ? 'text-lg' : 'text-xl md:text-2xl'} font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent`} 
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      transform: 'translateZ(20px)'
-                    }}
-                  >
-                    {steps[currentStep].title}
-                  </motion.h2>
-                  
-                  <motion.p 
-                    className={`text-indigo-200/80 ${isMobile ? 'text-xs' : 'text-xs md:text-sm'} mb-2 md:mb-4`} 
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      transform: 'translateZ(15px)'
-                    }}
-                  >
-                    {steps[currentStep].description}
-                  </motion.p>
-                  
-                  <motion.div 
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      transform: 'translateZ(25px)'
-                    }}
-                  >
-                    {steps[currentStep].action}
-                  </motion.div>
                 </div>
-              </div>
+              )}
               
               <div className="mt-3 md:mt-6 flex justify-center space-x-2">
                 {steps.map((_, index) => 
