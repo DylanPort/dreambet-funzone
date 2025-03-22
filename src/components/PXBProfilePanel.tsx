@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { UserProfile } from '@/types/pxb';
 import { Button } from '@/components/ui/button';
@@ -8,45 +7,46 @@ import { toast } from 'sonner';
 import { PublicKey } from '@solana/web3.js';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
-
 interface PXBProfilePanelProps {
   userProfile: UserProfile | null;
   publicKey: PublicKey;
   localPxbPoints: number;
 }
-
-const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userProfile, publicKey, localPxbPoints }) => {
+const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
+  userProfile,
+  publicKey,
+  localPxbPoints
+}) => {
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [usernameInput, setUsernameInput] = useState(userProfile?.username || '');
   const [isSavingUsername, setIsSavingUsername] = useState(false);
-  const { generatePxbId, fetchUserProfile } = usePXBPoints();
+  const {
+    generatePxbId,
+    fetchUserProfile
+  } = usePXBPoints();
   const [myPxbId, setMyPxbId] = useState<string>('');
-
   React.useEffect(() => {
     if (userProfile && generatePxbId) {
       setMyPxbId(generatePxbId());
     }
   }, [userProfile, generatePxbId]);
-
   React.useEffect(() => {
     if (userProfile) {
       setUsernameInput(userProfile.username);
     }
   }, [userProfile]);
-
   const handleUpdateUsername = async () => {
     if (!usernameInput.trim() || !userProfile) {
       toast.error("Username cannot be empty");
       return;
     }
-
     setIsSavingUsername(true);
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ username: usernameInput })
-        .eq('id', userProfile.id);
-
+      const {
+        error
+      } = await supabase.from('users').update({
+        username: usernameInput
+      }).eq('id', userProfile.id);
       if (error) {
         console.error('Error updating username:', error);
         toast.error('Failed to update username');
@@ -62,14 +62,11 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userProfile, publicKe
       setIsSavingUsername(false);
     }
   };
-
   const copyToClipboard = (text: string, message: string) => {
     navigator.clipboard.writeText(text);
     toast.success(message);
   };
-
-  return (
-    <div className="overflow-hidden rounded-xl bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
+  return <div className="overflow-hidden rounded-xl bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
       <div className="p-6 border-b border-indigo-900/30">
         <h2 className="text-2xl font-bold text-white">Profile</h2>
         <p className="text-indigo-300/70">Manage your account information</p>
@@ -80,51 +77,28 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userProfile, publicKe
         <div>
           <h3 className="text-sm text-indigo-300/70 mb-2 flex justify-between items-center">
             Username
-            {!isEditingUsername && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10"
-                onClick={() => setIsEditingUsername(true)}
-              >
+            {!isEditingUsername && <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={() => setIsEditingUsername(true)}>
                 <Edit2 className="w-4 h-4" />
-              </Button>
-            )}
+              </Button>}
           </h3>
 
-          {isEditingUsername ? (
-            <div className="space-y-2">
-              <Input
-                value={usernameInput}
-                onChange={(e) => setUsernameInput(e.target.value)}
-                className="bg-indigo-900/10 border-indigo-900/30 text-white"
-              />
+          {isEditingUsername ? <div className="space-y-2">
+              <Input value={usernameInput} onChange={e => setUsernameInput(e.target.value)} className="bg-indigo-900/10 border-indigo-900/30 text-white" />
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleUpdateUsername} 
-                  disabled={isSavingUsername}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700"
-                >
+                <Button onClick={handleUpdateUsername} disabled={isSavingUsername} className="w-full bg-indigo-600 hover:bg-indigo-700">
                   {isSavingUsername ? 'Saving...' : 'Save'}
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsEditingUsername(false);
-                    setUsernameInput(userProfile?.username || '');
-                  }}
-                  className="w-full border-indigo-900/30 text-indigo-300/70 hover:text-white hover:bg-indigo-900/20"
-                >
+                <Button variant="outline" onClick={() => {
+              setIsEditingUsername(false);
+              setUsernameInput(userProfile?.username || '');
+            }} className="w-full border-indigo-900/30 text-indigo-300/70 hover:text-white hover:bg-indigo-900/20">
                   Cancel
                 </Button>
               </div>
-            </div>
-          ) : (
-            <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center border border-indigo-900/30">
+            </div> : <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center border border-indigo-900/30">
               <User className="text-indigo-300/70 w-4 h-4 mr-2" />
               <span className="text-white">{userProfile?.username || 'Anonymous'}</span>
-            </div>
-          )}
+            </div>}
         </div>
 
         {/* Wallet Address */}
@@ -134,12 +108,7 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userProfile, publicKe
             <span className="text-white text-sm font-mono truncate">
               {publicKey.toString()}
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10"
-              onClick={() => copyToClipboard(publicKey.toString(), 'Wallet address copied to clipboard')}
-            >
+            <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={() => copyToClipboard(publicKey.toString(), 'Wallet address copied to clipboard')}>
               <Copy className="w-4 h-4" />
             </Button>
           </div>
@@ -152,13 +121,7 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userProfile, publicKe
             <span className="text-white text-sm font-mono truncate">
               {myPxbId || 'Generating...'}
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10"
-              onClick={() => copyToClipboard(myPxbId, 'PXB ID copied to clipboard')}
-              disabled={!myPxbId}
-            >
+            <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={() => copyToClipboard(myPxbId, 'PXB ID copied to clipboard')} disabled={!myPxbId}>
               <Copy className="w-4 h-4" />
             </Button>
           </div>
@@ -172,7 +135,7 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userProfile, publicKe
             
             <div className="flex items-center mb-4 relative z-10">
               <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-4 border border-indigo-500/20">
-                <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-8 h-8" />
+                <img alt="PXB Coin" className="w-8 h-8" src="/lovable-uploads/ab3da836-860c-4aae-a709-4a3da2b4f54e.png" />
               </div>
               <div>
                 <h3 className="text-4xl font-bold text-white">{localPxbPoints.toLocaleString()}</h3>
@@ -186,8 +149,6 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userProfile, publicKe
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default PXBProfilePanel;
