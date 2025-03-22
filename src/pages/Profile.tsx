@@ -97,14 +97,14 @@ const Profile = () => {
       <Navbar />
       <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 space-y-8">
-          {/* Grid layout for top section */}
+          {/* PXB Wallet at the top - full width */}
+          <div className="w-full">
+            <PXBWallet />
+          </div>
+          
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-8">
-            {/* Left column - Profile info and Wallet */}
-            <div className="lg:col-span-3 space-y-8">
-              {/* PXB Wallet moved inside the left column */}
-              <PXBWallet />
-              
-              {/* Profile Panel */}
+            {/* Left column - Profile info */}
+            <div className="lg:col-span-3">
               <PXBProfilePanel 
                 userProfile={userProfile} 
                 publicKey={publicKey} 

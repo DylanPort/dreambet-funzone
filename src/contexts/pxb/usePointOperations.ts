@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { UserProfile, PXBBet } from '@/types/pxb';
 import { supabase, isAuthRateLimited, checkSupabaseTables, isAuthDisabled } from '@/integrations/supabase/client';
@@ -357,7 +358,7 @@ export const usePointOperations = (
     }
   }, [userProfile, publicKey, setUserProfile, setBets, fetchUserProfile]);
 
-  // Send PXB points to another user - Enhanced version
+  // Send PXB points to another user
   const sendPoints = useCallback(async (recipientId: string, amount: number) => {
     if (!userProfile || !publicKey) {
       toast.error('Connect your wallet to send PXB points');
@@ -377,104 +378,49 @@ export const usePointOperations = (
     setIsSendingPoints(true);
     
     try {
-      console.log('Searching for recipient with ID or username:', recipientId);
+      console.log('Searching for recipient with ID:', recipientId);
       
-      // First check if it's a PXB ID format
-      let actualRecipientId = recipientId;
-      let recipientData = null;
-      let recipientError = null;
+      // First try to query by username if the ID doesn't look like a UUID
+      let recipientData;
+      let recipientError;
       
-      // Extract actual ID if it's a PXB ID format
-      if (recipientId.startsWith('PXB-')) {
-        const parts = recipientId.split('-');
-        if (parts.length >= 2) {
-          // Try to find the user by the extracted ID part
-          const extractedId = parts[1];
-          console.log('Extracted potential user ID from PXB ID:', extractedId);
-          
-          // Try to find a user whose ID starts with this extracted part
-          const { data, error } = await supabase
-            .from('users')
-            .select('id, username')
-            .like('id', `${extractedId}%`)
-            .maybeSingle();
-            
-          if (data) {
-            console.log('Found user by extracted PXB ID part:', data);
-            actualRecipientId = data.id;
-            recipientData = data;
-          } else {
-            console.log('No user found with extracted ID part, will try other methods');
-          }
-        }
-      }
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(recipientId);
       
-      // If not found by PXB ID, check if it's a UUID
-      if (!recipientData) {
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(actualRecipientId);
-        
-        if (isUUID) {
-          // Try to find by exact UUID
-          ({ data: recipientData, error: recipientError } = await supabase
-            .from('users')
-            .select('id, username')
-            .eq('id', actualRecipientId)
-            .maybeSingle());
-            
-          if (recipientData) {
-            console.log('Found recipient by UUID:', recipientData);
-          } else {
-            console.log('Could not find recipient by UUID');
-          }
-        }
-      }
-      
-      // If still not found, try username
-      if (!recipientData) {
-        // Try by username as fallback
+      if (!isUUID) {
+        // Try to find user by username first
         ({ data: recipientData, error: recipientError } = await supabase
           .from('users')
           .select('id, username')
-          .eq('username', actualRecipientId)
+          .eq('username', recipientId)
           .maybeSingle());
           
         if (recipientData) {
           console.log('Found recipient by username:', recipientData);
-          actualRecipientId = recipientData.id;
+          recipientId = recipientData.id;
         } else {
-          console.log('Could not find recipient by username either');
+          console.log('Could not find recipient by username, will try by ID');
         }
       }
-
-      // If still not found, try wallet address as last resort
+      
+      // If we couldn't find by username or if the input was a UUID, try by ID
       if (!recipientData) {
-        // Try by wallet address
         ({ data: recipientData, error: recipientError } = await supabase
           .from('users')
           .select('id, username')
-          .eq('wallet_address', actualRecipientId)
+          .eq('id', recipientId)
           .maybeSingle());
-          
-        if (recipientData) {
-          console.log('Found recipient by wallet address:', recipientData);
-          actualRecipientId = recipientData.id;
-        }
       }
       
-      if (!recipientData) {
+      if (recipientError || !recipientData) {
         console.error('Error finding recipient:', recipientError);
-        toast.error('Recipient not found. Check the PXB ID, username, or wallet address and try again.');
+        toast.error('Recipient not found. Check the PXB ID and try again.');
         return false;
       }
-      
-      // Confirmation if found by username to avoid sending to wrong person
-      const recipientName = recipientData.username || recipientData.id.substring(0, 8);
-      toast.success(`Sending ${amount} PXB to ${recipientName}...`);
       
       // Start a transaction to ensure atomicity
       const { data: transaction, error: transactionError } = await supabase.rpc('transfer_pxb_points', {
         sender_id: userProfile.id,
-        recipient_id: actualRecipientId,
+        recipient_id: recipientId,
         amount: amount
       });
       
@@ -490,7 +436,7 @@ export const usePointOperations = (
         pxbPoints: userProfile.pxbPoints - amount
       });
       
-      toast.success(`Successfully sent ${amount} PXB points to ${recipientName}!`);
+      toast.success(`Successfully sent ${amount} PXB points to ${recipientData.username || 'user'}!`);
       return true;
     } catch (error) {
       console.error('Unexpected error in sendPoints:', error);

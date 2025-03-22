@@ -3,7 +3,6 @@ export interface UserProfile {
   username: string;
   pxbPoints: number;
   createdAt: string;
-  wallet_address: string;
 }
 
 // Updated to match Supabase schema names and include percentage prediction
