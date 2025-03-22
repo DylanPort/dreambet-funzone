@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface for bounty data
@@ -137,6 +136,134 @@ export const hasUserSubmitted = async (bountyId: string, userId: string): Promis
     return (count || 0) > 0;
   } catch (error) {
     console.error('Error checking user submission:', error);
+    return false;
+  }
+};
+
+// Function to get a bounty by ID
+export const getBountyById = async (bountyId: string): Promise<Bounty | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('bounties')
+      .select('*')
+      .eq('id', bountyId)
+      .single();
+    
+    if (error) throw error;
+    return data as Bounty;
+  } catch (error) {
+    console.error('Error fetching bounty:', error);
+    return null;
+  }
+};
+
+// Submit a bounty completion
+export const submitBountyCompletion = async (
+  bountyId: string,
+  userId: string,
+  description: string,
+  proofLink: string
+): Promise<boolean> => {
+  try {
+    // Check if user has already submitted for this bounty
+    const hasSubmitted = await hasUserSubmitted(bountyId, userId);
+    
+    if (hasSubmitted) {
+      return false;
+    }
+    
+    // Check if bounty has reached max participants
+    const { isFull } = await checkBountyParticipants(bountyId);
+    
+    if (isFull) {
+      return false;
+    }
+    
+    // Get bounty details
+    const bounty = await getBountyById(bountyId);
+    if (!bounty) return false;
+    
+    // Calculate individual reward
+    const individualReward = Math.floor(bounty.pxb_reward / bounty.max_participants);
+    
+    // Submit the proof
+    const { error } = await supabase
+      .from('submissions')
+      .insert({
+        bounty_id: bountyId,
+        submitter_id: userId,
+        description: description,
+        proof_link: proofLink,
+        status: 'pending',
+        pxb_earned: individualReward
+      });
+    
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error('Error submitting bounty completion:', error);
+    return false;
+  }
+};
+
+// Function to track a bounty view
+export const trackBountyView = async (bountyId: string): Promise<void> => {
+  try {
+    await supabase.rpc('increment_bounty_views', { bounty_id: bountyId });
+  } catch (error) {
+    console.error('Error tracking bounty view:', error);
+  }
+};
+
+// Function to get submissions for a bounty
+export const getBountySubmissions = async (bountyId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('submissions')
+      .select(`
+        *,
+        submitter:users(id, username)
+      `)
+      .eq('bounty_id', bountyId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching bounty submissions:', error);
+    return [];
+  }
+};
+
+// Function to approve a submission
+export const approveSubmission = async (submissionId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('submissions')
+      .update({ status: 'approved' })
+      .eq('id', submissionId);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error approving submission:', error);
+    return false;
+  }
+};
+
+// Function to reject a submission
+export const rejectSubmission = async (submissionId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('submissions')
+      .update({ status: 'rejected' })
+      .eq('id', submissionId);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error rejecting submission:', error);
     return false;
   }
 };
