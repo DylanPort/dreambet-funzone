@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,26 +36,21 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
   
   const isMobile = useIsMobile();
 
-  // Number of items to display in each slide
   const itemsPerSlide = isMobile ? 1 : 3;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch open bets for betting activity
         const openBets = await fetchOpenBets();
         setBets(openBets);
         
-        // Fetch trending tokens based on bet activity
         const trending = await fetchTrendingTokens(10);
         setTrendingTokens(trending);
         
-        // Fetch top searched tokens
         const topSearched = await fetchTopSearchedTokens(10);
         setTopSearchedTokens(topSearched);
         
-        // Fetch recently searched tokens
         const recentlySearched = await fetchRecentlySearchedTokens(10);
         setRecentlySearchedTokens(recentlySearched);
       } catch (error) {
@@ -68,7 +62,6 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
 
     fetchData();
     
-    // Refresh data every 60 seconds
     const interval = setInterval(() => {
       fetchData();
     }, 60000);
@@ -76,7 +69,6 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
     return () => clearInterval(interval);
   }, []);
 
-  // Handle carousel scrolling
   const scrollCarousel = (direction: 'next' | 'prev', ref: React.RefObject<HTMLDivElement>) => {
     if (!ref.current) return;
     
@@ -89,13 +81,11 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
     });
   };
 
-  // Format number to 2 decimal places if needed
   const formatNumber = (num: number): string => {
     if (num % 1 === 0) return num.toString();
     return num.toFixed(2);
   };
 
-  // Get bets for a specific token
   const getBetsForToken = (tokenMint: string): Bet[] => {
     return bets.filter(bet => bet.tokenMint === tokenMint);
   };
@@ -117,7 +107,6 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
         </div>
 
         <CardContent className="pt-2 px-2">
-          {/* Trending Bets Tab */}
           <TabsContent value="trending" className="mt-0">
             {loading ? (
               <div className="flex justify-center items-center h-40">
@@ -158,7 +147,6 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
             )}
           </TabsContent>
 
-          {/* Most Searched Tab */}
           <TabsContent value="most-searched" className="mt-0 relative">
             {loading ? (
               <div className="flex justify-center items-center h-40">
@@ -222,7 +210,6 @@ export const TrendingBetsList: React.FC<TrendingBetsListProps> = ({ className })
             )}
           </TabsContent>
 
-          {/* Recently Searched Tab */}
           <TabsContent value="recently-searched" className="mt-0 relative">
             {loading ? (
               <div className="flex justify-center items-center h-40">

@@ -345,13 +345,15 @@ const MigratingTokenList = () => {
       
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-display font-bold text-dream-foreground flex items-center gap-2">
-          
           <span>ACTIVE BETS</span>
         </h2>
         
         <div className="flex items-center gap-2">
           <Tabs value={viewMode} onValueChange={value => setViewMode(value as 'all' | 'highValue')} className="w-auto">
-            
+            <TabsList className="grid w-full grid-cols-2 h-9">
+              <TabsTrigger value="all" className="text-xs">All Bets</TabsTrigger>
+              <TabsTrigger value="highValue" className="text-xs">1+ SOL</TabsTrigger>
+            </TabsList>
           </Tabs>
           
           <div className="relative">
