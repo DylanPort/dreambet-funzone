@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback } from 'react';
 import { UserProfile, PXBBet, SupabaseBetsRow } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +17,6 @@ export const useBetProcessor = (
     console.log('Processing pending bets...', bets.length);
     
     // Get pending bets that need to be checked
-    // Now TypeScript knows that 'open' is a valid status
     const pendingBets = bets.filter(bet => bet.status === 'pending' || (bet.status === 'open' && new Date() >= new Date(bet.expiresAt)));
     console.log(`Found ${pendingBets.length} pending bets to process`);
     
@@ -38,6 +38,28 @@ export const useBetProcessor = (
           try {
             tokenData = await fetchDexScreenerData(bet.tokenMint);
             currentMarketCap = tokenData?.marketCap;
+            
+            // If we don't have an initial market cap but have current market cap data,
+            // this means we might need to use the stored initial value
+            if (initialMarketCap === 0 && currentMarketCap) {
+              console.log(`No initial market cap recorded for ${bet.tokenSymbol}, checking database...`);
+              
+              // Try to get the bet with initial market cap from database
+              const { data: betData, error: betError } = await supabase
+                .from('bets')
+                .select('initial_market_cap')
+                .eq('bet_id', bet.id)
+                .single();
+                
+              if (!betError && betData && betData.initial_market_cap) {
+                initialMarketCap = betData.initial_market_cap;
+                console.log(`Found initial market cap in database: ${initialMarketCap}`);
+              } else {
+                // If still no initial market cap, we'll use a fallback approach
+                console.log(`No initial market cap found in database either, using fallback...`);
+                initialMarketCap = currentMarketCap; // This will effectively result in a 0% change
+              }
+            }
           } catch (fetchError) {
             console.error(`Unable to fetch current market cap for ${bet.tokenSymbol}:`, fetchError);
             // If we have initial market cap but no current, use a fallback approach
@@ -78,8 +100,9 @@ export const useBetProcessor = (
             .update({
               status: betWon ? 'won' : 'lost',
               points_won: pointsWon,
-              current_market_cap: currentMarketCap
-            } as Partial<SupabaseBetsRow>) // Use Partial with SupabaseBetsRow type
+              current_market_cap: currentMarketCap,
+              initial_market_cap: initialMarketCap // Ensure initial market cap is saved
+            } as Partial<SupabaseBetsRow>)
             .eq('bet_id', bet.id);
             
           if (betUpdateError) {
@@ -128,10 +151,10 @@ export const useBetProcessor = (
               pxbPoints: updatedPoints
             });
             
-            // Show win notification - keep this toast
+            // Show win notification
             toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points from the house.`);
           } else {
-            // Show loss notification - keep this toast
+            // Show loss notification
             toast.error(`Your bet on ${bet.tokenSymbol} didn't win this time.`, {
               description: `Your ${bet.betAmount} PXB Points have returned to the house supply.`
             });
@@ -140,38 +163,73 @@ export const useBetProcessor = (
           // Update bet in state
           setBets(prevBets => prevBets.map(b => 
             b.id === bet.id 
-              ? { ...b, status: betWon ? 'won' : 'lost', pointsWon, currentMarketCap } 
+              ? { 
+                  ...b, 
+                  status: betWon ? 'won' : 'lost', 
+                  pointsWon, 
+                  currentMarketCap,
+                  initialMarketCap // Ensure initial market cap is updated in state
+                } 
               : b
           ));
         } else {
-          // For active bets, update the current market cap for progress tracking - NO TOAST FOR THESE UPDATES
+          // For active bets, update the current market cap for progress tracking
           try {
             const tokenData = await fetchDexScreenerData(bet.tokenMint);
-            if (tokenData && tokenData.marketCap && bet.initialMarketCap) {
+            if (tokenData && tokenData.marketCap) {
+              // If we don't have an initial market cap yet, set it now
+              let initialMarketCap = bet.initialMarketCap;
+              if (!initialMarketCap) {
+                // Check if we have it in the database
+                const { data: betData, error: betError } = await supabase
+                  .from('bets')
+                  .select('initial_market_cap')
+                  .eq('bet_id', bet.id)
+                  .single();
+                  
+                if (!betError && betData && betData.initial_market_cap) {
+                  initialMarketCap = betData.initial_market_cap;
+                } else {
+                  // If not in database, use current as initial (this is a new bet)
+                  initialMarketCap = tokenData.marketCap;
+                  
+                  // Save initial market cap to database
+                  await supabase
+                    .from('bets')
+                    .update({
+                      initial_market_cap: initialMarketCap
+                    } as Partial<SupabaseBetsRow>)
+                    .eq('bet_id', bet.id);
+                }
+              }
+              
               // Update the current market cap in state for progress tracking
               setBets(prevBets => prevBets.map(b => 
                 b.id === bet.id 
-                  ? { ...b, currentMarketCap: tokenData.marketCap } 
+                  ? { 
+                      ...b, 
+                      currentMarketCap: tokenData.marketCap,
+                      initialMarketCap: initialMarketCap || b.initialMarketCap
+                    } 
                   : b
               ));
               
-              // Update in database - using the database column name with proper typing
+              // Update in database
               await supabase
                 .from('bets')
                 .update({
-                  current_market_cap: tokenData.marketCap
-                } as Partial<SupabaseBetsRow>) // Use Partial with SupabaseBetsRow type
+                  current_market_cap: tokenData.marketCap,
+                  initial_market_cap: initialMarketCap
+                } as Partial<SupabaseBetsRow>)
                 .eq('bet_id', bet.id);
             }
           } catch (error) {
             // Silent error handling - no notification for market cap updates
             console.error(`Error updating current market cap for bet ${bet.id}:`, error);
-            // Continue processing without showing error toast
           }
         }
       } catch (error) {
         console.error(`Error processing bet ${bet.id}:`, error);
-        // Errors are logged to console but no toast is shown
       }
     }
   }, [bets, userProfile, setUserProfile, setBets]);

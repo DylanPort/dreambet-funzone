@@ -560,19 +560,21 @@ const TokenDetail = () => {
       maximumFractionDigits: 2
     });
   };
+
   const formatLargeNumber = (num: number | null) => {
-    if (num === null) return "Loading...";
+    if (num === null || num === undefined) return "N/A";
+    
     if (num >= 1000000000) {
       return `$${(num / 1000000000).toFixed(2)}B`;
-    }
-    if (num >= 1000000) {
+    } else if (num >= 1000000) {
       return `$${(num / 1000000).toFixed(2)}M`;
-    }
-    if (num >= 1000) {
+    } else if (num >= 1000) {
       return `$${(num / 1000).toFixed(2)}K`;
+    } else {
+      return `$${num.toFixed(2)}`;
     }
-    return `$${num.toFixed(2)}`;
   };
+
   const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
   const renderActiveBetBanner = () => {
     if (!newActiveBet) return null;
@@ -724,164 +726,3 @@ const TokenDetail = () => {
                   </div>
                   
                   <div>
-                    <h1 className="text-3xl md:text-4xl font-display font-bold">{token.name}</h1>
-                    <div className="flex items-center gap-3">
-                      <span className="text-dream-foreground/70">{token.symbol}</span>
-                      <a href={`https://solscan.io/token/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline inline-flex items-center text-sm">
-                        <ExternalLink className="w-3 h-3 mr-1" />
-                        View on SolScan
-                      </a>
-                      <span className={`flex items-center gap-1 text-sm ${isLive ? 'text-green-400' : 'text-yellow-400'}`}>
-                        {isLive ? 'Live' : 'Static'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-end">
-                  <div className="text-3xl font-bold">
-                    ${formatPrice(token.currentPrice)}
-                    <span className="ml-2 text-xs bg-gradient-to-r from-green-500 to-green-700 px-2 py-1 rounded text-white">LIVE</span>
-                  </div>
-                  <div className={`flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {token.change24h >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
-                    {Math.abs(token.change24h).toFixed(2)}%
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <TokenMarketCap tokenId={token.id} />
-                <TokenVolume tokenId={token.id} />
-                
-                <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in" style={{
-              animationDelay: '0.2s'
-            }}>
-                  <div className="absolute inset-0 bg-gradient-to-r from-dream-accent3/10 to-dream-accent1/10 animate-gradient-move"></div>
-                  <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
-                    <Users size={20} className="mr-3 text-dream-accent3" />
-                    <span className="text-lg font-semibold">Active Bets</span>
-                  </div>
-                  <div className="text-3xl font-bold relative z-10">{bets.length}</div>
-                  <div className="absolute top-2 right-2 flex items-center">
-                    <button onClick={() => refreshData()} className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors" title="Refresh Data">
-                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    </button>
-                  </div>
-                  <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-dream-accent3 to-dream-accent1 animate-pulse-glow" style={{
-                width: `${Math.min(100, bets.length / 10 * 100)}%`
-              }}></div>
-                </div>
-              </div>
-              
-              <TokenChart tokenId={token?.id} tokenName={token?.name} refreshData={refreshData} loading={loading} onPriceUpdate={handleChartPriceUpdate} setShowCreateBet={setShowCreateBet} />
-              
-              {showCreateBet && <div className="glass-panel p-6 mb-8">
-                  <h2 className="text-xl font-display font-bold mb-4">Create a Bet</h2>
-                  <CreateBetForm tokenId={token?.id} tokenName={token?.name} tokenSymbol={token?.symbol || ''} onBetCreated={async () => {
-              setShowCreateBet(false);
-              await refreshData();
-            }} />
-                </div>}
-              
-              {userProfile && tokenPXBBets.length > 0 && (
-                <div className="glass-panel p-6 mb-8">
-                  <h2 className="text-xl font-display font-bold mb-4">Your PXB Bets on this Token</h2>
-                  
-                  <div className="space-y-4">
-                    {tokenPXBBets.map(bet => {
-                      const progress = calculateProgress(bet);
-                      const targetMC = calculateTargetMarketCap(bet);
-                      const changePercent = calculateMarketCapChange(bet);
-                      
-                      return (
-                        <div key={bet.id} className="glass-panel p-4 border border-dream-accent1/10">
-                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${bet.betType === 'up' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                                  {bet.betType === 'up' ? 
-                                    <ArrowUpRight className="w-3 h-3 text-green-400" /> : 
-                                    <ArrowDownRight className="w-3 h-3 text-red-400" />
-                                  }
-                                </div>
-                                <span className="font-semibold">{bet.points} PXB on {bet.betType === 'up' ? 'Growth' : 'Drop'}</span>
-                                {bet.status === 'won' && <CheckCircle className="w-4 h-4 text-green-400" />}
-                                {bet.status === 'lost' && <XCircle className="w-4 h-4 text-red-400" />}
-                              </div>
-                              
-                              <div className="text-sm text-dream-foreground/60 mt-1">
-                                Target: {bet.betType === 'up' ? '+' : '-'}{bet.percentageChange}% market cap
-                                {bet.createdAt && <span className="ml-2">• {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}</span>}
-                              </div>
-                            </div>
-                            
-                            <div className="mt-2 sm:mt-0 text-sm">
-                              {changePercent !== null ? (
-                                <div className={`${changePercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%
-                                </div>
-                              ) : 'Loading...'}
-                            </div>
-                          </div>
-                          
-                          <div className="mt-2">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Progress</span>
-                              <span>{Math.round(progress)}%</span>
-                            </div>
-                            <Progress value={progress} className="h-3" />
-                          </div>
-                          
-                          {targetMC && (
-                            <div className="mt-3 flex justify-between text-xs text-dream-foreground/60">
-                              <div>Initial: {formatLargeNumber(marketCapData[bet.id]?.initialMarketCap || bet.initialMarketCap)}</div>
-                              <div>Current: {formatLargeNumber(marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap)}</div>
-                              <div>Target: {formatLargeNumber(targetMC)}</div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              
-              <div className="mb-8">
-                <h2 className="text-xl font-display font-bold mb-4">Active Bets on {token.symbol}</h2>
-                {bets.length === 0 ? (
-                  <div className="glass-panel p-6 text-center">
-                    <p className="text-dream-foreground/70">
-                      No active bets on this token yet. Be the first to bet!
-                    </p>
-                    <Button onClick={() => setShowCreateBet(true)} className="mt-4">
-                      Create Bet
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {bets.map(bet => (
-                      <BetCard 
-                        key={bet.id} 
-                        bet={bet} 
-                        onAcceptBet={handleAcceptBet}
-                        connected={connected}
-                        publicKeyString={publicKey ? publicKey.toString() : null}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <TokenComments 
-                tokenId={token.id} 
-                tokenName={token.name} 
-              />
-            </>}
-        </div>
-      </main>
-    </>
-  );
-};
-
-export default TokenDetail;
