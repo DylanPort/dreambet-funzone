@@ -30,8 +30,8 @@ const PXBWallet: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const COOLDOWN_TIME = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-  const [recipientValidationStatus, setRecipientValidationStatus] = useState<'initial' | 'checking' | 'valid' | 'invalid'>('initial');
-  const [validatedRecipient, setValidatedRecipient] = useState<{id: string, username: string} | null>(null);
+  const [recipientValidationStatus, setRecipientValidationStatus<'initial' | 'checking' | 'valid' | 'invalid'>('initial');
+  const [validatedRecipient, setValidatedRecipient<{id: string, username: string} | null>(null);
 
   useEffect(() => {
     if (userProfile && generatePxbId) {
@@ -699,4 +699,3 @@ const PXBWallet: React.FC = () => {
 };
 
 export default PXBWallet;
-
