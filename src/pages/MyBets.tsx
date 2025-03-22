@@ -105,33 +105,9 @@ const PXBSpace = () => {
               <div className="md:col-span-8 space-y-6">
                 <PXBBetsList />
                 
-                <div className="glass-panel p-6">
-                  <h2 className="font-semibold text-lg mb-4 flex items-center">
-                    <Trophy className="mr-2 h-5 w-5 text-yellow-400" />
-                    PXB Leaderboard
-                  </h2>
-                  <PXBLeaderboard />
-                </div>
                 
-                <div className="glass-panel p-6">
-                  <h2 className="font-semibold text-lg mb-4 flex items-center">
-                    <Users className="mr-2 h-5 w-5 text-dream-accent2" />
-                    PXB Community
-                  </h2>
-                  <p className="text-dream-foreground/70 mb-4">
-                    Join the PXB community to connect with other users, share strategies, and earn more points!
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button variant="outline" className="flex items-center justify-center">
-                      <img src="/lovable-uploads/996f7a3a-2e7a-4c12-bcd7-8af762f1087a.png" className="w-4 h-4 mr-2" alt="Discord" />
-                      Join Discord
-                    </Button>
-                    <Button variant="outline" className="flex items-center justify-center">
-                      <img src="/lovable-uploads/cacd6344-a731-4fcf-8ae1-de6fc1aee605.png" className="w-4 h-4 mr-2" alt="Twitter" />
-                      Follow on Twitter
-                    </Button>
-                  </div>
-                </div>
+                
+                
               </div>
             </div>}
         </div>
