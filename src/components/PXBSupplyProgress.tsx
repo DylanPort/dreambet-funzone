@@ -70,9 +70,9 @@ const PXBSupplyProgress = () => {
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-lg font-semibold flex items-center">
             <span className="relative">
-              <img src="/lovable-uploads/05f6e261-54bf-4bf4-ba9d-52794f1b3b3c.png" alt="Diamond" className="mr-2 h-5 w-5 object-contain animate-pulse-subtle" style={{
+              <img alt="Diamond" className="mr-2 h-5 w-5 object-contain animate-pulse-subtle" style={{
               filter: 'drop-shadow(0 0 4px rgba(219, 39, 119, 0.5))'
-            }} />
+            }} src="/lovable-uploads/c5a2b975-3b82-4cbf-94db-8cb2fe2be3a6.png" />
               <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-yellow-300 animate-pulse" />
             </span>
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500 font-bold">
