@@ -8,10 +8,9 @@ export const useReferralSystem = (
   fetchUserProfile: () => Promise<void>
 ) => {
   const [referralStats, setReferralStats] = useState<ReferralStats>({
-    totalReferrals: 0,
-    totalPointsEarned: 0,
-    referrals: [],
-    referralCode: null
+    referrals_count: 0,
+    points_earned: 0,
+    referral_code: null
   });
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
 
@@ -157,21 +156,13 @@ export const useReferralSystem = (
         return;
       }
       
-      // Transform the data
-      const referrals = referralsData.map(referral => ({
-        id: referral.id,
-        referredUsername: referral.users.username || 'Unknown User',
-        pointsAwarded: referral.points_awarded,
-        createdAt: referral.created_at
-      }));
-      
-      const totalPointsEarned = referrals.reduce((sum, r) => sum + r.pointsAwarded, 0);
+      // Calculate total points earned from referrals
+      const totalPointsEarned = referralsData.reduce((sum, r) => sum + r.points_awarded, 0);
       
       setReferralStats({
-        totalReferrals: referrals.length,
-        totalPointsEarned,
-        referrals,
-        referralCode: userData?.referral_code || null
+        referrals_count: referralsData.length,
+        points_earned: totalPointsEarned,
+        referral_code: userData?.referral_code || null
       });
     } catch (error) {
       console.error('Error in fetchReferralStats:', error);
