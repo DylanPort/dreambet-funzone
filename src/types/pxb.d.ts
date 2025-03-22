@@ -1,71 +1,79 @@
 
 export interface UserProfile {
   id: string;
-  pxbId?: string;
-  walletAddress?: string;
-  pxbPoints: number;
-  winCount: number;
-  lossCount: number;
-  totalBets: number;
+  pxb_id: string;
+  wallet_address: string;
+  display_name: string;
+  avatar_url: string | null;
+  points: number;
+  created_at: string;
+  updated_at: string;
+  twitter_username: string | null;
+  instagram_username: string | null;
+  website_url: string | null;
+  bio: string | null;
   username?: string;
-  avatar?: string;
-  created_at?: string;
-  bets?: PXBBet[];
+  pxbPoints?: number;
+  createdAt?: string;
 }
 
 export interface PXBBet {
   id: string;
   userId: string;
   tokenMint: string;
-  tokenSymbol: string;
   tokenName: string;
+  tokenSymbol: string;
+  betAmount: number;
   betType: "up" | "down";
-  amount: number;
-  status: "pending" | "won" | "lost" | "refunded";
   percentageChange: number;
-  duration: number;
+  status: "open" | "pending" | "won" | "lost";
+  pointsWon: number;
   createdAt: string;
-  endTime: string;
-  initialMarketCap?: number;
-  currentMarketCap?: number;
-  pnl?: number;
+  expiresAt: string;
+  initialMarketCap: number | null;
+  currentMarketCap: number | null;
+  userRole: 'creator' | 'participant';
 }
 
 export interface LeaderboardEntry {
-  id?: string;
-  user_id?: string;
+  user_id: string;
+  display_name: string;
+  avatar_url?: string;
+  points: number;
   rank: number;
+  id?: string;
   username?: string;
   pxbPoints?: number;
-  points?: number;
-  winCount?: number;
-  lossCount?: number;
-  totalBets?: number;
-  avatar?: string;
 }
 
 export interface WinRateLeaderboardEntry {
-  id: string;
+  user_id: string;
+  display_name: string;
+  avatar_url?: string;
+  total_bets: number;
+  won_bets: number;
+  win_rate: number;
   rank: number;
+  id?: string;
   username?: string;
-  winRate: number;
-  winCount: number;
-  lossCount: number;
-  totalBets: number;
-  avatar?: string;
+  winRate?: number;
 }
 
 export interface ReferralStats {
-  totalReferrals: number;
-  totalPointsEarned: number;
-  referralCode?: string;
+  referrals_count: number;
+  points_earned: number;
+  referral_code: string | null;
+  totalReferrals?: number;
+  totalPointsEarned?: number;
+  referrals?: Referral[];
 }
 
 export interface Referral {
   id: string;
-  referrerId: string;
-  referredUserId: string;
-  pointsEarned: number;
+  referrer_id: string;
+  referred_id: string;
   created_at: string;
+  points_awarded: number;
   referredUsername?: string;
+  createdAt?: string;
 }

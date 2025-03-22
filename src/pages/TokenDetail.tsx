@@ -22,7 +22,6 @@ import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
-
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -90,7 +89,6 @@ const TokenChart = ({
       
     </div>;
 };
-
 const TokenDetail = () => {
   const {
     id
@@ -655,27 +653,21 @@ const TokenDetail = () => {
       fetchUserBets();
     }
   }, [userProfile, id, fetchUserBets]);
-  return (
-    <>
+  return <>
       <OrbitingParticles />
       <Navbar />
       
       <main className="pt-24 min-h-screen px-4 pb-16">
         <div className="max-w-7xl mx-auto">
-          {loading && !token ? (
-            <div className="flex justify-center py-16">
+          {loading && !token ? <div className="flex justify-center py-16">
               <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : !token ? (
-            <div className="glass-panel p-8 text-center">
+            </div> : !token ? <div className="glass-panel p-8 text-center">
               <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
               <p className="text-dream-foreground/70 mb-4">
                 The token you're looking for could not be found or has been removed.
               </p>
               <Button onClick={() => window.history.back()}>Go Back</Button>
-            </div>
-          ) : (
-            <>
+            </div> : <>
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
                 <span>Back to Tokens</span>
@@ -700,18 +692,20 @@ const TokenDetail = () => {
                     <div className="flex items-center text-dream-foreground/70">
                       <span className="mr-2">{token.symbol}</span>
                       <button onClick={() => {
-                        navigator.clipboard.writeText(token.id);
-                        toast({
-                          title: "Copied!",
-                          description: "Token address copied to clipboard"
-                        });
-                      }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
+                    navigator.clipboard.writeText(token.id);
+                    toast({
+                      title: "Copied!",
+                      description: "Token address copied to clipboard"
+                    });
+                  }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
                         {token.id.substring(0, 4)}...{token.id.substring(token.id.length - 4)}
                         <Copy className="w-3 h-3 ml-1" />
                       </button>
                     </div>
                   </div>
                 </div>
+                
+                
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
@@ -758,7 +752,7 @@ const TokenDetail = () => {
                           </div>
                         </div>
                         
-                        <Button className="w-full" variant="green" onClick={() => setShowCreateBet(true)}>
+                        <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
                           Place a Bet
                         </Button>
                       </div>
@@ -856,12 +850,9 @@ const TokenDetail = () => {
               <div className="mb-8">
                 <TokenComments tokenId={id} tokenName={token.name} />
               </div>
-            </>
-          )}
+            </>}
         </div>
       </main>
-    </>
-  );
+    </>;
 };
-
 export default TokenDetail;
