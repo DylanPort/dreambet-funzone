@@ -9,7 +9,6 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-
 interface TrendingToken {
   token_mint: string;
   token_name: string;
@@ -19,7 +18,6 @@ interface TrendingToken {
   moon_bets: number;
   die_bets: number;
 }
-
 const TrendingBetsList = () => {
   const [trendingTokens, setTrendingTokens] = useState<TrendingToken[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +25,6 @@ const TrendingBetsList = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
-
   const scrollLeft = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({
@@ -36,7 +33,6 @@ const TrendingBetsList = () => {
       });
     }
   };
-
   const scrollRight = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({
@@ -45,7 +41,6 @@ const TrendingBetsList = () => {
       });
     }
   };
-
   useEffect(() => {
     const fetchTrendingTokens = async () => {
       setIsLoading(true);
@@ -118,9 +113,7 @@ const TrendingBetsList = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
-
   const visibleTokens = isExpanded ? trendingTokens : trendingTokens.slice(0, 5);
-
   if (isLoading) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <div className="flex justify-center items-center py-8">
@@ -131,7 +124,6 @@ const TrendingBetsList = () => {
         </div>
       </Card>;
   }
-
   if (trendingTokens.length === 0) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <p className="text-center text-dream-foreground/60">
@@ -139,19 +131,16 @@ const TrendingBetsList = () => {
         </p>
       </Card>;
   }
-
   const getHeatColor = (betCount: number) => {
     if (betCount > 10) return "from-amber-500 to-red-500";
     if (betCount > 5) return "from-orange-400 to-amber-500";
     return "from-yellow-400 to-orange-400";
   };
-
   const getHeatText = (betCount: number) => {
     if (betCount > 10) return "Very Hot";
     if (betCount > 5) return "Hot";
     return "Warming Up";
   };
-
   return <>
       <div className="mb-2 overflow-hidden bg-gradient-to-r from-dream-accent3/20 to-dream-accent1/20 rounded-lg border border-dream-accent1/30 backdrop-blur-lg">
         <div className="flex items-center gap-1 px-1">
@@ -227,7 +216,7 @@ const TrendingBetsList = () => {
                             <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                               <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
                                 <span className="text-dream-foreground/60">Total Volume</span>
-                                <span className="font-medium text-dream-accent2">{token.total_amount.toFixed(2)} PXB</span>
+                                <span className="font-medium text-[#59ef02]">{token.total_amount.toFixed(2)} PXB</span>
                               </div>
                               <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
                                 <div className="flex items-center gap-1">
@@ -367,5 +356,4 @@ const TrendingBetsList = () => {
       </Card>
     </>;
 };
-
 export default TrendingBetsList;
