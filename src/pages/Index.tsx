@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -25,11 +26,13 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -70,10 +73,12 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -84,6 +89,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -98,21 +104,6 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
             <div className="text-center md:text-left md:flex-1">
               <AnimatedLogo />
-              
-              {isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
-                  bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
-                  backdrop-blur-[1px] rounded-xl border border-white/5
-                  animate-entrance overflow-hidden
-                  before:content-[''] before:absolute before:inset-0 
-                  before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
-                  before:animate-pulse-glow">
-                  
-                  
-                  
-                  
-                  
-                  
-                </div>}
             </div>
             
             <div className="md:flex-1 flex justify-center mt-8 md:mt-0">
@@ -120,25 +111,8 @@ const Index = () => {
             </div>
           </div>
           
-          {!isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
-              bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
-              backdrop-blur-[1px] rounded-xl border border-white/5
-              animate-entrance overflow-hidden
-              before:content-[''] before:absolute before:inset-0 
-              before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
-              before:animate-pulse-glow">
-              
-              
-              
-              
-              
-              
-            </div>}
-          
           <div className="flex justify-center gap-4 mt-10 mb-16">
             <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
-              
-              
               <Dialog>
                 <DialogTrigger asChild>
                   <div className="flex flex-col items-center transform transition-all duration-500 hover:scale-105 animate-float-delayed">
@@ -210,4 +184,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
