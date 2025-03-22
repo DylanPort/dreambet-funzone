@@ -9,9 +9,10 @@ import PXBOnboarding from '@/components/PXBOnboarding';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
-import { ChevronRight, Upload } from 'lucide-react';
+import { ChevronRight, Upload, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PXBOnboardingProps {
   onClose: () => void;
@@ -30,6 +31,7 @@ const InteractiveTour = () => {
     "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   const {
     userProfile,
@@ -52,6 +54,46 @@ const InteractiveTour = () => {
     if (tourCompleted) {
       setCurrentStep(0);
     }
+
+    // Load video sources from Supabase if available
+    const loadSupabaseVideos = async () => {
+      try {
+        const { data, error } = await supabase
+          .storage
+          .from('tour-videos')
+          .list();
+
+        if (error) {
+          console.error('Error loading videos from Supabase:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const newVideoSources = [...videoSources];
+          
+          for (const file of data) {
+            const stepMatch = file.name.match(/step-(\d+)\./);
+            if (stepMatch) {
+              const stepIndex = parseInt(stepMatch[1], 10) - 1;
+              if (stepIndex >= 0 && stepIndex < newVideoSources.length) {
+                const { data: { publicUrl } } = supabase
+                  .storage
+                  .from('tour-videos')
+                  .getPublicUrl(file.name);
+                
+                newVideoSources[stepIndex] = publicUrl;
+              }
+            }
+          }
+          
+          setVideoSources(newVideoSources);
+        }
+      } catch (error) {
+        console.error('Failed to load videos from Supabase:', error);
+      }
+    };
+
+    loadSupabaseVideos();
   }, []);
   
   const handleNextStep = () => {
@@ -87,7 +129,7 @@ const InteractiveTour = () => {
     }
   };
 
-  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
@@ -96,16 +138,48 @@ const InteractiveTour = () => {
       toast.error("Please upload a video file");
       return;
     }
+
+    setIsUploading(true);
     
-    // Create object URL for the video
-    const objectUrl = URL.createObjectURL(file);
-    
-    // Update the video source for the current step
-    const newVideoSources = [...videoSources];
-    newVideoSources[currentStep] = objectUrl;
-    setVideoSources(newVideoSources);
-    
-    toast.success(`Video uploaded for Step ${currentStep + 1}`);
+    try {
+      // Upload to Supabase storage
+      const fileName = `step-${currentStep + 1}.${file.name.split('.').pop()}`;
+      
+      const { data, error } = await supabase
+        .storage
+        .from('tour-videos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Get the public URL for the uploaded file
+      const { data: { publicUrl } } = supabase
+        .storage
+        .from('tour-videos')
+        .getPublicUrl(fileName);
+      
+      // Update the video sources
+      const newVideoSources = [...videoSources];
+      newVideoSources[currentStep] = publicUrl;
+      setVideoSources(newVideoSources);
+      
+      toast.success(`Video uploaded for Step ${currentStep + 1}`);
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      toast.error("Failed to upload video. Please try again.");
+    } finally {
+      setIsUploading(false);
+      
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const triggerFileInput = () => {
@@ -270,8 +344,8 @@ const InteractiveTour = () => {
               {isMobile ? <ScrollArea className="h-full pr-2">
                   <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
-                      {steps[currentStep].image && steps[currentStep].image.startsWith('/lovable-uploads') ? (
-                        <img src={steps[currentStep].image} alt={steps[currentStep].title} 
+                      {videoSources[currentStep] && videoSources[currentStep].startsWith('/lovable-uploads') ? (
+                        <img src={videoSources[currentStep]} alt={steps[currentStep].title} 
                           className="w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" 
                           style={{
                             transformStyle: 'preserve-3d',
@@ -280,7 +354,7 @@ const InteractiveTour = () => {
                         />
                       ) : (
                         <video 
-                          src={steps[currentStep].image} 
+                          src={videoSources[currentStep]} 
                           className="w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
                           style={{
                             transformStyle: 'preserve-3d',
@@ -297,8 +371,9 @@ const InteractiveTour = () => {
                         size="icon" 
                         className="absolute bottom-0 right-0 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full w-7 h-7 p-1"
                         onClick={triggerFileInput}
+                        disabled={isUploading}
                       >
-                        <Upload className="h-4 w-4" />
+                        {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                       </Button>
                     </div>
                     
@@ -341,9 +416,9 @@ const InteractiveTour = () => {
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(40px)'
               }}>
-                    {steps[currentStep].image && steps[currentStep].image.startsWith('/lovable-uploads') ? (
+                    {videoSources[currentStep] && videoSources[currentStep].startsWith('/lovable-uploads') ? (
                       <img 
-                        src={steps[currentStep].image} 
+                        src={videoSources[currentStep]} 
                         alt={steps[currentStep].title} 
                         className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" 
                         style={{
@@ -353,7 +428,7 @@ const InteractiveTour = () => {
                       />
                     ) : (
                       <video 
-                        src={steps[currentStep].image} 
+                        src={videoSources[currentStep]} 
                         className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
                         style={{
                           transformStyle: 'preserve-3d',
@@ -370,8 +445,9 @@ const InteractiveTour = () => {
                       size="icon" 
                       className="absolute bottom-2 right-2 bg-indigo-900/80 hover:bg-indigo-800 z-10 rounded-full"
                       onClick={triggerFileInput}
+                      disabled={isUploading}
                     >
-                      <Upload className="h-4 w-4" />
+                      {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     </Button>
                   </motion.div>
                   
