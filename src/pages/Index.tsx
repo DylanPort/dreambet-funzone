@@ -18,7 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -26,13 +25,11 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -73,12 +70,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -89,7 +84,6 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -181,7 +175,7 @@ const Index = () => {
             <h2 id="leaderboard" className="text-2xl font-bold text-center mb-8 
                 bg-gradient-to-r from-white via-green-300 to-blue-400 bg-clip-text text-transparent 
                 flex items-center justify-center gap-2 text-shadow-sm filter drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">
-              <img src="/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png" alt="Crown" className="h-16 w-16" />
+              
               
               PXB Leaderboard & Statistics
               
@@ -218,5 +212,4 @@ const Index = () => {
       </footer>
     </>;
 };
-
 export default Index;
