@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -98,15 +97,18 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
                 {mintingPoints ? 'Minting...' : `Mint ${pointAmount} PXB Points`}
               </Button>
               
-              {/* New Playground Button */}
               <div className="mt-6 pt-6 border-t border-white/10">
                 <p className="text-sm text-white/70 mb-3">Ready to use your PXB Points?</p>
                 <Button
                   asChild
                   className="w-full bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700"
                 >
-                  <Link to="/betting">
-                    <Gamepad className="mr-2 h-4 w-4" />
+                  <Link to="/betting" className="flex items-center justify-center">
+                    <img 
+                      src="/lovable-uploads/9152bc22-d941-4ac3-af5a-a48cfb9d7844.png" 
+                      alt="PXB" 
+                      className="h-6 mr-2" 
+                    />
                     Go to Playground
                   </Link>
                 </Button>
