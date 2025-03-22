@@ -406,15 +406,49 @@ export const createSupabaseBet = async (
     else if (prediction === 'die') dbPrediction = 'down';
     else dbPrediction = prediction;
     
-    // Insert the bet
+    // Get the user ID from the wallet address
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet_address', creatorWalletAddress)
+      .maybeSingle();
+    
+    if (userError) {
+      console.error('Error looking up user by wallet address:', userError);
+      throw new Error('Failed to find user by wallet address');
+    }
+    
+    // If no user found, create a record
+    let userId;
+    if (!userData) {
+      // Create user record
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({
+          wallet_address: creatorWalletAddress,
+          points: 0 // Start with 0 points
+        })
+        .select('id')
+        .single();
+      
+      if (createError) {
+        console.error('Error creating user record:', createError);
+        throw new Error('Failed to create user record');
+      }
+      userId = newUser.id;
+    } else {
+      userId = userData.id;
+    }
+    
+    // Insert the bet with the user's UUID instead of wallet address directly
     const { data, error } = await supabase
       .from('bets')
       .insert({
         token_mint: tokenMint,
         token_name: tokenName,
         token_symbol: tokenSymbol,
-        creator: creatorWalletAddress,
-        bettor1_id: creatorWalletAddress,
+        creator: userId, // Use UUID instead of wallet address
+        bettor1_id: userId, // Use UUID instead of wallet address
         prediction_bettor1: dbPrediction,
         duration: durationInSeconds,
         sol_amount: amount,
@@ -440,7 +474,7 @@ export const createSupabaseBet = async (
           .insert({
             bet_id: data.bet_id,
             action: 'created',
-            user_id: creatorWalletAddress,
+            user_id: userId, // Use UUID instead of wallet address
             details: { prediction: dbPrediction, amount: amount },
             market_cap_at_action: tokenData.current_market_cap || 0
           });
@@ -457,7 +491,7 @@ export const createSupabaseBet = async (
       tokenMint: tokenMint,
       tokenName: tokenName,
       tokenSymbol: tokenSymbol,
-      initiator: creatorWalletAddress,
+      initiator: creatorWalletAddress, // Keep using wallet address for frontend
       amount: amount,
       prediction: prediction,
       timestamp: new Date(data.created_at).getTime(),
@@ -568,3 +602,4 @@ export const acceptBet = async (betId: string) => {
     transactionSignature: data.transaction_signature || ''
   };
 };
+
