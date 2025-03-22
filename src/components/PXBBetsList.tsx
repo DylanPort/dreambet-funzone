@@ -1,56 +1,60 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle, ChevronRight } from 'lucide-react';
+import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle, ChevronRight, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { toast } from '@/hooks/use-toast';
 
 const PXBBetsList = () => {
   const { bets, fetchUserBets } = usePXBPoints();
   const [loadingMarketCaps, setLoadingMarketCaps] = useState<Record<string, boolean>>({});
   const [marketCapData, setMarketCapData] = useState<Record<string, { initialMarketCap: number | null, currentMarketCap: number | null }>>({});
   const [showAllBets, setShowAllBets] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     fetchUserBets();
   }, [fetchUserBets]);
 
-  useEffect(() => {
-    const fetchMarketCapData = async () => {
-      if (!bets || bets.length === 0) return;
-
-      for (const bet of bets) {
-        if (!bet.tokenMint) continue;
+  const fetchMarketCapData = async () => {
+    if (!bets || bets.length === 0) return;
+    
+    setIsRefreshing(true);
+    
+    for (const bet of bets) {
+      if (!bet.tokenMint) continue;
+      
+      setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: true }));
+      
+      try {
+        const data = await fetchDexScreenerData(bet.tokenMint);
         
-        if (marketCapData[bet.id]?.currentMarketCap) continue;
-        
-        setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: true }));
-        
-        try {
-          const data = await fetchDexScreenerData(bet.tokenMint);
-          
-          if (data) {
-            setMarketCapData(prev => ({
-              ...prev,
-              [bet.id]: {
-                initialMarketCap: bet.initialMarketCap || data.marketCap,
-                currentMarketCap: data.marketCap
-              }
-            }));
-          }
-        } catch (error) {
-          console.error(`Error fetching data for token ${bet.tokenSymbol}:`, error);
-        } finally {
-          setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: false }));
+        if (data) {
+          setMarketCapData(prev => ({
+            ...prev,
+            [bet.id]: {
+              initialMarketCap: bet.initialMarketCap || data.marketCap,
+              currentMarketCap: data.marketCap
+            }
+          }));
         }
-        
-        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (error) {
+        console.error(`Error fetching data for token ${bet.tokenSymbol}:`, error);
+      } finally {
+        setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: false }));
       }
-    };
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    setIsRefreshing(false);
+  };
 
+  useEffect(() => {
     fetchMarketCapData();
     
     const interval = setInterval(() => {
@@ -61,7 +65,18 @@ const PXBBetsList = () => {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [bets, marketCapData]);
+  }, [bets]);
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    
+    toast({
+      title: "Refreshing market cap data",
+      description: "Fetching the latest market cap information for your bets",
+    });
+    
+    await fetchMarketCapData();
+  };
 
   if (!bets || bets.length === 0) {
     return (
@@ -150,10 +165,22 @@ const PXBBetsList = () => {
 
   return (
     <div className="glass-panel p-6">
-      <h2 className="font-semibold text-lg mb-4 flex items-center">
-        <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
-        Your PXB Bets
-      </h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="font-semibold text-lg flex items-center">
+          <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
+          Your PXB Bets
+        </h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh} 
+          className="flex items-center gap-1"
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /> 
+          <span>Refresh</span>
+        </Button>
+      </div>
       
       <div className="space-y-3">
         {displayedBets.map((bet) => {
