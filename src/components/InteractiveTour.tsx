@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -15,7 +14,6 @@ import { toast } from 'sonner';
 interface PXBOnboardingProps {
   onClose: () => void;
 }
-
 const InteractiveTour = () => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
@@ -28,7 +26,6 @@ const InteractiveTour = () => {
     connected
   } = useWallet();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
   useEffect(() => {
     // Check local storage to see if user has already gone through the tour
     const tourCompleted = localStorage.getItem('pxb-tour-completed');
@@ -36,7 +33,6 @@ const InteractiveTour = () => {
       setCurrentStep(4); // Skip to the end (one less step now)
     }
   }, []);
-  
   const handleNextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -45,13 +41,11 @@ const InteractiveTour = () => {
       localStorage.setItem('pxb-tour-completed', 'true');
     }
   };
-  
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
-  
   const handleClaimPoints = async () => {
     if (!connected) {
       toast.error("Please connect your wallet first!");
@@ -92,9 +86,9 @@ const InteractiveTour = () => {
         </DialogTrigger>
         <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
           <PXBOnboarding onClose={() => {
-            setIsDialogOpen(false);
-            handleNextStep();
-          }} />
+          setIsDialogOpen(false);
+          handleNextStep();
+        }} />
         </DialogContent>
       </Dialog>,
     image: "/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png"
@@ -135,27 +129,22 @@ const InteractiveTour = () => {
   if (isMobile) {
     return null;
   }
-  
-  return (
-    <div className="flex justify-center items-center w-full my-12 mx-auto">
-      <motion.div 
-        className="relative w-[400px] md:w-[600px] h-[300px] md:h-[400px] flex items-center justify-center rounded-2xl overflow-hidden"
-        style={{
-          perspective: '1000px',
-          transformStyle: 'preserve-3d',
-        }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
+  return <div className="flex justify-center items-center w-full my-12 mx-auto">
+      <motion.div className="relative w-[400px] md:w-[600px] h-[300px] md:h-[400px] flex items-center justify-center rounded-2xl overflow-hidden" style={{
+      perspective: '1000px',
+      transformStyle: 'preserve-3d'
+    }} initial={{
+      opacity: 0
+    }} animate={{
+      opacity: 1
+    }} transition={{
+      duration: 0.8
+    }}>
         {/* 3D container with perspective */}
-        <motion.div 
-          className="absolute inset-0 w-full h-full"
-          style={{ 
-            transform: 'rotateX(10deg) rotateY(5deg)',
-            transformStyle: 'preserve-3d',
-          }}
-        >
+        <motion.div className="absolute inset-0 w-full h-full" style={{
+        transform: 'rotateX(10deg) rotateY(5deg)',
+        transformStyle: 'preserve-3d'
+      }}>
           {/* Holographic base panel */}
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/90 to-blue-950/90 
                         backdrop-blur-md rounded-2xl border border-indigo-500/30 shadow-[0_0_15px_rgba(79,70,229,0.3)]
@@ -163,123 +152,110 @@ const InteractiveTour = () => {
             
             {/* Holographic grid lines */}
             <div className="absolute inset-0 opacity-20">
-              <div className="h-full w-full" 
-                style={{
-                  backgroundImage: 'linear-gradient(to right, #4f46e5 1px, transparent 1px), linear-gradient(to bottom, #4f46e5 1px, transparent 1px)',
-                  backgroundSize: '25px 25px',
-                  transform: 'perspective(500px) rotateX(10deg) translateZ(0px)',
-                }}
-              ></div>
+              <div className="h-full w-full" style={{
+              backgroundImage: 'linear-gradient(to right, #4f46e5 1px, transparent 1px), linear-gradient(to bottom, #4f46e5 1px, transparent 1px)',
+              backgroundSize: '25px 25px',
+              transform: 'perspective(500px) rotateX(10deg) translateZ(0px)'
+            }}></div>
             </div>
             
             {/* Animated scan line */}
-            <motion.div 
-              className="absolute h-[2px] w-full bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent"
-              style={{ top: '0%', left: 0 }}
-              animate={{ 
-                top: ['0%', '100%', '0%'],
-              }}
-              transition={{ 
-                duration: 10, 
-                repeat: Infinity,
-                ease: 'linear'
-              }}
-            />
+            <motion.div className="absolute h-[2px] w-full bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" style={{
+            top: '0%',
+            left: 0
+          }} animate={{
+            top: ['0%', '100%', '0%']
+          }} transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: 'linear'
+          }} />
             
             {/* Animated glow spots */}
-            {[...Array(10)].map((_, i) => (
-              <motion.div 
-                key={i}
-                className="absolute rounded-full"
-                style={{
-                  width: Math.random() * 80 + 30,
-                  height: Math.random() * 80 + 30,
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  background: `radial-gradient(circle, rgba(79,70,229,0.3) 0%, rgba(79,70,229,0) 70%)`,
-                  filter: "blur(20px)",
-                  opacity: 0.5,
-                }}
-                animate={{
-                  opacity: [0.2, 0.5, 0.2],
-                  scale: [1, 1.2, 1],
-                }}
-                transition={{
-                  duration: 4 + Math.random() * 4,
-                  repeat: Infinity,
-                  repeatType: "reverse",
-                  ease: "easeInOut",
-                  delay: i * 0.3,
-                }}
-              />
-            ))}
+            {[...Array(10)].map((_, i) => <motion.div key={i} className="absolute rounded-full" style={{
+            width: Math.random() * 80 + 30,
+            height: Math.random() * 80 + 30,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            background: `radial-gradient(circle, rgba(79,70,229,0.3) 0%, rgba(79,70,229,0) 70%)`,
+            filter: "blur(20px)",
+            opacity: 0.5
+          }} animate={{
+            opacity: [0.2, 0.5, 0.2],
+            scale: [1, 1.2, 1]
+          }} transition={{
+            duration: 4 + Math.random() * 4,
+            repeat: Infinity,
+            repeatType: "reverse",
+            ease: "easeInOut",
+            delay: i * 0.3
+          }} />)}
           </div>
           
           {/* Content container with 3D effect */}
           <AnimatePresence mode="wait">
-            <motion.div 
-              key={currentStep}
-              className="relative z-10 text-center p-8 w-full h-full flex flex-col justify-center"
-              style={{ 
-                transformStyle: 'preserve-3d',
-                transform: 'translateZ(20px)',
-              }}
-              initial={{ opacity: 0, y: 20, rotateX: -5 }}
-              animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              exit={{ opacity: 0, y: -20, rotateX: 5 }}
-              transition={{ duration: 0.5 }}
-            >
+            <motion.div key={currentStep} style={{
+            transformStyle: 'preserve-3d',
+            transform: 'translateZ(20px)'
+          }} initial={{
+            opacity: 0,
+            y: 20,
+            rotateX: -5
+          }} animate={{
+            opacity: 1,
+            y: 0,
+            rotateX: 0
+          }} exit={{
+            opacity: 0,
+            y: -20,
+            rotateX: 5
+          }} transition={{
+            duration: 0.5
+          }} className="relative z-10 text-center p-8 w-full h-full flex flex-col justify-center bg-black/65">
               <div className="flex flex-col md:flex-row items-center justify-center gap-6">
                 {/* Step image */}
-                {steps[currentStep].image && (
-                  <motion.div 
-                    className="w-full md:w-1/2 flex justify-center items-center"
-                    style={{ 
-                      transformStyle: 'preserve-3d',
-                      transform: 'translateZ(40px)',
-                    }}
-                  >
-                    <img 
-                      src={steps[currentStep].image} 
-                      alt={steps[currentStep].title} 
-                      className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
-                      style={{ 
-                        transformStyle: 'preserve-3d', 
-                        transform: 'translateZ(10px) rotateY(-5deg)'
-                      }}
-                    />
-                  </motion.div>
-                )}
+                {steps[currentStep].image && <motion.div className="w-full md:w-1/2 flex justify-center items-center" style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(40px)'
+              }}>
+                    <img src={steps[currentStep].image} alt={steps[currentStep].title} className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" style={{
+                  transformStyle: 'preserve-3d',
+                  transform: 'translateZ(10px) rotateY(-5deg)'
+                }} />
+                  </motion.div>}
                 
                 {/* Text content */}
                 <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
                   <div className="mb-4 flex justify-center md:justify-start">
-                    <motion.div 
-                      className="p-3 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]"
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                      style={{ transformStyle: 'preserve-3d', transform: 'translateZ(30px)' }}
-                    >
+                    <motion.div className="p-3 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" whileHover={{
+                    scale: 1.1,
+                    rotate: 5
+                  }} style={{
+                    transformStyle: 'preserve-3d',
+                    transform: 'translateZ(30px)'
+                  }}>
                       {steps[currentStep].icon}
                     </motion.div>
                   </div>
                   
-                  <motion.h2 
-                    className="text-2xl font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent"
-                    style={{ transformStyle: 'preserve-3d', transform: 'translateZ(20px)' }}
-                  >
+                  <motion.h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent" style={{
+                  transformStyle: 'preserve-3d',
+                  transform: 'translateZ(20px)'
+                }}>
                     {steps[currentStep].title}
                   </motion.h2>
                   
-                  <motion.p 
-                    className="text-indigo-200/80 text-sm mb-4"
-                    style={{ transformStyle: 'preserve-3d', transform: 'translateZ(15px)' }}
-                  >
+                  <motion.p className="text-indigo-200/80 text-sm mb-4" style={{
+                  transformStyle: 'preserve-3d',
+                  transform: 'translateZ(15px)'
+                }}>
                     {steps[currentStep].description}
                   </motion.p>
                   
-                  <motion.div
-                    style={{ transformStyle: 'preserve-3d', transform: 'translateZ(25px)' }}
-                  >
+                  <motion.div style={{
+                  transformStyle: 'preserve-3d',
+                  transform: 'translateZ(25px)'
+                }}>
                     {steps[currentStep].action}
                   </motion.div>
                 </div>
@@ -287,46 +263,28 @@ const InteractiveTour = () => {
               
               <div className="mt-6 flex justify-center space-x-2">
                 {/* Tour navigation dots */}
-                {steps.map((_, index) => (
-                  <motion.button
-                    key={index}
-                    className={`w-2.5 h-2.5 rounded-full transition-all ${
-                      currentStep === index 
-                        ? 'bg-indigo-400 scale-125' 
-                        : 'bg-gray-600 hover:bg-gray-500'
-                    }`}
-                    onClick={() => setCurrentStep(index)}
-                    aria-label={`Go to step ${index + 1}`}
-                    whileHover={{ scale: 1.2 }}
-                    style={{ transformStyle: 'preserve-3d', transform: 'translateZ(20px)' }}
-                  />
-                ))}
+                {steps.map((_, index) => <motion.button key={index} className={`w-2.5 h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400 scale-125' : 'bg-gray-600 hover:bg-gray-500'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
+                scale: 1.2
+              }} style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(20px)'
+              }} />)}
               </div>
               
               <div className="absolute bottom-4 right-4 flex space-x-2">
-                {currentStep > 0 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-white/70 hover:text-white hover:bg-indigo-600/30 z-10"
-                    onClick={handlePrevStep}
-                    style={{ transformStyle: 'preserve-3d', transform: 'translateZ(20px)' }}
-                  >
+                {currentStep > 0 && <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-indigo-600/30 z-10" onClick={handlePrevStep} style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(20px)'
+              }}>
                     Back
-                  </Button>
-                )}
+                  </Button>}
                 
-                {currentStep < steps.length - 1 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-white hover:bg-indigo-600/30 z-10"
-                    onClick={handleNextStep}
-                    style={{ transformStyle: 'preserve-3d', transform: 'translateZ(20px)' }}
-                  >
+                {currentStep < steps.length - 1 && <Button variant="ghost" size="sm" className="text-white hover:bg-indigo-600/30 z-10" onClick={handleNextStep} style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(20px)'
+              }}>
                     Skip
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </motion.div>
           </AnimatePresence>
@@ -345,8 +303,6 @@ const InteractiveTour = () => {
           </div>
         </motion.div>
       </motion.div>
-    </div>
-  );
+    </div>;
 };
-
 export default InteractiveTour;
