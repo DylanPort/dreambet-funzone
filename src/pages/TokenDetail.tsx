@@ -9,19 +9,19 @@ import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Us
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import CreateBetForm from '@/components/CreateBetForm';
-import BetCard from '@/components/BetCard';
 import { useToast } from '@/hooks/use-toast';
 import { usePumpPortalWebSocket, getLatestPriceFromTrades, formatRawTrade, RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
 import TokenMarketCap from '@/components/TokenMarketCap';
 import TokenVolume from '@/components/TokenVolume';
-import TokenComments from '@/components/TokenComments';
 import PriceChart from '@/components/PriceChart';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
+import BetCardComponent from '@/components/BetCard';
+import TokenCommentsComponent from '@/components/TokenComments';
 
 const TokenChart = ({
   tokenId,
@@ -125,43 +125,6 @@ const TokenChart = ({
         </div>
       </div>
     </div>;
-};
-
-const BetCard = ({ bet, connected, publicKeyString, onAcceptBet }) => {
-  return (
-    <div className="glass-panel p-6 mb-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-display font-bold">{bet.tokenSymbol}</h2>
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-dream-foreground/70">Status:</span>
-            <span className="text-sm text-dream-foreground">{bet.status}</span>
-          </div>
-          <div className="flex gap-2">
-            {bet.status === 'open' && (
-              <Button variant="ghost" size="sm" onClick={() => onAcceptBet(bet)}>
-                Accept
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="text-lg text-dream-foreground/70">
-        {bet.amount} SOL bet on {bet.tokenSymbol}
-      </div>
-    </div>
-  );
-};
-
-const TokenComments = ({ tokenId, tokenName }) => {
-  return (
-    <div className="glass-panel p-6 mb-4">
-      <h2 className="text-xl font-display font-bold">Comments</h2>
-      <div className="text-lg text-dream-foreground/70">
-        No comments yet.
-      </div>
-    </div>
-  );
 };
 
 const TokenDetail = () => {
@@ -773,8 +736,15 @@ const TokenDetail = () => {
               </div>
 
               <div className="flex flex-col gap-4">
-                <BetCard bet={newActiveBet} connected={connected} publicKeyString={publicKeyString} onAcceptBet={handleAcceptBet} />
-                <TokenComments tokenId={id} tokenName={token.name} />
+                {newActiveBet && (
+                  <BetCardComponent 
+                    bet={newActiveBet} 
+                    connected={connected} 
+                    publicKeyString={publicKey ? publicKey.toString() : null} 
+                    onAcceptBet={handleAcceptBet} 
+                  />
+                )}
+                <TokenCommentsComponent tokenId={id} tokenName={token.name} />
               </div>
             </>
           )}
