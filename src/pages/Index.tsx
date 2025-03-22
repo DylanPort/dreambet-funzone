@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
@@ -108,7 +107,7 @@ const Index = () => {
                 <InteractiveTour />
               </div>
               
-              <div className="w-full md:w-1/2 flex justify-center">
+              <div className="hidden md:flex md:w-1/2 justify-center">
                 <FuturisticTokenDisplay tokens={latestTokens} />
               </div>
             </div>
