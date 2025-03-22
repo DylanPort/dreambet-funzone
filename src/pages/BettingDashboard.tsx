@@ -7,6 +7,7 @@ import WalletConnectButton from '@/components/WalletConnectButton';
 import MigratingTokenList from '@/components/MigratingTokenList';
 import OpenBetsList from '@/components/OpenBetsList';
 import TrendingBetsList from '@/components/TrendingBetsList';
+import SearchedTokensReel from '@/components/SearchedTokensReel';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import TokenSearchBar from '@/components/TokenSearchBar';
 import { useToast } from '@/hooks/use-toast';
@@ -90,8 +91,13 @@ const BettingDashboard = () => {
               </div>}
           </section>
           
-          <div className="mb-4">
+          <div className="mb-6">
             <TrendingBetsList />
+          </div>
+          
+          {/* Add the SearchedTokensReel component here */}
+          <div className="mb-6">
+            <SearchedTokensReel />
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">

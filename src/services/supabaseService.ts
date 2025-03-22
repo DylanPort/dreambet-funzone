@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
 
@@ -33,6 +32,112 @@ export const fetchTokenById = async (tokenMint: string) => {
   }
   
   return data;
+};
+
+// Token Search Tracking functions
+export interface SearchedToken {
+  id: string;
+  token_mint: string;
+  token_name: string;
+  token_symbol: string;
+  search_count: number;
+  first_searched_at: string;
+  last_searched_at: string;
+}
+
+export const trackTokenSearch = async (tokenMint: string, tokenName: string, tokenSymbol: string) => {
+  try {
+    console.log(`Tracking search for token: ${tokenName} (${tokenMint})`);
+    
+    // Check if this token has been searched before
+    const { data: existingSearch, error: searchError } = await supabase
+      .from('token_searches')
+      .select('id, search_count')
+      .eq('token_mint', tokenMint)
+      .maybeSingle();
+    
+    if (searchError) {
+      console.error('Error checking token search:', searchError);
+      return;
+    }
+    
+    if (existingSearch) {
+      // Update existing search record
+      const { error: updateError } = await supabase
+        .from('token_searches')
+        .update({ 
+          search_count: existingSearch.search_count + 1,
+          last_searched_at: new Date().toISOString()
+        })
+        .eq('id', existingSearch.id);
+      
+      if (updateError) {
+        console.error('Error updating token search count:', updateError);
+      }
+    } else {
+      // Create new search record
+      const { error: insertError } = await supabase
+        .from('token_searches')
+        .insert({
+          token_mint: tokenMint,
+          token_name: tokenName,
+          token_symbol: tokenSymbol,
+          search_count: 1,
+          first_searched_at: new Date().toISOString(),
+          last_searched_at: new Date().toISOString()
+        });
+      
+      if (insertError) {
+        console.error('Error creating token search record:', insertError);
+      }
+    }
+  } catch (error) {
+    console.error('Error in trackTokenSearch:', error);
+  }
+};
+
+export const fetchTopSearchedTokens = async (limit = 10) => {
+  try {
+    console.log(`Fetching top ${limit} searched tokens`);
+    
+    const { data, error } = await supabase
+      .from('token_searches')
+      .select('*')
+      .order('search_count', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error('Error fetching top searched tokens:', error);
+      throw error;
+    }
+    
+    return data as SearchedToken[];
+  } catch (error) {
+    console.error('Error in fetchTopSearchedTokens:', error);
+    return [];
+  }
+};
+
+export const fetchRecentlySearchedTokens = async (limit = 10) => {
+  try {
+    console.log(`Fetching ${limit} recently searched tokens`);
+    
+    const { data, error } = await supabase
+      .from('token_searches')
+      .select('*')
+      .order('last_searched_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error('Error fetching recently searched tokens:', error);
+      throw error;
+    }
+    
+    return data as SearchedToken[];
+  } catch (error) {
+    console.error('Error in fetchRecentlySearchedTokens:', error);
+    return [];
+  }
 };
 
 // Trending tokens function
@@ -463,4 +568,3 @@ export const acceptBet = async (betId: string) => {
     transactionSignature: data.transaction_signature || ''
   };
 };
-

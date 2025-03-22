@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X, Loader2, ExternalLink, Sparkle, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { searchTokenFromSolanaTracker } from '@/services/solanaTrackerService';
+import { trackTokenSearch } from '@/services/supabaseService';
 import { toast } from "sonner";
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+
 const TokenSearchBar: React.FC = () => {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -21,6 +23,7 @@ const TokenSearchBar: React.FC = () => {
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
   const handleSearch = async () => {
     setToken(null);
     setError(null);
@@ -44,20 +47,27 @@ const TokenSearchBar: React.FC = () => {
       setError("An error occurred during search. Please try again.");
     }
   };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
+
   const navigateToToken = () => {
     if (token) {
       navigate(`/token/${token.address}`);
+      
+      // Track this token search
+      trackTokenSearch(token.address, token.name, token.symbol);
+      
       setQuery('');
       setToken(null);
       setIsFocused(false);
       toast.success(`Navigating to ${token.name}`);
     }
   };
+
   const clearSearch = () => {
     setQuery('');
     setToken(null);
@@ -66,6 +76,7 @@ const TokenSearchBar: React.FC = () => {
       inputRef.current.focus();
     }
   };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -86,6 +97,7 @@ const TokenSearchBar: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
   return <div className="relative z-20 max-w-xl w-full mx-auto">
       <div className={cn("flex items-center relative group/search transition-all duration-300 rounded-xl", isFocused ? "shadow-[0_0_15px_rgba(116,66,255,0.4)]" : "shadow-none")}>
         <div className={cn("absolute inset-0 rounded-xl overflow-hidden transition-opacity duration-300", isFocused ? "opacity-100" : "opacity-0")}>
@@ -193,4 +205,5 @@ const TokenSearchBar: React.FC = () => {
       </AnimatePresence>
     </div>;
 };
+
 export default TokenSearchBar;

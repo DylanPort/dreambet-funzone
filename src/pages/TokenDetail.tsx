@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
-import { fetchTokenById } from '@/services/supabaseService';
+import { fetchTokenById, trackTokenSearch } from '@/services/supabaseService';
 import { fetchBetsByToken, acceptBet } from '@/api/mockData';
 import { Bet, BetStatus } from '@/types/bet';
 import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, ArrowUpRight, ArrowDownRight, HelpCircle, CheckCircle, XCircle, Copy } from 'lucide-react';
@@ -211,6 +211,7 @@ const TokenDetail = () => {
       try {
         setLoading(true);
         console.log("Loading token with ID:", id);
+        
         try {
           const cachedPrice = localStorage.getItem(`token_price_${id}`);
           if (cachedPrice) {
@@ -348,6 +349,7 @@ const TokenDetail = () => {
             description: "This appears to be a very new token. Limited information is available.",
             variant: "default"
           });
+          trackTokenSearch(id, tokenName, tokenSymbol);
         } else {
           toast({
             title: "Token not found",
@@ -883,4 +885,3 @@ const TokenDetail = () => {
 };
 
 export default TokenDetail;
-
