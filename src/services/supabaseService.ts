@@ -1,6 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetPrediction, BetStatus } from "@/types/bet";
-import { SearchedToken } from "@/types/token-search";
 
 // User related functions
 export const getCurrentUser = async () => {
@@ -464,79 +464,3 @@ export const acceptBet = async (betId: string) => {
   };
 };
 
-// Function to track token searches
-export const trackTokenSearch = async (tokenMint: string, tokenName: string, tokenSymbol: string) => {
-  try {
-    // Check if token exists in token_searches table
-    const { data: existingSearch, error } = await supabase
-      .from('token_searches')
-      .select('search_count')
-      .eq('token_mint', tokenMint)
-      .maybeSingle();
-    
-    if (existingSearch) {
-      // Increment search count
-      await supabase
-        .from('token_searches')
-        .update({ 
-          search_count: existingSearch.search_count + 1,
-          last_searched_at: new Date().toISOString()
-        })
-        .eq('token_mint', tokenMint);
-    } else {
-      // Insert new record
-      await supabase
-        .from('token_searches')
-        .insert({
-          token_mint: tokenMint,
-          token_name: tokenName,
-          token_symbol: tokenSymbol,
-          search_count: 1
-        });
-    }
-  } catch (error) {
-    console.error('Error tracking token search:', error);
-  }
-};
-
-// Function to fetch top searched tokens
-export const fetchTopSearchedTokens = async (limit = 10): Promise<SearchedToken[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('token_searches')
-      .select('*')
-      .order('search_count', { ascending: false })
-      .limit(limit);
-    
-    if (error) {
-      console.error('Error fetching top searched tokens:', error);
-      throw error;
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error('Error in fetchTopSearchedTokens:', error);
-    return [];
-  }
-};
-
-// Function to fetch recently searched tokens
-export const fetchRecentlySearchedTokens = async (limit = 10): Promise<SearchedToken[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('token_searches')
-      .select('*')
-      .order('last_searched_at', { ascending: false })
-      .limit(limit);
-    
-    if (error) {
-      console.error('Error fetching recently searched tokens:', error);
-      throw error;
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error('Error in fetchRecentlySearchedTokens:', error);
-    return [];
-  }
-};
