@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
+import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -12,6 +11,7 @@ const PXBBetsList = () => {
   const { bets, fetchUserBets } = usePXBPoints();
   const [loadingMarketCaps, setLoadingMarketCaps] = useState<Record<string, boolean>>({});
   const [marketCapData, setMarketCapData] = useState<Record<string, { initialMarketCap: number | null, currentMarketCap: number | null }>>({});
+  const [showAllBets, setShowAllBets] = useState(false);
 
   useEffect(() => {
     fetchUserBets();
@@ -138,6 +138,8 @@ const PXBBetsList = () => {
     return null;
   };
 
+  const displayedBets = showAllBets ? bets : bets.slice(0, 2);
+
   return (
     <div className="glass-panel p-6">
       <h2 className="font-semibold text-lg mb-4 flex items-center">
@@ -146,7 +148,7 @@ const PXBBetsList = () => {
       </h2>
       
       <div className="space-y-3">
-        {bets.map((bet) => {
+        {displayedBets.map((bet) => {
           const isActive = bet.status === 'pending';
           const expiryDate = new Date(bet.expiresAt);
           const timeLeft = isActive ? formatDistanceToNow(expiryDate, { addSuffix: true }) : '';
@@ -307,6 +309,16 @@ const PXBBetsList = () => {
             </Link>
           );
         })}
+        
+        {bets.length > 2 && !showAllBets && (
+          <Button 
+            variant="outline" 
+            className="w-full mt-3 flex justify-center items-center"
+            onClick={() => setShowAllBets(true)}
+          >
+            View All Bets <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
