@@ -41,13 +41,24 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
   });
 
   useEffect(() => {
-    // Check authentication status on mount and when userProfile changes
+    // More reliable authentication check
     const checkAuthStatus = async () => {
+      if (userProfile && userProfile.id) {
+        console.log('User profile found with ID:', userProfile.id);
+        setIsAuthenticated(true);
+        return;
+      }
+      
       try {
         const { data } = await supabase.auth.getSession();
         const hasSession = !!data.session;
         console.log('Auth check - has session:', hasSession);
-        setIsAuthenticated(hasSession && !!userProfile);
+        
+        if (hasSession) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
       } catch (error) {
         console.error('Error checking auth status:', error);
         setIsAuthenticated(false);
@@ -108,6 +119,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     setLoading(true);
     
     try {
+      // Use the userProfile.id directly
       const creatorId = userProfile.id;
       
       if (!creatorId) {
@@ -121,16 +133,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       
       console.log('Creating bounty with creator ID:', creatorId);
       
-      // Verify session before submission
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        console.log('No active session, refreshing the page might help');
-        toast.error('Your session has expired. Please refresh the page and try again.');
-        setLoading(false);
-        return;
-      }
-      
-      // Create bounty with verified session
+      // Create bounty directly with userProfile.id
       const { data, error } = await supabase
         .from('bounties')
         .insert({
@@ -169,6 +172,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     }
   };
 
+  // Only show auth warning if we're really sure there's no profile
   const showAuthWarning = !userProfile && !isAuthenticated;
 
   return (
