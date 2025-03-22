@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle, Users } from 'lucide-react';
@@ -23,6 +24,7 @@ interface PXBCreateBountyFormProps {
 const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -40,12 +42,19 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
 
   useEffect(() => {
     const checkAuth = async () => {
+      setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         console.warn('No active session found. User may need to authenticate with Supabase.');
+        setIsAuthenticated(false);
+        toast.error('Please connect your wallet to create a bounty', {
+          duration: 5000,
+        });
       } else {
         console.log('Authenticated session found:', session.user.id);
+        setIsAuthenticated(true);
       }
+      setLoading(false);
     };
     
     checkAuth();
@@ -89,6 +98,11 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       return;
     }
     
+    if (!isAuthenticated) {
+      toast.error('Please connect your wallet and sign in to create a bounty');
+      return;
+    }
+    
     if (!formData.title || !formData.description || !formData.projectName) {
       toast.error('Please fill in all required fields');
       return;
@@ -99,7 +113,9 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        throw new Error('No active Supabase session. Please sign in.');
+        toast.error('Please connect your wallet and sign in to create a bounty');
+        setLoading(false);
+        return;
       }
       
       if (userProfile.id !== session.user.id) {
@@ -151,6 +167,12 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
 
   return (
     <form onSubmit={handleSubmit}>
+      {!isAuthenticated && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500">
+          <p className="font-medium">Please connect your wallet and sign in to create a bounty.</p>
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-6 md:col-span-2">
           <h2 className="text-xl font-semibold text-dream-foreground flex items-center gap-2">
@@ -356,7 +378,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       <div className="mt-10 flex justify-end">
         <Button 
           type="submit" 
-          disabled={loading}
+          disabled={loading || !isAuthenticated}
           className="gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 px-8"
         >
           {loading ? (
