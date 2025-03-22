@@ -84,7 +84,7 @@ const Navbar = () => {
             {pxbPoints !== null && pxbPoints > 0 ? <div className="glass-panel relative overflow-hidden py-1 px-2 flex items-center gap-1 text-yellow-400 group animate-pulse-subtle">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300 py-[-7px]"></div>
                 <div className="w-5 h-5 flex items-center justify-center">
-                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                  <img alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" src="/lovable-uploads/d1c82b81-d141-4bf8-a3d8-7cdbbe82785a.png" />
                 </div>
                 <span className="relative z-10 text-xs">{pxbPoints.toLocaleString()} PXB</span>
               </div> : userProfile && <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400/70">
