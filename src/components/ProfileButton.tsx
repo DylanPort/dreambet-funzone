@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -11,6 +11,8 @@ const ProfileButton = () => {
   const { userProfile, addPointsToUser } = usePXBPoints();
   const { publicKey, connected } = useWallet();
   const [hasClaimedBonus, setHasClaimedBonus] = useState(false);
+  const location = useLocation();
+  const isActive = location.pathname === '/profile';
   
   // Show username if available, otherwise show wallet address or default text
   const displayName = userProfile?.username || 
@@ -42,7 +44,7 @@ const ProfileButton = () => {
     <Link to="/profile" onClick={handleProfileClick}>
       <Button 
         variant="ghost"
-        className="flex items-center gap-2 text-white transition-all duration-300 hover:bg-white/10"
+        className={`flex items-center gap-2 transition-all duration-300 hover:bg-white/10 ${isActive ? 'text-green-400' : 'text-white/90 hover:text-white'}`}
       >
         <div className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-r from-dream-accent1/20 to-dream-accent3/20">
           <img 
@@ -51,7 +53,7 @@ const ProfileButton = () => {
             className="w-full h-full object-contain"
           />
         </div>
-        <span className="text-white/90 hover:text-white">{connected ? displayName : 'Profile'}</span>
+        <span>{connected ? displayName : 'Profile'}</span>
       </Button>
     </Link>
   );

@@ -8,6 +8,7 @@ import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -21,6 +22,7 @@ const Navbar = () => {
     fetchUserProfile
   } = usePXBPoints();
   const [pxbPoints, setPxbPoints] = useState<number | null>(null);
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -32,14 +34,17 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
   useEffect(() => {
     if (userProfile) {
       setPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
+
   useEffect(() => {
     if (!userProfile) return;
     const channel = supabase.channel('public:users').on('postgres_changes', {
@@ -58,6 +63,7 @@ const Navbar = () => {
       supabase.removeChannel(channel);
     };
   }, [userProfile, fetchUserProfile]);
+
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-1.5">
@@ -66,13 +72,13 @@ const Navbar = () => {
           </Link>
           
           <nav className="hidden md:flex space-x-4 items-center">
-            <Link to="/betting" className={`nav-link flex items-center gap-1 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+            <Link to="/betting" className={`nav-link flex items-center gap-1 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-green-400' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
               </div>
               <span className="text-sm">Playground</span>
             </Link>
-            <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+            <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1 ${location.pathname === '/betting/my-bets' ? 'text-green-400' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105">
                 <img alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" src="/lovable-uploads/f4f0715a-b593-4250-b09f-b31137657bf2.png" />
               </div>
@@ -120,20 +126,20 @@ const Navbar = () => {
             <Link to="/" className="flex items-center justify-center mb-2">
               <img src="/lovable-uploads/c1eb3c6e-eec2-4e22-957e-f11585370fb6.png" alt="PumpXBounty" className="h-10 filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" />
             </Link>
-            <Link to="/betting" className={`py-1 flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
+            <Link to="/betting" className={`py-1 flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-green-400' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
               </div>
               <span className="text-sm">Playground</span>
             </Link>
-            <Link to="/betting/my-bets" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
+            <Link to="/betting/my-bets" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-green-400' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/f4f0715a-b593-4250-b09f-b31137657bf2.png" alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" />
               </div>
               <span className="text-sm">PXB Space</span>
             </Link>
             
-            <Link to="/profile" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/profile' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
+            <Link to="/profile" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/profile' ? 'text-green-400' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
                 <img src="/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png" alt="Profile" className="w-full h-full object-cover" />
               </div>
@@ -166,4 +172,6 @@ const Navbar = () => {
         </div>}
     </header>;
 };
+
 export default Navbar;
+
