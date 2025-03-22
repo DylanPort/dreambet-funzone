@@ -8,11 +8,13 @@ import useSolanaBalance from '@/hooks/useSolanaBalance';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const isMobile = useIsMobile();
   const {
     balance
   } = useSolanaBalance();
@@ -104,9 +106,21 @@ const Navbar = () => {
             <WalletConnectButton />
           </nav>
           
-          <button className="md:hidden text-dream-foreground" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="md:hidden flex items-center gap-3">
+            {/* Mobile PXB Points display */}
+            {userProfile && pxbPoints !== null && (
+              <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400">
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                </div>
+                <span className="text-xs">{pxbPoints.toLocaleString()}</span>
+              </div>
+            )}
+            
+            <button className="text-dream-foreground" onClick={() => setIsOpen(!isOpen)}>
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
       
@@ -116,11 +130,11 @@ const Navbar = () => {
               <div className="w-8 h-8 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
               </div>
-              <span className="text-sm">Betting</span>
+              <span className="text-sm">Playground</span>
             </Link>
             <Link to="/betting/my-bets" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 flex items-center justify-center transition-transform hover:scale-105">
-                <img src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" />
+                <img src="/lovable-uploads/f4f0715a-b593-4250-b09f-b31137657bf2.png" alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" />
               </div>
               <span className="text-sm">PXB Space</span>
             </Link>
