@@ -72,7 +72,7 @@ const Navbar = () => {
             <img 
               src="/lovable-uploads/a2975835-e669-4129-b2d9-c4ec405cf5c5.png" 
               alt="PumpBounty" 
-              className="h-10"
+              className="h-12" // Changed from h-10 to h-12 to increase size
             />
           </Link>
           
