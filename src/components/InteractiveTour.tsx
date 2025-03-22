@@ -336,15 +336,7 @@ const InteractiveTour = () => {
               {isMobile ? <ScrollArea className="h-full pr-2">
                   <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
-                      {videoSources[currentStep] && videoSources[currentStep].startsWith('/lovable-uploads') ? (
-                        <img src={videoSources[currentStep]} alt={steps[currentStep].title} 
-                          className="w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" 
-                          style={{
-                            transformStyle: 'preserve-3d',
-                            transform: 'translateZ(10px) rotateY(-5deg)'
-                          }} 
-                        />
-                      ) : (
+                      {videoSources[currentStep] ? (
                         <video 
                           src={videoSources[currentStep]} 
                           className="w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
@@ -357,6 +349,10 @@ const InteractiveTour = () => {
                           muted 
                           playsInline
                         />
+                      ) : (
+                        <div className="w-[100px] h-[100px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30">
+                          <Upload className="w-8 h-8 text-indigo-400/50" />
+                        </div>
                       )}
                       <Button 
                         variant="outline" 
@@ -408,17 +404,7 @@ const InteractiveTour = () => {
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(40px)'
               }}>
-                    {videoSources[currentStep] && videoSources[currentStep].startsWith('/lovable-uploads') ? (
-                      <img 
-                        src={videoSources[currentStep]} 
-                        alt={steps[currentStep].title} 
-                        className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" 
-                        style={{
-                          transformStyle: 'preserve-3d',
-                          transform: 'translateZ(10px) rotateY(-5deg)'
-                        }} 
-                      />
-                    ) : (
+                    {videoSources[currentStep] ? (
                       <video 
                         src={videoSources[currentStep]} 
                         className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
@@ -431,6 +417,10 @@ const InteractiveTour = () => {
                         muted 
                         playsInline
                       />
+                    ) : (
+                      <div className="w-[200px] h-[150px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30">
+                        <Upload className="w-12 h-12 text-indigo-400/50" />
+                      </div>
                     )}
                     <Button 
                       variant="outline" 
