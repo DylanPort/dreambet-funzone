@@ -28,6 +28,10 @@ const InteractiveTour = () => {
     connected
   } = useWallet();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
+  const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
+  const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   useEffect(() => {
     setCurrentStep(0);

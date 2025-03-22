@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,7 @@ const PXBWallet: React.FC = () => {
   const [isClaiming, setIsClaiming] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
-  const COOLDOWN_TIME = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+  const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
 
   useEffect(() => {
     if (userProfile && generatePxbId) {
@@ -205,7 +204,6 @@ const PXBWallet: React.FC = () => {
     );
   }
 
-  // Check if wallet is connected first, regardless of userProfile
   if (!connected) {
     return (
       <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
@@ -214,7 +212,6 @@ const PXBWallet: React.FC = () => {
     );
   }
   
-  // Now we can check for userProfile separately
   if (!userProfile) {
     return (
       <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
@@ -399,7 +396,7 @@ const PXBWallet: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-bold mb-2 text-white">Daily PXB Points</h3>
                 <p className="text-indigo-300/70">
-                  Claim free PXB points once every 6 hours
+                  Claim free PXB points once every 48 hours
                 </p>
               </div>
               
