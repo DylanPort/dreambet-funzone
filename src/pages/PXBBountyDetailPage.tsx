@@ -59,10 +59,9 @@ const PXBBountyDetailPage = () => {
     if (id) {
       fetchBounty(id);
       fetchSubmissions(id);
-      // Increment view count
       supabase.rpc('increment_bounty_views', { bounty_id: id }).then(() => {
         console.log("View count incremented");
-      }).catch(error => {
+      }).catch((error: Error) => {
         console.error("Error incrementing view count:", error);
       });
     }
@@ -70,7 +69,6 @@ const PXBBountyDetailPage = () => {
 
   useEffect(() => {
     if (bounty) {
-      // Format the end date
       const endDate = new Date(bounty.end_date);
       setFormattedDate(endDate.toLocaleDateString('en-US', {
         year: 'numeric',
@@ -78,7 +76,6 @@ const PXBBountyDetailPage = () => {
         day: 'numeric'
       }));
       
-      // Calculate time left
       const updateTimeLeft = () => {
         const now = new Date();
         const end = new Date(bounty.end_date);
@@ -101,7 +98,7 @@ const PXBBountyDetailPage = () => {
       };
       
       updateTimeLeft();
-      const interval = setInterval(updateTimeLeft, 60000); // Update every minute
+      const interval = setInterval(updateTimeLeft, 60000);
       
       return () => clearInterval(interval);
     }
@@ -119,7 +116,6 @@ const PXBBountyDetailPage = () => {
         throw error;
       }
       
-      // Type assertion to match our Bounty type
       const typedBounty: Bounty = {
         ...data,
         status: data.status as 'open' | 'closed' | 'expired'
@@ -127,7 +123,6 @@ const PXBBountyDetailPage = () => {
       
       setBounty(typedBounty);
       
-      // Check if the current user is the creator
       if (userProfile && data.creator_id === userProfile.id) {
         setIsCreator(true);
       } else {
@@ -154,7 +149,6 @@ const PXBBountyDetailPage = () => {
         throw error;
       }
       
-      // Type assertion to match our Submission type
       const typedSubmissions: Submission[] = data?.map(sub => ({
         ...sub,
         status: sub.status as 'pending' | 'approved' | 'rejected'
@@ -162,7 +156,6 @@ const PXBBountyDetailPage = () => {
       
       setSubmissions(typedSubmissions);
       
-      // Check if the current user has a submission
       if (userProfile) {
         const userSub = typedSubmissions.find(sub => sub.submitter_id === userProfile.id) || null;
         setUserSubmission(userSub);
@@ -192,7 +185,6 @@ const PXBBountyDetailPage = () => {
       
       toast.success('Submission approved! PXB points awarded to the user.');
       
-      // Refresh submissions
       fetchSubmissions(bounty.id);
     } catch (error) {
       console.error('Error approving submission:', error);
@@ -220,7 +212,6 @@ const PXBBountyDetailPage = () => {
       
       toast.success('Submission rejected');
       
-      // Refresh submissions
       fetchSubmissions(bounty.id);
     } catch (error) {
       console.error('Error rejecting submission:', error);
