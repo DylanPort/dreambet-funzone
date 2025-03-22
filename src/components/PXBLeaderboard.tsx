@@ -1,12 +1,15 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Trophy, Medal, User, ArrowUp, Flame, Star } from 'lucide-react';
+import { Trophy, Medal, User, ArrowUp, Flame, Star, BarChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const PXBLeaderboard: React.FC = () => {
   const { leaderboard, fetchLeaderboard, userProfile } = usePXBPoints();
   const [animate, setAnimate] = useState(false);
+  const [leaderboardTab, setLeaderboardTab] = useState<'points' | 'winrate'>('points');
 
   useEffect(() => {
     fetchLeaderboard();
@@ -16,6 +19,13 @@ const PXBLeaderboard: React.FC = () => {
     
     return () => clearTimeout(timer);
   }, [fetchLeaderboard]);
+
+  // This is a placeholder for winrate data - in a real implementation
+  // this would be fetched from your backend
+  const winrateLeaderboard = leaderboard.map(user => ({
+    ...user,
+    winRate: Math.round(Math.random() * 100) // Replace with actual win rate data
+  })).sort((a, b) => b.winRate - a.winRate);
 
   const getLeaderIcon = (position: number) => {
     switch(position) {
@@ -53,17 +63,10 @@ const PXBLeaderboard: React.FC = () => {
     }
   };
 
-  return (
-    <div className="glass-panel p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-green-500/5 to-yellow-500/5 animate-gradient-move"></div>
-      
-      <div className="flex items-center mb-4 relative z-10">
-        <Trophy className="w-6 h-6 mr-2 text-yellow-400 animate-bob" />
-        <h2 className="text-xl font-bold bg-gradient-to-r from-green-400 via-yellow-300 to-orange-500 bg-clip-text text-transparent">Leaderboard</h2>
-      </div>
-      
+  const renderLeaderboardContent = (data: any[], valueKey: string, valueLabel: string) => (
+    <ScrollArea className="h-[320px] pr-4">
       <div className="space-y-3">
-        {leaderboard.map((trader, index) => {
+        {data.map((trader, index) => {
           const isCurrentUser = trader.id === userProfile?.id;
           
           return (
@@ -104,7 +107,7 @@ const PXBLeaderboard: React.FC = () => {
                     index === 2 ? "text-orange-500" : 
                     "text-green-400"
                   )}>
-                    {trader.pxbPoints} PXB
+                    {valueKey === 'winRate' ? `${trader[valueKey]}%` : `${trader[valueKey]} ${valueLabel}`}
                   </div>
                 </div>
               </div>
@@ -125,7 +128,7 @@ const PXBLeaderboard: React.FC = () => {
           );
         })}
 
-        {leaderboard.length === 0 && (
+        {data.length === 0 && (
           <div className="text-center py-4 text-dream-foreground/60">
             <p className="animate-pulse">No data yet. Be the first on the leaderboard!</p>
             <div className="mt-2 w-32 h-32 mx-auto opacity-20">
@@ -134,6 +137,36 @@ const PXBLeaderboard: React.FC = () => {
           </div>
         )}
       </div>
+    </ScrollArea>
+  );
+
+  return (
+    <div className="glass-panel p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-green-500/5 to-yellow-500/5 animate-gradient-move"></div>
+      
+      <div className="flex items-center mb-4 relative z-10">
+        <Trophy className="w-6 h-6 mr-2 text-yellow-400 animate-bob" />
+        <h2 className="text-xl font-bold bg-gradient-to-r from-green-400 via-yellow-300 to-orange-500 bg-clip-text text-transparent">Leaderboard</h2>
+      </div>
+      
+      <Tabs defaultValue="points" className="w-full" onValueChange={(value) => setLeaderboardTab(value as 'points' | 'winrate')}>
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="points" className="flex items-center gap-1">
+            <Star className="w-4 h-4" /> PXB Points
+          </TabsTrigger>
+          <TabsTrigger value="winrate" className="flex items-center gap-1">
+            <BarChart className="w-4 h-4" /> Win Rate
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="points" className="mt-0">
+          {renderLeaderboardContent(leaderboard, 'pxbPoints', 'PXB')}
+        </TabsContent>
+        
+        <TabsContent value="winrate" className="mt-0">
+          {renderLeaderboardContent(winrateLeaderboard, 'winRate', '')}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
