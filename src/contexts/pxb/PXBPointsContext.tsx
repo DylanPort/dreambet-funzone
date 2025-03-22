@@ -35,7 +35,13 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const { leaderboard, fetchLeaderboard } = useLeaderboardData();
   
   // Set up operations
-  const { mintPoints, placeBet, sendPoints, generatePxbId } = usePointOperations(
+  const { 
+    mintPoints, 
+    placeBet, 
+    sendPoints, 
+    generatePxbId,
+    mintingPoints // Get the mintingPoints state from usePointOperations
+  } = usePointOperations(
     userProfile,
     setUserProfile,
     setBets,
@@ -88,7 +94,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fetchUserProfile,
         fetchUserBets,
         fetchLeaderboard,
-        addPointsToUser
+        addPointsToUser,
+        mintingPoints // Expose the mintingPoints state
       }}
     >
       {children}

@@ -8,6 +8,11 @@ import { Bet, BetPrediction } from '@/types/bet';
 import { createSupabaseBet } from '@/services/supabaseService';
 import { toast } from 'sonner';
 
+// Constants for minting limits
+const MINT_LIMIT_PER_PERIOD = 2000; // Max tokens per period
+const MINT_PERIOD_HOURS = 24; // Period in hours
+const MINT_PERIOD_MS = MINT_PERIOD_HOURS * 60 * 60 * 1000; // Period in milliseconds
+
 export const usePointOperations = (
   userProfile: UserProfile | null,
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>,
@@ -24,18 +29,46 @@ export const usePointOperations = (
       return;
     }
 
+    if (amount <= 0) {
+      toast.error('Amount must be greater than zero');
+      return;
+    }
+
     const walletAddress = publicKey.toString();
     
     setMintingPoints(true);
     try {
-      // Check if the wallet has already minted points before
-      const mintedWallets = JSON.parse(localStorage.getItem('pxbMintedWallets') || '{}');
+      // Get minting history for this wallet in the last 24 hours
+      const now = new Date();
+      const periodStart = new Date(now.getTime() - MINT_PERIOD_MS);
       
-      // Allow multiple mints - removing the restriction
-      // if (mintedWallets[walletAddress]) {
-      //   toast.error('You have already minted your free PXB points');
-      //   return;
-      // }
+      const { data: mintHistory, error: historyError } = await supabase
+        .from('points_history')
+        .select('amount')
+        .eq('user_id', userProfile.id)
+        .eq('action', 'mint')
+        .gte('created_at', periodStart.toISOString());
+        
+      if (historyError) {
+        console.error('Error fetching mint history:', historyError);
+        toast.error('Failed to check minting history');
+        return;
+      }
+      
+      // Calculate how much has been minted in the current period
+      const mintedInPeriod = mintHistory?.reduce((total, record) => total + record.amount, 0) || 0;
+      const remainingAllowance = MINT_LIMIT_PER_PERIOD - mintedInPeriod;
+      
+      if (remainingAllowance <= 0) {
+        toast.error(`You've reached your minting limit of ${MINT_LIMIT_PER_PERIOD} PXB per ${MINT_PERIOD_HOURS} hours`);
+        return;
+      }
+      
+      // If requested amount exceeds remaining allowance, limit it
+      const mintAmount = Math.min(amount, remainingAllowance);
+      if (mintAmount < amount) {
+        toast.info(`You can only mint ${mintAmount} more PXB within this ${MINT_PERIOD_HOURS}-hour period`);
+      }
       
       // Get the current user profile to ensure we have the latest data
       const { data: userData, error: fetchError } = await supabase
@@ -51,7 +84,7 @@ export const usePointOperations = (
       }
       
       const currentPoints = userData?.points || userProfile.pxbPoints;
-      const newPointsTotal = currentPoints + amount;
+      const newPointsTotal = currentPoints + mintAmount;
       
       // Update the points in the database
       const { data, error } = await supabase
@@ -68,22 +101,19 @@ export const usePointOperations = (
 
       console.log('Points updated in database:', data);
 
-      // Add record to points history
-      const { error: historyError } = await supabase.from('points_history').insert({
+      // Add record to points history with a timestamp
+      const { error: historyError2 } = await supabase.from('points_history').insert({
         user_id: userProfile.id,
-        amount: amount,
+        amount: mintAmount,
         action: 'mint',
-        reference_id: `mint_${Date.now()}`  // Use timestamp to make each mint unique
+        reference_id: `mint_${Date.now()}_${uuidv4().substring(0, 8)}`,  // Use timestamp and UUID to make each mint unique
+        created_at: new Date().toISOString()
       });
 
-      if (historyError) {
-        console.error('Error recording points history:', historyError);
+      if (historyError2) {
+        console.error('Error recording points history:', historyError2);
         // Continue anyway since the points were already added
       }
-
-      // Mark this wallet as having minted
-      mintedWallets[walletAddress] = true;
-      localStorage.setItem('pxbMintedWallets', JSON.stringify(mintedWallets));
 
       // Update the user profile with new points
       setUserProfile({
@@ -91,7 +121,11 @@ export const usePointOperations = (
         pxbPoints: newPointsTotal
       });
       
-      toast.success(`Successfully minted ${amount} PXB points!`);
+      if (mintAmount === amount) {
+        toast.success(`Successfully minted ${mintAmount} PXB points!`);
+      } else {
+        toast.success(`Successfully minted ${mintAmount} PXB points! (Limit reached)`);
+      }
 
     } catch (error) {
       console.error('Error in mintPoints:', error);
@@ -310,6 +344,7 @@ export const usePointOperations = (
     mintPoints,
     placeBet,
     sendPoints,
-    generatePxbId
+    generatePxbId,
+    mintingPoints // Expose the mintingPoints state
   };
 };

@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
-import { X, Settings } from 'lucide-react';
+import { X, Settings, Info } from 'lucide-react';
 import TourVideoManager from './TourVideoManager';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PXBOnboardingProps {
   onClose?: () => void;
@@ -14,7 +15,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
   const { userProfile, mintPoints, mintingPoints } = usePXBPoints();
   const [showTour, setShowTour] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [pointAmount, setPointAmount] = useState(100);
+  const [pointAmount, setPointAmount] = useState(2000);
 
   const tourSteps = [
     { id: 'welcome', title: 'Welcome to PXB', description: 'Introduction to the PXB platform' },
@@ -73,7 +74,21 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
           )}
           
           {userProfile && (
-            <div className="mt-8">
+            <div className="mt-8 space-y-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-center mb-1">
+                      <p className="text-sm text-white/70">Daily Limit: 2000 PXB</p>
+                      <Info className="w-4 h-4 ml-1 text-white/50" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-sm">You can mint up to 2000 PXB tokens every 24 hours</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
               <Button 
                 onClick={handleMintPoints}
                 disabled={mintingPoints}
