@@ -32,7 +32,7 @@ import { toast } from "sonner";
 
 const WebsiteTour = () => {
   const [activeSlide, setActiveSlide] = useState(0);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "center", draggable: false });
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "center" });
   const [progress, setProgress] = useState(0);
   const [xp, setXp] = useState(0);
   const [achievements, setAchievements] = useState<string[]>([]);
