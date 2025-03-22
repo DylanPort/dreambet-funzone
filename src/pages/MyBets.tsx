@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -160,8 +159,8 @@ const PXBSpace = () => {
                 {/* Referral Section */}
                 <div className="glass-panel p-6">
                   <h2 className="font-semibold text-lg mb-4 flex items-center">
-                    <Users className="mr-2 h-5 w-5 text-dream-accent3" />
-                    Referral Program
+                    <img src="/lovable-uploads/e1b33d2f-7fd6-471b-802e-f18d0c0b7155.png" alt="Referral" className="mr-2 h-6 w-6" />
+                    <span className="text-dream-success font-bold">Referral Program</span>
                   </h2>
                   
                   <div className="space-y-4">
