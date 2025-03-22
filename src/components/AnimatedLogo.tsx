@@ -6,7 +6,7 @@ import WebsiteTour from './WebsiteTour';
 const AnimatedLogo = () => {
   const isMobile = useIsMobile();
   
-  // Return the WebsiteTour component for both mobile and desktop
+  // Return the enhanced WebsiteTour component for both mobile and desktop
   return <WebsiteTour />;
 };
 
