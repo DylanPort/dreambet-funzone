@@ -1,277 +1,402 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { usePumpPortalWebSocket, formatRawTrade, getLatestPriceFromTrades } from '@/services/pumpPortalWebSocketService';
-import { ArrowUp, ArrowDown, ExternalLink, Zap } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useIsMobile } from '@/hooks/use-mobile';
 
-const RecentTokenTrades = () => {
-  const [latestTokens, setLatestTokens] = useState<any[]>([]);
-  const [visibleTokens, setVisibleTokens] = useState<any[]>([]);
-  const pumpPortal = usePumpPortalWebSocket();
-  const [filter, setFilter] = useState<'all' | 'up' | 'down'>('all');
+import React, { useState, useEffect } from 'react';
+import { usePumpPortal } from '@/hooks/usePumpPortal';
+import { ArrowUpRight, ArrowDownRight, Clock, TrendingUp, User, Users, Layers, DollarSign, Loader2, ExternalLink } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { BetPrediction, BetStatus } from '@/types/bet';
+import { formatDistanceToNow } from 'date-fns';
+import { Progress } from '@/components/ui/progress';
+import { fetchTokenMetrics } from '@/services/tokenDataCache';
+
+const RecentTokenTrades: React.FC = () => {
+  const { isConnected } = usePumpPortal();
+  const [displayLimit, setDisplayLimit] = useState(5);
   const isMobile = useIsMobile();
-  const [loadingMore, setLoadingMore] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const initialScrollMadeRef = useRef(false);
-  
-  useEffect(() => {
-    let allTokens: any[] = [];
-    
-    if (pumpPortal.recentTrades) {
-      Object.keys(pumpPortal.recentTrades).forEach(tokenId => {
-        const trades = pumpPortal.recentTrades[tokenId];
-        trades.forEach((trade, index) => {
-          const formattedTrade = formatRawTrade(trade);
-          if (formattedTrade) {
-            // Only add the most recent trade for this token
-            if (index === 0) {
-              allTokens.push(formattedTrade);
-            }
-          }
-        });
-      });
+  const [recentBets, setRecentBets] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const pageSize = 5;
+  const navigate = useNavigate();
+  const [marketCapData, setMarketCapData] = useState<Record<string, { initialMarketCap: number | null, currentMarketCap: number | null }>>({});
+  const [loadingProgress, setLoadingProgress] = useState<Record<string, boolean>>({});
+
+  const formatTimeAgo = (timestamp: string) => {
+    try {
+      const date = new Date(timestamp);
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (e) {
+      return 'recently';
     }
+  };
+
+  const fetchRecentBets = async (pageNum = 0, append = false) => {
+    const loadingState = append ? setIsLoadingMore : setIsLoading;
+    loadingState(true);
     
-    if (pumpPortal.rawTokens) {
-      pumpPortal.rawTokens.forEach(token => {
-        if (!allTokens.some(t => t.tokenMint === token.mint)) {
-          allTokens.push({
-            tokenMint: token.mint,
-            tokenName: token.name || 'Unknown Token',
-            tokenSymbol: token.symbol || '',
-            price: token.price || 0,
-            time: new Date().toISOString(),
-            type: Math.random() > 0.5 ? 'buy' : 'sell',
-            amount: Math.random() * 5,
-            change24h: (Math.random() * 40) - 20
-          });
+    try {
+      const { data, error } = await supabase
+        .from('bets')
+        .select(`
+          bet_id,
+          token_mint,
+          tokens (token_name, token_symbol),
+          creator,
+          prediction_bettor1,
+          sol_amount,
+          status,
+          created_at,
+          percentage_change,
+          initial_market_cap
+        `)
+        .order('created_at', { ascending: false })
+        .range(pageNum * pageSize, (pageNum * pageSize) + pageSize - 1);
+      
+      if (error) {
+        console.error('Error fetching recent bets:', error);
+        return;
+      }
+      
+      if (data.length < pageSize) {
+        setHasMore(false);
+      }
+      
+      const formattedBets = data.map(bet => {
+        let predictionDisplay: string;
+        if (bet.prediction_bettor1 === 'up') {
+          predictionDisplay = 'MOON';
+        } else if (bet.prediction_bettor1 === 'down') {
+          predictionDisplay = 'DIE';
+        } else {
+          predictionDisplay = bet.prediction_bettor1.toUpperCase();
         }
-      });
-    }
-    
-    if (pumpPortal.recentTokens) {
-      pumpPortal.recentTokens.forEach(token => {
-        if (!allTokens.some(t => t.tokenMint === token.token_mint)) {
-          const tokenMint = token.token_mint;
-          
-          if (pumpPortal.recentTrades[tokenMint] && pumpPortal.recentTrades[tokenMint].length > 0) {
-            const latestPrice = getLatestPriceFromTrades(pumpPortal.recentTrades[tokenMint]);
-            
-            allTokens.push({
-              tokenMint,
-              tokenName: token.token_name || 'Unknown Token',
-              tokenSymbol: token.token_symbol || '',
-              price: latestPrice || 0,
-              time: new Date().toISOString(),
-              type: Math.random() > 0.5 ? 'buy' : 'sell',
-              amount: Math.random() * 5,
-              change24h: (Math.random() * 40) - 20
-            });
-          }
-        }
-      });
-    }
-    
-    // Sort by time, most recent first
-    allTokens.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-    
-    // Filter by type if needed
-    if (filter !== 'all') {
-      allTokens = allTokens.filter(token => {
-        if (filter === 'up' && token.type === 'buy') return true;
-        if (filter === 'down' && token.type === 'sell') return false;
-        return false;
-      });
-    }
-    
-    // Keep only the most recent 30 tokens
-    allTokens = allTokens.slice(0, 30);
-    
-    setLatestTokens(allTokens);
-    
-    // Initially show only 5 tokens or all if fewer than 5
-    setVisibleTokens(allTokens.slice(0, 5));
-  }, [pumpPortal.recentTrades, pumpPortal.rawTokens, pumpPortal.recentTokens, filter]);
-  
-  const loadMoreTokens = () => {
-    setLoadingMore(true);
-    
-    // Add the next 5 tokens, or all remaining if fewer than 5
-    const currentCount = visibleTokens.length;
-    const nextBatch = latestTokens.slice(currentCount, currentCount + 5);
-    
-    // Simulate a loading delay
-    setTimeout(() => {
-      setVisibleTokens(prev => [...prev, ...nextBatch]);
-      setLoadingMore(false);
-    }, 500);
-  };
-  
-  const handleFilterChange = (newFilter: 'all' | 'up' | 'down') => {
-    setFilter(newFilter);
-    // Reset visible tokens when filter changes
-    setVisibleTokens([]);
-    
-    // Allow the effect to recompute tokens before scrolling
-    setTimeout(() => {
-      initialScrollMadeRef.current = false;
-    }, 100);
-  };
-  
-  const formatPrice = (price: number) => {
-    if (price < 0.01) return price.toFixed(6);
-    if (price < 1) return price.toFixed(4);
-    if (price < 1000) return price.toFixed(2);
-    return price.toLocaleString('en-US', { maximumFractionDigits: 2 });
-  };
-  
-  const formatTokenSymbol = (symbol: string) => {
-    return symbol || 'Unknown';
-  };
-  
-  const getPriceChangeClass = (change: number) => {
-    return change >= 0 ? 'text-green-400' : 'text-red-400';
-  };
-  
-  const formatTimeAgo = (timeString: string) => {
-    const date = new Date(timeString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    if (diffInSeconds < 60) {
-      return `${diffInSeconds}s ago`;
-    } else if (diffInSeconds < 3600) {
-      return `${Math.floor(diffInSeconds / 60)}m ago`;
-    } else if (diffInSeconds < 86400) {
-      return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    } else {
-      return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    }
-  };
-  
-  return (
-    <div ref={containerRef} className="w-full rounded-xl overflow-hidden backdrop-blur-sm glass-panel border border-white/10">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-display font-bold">Recent Token Activity</h2>
-          
-          <div className="flex space-x-2">
-            <button 
-              onClick={() => handleFilterChange('all')} 
-              className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                filter === 'all' 
-                  ? 'bg-dream-accent2/20 text-dream-accent2 border border-dream-accent2/30' 
-                  : 'bg-dream-foreground/5 text-dream-foreground/70 hover:bg-dream-foreground/10'
-              }`}
-            >
-              All
-            </button>
-            <button 
-              onClick={() => handleFilterChange('up')} 
-              className={`px-3 py-1 rounded-md text-sm transition-colors flex items-center ${
-                filter === 'up' 
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                  : 'bg-dream-foreground/5 text-dream-foreground/70 hover:bg-dream-foreground/10'
-              }`}
-            >
-              <ArrowUp className="w-3 h-3 mr-1" />
-              MOON
-            </button>
-            <button 
-              onClick={() => handleFilterChange('down')} 
-              className={`px-3 py-1 rounded-md text-sm transition-colors flex items-center ${
-                filter === 'down' 
-                  ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                  : 'bg-dream-foreground/5 text-dream-foreground/70 hover:bg-dream-foreground/10'
-              }`}
-            >
-              <ArrowDown className="w-3 h-3 mr-1" />
-              DUST
-            </button>
-          </div>
-        </div>
         
-        <div className="space-y-4">
-          {visibleTokens.map((token, index) => (
-            <div 
-              key={`${token.tokenMint}-${index}`} 
-              className="relative overflow-hidden group backdrop-blur-sm bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all duration-300"
-            >
-              <Link to={`/token/${token.tokenMint}`} className="block p-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-lg font-bold border border-white/10">
-                      {formatTokenSymbol(token.tokenSymbol).charAt(0)}
-                    </div>
-                    
-                    <div>
-                      <div className="font-medium">{token.tokenName}</div>
-                      <div className="text-sm text-dream-foreground/60">{formatTokenSymbol(token.tokenSymbol)}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="font-medium">${formatPrice(token.price)}</div>
-                    <div className={`text-sm ${getPriceChangeClass(token.change24h)}`}>
-                      {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-2 flex justify-between items-center">
-                  <div className={`flex items-center text-sm ${token.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                    {token.type === 'buy' ? (
-                      <>
-                        <ArrowUp className="w-3 h-3 mr-1" />
-                        MOON
-                      </>
-                    ) : (
-                      <>
-                        <ArrowDown className="w-3 h-3 mr-1" />
-                        DUST
-                      </>
-                    )}
-                    <span className="ml-1 text-white/60">{token.amount.toFixed(2)} SOL</span>
-                  </div>
-                  
-                  <div className="text-sm text-dream-foreground/60">
-                    {formatTimeAgo(token.time)}
-                  </div>
-                </div>
-                
-                <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/70 to-dream-accent3/0 w-0 group-hover:w-full transition-all duration-500"></div>
-              </Link>
-            </div>
-          ))}
-          
-          {visibleTokens.length === 0 && (
-            <div className="text-center py-6 text-dream-foreground/60">
-              No tokens found for the selected filter.
-            </div>
-          )}
-          
-          {visibleTokens.length > 0 && visibleTokens.length < latestTokens.length && (
-            <div className="mt-4 text-center">
-              <button 
-                onClick={loadMoreTokens} 
-                disabled={loadingMore}
-                className="px-4 py-2 bg-dream-accent2/20 text-dream-accent2 rounded-md hover:bg-dream-accent2/30 transition-colors"
-              >
-                {loadingMore ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-dream-accent2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Loading...
-                  </span>
-                ) : (
-                  'Load More'
-                )}
-              </button>
-            </div>
-          )}
+        return {
+          id: bet.bet_id,
+          tokenMint: bet.token_mint,
+          tokenName: bet.tokens?.token_name || 'Unknown Token',
+          tokenSymbol: bet.tokens?.token_symbol || 'UNKNOWN',
+          creator: bet.creator || 'Unknown',
+          amount: bet.sol_amount,
+          prediction: bet.prediction_bettor1,
+          predictionDisplay,
+          percentageChange: bet.percentage_change || 0,
+          timestamp: bet.created_at,
+          status: bet.status,
+          initialMarketCap: bet.initial_market_cap
+        };
+      });
+      
+      if (append) {
+        setRecentBets(prev => [...prev, ...formattedBets]);
+      } else {
+        setRecentBets(formattedBets);
+      }
+
+      // Fetch market cap data for each bet
+      formattedBets.forEach(bet => {
+        fetchBetMarketCapData(bet);
+      });
+    } catch (error) {
+      console.error('Error in fetchRecentBets:', error);
+    } finally {
+      loadingState(false);
+    }
+  };
+
+  const fetchBetMarketCapData = async (bet: any) => {
+    if (!bet.tokenMint || marketCapData[bet.id]?.currentMarketCap) return;
+    
+    setLoadingProgress(prev => ({ ...prev, [bet.id]: true }));
+    
+    try {
+      const metrics = await fetchTokenMetrics(bet.tokenMint);
+      
+      if (metrics && metrics.marketCap !== null) {
+        setMarketCapData(prev => ({
+          ...prev,
+          [bet.id]: {
+            initialMarketCap: bet.initialMarketCap || metrics.marketCap,
+            currentMarketCap: metrics.marketCap
+          }
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching market cap data for token ${bet.tokenSymbol}:`, error);
+    } finally {
+      setLoadingProgress(prev => ({ ...prev, [bet.id]: false }));
+    }
+  };
+
+  const calculateProgress = (bet: any) => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    const currentMarketCap = marketCapData[bet.id]?.currentMarketCap;
+    
+    if (!initialMarketCap || !currentMarketCap) {
+      return 0;
+    }
+    
+    if (bet.status !== 'open') {
+      return bet.status === 'won' ? 100 : 0;
+    }
+    
+    const percentageChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
+    const targetChange = bet.percentageChange || 30; // Default to 30% if not specified
+    
+    if (bet.prediction === 'up') {
+      if (percentageChange < 0) return 0;
+      return Math.min(100, (percentageChange / targetChange) * 100);
+    } else {
+      if (percentageChange > 0) return 0;
+      return Math.min(100, (Math.abs(percentageChange) / targetChange) * 100);
+    }
+  };
+
+  useEffect(() => {
+    if (isConnected) {
+      fetchRecentBets();
+      
+      const interval = setInterval(() => fetchRecentBets(), 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isConnected]);
+
+  const handleShowMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await fetchRecentBets(nextPage, true);
+  };
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000000) {
+      return `${(num / 1000000000).toFixed(2)}B`;
+    }
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(2)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(2)}K`;
+    }
+    return num.toFixed(2);
+  };
+
+  const handleNavigateToBetting = () => {
+    navigate('/betting');
+  };
+
+  // Format market cap values
+  const formatMarketCap = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return "N/A";
+    
+    if (value >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(2)}B`;
+    }
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(2)}M`;
+    }
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(2)}K`;
+    }
+    return `$${value.toFixed(2)}`;
+  };
+
+  // Calculate target market cap based on prediction and percentage change
+  const calculateTargetMarketCap = (bet: any) => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    if (!initialMarketCap) return null;
+    
+    const percentageChange = bet.percentageChange || 30; // Default to 30% if not specified
+    
+    if (bet.prediction === 'up') {
+      return initialMarketCap * (1 + percentageChange / 100);
+    } else {
+      return initialMarketCap * (1 - percentageChange / 100);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-dream-foreground/5 backdrop-blur-sm p-4 rounded-lg border border-dream-accent1/20">
+        <div className="text-center py-4">
+          <p className="text-dream-foreground/60">Loading recent bets...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="bg-dream-foreground/5 backdrop-blur-sm p-4 rounded-lg border border-dream-accent1/20">
+        <div className="text-center py-4">
+          <p className="text-dream-foreground/60">Connecting to Pump Portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (recentBets.length === 0) {
+    return (
+      <div className="bg-dream-foreground/5 backdrop-blur-sm rounded-lg border border-dream-accent1/20 overflow-hidden">
+        <div className="p-4 border-b border-dream-accent1/20 flex justify-between items-center">
+          <h3 className="font-display font-semibold text-lg">
+            New Bets
+          </h3>
+        </div>
+        <div className="p-4 text-center">
+          <p className="text-dream-foreground/60">No recent bets found</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-dream-foreground/5 backdrop-blur-sm rounded-lg border border-dream-accent1/20 overflow-hidden">
+      <div className="p-4 border-b border-dream-accent1/20 flex justify-between items-center">
+        <h3 className="font-display font-semibold text-lg">
+          New Bets
+        </h3>
+        <div className="flex items-center gap-2">
+          <span className="text-purple-400 text-xs flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+            Live from PumpXBounty
+          </span>
+        </div>
+      </div>
+      
+      <ScrollArea className="max-h-[400px]">
+        <div className="divide-y divide-dream-accent1/10">
+          {recentBets.map((bet, index) => (
+            <Link 
+              key={`bet-${bet.id}`} 
+              to={`/token/${bet.tokenMint}`}
+              className="block"
+            >
+              <div className="p-4 hover:bg-dream-accent1/5 transition-colors">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <div className="font-medium text-dream-foreground flex items-center gap-1">
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">{bet.tokenName}</span>
+                      <span className="text-xs text-dream-foreground/60">{bet.tokenSymbol}</span>
+                    </div>
+                    <div className="text-xs text-dream-foreground/60 flex items-center gap-2 mt-1">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatTimeAgo(bet.timestamp)}
+                      </span>
+                      {bet.status && (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                          bet.status === 'open' ? 'bg-green-500/20 text-green-400' : 
+                          bet.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-dream-foreground/20 text-dream-foreground/60'
+                        }`}>
+                          {bet.status.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 bg-dream-accent1/10 text-dream-accent1 text-xs px-2 py-1 rounded">
+                    <span className="font-mono font-medium">{bet.amount} PXB</span>
+                  </div>
+                </div>
+                
+                <div className="mb-3 mt-2">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-dream-foreground/60">Progress</span>
+                    <div className="flex space-x-2">
+                      <span className="text-dream-foreground/60">
+                        Initial: {formatMarketCap(bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap)}
+                      </span>
+                      <span className="text-dream-foreground/60">→</span>
+                      <span className="text-green-400">
+                        Target: {formatMarketCap(calculateTargetMarketCap(bet))}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {loadingProgress[bet.id] ? (
+                    <div className="h-2 bg-black/30 backdrop-blur-sm rounded-full animate-pulse"></div>
+                  ) : (
+                    <Progress 
+                      value={calculateProgress(bet)} 
+                      className="h-2 bg-black/30 backdrop-blur-sm" 
+                    />
+                  )}
+                  
+                  <div className="flex justify-between text-xs mt-1">
+                    <span className="text-dream-foreground/60">
+                      Current: {formatMarketCap(marketCapData[bet.id]?.currentMarketCap)}
+                    </span>
+                    <span className={`${bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'} font-medium`}>
+                      {calculateProgress(bet).toFixed(1)}% complete
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                  <div className="bg-dream-foreground/5 p-2 rounded flex items-center justify-between">
+                    <span className="text-dream-foreground/60 flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      Bettor
+                    </span>
+                    <span className="font-medium truncate max-w-[100px]" title={bet.creator}>
+                      {bet.creator.substring(0, 6)}...{bet.creator.substring(bet.creator.length - 4)}
+                    </span>
+                  </div>
+                  
+                  <div className={`bg-dream-foreground/5 p-2 rounded flex items-center justify-between ${
+                    bet.prediction === 'up' ? 'border-l-2 border-green-400' : 'border-l-2 border-red-400'
+                  }`}>
+                    <span className="text-dream-foreground/60 flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" />
+                      Prediction
+                    </span>
+                    <span className={`font-medium ${
+                      bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {bet.predictionDisplay}
+                    </span>
+                  </div>
+                  
+                  {bet.percentageChange > 0 && (
+                    <div className="bg-dream-foreground/5 p-2 rounded flex items-center justify-between">
+                      <span className="text-dream-foreground/60 flex items-center gap-1">
+                        <Layers className="w-3 h-3" />
+                        Target
+                      </span>
+                      <span className="font-medium">
+                        {bet.percentageChange}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-2 text-xs">
+                  <div className="truncate text-dream-foreground/40">
+                    {bet.tokenMint}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </ScrollArea>
+      
+      <div className="p-3 text-center border-t border-dream-accent1/20">
+        <button 
+          onClick={handleNavigateToBetting}
+          className="text-dream-accent1 text-sm hover:underline flex items-center justify-center gap-2 w-full"
+        >
+          View all bets
+          <ExternalLink className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
