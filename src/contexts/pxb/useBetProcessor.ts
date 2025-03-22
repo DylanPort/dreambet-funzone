@@ -30,6 +30,10 @@ export const useBetProcessor = (
         if (now >= expiresAt) {
           console.log(`Processing expired bet ${bet.id} for token ${bet.tokenSymbol}`);
           
+          // Show processing notification
+          const toastId = `processing-bet-${bet.id}`;
+          toast.loading(`Processing your bet on ${bet.tokenSymbol}...`, { id: toastId });
+          
           // Get the current market cap from DexScreener
           let tokenData;
           let currentMarketCap;
@@ -40,9 +44,10 @@ export const useBetProcessor = (
             currentMarketCap = tokenData?.marketCap;
           } catch (fetchError) {
             console.error(`Unable to fetch current market cap for ${bet.tokenSymbol}:`, fetchError);
+            // Continue with processing but don't show the error toast
             // If we have initial market cap but no current, use a fallback approach
             if (initialMarketCap === 0) {
-              // Silently continue without showing an error toast
+              toast.error(`Could not process bet for ${bet.tokenSymbol} - insufficient data`, { id: toastId });
               continue;
             }
             // If we have initial data, use last known market cap or estimate
@@ -51,7 +56,7 @@ export const useBetProcessor = (
           
           if (!currentMarketCap) {
             console.error(`Current market cap not available for ${bet.tokenSymbol}`);
-            // Silently continue without showing an error toast
+            toast.error(`Could not process bet for ${bet.tokenSymbol} - insufficient data`, { id: toastId });
             continue;
           }
           
@@ -85,6 +90,7 @@ export const useBetProcessor = (
             
           if (betUpdateError) {
             console.error(`Error updating bet ${bet.id}:`, betUpdateError);
+            toast.error(`Error updating bet for ${bet.tokenSymbol}`, { id: toastId });
             continue;
           }
           
@@ -120,6 +126,7 @@ export const useBetProcessor = (
               
             if (userUpdateError) {
               console.error(`Error updating user points for bet ${bet.id}:`, userUpdateError);
+              toast.error(`Error awarding points for ${bet.tokenSymbol} bet`, { id: toastId });
               continue;
             }
             
@@ -130,10 +137,11 @@ export const useBetProcessor = (
             });
             
             // Show win notification
-            toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points from the house.`);
+            toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points from the house.`, { id: toastId });
           } else {
             // Show loss notification with a less alarming tone
             toast(`Your bet on ${bet.tokenSymbol} didn't win this time.`, {
+              id: toastId,
               description: `Your ${bet.betAmount} PXB Points have returned to the house supply. Market cap changed by ${actualChange.toFixed(2)}%, which didn't meet your ${bet.percentageChange}% prediction.`
             });
           }
@@ -172,7 +180,8 @@ export const useBetProcessor = (
         }
       } catch (error) {
         console.error(`Error processing bet ${bet.id}:`, error);
-        // No toast for general processing errors
+        // Only show general processing errors, not specific market cap errors
+        toast.error(`Error processing bet: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   }, [bets, userProfile, setUserProfile, setBets]);

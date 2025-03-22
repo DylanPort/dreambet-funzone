@@ -25,8 +25,7 @@ export const useLeaderboardData = () => {
         id: user.id,
         username: user.username || user.wallet_address.substring(0, 8),
         pxbPoints: user.points,
-        createdAt: user.created_at,
-        wallet_address: user.wallet_address // Adding the wallet_address property
+        createdAt: user.created_at
       }));
       
       setLeaderboard(formattedLeaderboard);
@@ -39,7 +38,6 @@ export const useLeaderboardData = () => {
 
   return {
     leaderboard,
-    isLoading,
     fetchLeaderboard
   };
 };

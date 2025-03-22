@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
