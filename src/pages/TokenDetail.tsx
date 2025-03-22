@@ -655,21 +655,27 @@ const TokenDetail = () => {
       fetchUserBets();
     }
   }, [userProfile, id, fetchUserBets]);
-  return <>
+  return (
+    <>
       <OrbitingParticles />
       <Navbar />
       
       <main className="pt-24 min-h-screen px-4 pb-16">
         <div className="max-w-7xl mx-auto">
-          {loading && !token ? <div className="flex justify-center py-16">
+          {loading && !token ? (
+            <div className="flex justify-center py-16">
               <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
-            </div> : !token ? <div className="glass-panel p-8 text-center">
+            </div>
+          ) : !token ? (
+            <div className="glass-panel p-8 text-center">
               <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
               <p className="text-dream-foreground/70 mb-4">
                 The token you're looking for could not be found or has been removed.
               </p>
               <Button onClick={() => window.history.back()}>Go Back</Button>
-            </div> : <>
+            </div>
+          ) : (
+            <>
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
                 <span>Back to Tokens</span>
@@ -851,9 +857,11 @@ const TokenDetail = () => {
                 <TokenComments tokenId={id} tokenName={token.name} />
               </div>
             </>
+          )}
         </div>
       </main>
-    </>;
+    </>
+  );
 };
 
 export default TokenDetail;
