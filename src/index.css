@@ -80,32 +80,6 @@
     animation: flip 1s cubic-bezier(0.455, 0.03, 0.515, 0.955) forwards;
   }
 
-  @keyframes flip-next {
-    0% {
-      transform: perspective(1000px) rotateY(0);
-    }
-    100% {
-      transform: perspective(1000px) rotateY(90deg);
-    }
-  }
-
-  @keyframes flip-prev {
-    0% {
-      transform: perspective(1000px) rotateY(0);
-    }
-    100% {
-      transform: perspective(1000px) rotateY(-90deg);
-    }
-  }
-
-  .animate-flip-next {
-    animation: flip-next 0.6s cubic-bezier(0.455, 0.03, 0.515, 0.955) forwards;
-  }
-
-  .animate-flip-prev {
-    animation: flip-prev 0.6s cubic-bezier(0.455, 0.03, 0.515, 0.955) forwards;
-  }
-
   /* Other existing animations */
   @keyframes shine {
     0% {
