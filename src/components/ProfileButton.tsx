@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -9,6 +9,7 @@ import { User } from 'lucide-react';
 const ProfileButton = () => {
   const { userProfile } = usePXBPoints();
   const { publicKey } = useWallet();
+  const location = useLocation();
   
   // Show username if available, otherwise show wallet address or default text
   const displayName = userProfile?.username || 
@@ -18,7 +19,9 @@ const ProfileButton = () => {
     <Link to="/profile">
       <Button 
         variant="ghost"
-        className="flex items-center gap-2 text-white transition-all duration-300 hover:bg-white/10"
+        className={`flex items-center gap-2 transition-all duration-300 hover:bg-white/10 ${
+          location.pathname === '/profile' ? 'text-green-400' : 'text-white/90 hover:text-white'
+        }`}
       >
         <div className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-r from-dream-accent1/20 to-dream-accent3/20">
           <img 
@@ -27,7 +30,7 @@ const ProfileButton = () => {
             className="w-full h-full object-contain"
           />
         </div>
-        <span className="text-white/90 hover:text-white">{displayName}</span>
+        <span>{displayName}</span>
       </Button>
     </Link>
   );
