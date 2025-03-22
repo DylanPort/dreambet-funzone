@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -51,11 +50,13 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
       return stepIds[index] || `step${index + 1}`;
     };
     
+    const videoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/sign/tourvideo/Untitled%20video%20-%20Made%20with%20Clipchamp%20(7)%20(online-video-cutter.com).mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJ0b3VydmlkZW8vVW50aXRsZWQgdmlkZW8gLSBNYWRlIHdpdGggQ2xpcGNoYW1wICg3KSAob25saW5lLXZpZGVvLWN1dHRlci5jb20pLm1wNCIsImlhdCI6MTc0MjY2NTY1MiwiZXhwIjoxNzc0MjAxNjUyfQ.FOnoYScf0r244PUOjega7OzIC0KEEmB2O6l4T-_UY9E";
+    
     return (
       <div className="flex flex-col space-y-6 p-4">
         <div className="rounded-lg overflow-hidden bg-gray-800 aspect-video w-full">
           <video
-            src={`https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/public/tour-videos/tour_${stepIdForIndex(step)}.mp4`}
+            src={videoUrl}
             className="w-full h-full object-cover"
             controls
             autoPlay

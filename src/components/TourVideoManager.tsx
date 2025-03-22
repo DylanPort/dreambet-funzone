@@ -35,9 +35,9 @@ const TourVideoManager: React.FC<TourVideoManagerProps> = ({ onClose }) => {
       try {
         setIsLoading(true);
         
-        // List all files in the tour-videos bucket
+        // List all files in the tourvideo bucket
         const { data: files, error } = await supabase.storage
-          .from('tour-videos')
+          .from('tourvideo')
           .list();
         
         if (error) {
@@ -53,7 +53,7 @@ const TourVideoManager: React.FC<TourVideoManagerProps> = ({ onClose }) => {
             const matchingFile = files.find(file => file.name.startsWith(`tour_${step.id}_`));
             if (matchingFile) {
               const { data } = supabase.storage
-                .from('tour-videos')
+                .from('tourvideo')
                 .getPublicUrl(matchingFile.name);
               
               videoMap[step.id] = data.publicUrl;

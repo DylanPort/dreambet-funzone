@@ -59,9 +59,9 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
         }
       });
       
-      // Upload file to Supabase Storage
+      // Upload file to Supabase Storage (use tourvideo bucket)
       const { data, error: uploadError } = await supabase.storage
-        .from('tour-videos')
+        .from('tourvideo')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -73,7 +73,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
       
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('tour-videos')
+        .from('tourvideo')
         .getPublicUrl(filePath);
       
       // Notify parent component

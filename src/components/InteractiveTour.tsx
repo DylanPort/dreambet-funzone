@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -56,56 +55,21 @@ const InteractiveTour = () => {
       setCurrentStep(0);
     }
 
-    const loadSupabaseVideos = async () => {
-      try {
-        const { data, error } = await supabase
-          .storage
-          .from('tour-videos')
-          .list();
-
-        if (error) {
-          console.error('Error loading videos from Supabase:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const newVideoSources = [...videoSources];
-          
-          for (const file of data) {
-            const stepMatch = file.name.match(/step-(\d+)\./);
-            if (stepMatch) {
-              const stepIndex = parseInt(stepMatch[1], 10) - 1;
-              if (stepIndex >= 0 && stepIndex < newVideoSources.length) {
-                const { data: { publicUrl } } = supabase
-                  .storage
-                  .from('tour-videos')
-                  .getPublicUrl(file.name);
-                
-                newVideoSources[stepIndex] = publicUrl;
-                console.log(`Loaded video for step ${stepIndex + 1}:`, publicUrl);
-              }
-            }
-          }
-          
-          setVideoSources(newVideoSources);
-        }
-      } catch (error) {
-        console.error('Failed to load videos from Supabase:', error);
-      }
-    };
-
-    loadSupabaseVideos();
+    const mainVideoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/sign/tourvideo/Untitled%20video%20-%20Made%20with%20Clipchamp%20(7)%20(online-video-cutter.com).mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJ0b3VydmlkZW8vVW50aXRsZWQgdmlkZW8gLSBNYWRlIHdpdGggQ2xpcGNoYW1wICg3KSAob25saW5lLXZpZGVvLWN1dHRlci5jb20pLm1wNCIsImlhdCI6MTc0MjY2NTY1MiwiZXhwIjoxNzc0MjAxNjUyfQ.FOnoYScf0r244PUOjega7OzIC0KEEmB2O6l4T-_UY9E";
+    
+    const newVideoSources = [...videoSources];
+    for (let i = 0; i < newVideoSources.length; i++) {
+      newVideoSources[i] = mainVideoUrl;
+    }
+    setVideoSources(newVideoSources);
   }, []);
   
-  // Helper function to play videos when they're visible
   const playVideoIfVisible = (index: number) => {
     if (index === currentStep && videoRefs.current[index]) {
       const videoElement = videoRefs.current[index];
       if (videoElement) {
-        // Try to play the video
         const playPromise = videoElement.play();
         
-        // Handle play() promise to avoid DOMException
         if (playPromise !== undefined) {
           playPromise.catch(error => {
             console.warn('Error playing video:', error);
@@ -115,7 +79,6 @@ const InteractiveTour = () => {
     }
   };
   
-  // Effect to handle playing videos when step changes
   useEffect(() => {
     playVideoIfVisible(currentStep);
   }, [currentStep, videoSources]);
@@ -190,7 +153,6 @@ const InteractiveTour = () => {
       
       toast.success(`Video uploaded for Step ${currentStep + 1}`);
       
-      // Attempt to play the newly uploaded video
       setTimeout(() => {
         playVideoIfVisible(currentStep);
       }, 500);
@@ -282,7 +244,6 @@ const InteractiveTour = () => {
     />
   );
   
-  // Render video with fallback
   const renderVideo = (index: number, size: 'small' | 'large') => {
     const videoUrl = videoSources[index];
     const videoClassName = size === 'small' 
@@ -311,10 +272,11 @@ const InteractiveTour = () => {
           playsInline
           onError={(e) => {
             console.error(`Error loading video for step ${index + 1}:`, e);
-            // If there's an error, try again with a timestamp to bust cache
             const target = e.target as HTMLVideoElement;
             if (videoUrl && !videoUrl.includes('?')) {
               target.src = `${videoUrl}?t=${Date.now()}`;
+            } else if (videoUrl && videoUrl.includes('?')) {
+              target.src = `${videoUrl}&t=${Date.now()}`;
             }
           }}
         />
