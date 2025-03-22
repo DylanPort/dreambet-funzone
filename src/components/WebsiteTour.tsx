@@ -3,7 +3,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { useEmblaCarousel } from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import PXBOnboarding from '@/components/PXBOnboarding';
@@ -25,11 +26,6 @@ type TourStep = {
 
 const WebsiteTour = () => {
   const isMobile = useIsMobile();
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: false,
-    align: 'center',
-    skipSnaps: false
-  });
   const [currentStep, setCurrentStep] = useState(0);
   const [canProgress, setCanProgress] = useState(true);
   const [showMintDialog, setShowMintDialog] = useState(false);
@@ -115,39 +111,27 @@ const WebsiteTour = () => {
     }
   ];
 
-  useEffect(() => {
-    if (!emblaApi) return;
+  const handleNext = (stepIndex: number) => {
+    if (!canProgress) return;
     
-    emblaApi.on('select', () => {
-      setCurrentStep(emblaApi.selectedScrollSnap());
-    });
+    // If this step has a reward, give it
+    if (tourSteps[stepIndex].reward) {
+      handleReward(stepIndex);
+    }
     
-    return () => {
-      emblaApi.off('select');
-    };
-  }, [emblaApi]);
-
-  const handleNext = () => {
-    if (!emblaApi || !canProgress) return;
+    // Execute any custom action for this step
+    if (tourSteps[stepIndex].action) {
+      tourSteps[stepIndex].action();
+    }
     
-    const nextStep = currentStep + 1;
+    const nextStep = stepIndex + 1;
     
     if (nextStep < tourSteps.length) {
-      emblaApi.scrollTo(nextStep);
-      
-      // If this step has a reward, give it
-      if (tourSteps[currentStep].reward) {
-        handleReward(currentStep);
-      }
-      
-      // Execute any custom action for this step
-      if (tourSteps[currentStep].action) {
-        tourSteps[currentStep].action();
-      }
+      setCurrentStep(nextStep);
     } else {
       // Tour completed
       setTourCompleted(true);
-      handleReward(currentStep);
+      handleReward(stepIndex);
     }
   };
 
@@ -189,10 +173,10 @@ const WebsiteTour = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        <div className="embla overflow-hidden h-full" ref={emblaRef}>
-          <div className="embla__container h-full flex touch-pan-y">
+        <Carousel className="h-full">
+          <CarouselContent className="h-full">
             {tourSteps.map((step, index) => (
-              <div key={index} className="embla__slide relative flex-[0_0_100%] h-full">
+              <CarouselItem key={index} className="h-full">
                 <div className="flex flex-col h-full p-6">
                   <div className="mb-4 flex items-center">
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mr-4">
@@ -231,7 +215,10 @@ const WebsiteTour = () => {
                     </div>
                     
                     <Button
-                      onClick={handleNext}
+                      onClick={() => {
+                        setCurrentStep(index);
+                        handleNext(index);
+                      }}
                       className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                     >
                       {step.buttonText}
@@ -239,10 +226,10 @@ const WebsiteTour = () => {
                     </Button>
                   </div>
                 </div>
-              </div>
+              </CarouselItem>
             ))}
-          </div>
-        </div>
+          </CarouselContent>
+        </Carousel>
         
         {/* Progress indicator dots */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
@@ -254,7 +241,7 @@ const WebsiteTour = () => {
                   ? 'bg-white w-4' 
                   : 'bg-white/30'
               }`}
-              onClick={() => emblaApi?.scrollTo(index)}
+              onClick={() => setCurrentStep(index)}
             />
           ))}
         </div>
