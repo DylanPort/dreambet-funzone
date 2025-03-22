@@ -114,39 +114,6 @@ const PXBLeaderboard: React.FC = () => {
         </div>
       </ScrollArea>;
   };
-  return <div className="glass-panel p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-green-500/5 to-yellow-500/5 animate-gradient-move"></div>
-      
-      <div className="flex items-center mb-4 relative z-10">
-        <img src="/lovable-uploads/a940715f-922f-4c71-88e5-de8d93fce0c2.png" alt="Colorful flame" className="w-14 h-14 mr-2 animate-bob" />
-        <h2 className="text-xl font-bold bg-gradient-to-r from-green-400 via-yellow-300 to-orange-500 bg-clip-text text-transparent">Leaderboard</h2>
-      </div>
-      
-      <Tabs defaultValue="points" className="w-full" onValueChange={handleTabChange}>
-        <TabsList className="grid grid-cols-2 mb-4">
-          <TabsTrigger value="points" className="flex items-center gap-1">
-            <Star className="w-4 h-4" /> PXB Points
-          </TabsTrigger>
-          <TabsTrigger value="winrate" className="flex items-center gap-1">
-            <BarChart className="w-4 h-4" /> Win Rate
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="points" className="mt-0">
-          {renderLeaderboardContent(displayedPointsUsers, 'pxbPoints', 'PXB', isLeaderboardLoading)}
-        </TabsContent>
-        
-        <TabsContent value="winrate" className="mt-0">
-          {renderLeaderboardContent(displayedWinRateUsers, 'winRate', '', isLoadingWinRate)}
-        </TabsContent>
-      </Tabs>
-      
-      <div className="mt-3 text-center">
-        <Button variant="outline" size="sm" onClick={() => setShowAllUsers(!showAllUsers)} className="w-full bg-dream-foreground/5 border-dream-foreground/20">
-          {showAllUsers ? "Show Less" : "Show All Top 50"}
-          <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${showAllUsers ? 'rotate-180' : ''}`} />
-        </Button>
-      </div>
-    </div>;
+  return;
 };
 export default PXBLeaderboard;
