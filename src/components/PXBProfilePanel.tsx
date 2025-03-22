@@ -66,7 +66,7 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
     navigator.clipboard.writeText(text);
     toast.success(message);
   };
-  return <div className="overflow-hidden rounded-xl bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
+  return <div className="overflow-hidden rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
       <div className="p-6 border-b border-indigo-900/30 bg-black/0">
         <h2 className="text-2xl font-bold text-white">Profile</h2>
         <p className="text-indigo-300/70">Manage your account information</p>
