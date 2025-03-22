@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Clock, ArrowUp, ArrowDown, CheckCircle, XCircle, HelpCircle, ChevronRight } from 'lucide-react';
@@ -80,7 +81,7 @@ const PXBBetsList = () => {
   }
 
   const calculateProgress = (bet) => {
-    if (bet.status !== 'pending') {
+    if (bet.status !== 'pending' && bet.status !== 'open') {
       return bet.status === 'won' ? 100 : 0;
     }
     
@@ -138,6 +139,13 @@ const PXBBetsList = () => {
     return null;
   };
 
+  // Helper function to check if a bet is active (pending or open and not expired)
+  const isBetActive = (bet) => {
+    const now = new Date();
+    const expiryDate = new Date(bet.expiresAt);
+    return (bet.status === 'pending' || bet.status === 'open') && now < expiryDate;
+  };
+
   const displayedBets = showAllBets ? bets : bets.slice(0, 2);
 
   return (
@@ -149,14 +157,14 @@ const PXBBetsList = () => {
       
       <div className="space-y-3">
         {displayedBets.map((bet) => {
-          const isActive = bet.status === 'pending';
+          const isActive = isBetActive(bet);
           const expiryDate = new Date(bet.expiresAt);
           const timeLeft = isActive ? formatDistanceToNow(expiryDate, { addSuffix: true }) : '';
           
           let statusIcon;
           let statusClass;
           
-          if (bet.status === 'pending') {
+          if (isActive) {
             statusIcon = <HelpCircle className="h-4 w-4 text-yellow-400" />;
             statusClass = 'text-yellow-400';
           } else if (bet.status === 'won') {
@@ -269,7 +277,7 @@ const PXBBetsList = () => {
                   <div className="flex items-center">
                     {statusIcon}
                     <span className={`ml-1 ${statusClass}`}>
-                      {bet.status === 'pending' ? 'Active' : bet.status === 'won' ? 'Won' : 'Lost'}
+                      {isActive ? 'Active' : bet.status === 'won' ? 'Won' : 'Lost'}
                     </span>
                     {isActive && (
                       <span className="ml-2 text-dream-foreground/60">
@@ -292,7 +300,7 @@ const PXBBetsList = () => {
                 </div>
                 
                 <div className="mt-2 text-xs text-dream-foreground/50 border-t border-dream-foreground/10 pt-2">
-                  {bet.status === 'pending' ? (
+                  {isActive ? (
                     <p>Betting against the house: If you win, you'll earn {bet.betAmount} PXB from the supply.</p>
                   ) : bet.status === 'won' ? (
                     <p>You won {bet.pointsWon} PXB from the house supply!</p>

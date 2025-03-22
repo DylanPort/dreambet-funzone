@@ -48,6 +48,21 @@ export const useBetsData = (userProfile: any) => {
         
         // Determine if this user was the creator or participant
         const isCreator = bet.bettor1_id === userProfile.id;
+
+        // Check if bet is expired but status is still 'open'
+        const createdTime = new Date(bet.created_at).getTime();
+        const expiryTime = createdTime + (bet.duration * 1000);
+        const now = new Date().getTime();
+        const isExpired = now > expiryTime;
+        
+        // Determine the correct status
+        let betStatus = bet.status;
+        
+        // If the database shows 'open' but the bet is past its expiry time,
+        // we should consider it 'pending' instead of 'lost'
+        if (betStatus === 'open' && isExpired) {
+          betStatus = 'pending';
+        }
         
         return {
           id: bet.bet_id,
@@ -58,7 +73,7 @@ export const useBetsData = (userProfile: any) => {
           betAmount: bet.sol_amount,
           betType: isCreator ? (bet.prediction_bettor1 as 'up' | 'down') : (bet.prediction_bettor2 as 'up' | 'down'),
           percentageChange: bet.percentage_change || 0,
-          status: bet.status === 'pending' ? 'pending' : (bet.status === 'won' ? 'won' : 'lost'),
+          status: betStatus, // Using our corrected status
           pointsWon: bet.points_won || 0,
           createdAt: bet.created_at,
           expiresAt: new Date(new Date(bet.created_at).getTime() + (bet.duration * 1000)).toISOString(),

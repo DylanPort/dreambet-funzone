@@ -17,7 +17,7 @@ export const useBetProcessor = (
     console.log('Processing pending bets...', bets.length);
     
     // Get pending bets that need to be checked
-    const pendingBets = bets.filter(bet => bet.status === 'pending');
+    const pendingBets = bets.filter(bet => bet.status === 'pending' || (bet.status === 'open' && new Date() >= new Date(bet.expiresAt)));
     console.log(`Found ${pendingBets.length} pending bets to process`);
     
     // Process each pending bet
