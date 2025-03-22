@@ -64,7 +64,7 @@ const SearchedTokensReel: React.FC = () => {
         
         <div className="flex flex-col items-end">
           {activeTab === 'top' ? (
-            <div className="bg-dream-accent2/20 px-2 py-1 rounded text-xs text-dream-accent2 flex items-center">
+            <div className="bg-green-500/20 px-2 py-1 rounded text-xs text-green-400 flex items-center">
               <Search className="w-3 h-3 mr-1" /> {token.search_count}
             </div>
           ) : (
@@ -76,7 +76,7 @@ const SearchedTokensReel: React.FC = () => {
             href={`https://solscan.io/token/${token.token_mint}`} 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="text-dream-accent2/80 hover:text-dream-accent2 text-xs mt-1 inline-flex items-center" 
+            className="text-green-400/80 hover:text-green-400 text-xs mt-1 inline-flex items-center" 
             onClick={(e) => e.stopPropagation()}
           >
             SolScan <ExternalLink className="w-3 h-3 ml-1" />
@@ -118,11 +118,11 @@ const SearchedTokensReel: React.FC = () => {
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
             <TabsList className="grid w-[240px] grid-cols-2 bg-dream-background/30 border border-white/10">
-              <TabsTrigger value="top" className="flex items-center gap-1 data-[state=active]:bg-dream-accent2/20">
+              <TabsTrigger value="top" className="flex items-center gap-1 data-[state=active]:bg-green-500/20">
                 <TrendingUp className="w-4 h-4" />
                 <span>Top Searched</span>
               </TabsTrigger>
-              <TabsTrigger value="recent" className="flex items-center gap-1 data-[state=active]:bg-dream-accent2/20">
+              <TabsTrigger value="recent" className="flex items-center gap-1 data-[state=active]:bg-green-500/20">
                 <Clock className="w-4 h-4" />
                 <span>Recent</span>
               </TabsTrigger>

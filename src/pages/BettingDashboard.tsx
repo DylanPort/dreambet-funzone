@@ -85,7 +85,7 @@ const BettingDashboard = () => {
         
           <section className="mb-6 text-center py-0 my-0 mx-0 sm:mx-4 md:mx-8 lg:mx-[240px] px-1 sm:px-[11px]">
             {!connected && <div className="mt-8 glass-panel inline-flex flex-col sm:flex-row items-center gap-3 p-4">
-                <Wallet className="text-dream-accent2" />
+                <Wallet className="text-green-400" />
                 <span>Connect your Solana wallet to start betting</span>
                 <WalletConnectButton />
               </div>}
