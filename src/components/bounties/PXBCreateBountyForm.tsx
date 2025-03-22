@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -130,7 +129,12 @@ export function PXBCreateBountyForm() {
           twitter_url: twitterUrl || null,
           creator_id: userProfile.id,
           status: 'open',
-          required_proof: 'screenshot'
+          required_proof: 'screenshot',
+          title: projectName,
+          description: projectDescription || 'Complete tasks to earn PXB points',
+          budget: pxbReward,
+          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          views: 0
         })
         .select()
         .single();

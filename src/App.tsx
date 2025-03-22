@@ -1,3 +1,4 @@
+
 import React, { Suspense, useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -5,7 +6,7 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
-import Index from './pages';
+import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import TokenBetting from './pages/TokenBetting';
