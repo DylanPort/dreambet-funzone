@@ -14,9 +14,6 @@ import BettingDashboard from "./pages/BettingDashboard";
 import TokenBetting from "./pages/TokenBetting";
 import PXBSpace from "./pages/MyBets";
 import BetDetails from "./pages/BetDetails";
-import PXBBountyPage from "./pages/PXBBountyPage";
-import PXBBountyDetailPage from "./pages/PXBBountyDetailPage";
-import PXBCreateBountyPage from "./pages/PXBCreateBountyPage";
 
 // Configure Query Client with retry options for better error handling
 const queryClient = new QueryClient({
@@ -48,9 +45,6 @@ function App() {
                 <Route path="/betting/token/:id" element={<TokenBetting />} />
                 <Route path="/betting/my-bets" element={<PXBSpace />} />
                 <Route path="/betting/bet/:id" element={<BetDetails />} />
-                <Route path="/bounties" element={<PXBBountyPage />} />
-                <Route path="/bounties/create" element={<PXBCreateBountyPage />} />
-                <Route path="/bounties/:id" element={<PXBBountyDetailPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

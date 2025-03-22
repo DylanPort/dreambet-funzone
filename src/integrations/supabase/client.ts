@@ -14,7 +14,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'pxb-supabase-auth'
   },
   global: {
     // Add rate limit handling with exponential backoff retry

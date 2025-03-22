@@ -10,7 +10,7 @@ const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root
     <div className="absolute inset-0 bg-gradient-to-r from-black/5 via-white/5 to-black/5 animate-gradient-move"></div>
     
     {/* Floating particles - enhanced with more colors and green tones */}
-    <div className="absolute inset-0 overflow-hidden bg-[#264f21]/60">
+    <div className="absolute inset-0 overflow-hidden bg-[#2fff0f]/60">
       {Array.from({
       length: 8
     }).map((_, i) => {
