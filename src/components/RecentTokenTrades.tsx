@@ -21,7 +21,7 @@ const RecentTokenTrades = () => {
       Object.keys(pumpPortal.recentTrades).forEach(tokenId => {
         const trades = pumpPortal.recentTrades[tokenId];
         trades.forEach((trade, index) => {
-          const formattedTrade = formatRawTrade(trade, tokenId);
+          const formattedTrade = formatRawTrade(trade);
           if (formattedTrade) {
             // Only add the most recent trade for this token
             if (index === 0) {
@@ -39,7 +39,7 @@ const RecentTokenTrades = () => {
             tokenMint: token.mint,
             tokenName: token.name || 'Unknown Token',
             tokenSymbol: token.symbol || '',
-            price: token.lastPrice || 0,
+            price: token.price || 0,
             time: new Date().toISOString(),
             type: Math.random() > 0.5 ? 'buy' : 'sell',
             amount: Math.random() * 5,
@@ -79,7 +79,7 @@ const RecentTokenTrades = () => {
     if (filter !== 'all') {
       allTokens = allTokens.filter(token => {
         if (filter === 'up' && token.type === 'buy') return true;
-        if (filter === 'down' && token.type === 'sell') return true;
+        if (filter === 'down' && token.type === 'sell') return false;
         return false;
       });
     }

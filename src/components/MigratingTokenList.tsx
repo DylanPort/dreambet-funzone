@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDistanceToNow } from 'date-fns';
@@ -114,9 +115,10 @@ const MigratingTokenList = () => {
         };
       case 'die':
       case 'down':
+      case 'dust':
         return {
           color: 'text-red-400',
-          text: 'DIE',
+          text: 'DUST',
           bgColor: 'bg-red-400/10'
         };
       default:
@@ -199,7 +201,7 @@ const MigratingTokenList = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="text-xs font-medium text-dream-foreground/70">{upPercentage}%</span>
+                <span className="text-xs font-medium text-dream-foreground/70">{upPercentage}% MOON</span>
               </div>
             </div>
             
@@ -209,7 +211,7 @@ const MigratingTokenList = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <span className="text-xs font-medium text-dream-foreground/70">{downPercentage}%</span>
+                <span className="text-xs font-medium text-dream-foreground/70">{downPercentage}% DUST</span>
               </div>
             </div>
           </div>
