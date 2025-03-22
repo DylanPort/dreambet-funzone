@@ -10,7 +10,7 @@ import FuturisticTokenDisplay from '@/components/FuturisticTokenDisplay';
 import { Button } from '@/components/ui/button';
 import { usePumpPortalWebSocket, formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import PXBOnboarding from '@/components/PXBOnboarding';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import RecentTokenTrades from '@/components/RecentTokenTrades';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -25,11 +26,13 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -70,10 +73,12 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -84,6 +89,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -114,12 +120,6 @@ const Index = () => {
               before:content-[''] before:absolute before:inset-0 
               before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
               before:animate-pulse-glow">
-              
-              
-              
-              
-              
-              
             </div>}
           
           <div className="flex justify-center gap-4 mt-10 mb-16">
@@ -161,6 +161,7 @@ const Index = () => {
                   </div>
                 </DialogTrigger>
                 <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
+                  <DialogTitle className="sr-only">{userProfile ? 'Your PXB Points' : 'Mint PXB Points'}</DialogTitle>
                   <PXBOnboarding />
                 </DialogContent>
               </Dialog>
@@ -176,8 +177,7 @@ const Index = () => {
                 bg-gradient-to-r from-white via-green-300 to-blue-400 bg-clip-text text-transparent 
                 flex items-center justify-center gap-2 text-shadow-sm filter drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">
               
-              
-              PXB Leaderboard & Statistics
+              PXBLeaderboard & Statistics
               
             </h2>
             
@@ -203,7 +203,6 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             
-            
             <div className="mt-6 border-t border-white/10 pt-6 text-sm text-white/60">
               © {new Date().getFullYear()} PumpXBounty. All rights reserved.
             </div>
@@ -212,4 +211,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
