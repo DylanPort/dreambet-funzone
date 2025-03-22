@@ -30,7 +30,7 @@ const InteractiveTour = () => {
     // Check local storage to see if user has already gone through the tour
     const tourCompleted = localStorage.getItem('pxb-tour-completed');
     if (tourCompleted) {
-      setCurrentStep(4); // Skip to the end (one less step now)
+      setCurrentStep(0); // Always start from the beginning, even if tour was completed
     }
   }, []);
   const handleNextStep = () => {
@@ -207,23 +207,23 @@ const InteractiveTour = () => {
             rotateX: 5
           }} transition={{
             duration: 0.5
-          }} className="relative z-10 text-center p-8 w-full h-full flex flex-col justify-center bg-black/65">
-              <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-                {/* Step image */}
-                {steps[currentStep].image && <motion.div className="w-full md:w-1/2 flex justify-center items-center" style={{
+          }} className="relative z-10 text-center p-6 sm:p-8 w-full h-full flex flex-col justify-center bg-black/65">
+              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
+                {/* Step image - always visible, adjust size for mobile */}
+                <motion.div className="w-full md:w-1/2 flex justify-center items-center mb-4 md:mb-0" style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(40px)'
               }}>
-                    <img src={steps[currentStep].image} alt={steps[currentStep].title} className="w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" style={{
+                    <img src={steps[currentStep].image} alt={steps[currentStep].title} className="w-[120px] md:w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" style={{
                   transformStyle: 'preserve-3d',
                   transform: 'translateZ(10px) rotateY(-5deg)'
                 }} />
-                  </motion.div>}
+                  </motion.div>
                 
                 {/* Text content */}
                 <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
-                  <div className="mb-4 flex justify-center md:justify-start">
-                    <motion.div className="p-3 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" whileHover={{
+                  <div className="mb-3 md:mb-4 flex justify-center md:justify-start">
+                    <motion.div className="p-2 md:p-3 rounded-full bg-indigo-900/50 border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.3)]" whileHover={{
                     scale: 1.1,
                     rotate: 5
                   }} style={{
@@ -234,14 +234,14 @@ const InteractiveTour = () => {
                     </motion.div>
                   </div>
                   
-                  <motion.h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent" style={{
+                  <motion.h2 className="text-xl md:text-2xl font-bold mb-2 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent" style={{
                   transformStyle: 'preserve-3d',
                   transform: 'translateZ(20px)'
                 }}>
                     {steps[currentStep].title}
                   </motion.h2>
                   
-                  <motion.p className="text-indigo-200/80 text-sm mb-4" style={{
+                  <motion.p className="text-indigo-200/80 text-xs md:text-sm mb-3 md:mb-4" style={{
                   transformStyle: 'preserve-3d',
                   transform: 'translateZ(15px)'
                 }}>
@@ -257,9 +257,9 @@ const InteractiveTour = () => {
                 </div>
               </div>
               
-              <div className="mt-6 flex justify-center space-x-2">
+              <div className="mt-4 md:mt-6 flex justify-center space-x-2">
                 {/* Tour navigation dots */}
-                {steps.map((_, index) => <motion.button key={index} className={`w-2.5 h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400 scale-125' : 'bg-gray-600 hover:bg-gray-500'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
+                {steps.map((_, index) => <motion.button key={index} className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400 scale-125' : 'bg-gray-600 hover:bg-gray-500'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
                 scale: 1.2
               }} style={{
                 transformStyle: 'preserve-3d',
@@ -267,15 +267,15 @@ const InteractiveTour = () => {
               }} />)}
               </div>
               
-              <div className="absolute bottom-4 right-4 flex space-x-2">
-                {currentStep > 0 && <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-indigo-600/30 z-10" onClick={handlePrevStep} style={{
+              <div className="absolute bottom-2 md:bottom-4 right-2 md:right-4 flex space-x-2">
+                {currentStep > 0 && <Button variant="ghost" size="sm" className="text-xs md:text-sm text-white/70 hover:text-white hover:bg-indigo-600/30 z-10 px-2 py-1 md:px-4 md:py-2" onClick={handlePrevStep} style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(20px)'
               }}>
                     Back
                   </Button>}
                 
-                {currentStep < steps.length - 1 && <Button variant="ghost" size="sm" className="text-white hover:bg-indigo-600/30 z-10" onClick={handleNextStep} style={{
+                {currentStep < steps.length - 1 && <Button variant="ghost" size="sm" className="text-xs md:text-sm text-white hover:bg-indigo-600/30 z-10 px-2 py-1 md:px-4 md:py-2" onClick={handleNextStep} style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(20px)'
               }}>
