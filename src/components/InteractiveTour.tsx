@@ -414,7 +414,7 @@ const InteractiveTour = () => {
             {isMobile ? (
               <ScrollArea className="h-full pr-2">
                 <div className="flex flex-col items-center justify-start py-2">
-                  <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
+                  <div className="w-full flex justify-center items-center mb-4 relative">
                     {renderVideo(currentStep, 'small')}
                     <Button 
                       variant="outline" 
