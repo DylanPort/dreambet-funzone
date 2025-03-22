@@ -1,7 +1,5 @@
-
 import React, { Suspense, useEffect } from 'react';
 import {
-  BrowserRouter as Router,
   Route,
   Routes,
   useLocation,
