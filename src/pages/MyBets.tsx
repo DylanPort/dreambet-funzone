@@ -1,7 +1,8 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+
+import React, { useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { ArrowLeft, Zap, Coins, Trophy, Users, Activity } from 'lucide-react';
+import { ArrowLeft, Zap, Coins, Trophy, Users, Activity, Link as LinkIcon, Copy } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -12,6 +13,8 @@ import PXBBetsList from '@/components/PXBBetsList';
 import PXBSupplyProgress from '@/components/PXBSupplyProgress';
 import PXBUserStats from '@/components/PXBUserStats';
 import BetReel from '@/components/BetReel';
+import { toast } from 'sonner';
+
 const PXBSpace = () => {
   const {
     connected,
@@ -19,8 +22,57 @@ const PXBSpace = () => {
   } = useWallet();
   const {
     userProfile,
-    isLoading
+    isLoading,
+    generateReferralLink,
+    referralStats,
+    fetchReferralStats,
+    isLoadingReferrals,
+    checkAndProcessReferral
   } = usePXBPoints();
+  
+  const [referralLink, setReferralLink] = React.useState('');
+  const [isGeneratingLink, setIsGeneratingLink] = React.useState(false);
+  const [searchParams] = useSearchParams();
+
+  // Handle referral link generation
+  const handleGenerateReferralLink = async () => {
+    if (!generateReferralLink) return;
+    
+    setIsGeneratingLink(true);
+    try {
+      const link = await generateReferralLink();
+      setReferralLink(link);
+    } catch (error) {
+      console.error('Error generating referral link:', error);
+      toast.error('Failed to generate referral link');
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
+  // Copy to clipboard function
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
+  // Check for referral code in URL
+  useEffect(() => {
+    if (connected && userProfile) {
+      const referralCode = searchParams.get('ref');
+      if (referralCode && checkAndProcessReferral) {
+        checkAndProcessReferral(referralCode);
+      }
+    }
+  }, [connected, userProfile, searchParams, checkAndProcessReferral]);
+
+  // Fetch referral stats when component mounts
+  useEffect(() => {
+    if (connected && userProfile && fetchReferralStats) {
+      fetchReferralStats();
+    }
+  }, [connected, userProfile, fetchReferralStats]);
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -105,9 +157,87 @@ const PXBSpace = () => {
               <div className="md:col-span-8 space-y-6">
                 <PXBBetsList />
                 
+                {/* Referral Section */}
+                <div className="glass-panel p-6">
+                  <h2 className="font-semibold text-lg mb-4 flex items-center">
+                    <Users className="mr-2 h-5 w-5 text-dream-accent3" />
+                    Referral Program
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    <p className="text-dream-foreground/70 text-sm">
+                      Invite friends and earn 10,000 PXB points for each person who joins through your referral link!
+                    </p>
+                    
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-dream-foreground/70">Your Referral Link</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-dream-accent1 hover:text-dream-accent1/80 px-2"
+                          onClick={handleGenerateReferralLink}
+                          disabled={isGeneratingLink}
+                        >
+                          {isGeneratingLink ? 
+                            <div className="flex items-center">
+                              <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1"></div>
+                              <span>Generating...</span>
+                            </div> : 
+                            <div className="flex items-center">
+                              <LinkIcon className="w-3 h-3 mr-1" />
+                              {referralLink ? 'Refresh' : 'Generate'}
+                            </div>
+                          }
+                        </Button>
+                      </div>
+                      
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={referralLink}
+                          readOnly
+                          placeholder="Generate your referral link"
+                          className="w-full bg-dream-foreground/5 px-3 py-2 rounded-md text-sm text-dream-foreground"
+                        />
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="absolute right-1 top-1/2 -translate-y-1/2"
+                          onClick={() => copyToClipboard(referralLink)}
+                          disabled={!referralLink}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                      <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
+                        <p className="text-sm text-dream-foreground/60 mb-1">Total Referrals</p>
+                        <p className="text-2xl font-display font-bold text-gradient">
+                          {isLoadingReferrals ? "..." : referralStats?.totalReferrals || 0}
+                        </p>
+                      </div>
+                      <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
+                        <p className="text-sm text-dream-foreground/60 mb-1">Points Earned</p>
+                        <p className="text-2xl font-display font-bold text-gradient">
+                          {isLoadingReferrals ? "..." : (referralStats?.totalPointsEarned || 0).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <Button asChild className="w-full" variant="outline">
+                        <Link to="/profile">
+                          View All Referrals
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
                 
-                
-                
+                <PXBLeaderboard />
               </div>
             </div>}
         </div>
