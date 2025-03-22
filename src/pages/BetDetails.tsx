@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,10 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { fetchGMGNTokenData, subscribeToGMGNTokenData } from '@/services/gmgnService';
+import { getTokenImageUrl } from '@/services/pumpMetadataService';
+
 interface PriceChartDataPoint {
   time: string;
   price: number;
 }
+
 const BetDetails = () => {
   const {
     id
@@ -23,6 +27,8 @@ const BetDetails = () => {
   const [tokenDetails, setTokenDetails] = useState<any>(null);
   const [chartData, setChartData] = useState<PriceChartDataPoint[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
+  const [tokenImage, setTokenImage] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchBetDetails = async () => {
       if (!id) return;
@@ -49,26 +55,38 @@ const BetDetails = () => {
           } else {
             predictionValue = data.prediction_bettor1 as BetPrediction;
           }
-          const status = data.status as BetStatus;
-          let outcomeValue: 'win' | 'loss' | undefined = undefined;
-          if (data.outcome === 'win') {
-            outcomeValue = 'win';
-          } else if (data.outcome === 'loss') {
-            outcomeValue = 'loss';
+
+          let statusValue: BetStatus;
+          if (data.status === 'win') {
+            statusValue = 'completed';
+          } else if (data.status === 'loss') {
+            statusValue = 'closed';
+          } else {
+            statusValue = data.status as BetStatus;
           }
+
+          let outcomeValue: 'win' | 'loss' | undefined;
+          if (data.status === 'win') {
+            outcomeValue = 'win';
+          } else if (data.status === 'loss') {
+            outcomeValue = 'loss';
+          } else {
+            outcomeValue = undefined;
+          }
+
           const betData: Bet = {
             id: data.bet_id,
             tokenId: data.token_mint,
-            tokenName: data.tokens?.token_name || 'Unknown Token',
-            tokenSymbol: data.tokens?.token_symbol || 'UNKNOWN',
+            tokenName: data.tokens?.token_name,
+            tokenSymbol: data.tokens?.token_symbol,
             tokenMint: data.token_mint,
-            initiator: data.creator,
-            counterParty: data.bettor2_id || undefined,
+            initiator: data.bettor1_id,
+            counterParty: data.bettor2_id,
             amount: data.sol_amount,
             prediction: predictionValue,
             timestamp: new Date(data.created_at).getTime(),
             expiresAt: new Date(data.created_at).getTime() + data.duration * 1000,
-            status: status,
+            status: statusValue,
             initialMarketCap: data.initial_market_cap,
             currentMarketCap: data.current_market_cap,
             duration: data.duration,
@@ -77,9 +95,12 @@ const BetDetails = () => {
             transactionSignature: data.transaction_signature,
             outcome: outcomeValue
           };
+          
           setBet(betData);
           setTokenDetails(data.tokens);
+          
           if (data.token_mint) {
+            fetchTokenImage(data.token_mint);
             fetchTokenChartData(data.token_mint);
           }
         }
@@ -90,20 +111,35 @@ const BetDetails = () => {
         setLoading(false);
       }
     };
+    
     fetchBetDetails();
   }, [id]);
+
+  const fetchTokenImage = async (tokenMint: string) => {
+    try {
+      const imageUrl = await getTokenImageUrl(tokenMint);
+      if (imageUrl) {
+        setTokenImage(imageUrl);
+      }
+    } catch (error) {
+      console.error('Error fetching token image:', error);
+    }
+  };
+
   const fetchTokenChartData = async (tokenMint: string) => {
     setChartLoading(true);
     try {
       const tokenData = await fetchGMGNTokenData(tokenMint);
       console.log('GMGN token data for chart:', tokenData);
-      if (tokenData.price) {
+      if (tokenData?.price) {
         const data: PriceChartDataPoint[] = [];
         const now = new Date();
         data.push({
           time: now.toISOString(),
           price: tokenData.price
         });
+        
+        // Calculate prior price using 24h change or a random value if not available
         const priorPrice = tokenData.change24h ? tokenData.price / (1 + tokenData.change24h / 100) : tokenData.price * (0.9 + Math.random() * 0.2);
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
@@ -111,6 +147,8 @@ const BetDetails = () => {
           time: yesterday.toISOString(),
           price: priorPrice
         });
+        
+        // Generate intermediate price points for chart
         for (let i = 1; i <= 10; i++) {
           const hoursPast = 24 * (i / 10);
           const intermediateTime = new Date(now);
@@ -123,6 +161,8 @@ const BetDetails = () => {
             price: intermediatePrice + noise
           });
         }
+        
+        // Sort data by time
         data.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
         setChartData(data);
         console.log('Generated chart data:', data);
@@ -133,8 +173,10 @@ const BetDetails = () => {
       setChartLoading(false);
     }
   };
+
   useEffect(() => {
     if (!bet?.tokenMint) return;
+    
     const unsubscribe = subscribeToGMGNTokenData(bet.tokenMint, data => {
       if (data.price && chartData.length > 0) {
         const now = new Date();
@@ -148,10 +190,12 @@ const BetDetails = () => {
         });
       }
     });
+    
     return () => {
       unsubscribe();
     };
   }, [bet?.tokenMint, chartData.length]);
+
   if (loading) {
     return <div className="min-h-screen bg-dream-background text-dream-foreground p-6">
         <div className="max-w-4xl mx-auto">
@@ -161,6 +205,7 @@ const BetDetails = () => {
         </div>
       </div>;
   }
+
   if (!bet) {
     return <div className="min-h-screen bg-dream-background text-dream-foreground p-6">
         <div className="max-w-4xl mx-auto">
@@ -174,12 +219,15 @@ const BetDetails = () => {
         </div>
       </div>;
   }
+
   const isPredictionUp = ['migrate', 'up', 'moon'].includes(bet.prediction);
   const predictionDisplay = isPredictionUp ? 'MOON' : 'DIE';
   const predictionColor = isPredictionUp ? 'text-green-400' : 'text-red-400';
   const predictionBgColor = isPredictionUp ? 'bg-green-400/10' : 'bg-red-400/10';
+  
   let statusDisplay = bet.status.toUpperCase();
   let statusClass = 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30';
+  
   if (bet.status === 'pending') {
     statusClass = 'bg-blue-500/20 text-blue-400 border-blue-400/30';
   } else if (bet.status === 'completed' || bet.status === 'closed') {
@@ -196,6 +244,7 @@ const BetDetails = () => {
   } else if (bet.status === 'matched') {
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
+
   return <div className="min-h-screen bg-dream-background text-dream-foreground p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
@@ -209,6 +258,9 @@ const BetDetails = () => {
           <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-3xl font-display font-bold flex items-center gap-2">
+                {tokenImage && (
+                  <img src={tokenImage} alt={bet.tokenName} className="w-10 h-10 rounded-full object-contain mr-2" />
+                )}
                 <span>{bet.tokenName}</span>
                 <span className="text-lg text-dream-foreground/60">({bet.tokenSymbol})</span>
               </h1>
@@ -262,7 +314,7 @@ const BetDetails = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-3">Bet Details</h3>
+                <h3 className="text-lg font-semibold mb-3">BET Details</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
                     <div className="flex items-center">
@@ -299,50 +351,54 @@ const BetDetails = () => {
               </div>
               
               {bet.initialMarketCap && <div>
-                  
                   <div className="space-y-3">
-                    
-                    
                     {bet.currentMarketCap && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
                         <div className="text-dream-foreground/70">Current Market Cap</div>
                         <div className="font-medium">${formatNumberWithCommas(bet.currentMarketCap)}</div>
                       </div>}
                     
-                    {bet.initialMarketCap && bet.currentMarketCap}
+                    {bet.initialMarketCap && bet.currentMarketCap && <div className="p-3 bg-dream-foreground/5 rounded-lg">
+                        <div className="flex justify-between mb-2">
+                          <div className="text-dream-foreground/70">Initial: ${formatNumberWithCommas(bet.initialMarketCap)}</div>
+                          <div className="text-dream-foreground/70">Target: ${formatNumberWithCommas(bet.initialMarketCap * (bet.prediction === 'migrate' ? 1.3 : 0.7))}</div>
+                        </div>
+                        <div className="w-full bg-dream-foreground/10 rounded-full h-2.5">
+                          <div className={`h-2.5 rounded-full ${bet.prediction === 'migrate' ? 'bg-green-500' : 'bg-red-500'}`} style={{
+                            width: `${Math.min(100, Math.abs(((bet.currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100))}%`
+                          }}></div>
+                        </div>
+                      </div>}
                   </div>
                 </div>}
             </div>
             
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Token Details</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="text-dream-foreground/70">Name</div>
-                    <div className="font-medium">{bet.tokenName}</div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="text-dream-foreground/70">Symbol</div>
-                    <div className="font-medium">{bet.tokenSymbol}</div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="text-dream-foreground/70">Mint Address</div>
-                    <div className="font-medium truncate max-w-[200px]" title={bet.tokenMint}>
-                      {formatAddress(bet.tokenMint)}
-                    </div>
-                  </div>
-                  
-                  {tokenDetails?.total_supply && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                      <div className="text-dream-foreground/70">Total Supply</div>
-                      <div className="font-medium">{formatNumberWithCommas(tokenDetails.total_supply)}</div>
-                    </div>}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Token Details</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
+                  <div className="text-dream-foreground/70">Name</div>
+                  <div className="font-medium">{bet.tokenName}</div>
                 </div>
+                
+                <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
+                  <div className="text-dream-foreground/70">Symbol</div>
+                  <div className="font-medium">{bet.tokenSymbol}</div>
+                </div>
+                
+                <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
+                  <div className="text-dream-foreground/70">Mint Address</div>
+                  <div className="font-medium truncate max-w-[200px]" title={bet.tokenMint}>
+                    {formatAddress(bet.tokenMint)}
+                  </div>
+                </div>
+                
+                {tokenDetails?.total_supply && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
+                    <div className="text-dream-foreground/70">Total Supply</div>
+                    <div className="font-medium">{formatNumberWithCommas(tokenDetails.total_supply)}</div>
+                  </div>}
               </div>
               
               <div>
-                
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
                     <div className="text-dream-foreground/70">Bet ID</div>
@@ -367,7 +423,17 @@ const BetDetails = () => {
           </div>
           
           <div className="mt-8 text-center">
-            {bet.status === 'open'}
+            {bet.status === 'open' && (
+              <div className="p-4 rounded-lg bg-dream-foreground/5">
+                <h3 className="text-xl font-semibold mb-2">Bet is Open</h3>
+                <p className="text-dream-foreground/70 mb-4">
+                  This bet is open and waiting for someone to accept the challenge.
+                </p>
+                <Button variant="green" className="mt-2">
+                  Accept Bet
+                </Button>
+              </div>
+            )}
             
             {(bet.status === 'completed' || bet.status === 'closed') && bet.winner && <div className="p-4 rounded-lg bg-dream-foreground/5">
                 <h3 className="text-xl font-semibold mb-2">
@@ -382,4 +448,5 @@ const BetDetails = () => {
       </div>
     </div>;
 };
+
 export default BetDetails;
