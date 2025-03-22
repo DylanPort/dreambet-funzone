@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
+
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -25,11 +26,13 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
+
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -70,10 +73,12 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
+
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -84,6 +89,7 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -123,15 +129,12 @@ const Index = () => {
               <Dialog>
                 <DialogTrigger asChild>
                   <div className="flex flex-col items-center transform transition-all duration-500 hover:scale-105 animate-float-delayed">
-                    <div className="relative overflow-hidden group transition-all duration-500
-                      transform hover:translate-y-[-4px] hover:scale-105 active:translate-y-[2px] cursor-pointer">
-                      
-                      <img alt="Mint PXB Points" className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
-                        transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" src="/lovable-uploads/75b9d39b-4705-4e43-8bf5-99c97463da79.png" />
-                      
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-dream-accent1/0 via-dream-accent2/10 to-dream-accent1/10 
-                        opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                    </div>
+                    <img 
+                      alt="Mint PXB Points" 
+                      className="w-64 h-auto filter drop-shadow-[0_0_30px_rgba(246,148,92,0.8)]
+                      transition-all duration-500 hover:drop-shadow-[0_0_40px_rgba(246,148,92,0.9)]" 
+                      src="/lovable-uploads/75b9d39b-4705-4e43-8bf5-99c97463da79.png" 
+                    />
                     <div className="mt-4 text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
                       drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
                       {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
@@ -190,4 +193,5 @@ const Index = () => {
       </footer>
     </>;
 };
+
 export default Index;
