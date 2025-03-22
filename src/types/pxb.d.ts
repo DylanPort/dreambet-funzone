@@ -1,4 +1,5 @@
 
+
 export interface UserProfile {
   id: string;
   pxb_id: string;
@@ -54,6 +55,9 @@ export interface ReferralStats {
   referrals_count: number;
   points_earned: number;
   referral_code: string | null;
+  totalReferrals?: number;
+  totalPointsEarned?: number;
+  referrals?: Referral[];
 }
 
 export interface Referral {
@@ -62,4 +66,7 @@ export interface Referral {
   referred_id: string;
   created_at: string;
   points_awarded: number;
+  referredUsername?: string;
+  createdAt?: string;
 }
+
