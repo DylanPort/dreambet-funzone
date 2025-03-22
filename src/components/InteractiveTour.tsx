@@ -12,9 +12,11 @@ import { ChevronRight, Upload, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
+
 interface PXBOnboardingProps {
   onClose: () => void;
 }
+
 const InteractiveTour = () => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
@@ -36,6 +38,7 @@ const InteractiveTour = () => {
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
+
   useEffect(() => {
     setCurrentStep(0);
     const tourCompleted = localStorage.getItem('pxb-tour-completed');
@@ -49,6 +52,7 @@ const InteractiveTour = () => {
     }
     setVideoSources(newVideoSources);
   }, []);
+
   const playVideoIfVisible = (index: number) => {
     if (index === currentStep && videoRefs.current[index]) {
       const videoElement = videoRefs.current[index];
@@ -62,9 +66,11 @@ const InteractiveTour = () => {
       }
     }
   };
+
   useEffect(() => {
     playVideoIfVisible(currentStep);
   }, [currentStep, videoSources]);
+
   const handleNextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -72,11 +78,13 @@ const InteractiveTour = () => {
       localStorage.setItem('pxb-tour-completed', 'true');
     }
   };
+
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
+
   const handleClaimPoints = async () => {
     if (!connected) {
       toast.error("Please connect your wallet first!");
@@ -95,6 +103,7 @@ const InteractiveTour = () => {
       toast.error("Failed to claim points. Please try again later.");
     }
   };
+
   const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -137,9 +146,11 @@ const InteractiveTour = () => {
       }
     }
   };
+
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
+
   const steps = [{
     title: "Welcome, Explorer!",
     description: "You've stumbled upon a treasure chest of opportunity in the wild Trenches!",
@@ -182,11 +193,19 @@ const InteractiveTour = () => {
     description: "Show off your betting skills and rise through the leaderboard ranks to reach legendary status!",
     icon: <img src="/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png" className="w-8 h-8" alt="Leaderboard" />,
     highlight: "leaderboard",
-    action: <Link to="/#leaderboard">
-        <Button variant="default" className="mt-4 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700" onClick={handleNextStep}>
-          View Leaderboard
-        </Button>
-      </Link>,
+    action: <Button 
+      variant="default" 
+      className="mt-4 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700" 
+      onClick={() => {
+        handleNextStep();
+        const leaderboardSection = document.getElementById('leaderboard');
+        if (leaderboardSection) {
+          leaderboardSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }}
+    >
+      View Leaderboard
+    </Button>,
     image: videoSources[3]
   }, {
     title: "Unlock Elite Powers",
@@ -200,7 +219,9 @@ const InteractiveTour = () => {
       </Link>,
     image: videoSources[4]
   }];
+
   const fileInput = <Input ref={fileInputRef} type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />;
+
   const renderVideo = (index: number, size: 'small' | 'large') => {
     const videoUrl = videoSources[index];
     const videoClassName = size === 'small' ? "w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" : "w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]";
@@ -225,6 +246,7 @@ const InteractiveTour = () => {
         </div>;
     }
   };
+
   return <div className={`flex justify-center items-center w-full my-4 md:my-12 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
       {fileInput}
       <motion.div className={`relative ${isMobile ? 'w-[300px] h-[400px]' : 'w-[400px] md:w-[600px] h-[300px] md:h-[400px]'} flex items-center justify-center rounded-2xl overflow-hidden`} style={{
@@ -435,4 +457,5 @@ const InteractiveTour = () => {
       </motion.div>
     </div>;
 };
+
 export default InteractiveTour;
