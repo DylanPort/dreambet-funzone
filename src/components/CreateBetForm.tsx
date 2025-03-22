@@ -50,20 +50,16 @@ interface CreateBetFormProps {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  onBetCreated: () => void;
-  token?: any; // Optional token prop for TokenDetail page
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  onCancel: () => void;
+  onSuccess: (betType?: string) => void;
 }
 
 const CreateBetForm: React.FC<CreateBetFormProps> = ({
   tokenId,
   tokenName,
   tokenSymbol,
-  onBetCreated,
-  token,
-  onSuccess,
-  onCancel
+  onCancel,
+  onSuccess
 }) => {
   const [amount, setAmount] = useState<string>('10');
   const [prediction, setPrediction] = useState<BetPrediction | null>(null);
