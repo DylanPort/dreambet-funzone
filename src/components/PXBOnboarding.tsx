@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
-import { X, Settings, Info } from 'lucide-react';
+import { X, Settings, Info, Gamepad } from 'lucide-react';
 import TourVideoManager from './TourVideoManager';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Link } from 'react-router-dom';
 
 interface PXBOnboardingProps {
   onClose?: () => void;
@@ -96,6 +97,23 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
               >
                 {mintingPoints ? 'Minting...' : `Mint ${pointAmount} PXB Points`}
               </Button>
+              
+              {/* New Playground Button */}
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <p className="text-sm text-white/70 mb-3">Ready to use your PXB Points?</p>
+                <Button
+                  asChild
+                  className="w-full bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700"
+                >
+                  <Link to="/betting">
+                    <Gamepad className="mr-2 h-4 w-4" />
+                    Go to Playground
+                  </Link>
+                </Button>
+                <p className="text-xs text-white/50 mt-2">
+                  Start your journey by placing bets on tokens in our PXB Playground!
+                </p>
+              </div>
             </div>
           )}
         </div>
