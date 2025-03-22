@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { motion } from 'framer-motion';
-import { Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle2, InfoIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface PXBOnboardingProps {
@@ -17,6 +18,17 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
   const [minted, setMinted] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { mintPoints } = usePXBPoints();
+
+  const MAX_MINT_AMOUNT = 500;
+
+  const handleMintAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value);
+    if (value > MAX_MINT_AMOUNT) {
+      setMintAmount(MAX_MINT_AMOUNT);
+    } else {
+      setMintAmount(value);
+    }
+  };
 
   const handleMintPoints = async () => {
     setMinting(true);
@@ -50,15 +62,22 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({ onClose }) => {
           <label htmlFor="amount" className="text-right text-sm font-medium">
             Amount
           </label>
-          <Input
-            type="number"
-            id="amount"
-            value={mintAmount}
-            onChange={(e) => setMintAmount(Number(e.target.value))}
-            className="col-span-3"
-            min="1"
-            disabled={minting}
-          />
+          <div className="col-span-3 space-y-1">
+            <Input
+              type="number"
+              id="amount"
+              value={mintAmount}
+              onChange={handleMintAmountChange}
+              className="w-full"
+              min="1"
+              max={MAX_MINT_AMOUNT}
+              disabled={minting}
+            />
+            <p className="text-xs text-muted-foreground flex items-center">
+              <InfoIcon className="h-3 w-3 mr-1" />
+              Maximum {MAX_MINT_AMOUNT} PXB points per mint
+            </p>
+          </div>
         </div>
       </div>
       {error && (
