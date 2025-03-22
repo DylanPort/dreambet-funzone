@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Award, Globe, MessageSquare, Twitter, Calendar, Clock, CheckCircle, Users } from 'lucide-react';
@@ -121,9 +122,19 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
     setLoading(true);
     
     try {
-      const userId = userProfile.id;
+      // Fetch the auth session to get the current user's ID
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!userId) {
+      if (!session) {
+        toast.error('Your session has expired. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+      
+      // This should match the ID in the profiles table which is auth.uid()
+      const creatorId = session.user.id;
+      
+      if (!creatorId) {
         toast.error('User ID not available. Please reconnect your wallet.');
         setLoading(false);
         return;
@@ -132,7 +143,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + formData.durationDays);
       
-      console.log('Creating bounty with creator ID:', userId);
+      console.log('Creating bounty with creator ID:', creatorId);
       
       const { data, error } = await supabase
         .from('bounties')
@@ -146,7 +157,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
           twitter_url: formData.twitterUrl || null,
           project_logo: formData.projectLogo || null,
           pxb_reward: formData.pxbReward,
-          creator_id: userId,
+          creator_id: creatorId,
           budget: formData.pxbReward,
           end_date: endDate.toISOString(),
           task_type: formData.taskType,
@@ -166,7 +177,7 @@ const PXBCreateBountyForm: React.FC<PXBCreateBountyFormProps> = ({ userProfile }
       navigate(`/bounties/${data.id}`);
     } catch (error) {
       console.error('Error creating bounty:', error);
-      toast.error('Failed to create bounty. Please try again.');
+      toast.error(`Failed to create bounty: ${error.message || 'Please try again'}`);
     } finally {
       setLoading(false);
     }
