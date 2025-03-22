@@ -39,6 +39,7 @@ export const useLeaderboardData = () => {
 
   return {
     leaderboard,
+    isLoading,
     fetchLeaderboard
   };
 };
