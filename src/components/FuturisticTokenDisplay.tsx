@@ -1,16 +1,12 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, ArrowUp, ArrowDown, Zap, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
-import { getTokenImageUrl } from '@/services/pumpMetadataService';
-
 interface FuturisticTokenCardProps {
   token: any;
   flipping: boolean;
 }
-
 const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
   token,
   flipping
@@ -18,7 +14,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
   const [isHovering, setIsHovering] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [marketCap, setMarketCap] = useState<number | null>(null);
-  const [tokenImage, setTokenImage] = useState<string | null>(null);
   const isPositive = token.change24h >= 0;
 
   // Use the PumpPortal hook to get token metrics
@@ -26,24 +21,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
     tokenMetrics,
     subscribeToToken
   } = usePumpPortal(token.id);
-
-  // Fetch token image when component mounts
-  useEffect(() => {
-    const fetchTokenImage = async () => {
-      if (token && token.id) {
-        try {
-          const imageUrl = await getTokenImageUrl(token.id);
-          if (imageUrl) {
-            setTokenImage(imageUrl);
-          }
-        } catch (error) {
-          console.error('Error fetching token image:', error);
-        }
-      }
-    };
-    
-    fetchTokenImage();
-  }, [token]);
 
   // Subscribe to token when component mounts
   useEffect(() => {
@@ -58,12 +35,10 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       setMarketCap(tokenMetrics.market_cap);
     }
   }, [tokenMetrics]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -81,7 +56,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
     const totalSupply = 1000000000;
     return price * totalSupply;
   };
-
   const copyToClipboard = () => {
     if (token && token.id) {
       navigator.clipboard.writeText(token.id).then(() => {
@@ -97,7 +71,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
 
   // Get the market cap to display - use tokenMetrics if available, otherwise calculate
   const displayMarketCap = marketCap !== null ? marketCap : calculateMarketCap(token.currentPrice);
-
   return <Link to={`/token/${token.id}`} className="block">
       <div className={`glass-panel transform transition-all duration-500 w-[280px] p-5 h-[420px] flex flex-col justify-between ${flipping ? 'animate-flip' : ''} ${isHovering ? 'scale-105 z-50' : 'z-10'} cursor-pointer`} style={{
       transform: `perspective(1000px) rotateY(${isHovering ? '0' : '-15'}deg) rotateX(${isHovering ? '0' : '5'}deg)`,
@@ -115,26 +88,15 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         {/* Token Info */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
-            {tokenImage ? (
-              <img src={tokenImage} alt={token.name} className="w-10 h-10 rounded-full object-cover" onError={e => {
-                const imgElement = e.target as HTMLImageElement;
-                imgElement.style.display = 'none';
-                const nextElement = imgElement.nextElementSibling as HTMLElement;
-                if (nextElement) {
-                  nextElement.style.display = 'flex';
-                }
-              }} />
-            ) : token.imageUrl ? (
-              <img src={token.imageUrl} alt={token.name} className="w-10 h-10 rounded-full object-cover" onError={e => {
-                const imgElement = e.target as HTMLImageElement;
-                imgElement.style.display = 'none';
-                const nextElement = imgElement.nextElementSibling as HTMLElement;
-                if (nextElement) {
-                  nextElement.style.display = 'flex';
-                }
-              }} />
-            ) : null}
-            <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${(tokenImage || token.imageUrl) ? 'hidden' : ''}`}>
+            {token.imageUrl ? <img src={token.imageUrl} alt={token.name} className="w-10 h-10 rounded-full object-cover" onError={e => {
+            const imgElement = e.target as HTMLImageElement;
+            imgElement.style.display = 'none';
+            const nextElement = imgElement.nextElementSibling as HTMLElement;
+            if (nextElement) {
+              nextElement.style.display = 'flex';
+            }
+          }} /> : null}
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}>
               <span className="font-display font-bold">{getTokenSymbol(token)}</span>
             </div>
             <span className="ml-2 font-semibold text-lg">{token.name}</span>
@@ -150,10 +112,10 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
             {token.id || 'Unknown Address'}
           </div>
           <button onClick={e => {
-            e.preventDefault();
-            e.stopPropagation();
-            copyToClipboard();
-          }} className="text-cyan-400 hover:text-cyan-300 transition-colors">
+          e.preventDefault();
+          e.stopPropagation();
+          copyToClipboard();
+        }} className="text-cyan-400 hover:text-cyan-300 transition-colors">
             {isCopied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
           </button>
         </div>
@@ -161,9 +123,9 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         {/* Market Cap Display */}
         <div className="relative h-[120px] mb-6 rounded-md overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" style={{
-            backgroundSize: '200% 100%',
-            animation: 'border-flow 15s linear infinite'
-          }}></div>
+          backgroundSize: '200% 100%',
+          animation: 'border-flow 15s linear infinite'
+        }}></div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="text-xs text-white/50 mb-1">Market Cap</div>
             <div className="relative">
@@ -172,7 +134,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
               </span>
               <div className="absolute -right-8 -top-4">
                 <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                  {isPositive ? '+' : ''}{token.change24h ? token.change24h.toFixed(2) : '0.00'}%
+                  {isPositive ? '+' : ''}{token.change24h.toFixed(2)}%
                 </span>
               </div>
             </div>
@@ -180,10 +142,10 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
           
           {/* Animated scan line */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent opacity-50" style={{
-            height: '10px',
-            width: '100%',
-            animation: 'scan-line 2s linear infinite'
-          }}></div>
+          height: '10px',
+          width: '100%',
+          animation: 'scan-line 2s linear infinite'
+        }}></div>
         </div>
         
         {/* Action Buttons - Rocket for MOON and Skull for DUST */}
@@ -213,7 +175,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       </div>
     </Link>;
 };
-
 const FuturisticTokenDisplay: React.FC<{
   tokens: any[];
 }> = ({
@@ -247,12 +208,10 @@ const FuturisticTokenDisplay: React.FC<{
 
   // Don't render anything if there are no tokens
   if (!tokens.length) return null;
-  
   return <div className="flex items-center justify-center">
       <div className="relative">
         <FuturisticTokenCard key={tokens[currentTokenIndex]?.id || `token-${currentTokenIndex}`} token={tokens[currentTokenIndex]} flipping={isFlipping} />
       </div>
     </div>;
 };
-
 export default FuturisticTokenDisplay;

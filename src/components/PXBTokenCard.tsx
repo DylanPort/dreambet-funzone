@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ExternalLink, Flame } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { toast } from '@/hooks/use-toast';
-import { getTokenImageUrl } from '@/services/pumpMetadataService';
 
 interface PXBTokenCardProps {
   id: string;
@@ -37,25 +36,6 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
 }) => {
   const { userProfile, placeBet, isLoading } = usePXBPoints();
   const isPositive = priceChange >= 0;
-  const [tokenImage, setTokenImage] = useState<string | null>(imageUrl || null);
-
-  // Fetch token image from Pump API if not provided
-  useEffect(() => {
-    const fetchImage = async () => {
-      if (!imageUrl && id) {
-        try {
-          const fetchedImageUrl = await getTokenImageUrl(id);
-          if (fetchedImageUrl) {
-            setTokenImage(fetchedImageUrl);
-          }
-        } catch (error) {
-          console.error('Error fetching token image:', error);
-        }
-      }
-    };
-    
-    fetchImage();
-  }, [id, imageUrl]);
 
   const formatPrice = (price: number) => {
     if (price < 0.01) return price.toFixed(6);
@@ -124,38 +104,11 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center">
-              {tokenImage ? (
-                <img 
-                  src={tokenImage} 
-                  alt={name} 
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    const imgElement = e.target as HTMLImageElement;
-                    imgElement.style.display = 'none';
-                    const nextElement = imgElement.nextElementSibling as HTMLElement;
-                    if (nextElement) {
-                      nextElement.style.display = 'flex';
-                    }
-                  }}
-                />
-              ) : (
-                <img 
-                  src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
-                  alt={name} 
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    const imgElement = e.target as HTMLImageElement;
-                    imgElement.style.display = 'none';
-                    const nextElement = imgElement.nextElementSibling as HTMLElement;
-                    if (nextElement) {
-                      nextElement.style.display = 'flex';
-                    }
-                  }}
-                />
-              )}
-              <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${tokenImage ? 'hidden' : ''}`}>
-                <span className="font-display font-bold">{symbol ? symbol.charAt(0).toUpperCase() : 'T'}</span>
-              </div>
+              <img 
+                src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
+                alt={name} 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1">
