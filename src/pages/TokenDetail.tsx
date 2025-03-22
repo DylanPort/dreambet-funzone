@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -23,7 +22,6 @@ import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
-
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -34,11 +32,9 @@ const TokenChart = ({
 }) => {
   const [timeInterval, setTimeInterval] = useState('15');
   const [chartTheme, setChartTheme] = useState('dark');
-
   const handleRefreshChart = () => {
     refreshData();
   };
-
   useEffect(() => {
     const handleMessage = event => {
       try {
@@ -52,27 +48,17 @@ const TokenChart = ({
         console.error("Error handling chart message:", error);
       }
     };
-
     window.addEventListener('message', handleMessage);
-
     return () => window.removeEventListener('message', handleMessage);
   }, [onPriceUpdate]);
-
   const chartUrl = `https://www.gmgn.cc/kline/sol/${tokenId}?theme=${chartTheme}&interval=${timeInterval}&send_price=true`;
-
-  return (
-    <div className="glass-panel p-6 mb-8">
+  return <div className="glass-panel p-6 mb-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-display font-bold">Price Chart</h2>
         <div className="flex gap-4">
           <div className="flex items-center gap-2">
             <label htmlFor="interval" className="text-sm text-dream-foreground/70">Interval:</label>
-            <select
-              id="interval"
-              value={timeInterval}
-              onChange={e => setTimeInterval(e.target.value)}
-              className="bg-black/20 border border-dream-accent2/20 rounded px-2 py-1 text-sm"
-            >
+            <select id="interval" value={timeInterval} onChange={e => setTimeInterval(e.target.value)} className="bg-black/20 border border-dream-accent2/20 rounded px-2 py-1 text-sm">
               <option value="1S">1 Second</option>
               <option value="1">1 Minute</option>
               <option value="5">5 Minutes</option>
@@ -84,20 +70,11 @@ const TokenChart = ({
             </select>
           </div>
           <div className="flex gap-2">
-            <a
-              href={`https://dexscreener.com/solana/${tokenId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-dream-accent2 hover:underline flex items-center text-sm"
-            >
+            <a href={`https://dexscreener.com/solana/${tokenId}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm">
               <ExternalLink className="w-3 h-3 mr-1" />
               DexScreener
             </a>
-            <button
-              onClick={handleRefreshChart}
-              className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm"
-              disabled={loading}
-            >
+            <button onClick={handleRefreshChart} className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm" disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
@@ -109,130 +86,119 @@ const TokenChart = ({
         <iframe src={chartUrl} className="w-full h-full border-0" title="GMGN Price Chart" loading="lazy"></iframe>
       </div>
       
-      <div className="mt-8 grid grid-cols-2 gap-4">
-        <div className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30" onClick={() => {
-        const moonPredictionEvent = new CustomEvent('predictionSelected', {
-          detail: {
-            prediction: 'moon',
-            percentageChange: 80,
-            defaultBetAmount: 10,
-            defaultDuration: 30
-          }
-        });
-        window.dispatchEvent(moonPredictionEvent);
-        refreshData('up');
-        setShowCreateBet(true);
-      }}>
-          <img src="/lovable-uploads/24c9c7f3-aec1-4095-b55f-b6198e22db19.png" alt="MOON" className="w-20 h-20 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(209,103,243,0.7)]" />
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-cyan-400/20 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
-          <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500 bg-clip-text text-transparent">MOON</span>
-        </div>
-        
-        <div className="relative group cursor-pointer glass-panel border border-dream-accent1/10 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 hover:border-dream-accent1/30" onClick={() => {
-        const dustPredictionEvent = new CustomEvent('predictionSelected', {
-          detail: {
-            prediction: 'die',
-            percentageChange: 50,
-            defaultBetAmount: 10,
-            defaultDuration: 30
-          }
-        });
-        window.dispatchEvent(dustPredictionEvent);
-        refreshData('down');
-        setShowCreateBet(true);
-      }}>
-          <img src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" alt="DUST" className="w-20 h-20 transition-transform duration-300 group-hover:scale-110 filter drop-shadow-[0_0_8px_rgba(0,179,255,0.7)]" />
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-cyan-400/20 to-magenta-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
-          <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 bg-clip-text text-transparent">DUST</span>
-        </div>
-      </div>
-    </div>
-  );
+      
+    </div>;
 };
-
 const TokenDetail = () => {
-  const { id } = useParams<{ id: string; }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const [token, setToken] = useState<any>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [priceData, setPriceData] = useState<{ time: string; price: number; }[]>([]);
+  const [priceData, setPriceData] = useState<{
+    time: string;
+    price: number;
+  }[]>([]);
   const [showCreateBet, setShowCreateBet] = useState(false);
   const [newActiveBet, setNewActiveBet] = useState<Bet | null>(null);
   const [activeBetsCount, setActiveBetsCount] = useState(0);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
-  const { connected, publicKey, wallet } = useWallet();
+  const {
+    connected,
+    publicKey,
+    wallet
+  } = useWallet();
   const [tokenMetrics, setTokenMetrics] = useState({
     marketCap: null,
     volume24h: null,
     liquidity: null,
-    holders: 0,
+    holders: 0
   });
   const lastPriceUpdateRef = useRef<number>(0);
   const lastMetricsUpdateRef = useRef<number>(0);
   const dexScreenerCleanupRef = useRef<Function | null>(null);
-
   const updateTokenPrice = useCallback((price: number, change24h: number) => {
     const now = Date.now();
     if (now - lastPriceUpdateRef.current > 2000) {
       lastPriceUpdateRef.current = now;
       setToken(current => {
         if (!current) return null;
-        return { ...current, currentPrice: price, change24h: change24h };
+        return {
+          ...current,
+          currentPrice: price,
+          change24h: change24h
+        };
       });
       setPriceData(current => {
-        const newPoint = { time: new Date().toISOString(), price: price };
+        const newPoint = {
+          time: new Date().toISOString(),
+          price: price
+        };
         return [...current, newPoint].slice(-60);
       });
     }
   }, []);
-
   const handleChartPriceUpdate = useCallback((price: number, change24h: number = 0) => {
     console.log("Received price update from chart:", price, change24h);
     updateTokenPrice(price, change24h);
     try {
-      localStorage.setItem(`token_price_${id}`, JSON.stringify({ price, change24h, timestamp: Date.now() }));
+      localStorage.setItem(`token_price_${id}`, JSON.stringify({
+        price,
+        change24h,
+        timestamp: Date.now()
+      }));
     } catch (error) {
       console.error("Error caching price:", error);
     }
   }, [id, updateTokenPrice]);
-
   const updateTokenMetrics = useCallback((newMetrics: any) => {
     const now = Date.now();
     if (now - lastMetricsUpdateRef.current > 2000) {
       lastMetricsUpdateRef.current = now;
-      setTokenMetrics(current => ({ ...current, ...newMetrics }));
+      setTokenMetrics(current => ({
+        ...current,
+        ...newMetrics
+      }));
     }
   }, []);
-
   useEffect(() => {
     const loadToken = async () => {
       if (!id) return;
-
       try {
         setLoading(true);
         console.log("Loading token with ID:", id);
-
         try {
           const cachedPrice = localStorage.getItem(`token_price_${id}`);
           if (cachedPrice) {
-            const { price, change24h, timestamp } = JSON.parse(cachedPrice);
+            const {
+              price,
+              change24h,
+              timestamp
+            } = JSON.parse(cachedPrice);
             if (Date.now() - timestamp < 5 * 60 * 1000) {
               setToken(current => {
                 if (!current) return null;
-                return { ...current, currentPrice: price, change24h: change24h };
+                return {
+                  ...current,
+                  currentPrice: price,
+                  change24h: change24h
+                };
               });
             }
           }
         } catch (e) {
           console.error("Error loading cached price:", e);
         }
-
         let tokenData = null;
         let isWebSocketToken = false;
         const recentTokens = pumpPortal.recentTokens || [];
         const webSocketToken = recentTokens.find(t => t.token_mint === id);
-
         if (webSocketToken) {
           console.log("Found token in WebSocket data:", webSocketToken);
           isWebSocketToken = true;
@@ -241,10 +207,9 @@ const TokenDetail = () => {
             token_name: webSocketToken.token_name,
             token_symbol: webSocketToken.token_symbol || '',
             last_trade_price: 0,
-            last_updated_time: webSocketToken.created_time,
+            last_updated_time: webSocketToken.created_time
           };
         }
-
         if (!tokenData) {
           console.log("Checking Supabase for token");
           const supabaseTokenData = await fetchTokenById(id);
@@ -253,7 +218,6 @@ const TokenDetail = () => {
             tokenData = supabaseTokenData;
           }
         }
-
         if (tokenData) {
           console.log("Setting token data:", tokenData);
           setToken({
@@ -263,16 +227,14 @@ const TokenDetail = () => {
             logo: '🪙',
             currentPrice: tokenData.last_trade_price || 0,
             change24h: 0,
-            migrationTime: new Date(tokenData.last_updated_time).getTime(),
+            migrationTime: new Date(tokenData.last_updated_time).getTime()
           });
-
           setTokenMetrics({
             marketCap: null,
             volume24h: null,
             liquidity: null,
-            holders: 0,
+            holders: 0
           });
-
           const dexScreenerData = await fetchDexScreenerData(tokenData.token_mint);
           if (dexScreenerData) {
             console.log("Got DexScreener data:", dexScreenerData);
@@ -280,30 +242,29 @@ const TokenDetail = () => {
               marketCap: dexScreenerData.marketCap,
               volume24h: dexScreenerData.volume24h,
               liquidity: dexScreenerData.liquidity,
-              holders: tokenMetrics.holders,
+              holders: tokenMetrics.holders
             });
           }
-
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(id);
           }
-
           const now = new Date();
           const initialData = [];
           for (let i = -30; i <= 0; i++) {
             const time = new Date(now);
             time.setMinutes(time.getMinutes() + i);
-            initialData.push({ time: time.toISOString(), price: tokenData.last_trade_price || 0 });
+            initialData.push({
+              time: time.toISOString(),
+              price: tokenData.last_trade_price || 0
+            });
           }
           setPriceData(initialData);
-
           const tokenBets = await fetchBetsByToken(id);
           setBets(tokenBets);
         } else if (id) {
           console.log("Creating placeholder for new token with ID:", id);
           let tokenName = "New Token";
           let tokenSymbol = "";
-
           const dexScreenerData = await fetchDexScreenerData(id);
           if (dexScreenerData) {
             console.log("Got DexScreener data for new token:", dexScreenerData);
@@ -312,15 +273,13 @@ const TokenDetail = () => {
               tokenName = baseTokenInfo.name || tokenName;
               tokenSymbol = baseTokenInfo.symbol || tokenSymbol;
             }
-
             setTokenMetrics({
               marketCap: dexScreenerData.marketCap,
               volume24h: dexScreenerData.volume24h,
               liquidity: dexScreenerData.liquidity,
-              holders: 0,
+              holders: 0
             });
           }
-
           setToken({
             id: id,
             name: tokenName,
@@ -328,37 +287,35 @@ const TokenDetail = () => {
             logo: '🪙',
             currentPrice: dexScreenerData?.priceUsd || 0,
             change24h: dexScreenerData?.priceChange24h || 0,
-            migrationTime: new Date().getTime(),
+            migrationTime: new Date().getTime()
           });
-
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(id);
           }
-
           const now = new Date();
           const initialData = [];
           for (let i = -30; i <= 0; i++) {
             const time = new Date(now);
             time.setMinutes(time.getMinutes() + i);
-            initialData.push({ time: time.toISOString(), price: dexScreenerData?.priceUsd || 0 });
+            initialData.push({
+              time: time.toISOString(),
+              price: dexScreenerData?.priceUsd || 0
+            });
           }
           setPriceData(initialData);
-
           const tokenBets = await fetchBetsByToken(id);
           setBets(tokenBets);
-
           toast({
             title: "New token detected",
             description: "This appears to be a very new token. Limited information is available.",
-            variant: "default",
+            variant: "default"
           });
-
           trackTokenSearch(id, tokenName, tokenSymbol);
         } else {
           toast({
             title: "Token not found",
             description: "We couldn't find details for this token.",
-            variant: "destructive",
+            variant: "destructive"
           });
         }
       } catch (error) {
@@ -366,16 +323,14 @@ const TokenDetail = () => {
         toast({
           title: "Failed to load token",
           description: "There was an error loading the token details.",
-          variant: "destructive",
+          variant: "destructive"
         });
       } finally {
         setLoading(false);
       }
     };
-
     loadToken();
   }, [id, toast, pumpPortal.connected, pumpPortal.recentTokens]);
-
   useEffect(() => {
     if (id && pumpPortal.recentTrades[id]) {
       const trades = pumpPortal.recentTrades[id];
@@ -386,11 +341,13 @@ const TokenDetail = () => {
           const priceChange = currentPrice > 0 ? (latestPrice - currentPrice) / currentPrice * 100 : 0;
           updateTokenPrice(latestPrice, priceChange);
           setPriceData(current => {
-            const newPoint = { time: new Date().toISOString(), price: latestPrice };
+            const newPoint = {
+              time: new Date().toISOString(),
+              price: latestPrice
+            };
             return [...current, newPoint].slice(-60);
           });
         }
-
         if (Date.now() - lastMetricsUpdateRef.current > 5000) {
           if (pumpPortal.tokenMetrics[id]) {
             const metrics = pumpPortal.tokenMetrics[id];
@@ -398,11 +355,10 @@ const TokenDetail = () => {
               marketCap: metrics.market_cap,
               volume24h: metrics.volume_24h,
               liquidity: metrics.liquidity,
-              holders: metrics.holders,
+              holders: metrics.holders
             });
           }
         }
-
         const lastPrice = priceData[priceData.length - 1]?.price || 0;
         if (lastPrice > 0) {
           const percentChange = (latestPrice - lastPrice) / lastPrice * 100;
@@ -410,14 +366,13 @@ const TokenDetail = () => {
             toast({
               title: `Price ${percentChange > 0 ? 'up' : 'down'} ${Math.abs(percentChange).toFixed(1)}%`,
               description: `${token?.symbol || 'Token'} is now $${formatPrice(latestPrice)}`,
-              variant: percentChange > 0 ? "default" : "destructive",
+              variant: percentChange > 0 ? "default" : "destructive"
             });
           }
         }
       }
     }
   }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
-
   useEffect(() => {
     if (id && pumpPortal.tokenMetrics[id]) {
       const metrics = pumpPortal.tokenMetrics[id];
@@ -425,12 +380,11 @@ const TokenDetail = () => {
         marketCap: metrics.market_cap,
         volume24h: metrics.volume_24h,
         liquidity: metrics.liquidity,
-        holders: metrics.holders,
+        holders: metrics.holders
       });
       console.log("Updated token metrics from WebSocket:", metrics);
     }
   }, [id, pumpPortal.tokenMetrics, updateTokenMetrics]);
-
   useEffect(() => {
     if (id) {
       const stopPolling = startDexScreenerPolling(id, data => {
@@ -439,13 +393,11 @@ const TokenDetail = () => {
           updateTokenMetrics({
             marketCap: data.marketCap,
             volume24h: data.volume24h,
-            liquidity: data.liquidity,
+            liquidity: data.liquidity
           });
         }
       }, 30000);
-
       dexScreenerCleanupRef.current = stopPolling;
-
       return () => {
         if (dexScreenerCleanupRef.current) {
           dexScreenerCleanupRef.current();
@@ -454,7 +406,6 @@ const TokenDetail = () => {
       };
     }
   }, [id, updateTokenPrice, updateTokenMetrics]);
-
   useEffect(() => {
     if (bets.length > 0) {
       const activeBets = bets.filter(bet => bet.status === 'open' || bet.status === 'matched');
@@ -464,26 +415,23 @@ const TokenDetail = () => {
         toast({
           title: "New Active Bet!",
           description: `A ${latestBet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`,
-          variant: "default",
+          variant: "default"
         });
       }
       setActiveBetsCount(activeBets.length);
     }
   }, [bets, activeBetsCount, toast, token]);
-
   const refreshData = useCallback(async (betType = null) => {
     if (!id) return;
-
     try {
       setLoading(true);
-
       const recentTokens = pumpPortal.recentTokens || [];
       const webSocketToken = recentTokens.find(t => t.token_mint === id);
       if (webSocketToken) {
         setToken(current => ({
           ...current,
           name: webSocketToken.token_name || current?.name || "New Token",
-          symbol: webSocketToken.token_symbol || current?.symbol || "",
+          symbol: webSocketToken.token_symbol || current?.symbol || ""
         }));
       } else {
         const tokenData = await fetchTokenById(id);
@@ -495,11 +443,10 @@ const TokenDetail = () => {
             logo: '🪙',
             currentPrice: tokenData.last_trade_price || 0,
             change24h: 0,
-            migrationTime: new Date(tokenData.last_updated_time).getTime(),
+            migrationTime: new Date(tokenData.last_updated_time).getTime()
           });
         }
       }
-
       const dexScreenerData = await fetchDexScreenerData(id);
       if (dexScreenerData) {
         console.log("Refreshed DexScreener data:", dexScreenerData);
@@ -507,21 +454,19 @@ const TokenDetail = () => {
           setToken(current => ({
             ...current,
             currentPrice: dexScreenerData.priceUsd || current?.currentPrice || 0,
-            change24h: dexScreenerData.priceChange24h || current?.change24h || 0,
+            change24h: dexScreenerData.priceChange24h || current?.change24h || 0
           }));
         }
         updateTokenMetrics({
           marketCap: dexScreenerData.marketCap,
           volume24h: dexScreenerData.volume24h,
-          liquidity: dexScreenerData.liquidity,
+          liquidity: dexScreenerData.liquidity
         });
       } else if (pumpPortal.connected) {
         pumpPortal.fetchTokenMetrics(id);
       }
-
       const tokenBets = await fetchBetsByToken(id);
       setBets(tokenBets);
-
       if (betType) {
         setShowCreateBet(true);
       }
@@ -530,33 +475,31 @@ const TokenDetail = () => {
       toast({
         title: "Refresh failed",
         description: "Could not refresh token data",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   }, [id, pumpPortal, toast, updateTokenMetrics, token]);
-
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to accept a bet",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
       await acceptBet(bet, publicKey.toString(), wallet);
       toast({
         title: "Bet accepted!",
-        description: `You've successfully accepted the bet on ${bet.tokenSymbol}`,
+        description: `You've successfully accepted the bet on ${bet.tokenSymbol}`
       });
       setNewActiveBet(bet);
       toast({
         title: "New Active Bet!",
-        description: `A ${bet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`,
+        description: `A ${bet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`
       });
       await refreshData();
     } catch (error) {
@@ -564,20 +507,20 @@ const TokenDetail = () => {
       toast({
         title: "Failed to accept bet",
         description: "There was an error processing the blockchain transaction",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
     if (numPrice < 0.01) return numPrice.toFixed(6);
     if (numPrice < 1) return numPrice.toFixed(4);
     if (numPrice < 1000) return numPrice.toFixed(2);
-    return numPrice.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    return numPrice.toLocaleString('en-US', {
+      maximumFractionDigits: 2
+    });
   };
-
   const formatLargeNumber = (num: number | null) => {
     if (num === null || num === undefined) return "N/A";
     if (num >= 1000000000) {
@@ -590,14 +533,10 @@ const TokenDetail = () => {
       return `$${num.toFixed(2)}`;
     }
   };
-
   const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
-
   const renderActiveBetBanner = () => {
     if (!newActiveBet) return null;
-
-    return (
-      <div className="bg-gradient-to-r from-dream-accent1/20 to-dream-accent3/20 border border-dream-accent2/30 rounded-md p-3 mb-4 animate-pulse-slow">
+    return <div className="bg-gradient-to-r from-dream-accent1/20 to-dream-accent3/20 border border-dream-accent2/30 rounded-md p-3 mb-4 animate-pulse-slow">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <div className="w-2 h-2 bg-dream-accent2 rounded-full mr-2 animate-pulse"></div>
@@ -610,15 +549,20 @@ const TokenDetail = () => {
         <p className="text-sm mt-1">
           A {newActiveBet.amount} PXB bet that this token will {newActiveBet.prediction} is now active!
         </p>
-      </div>
-    );
+      </div>;
   };
-
-  const { userProfile, bets: userPXBBets, fetchUserBets, isLoading: pxbLoading } = usePXBPoints();
+  const {
+    userProfile,
+    bets: userPXBBets,
+    fetchUserBets,
+    isLoading: pxbLoading
+  } = usePXBPoints();
   const [tokenPXBBets, setTokenPXBBets] = useState<any[]>([]);
   const [loadingMarketCaps, setLoadingMarketCaps] = useState<Record<string, boolean>>({});
-  const [marketCapData, setMarketCapData] = useState<Record<string, { initialMarketCap: number | null, currentMarketCap: number | null }>>({});
-
+  const [marketCapData, setMarketCapData] = useState<Record<string, {
+    initialMarketCap: number | null;
+    currentMarketCap: number | null;
+  }>>({});
   useEffect(() => {
     if (userProfile && userPXBBets && userPXBBets.length > 0 && id) {
       const filteredBets = userPXBBets.filter(bet => bet.tokenMint === id);
@@ -627,123 +571,103 @@ const TokenDetail = () => {
       setTokenPXBBets([]);
     }
   }, [userProfile, userPXBBets, id]);
-
   useEffect(() => {
     const fetchMarketCapData = async () => {
       if (!tokenPXBBets || tokenPXBBets.length === 0) return;
-
       for (const bet of tokenPXBBets) {
         if (!bet.tokenMint) continue;
         if (marketCapData[bet.id]?.currentMarketCap) continue;
-
-        setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: true }));
-
+        setLoadingMarketCaps(prev => ({
+          ...prev,
+          [bet.id]: true
+        }));
         try {
           const data = await fetchDexScreenerData(bet.tokenMint);
-
           if (data) {
             setMarketCapData(prev => ({
               ...prev,
               [bet.id]: {
                 initialMarketCap: bet.initialMarketCap || data.marketCap,
-                currentMarketCap: data.marketCap,
-              },
+                currentMarketCap: data.marketCap
+              }
             }));
           }
         } catch (error) {
           console.error(`Error fetching data for token ${bet.tokenSymbol}:`, error);
         } finally {
-          setLoadingMarketCaps(prev => ({ ...prev, [bet.id]: false }));
+          setLoadingMarketCaps(prev => ({
+            ...prev,
+            [bet.id]: false
+          }));
         }
-
         await new Promise(resolve => setTimeout(resolve, 200));
       }
     };
-
     fetchMarketCapData();
-
     const interval = setInterval(() => {
       const pendingBets = tokenPXBBets.filter(bet => bet.status === 'pending');
       if (pendingBets.length > 0) {
         fetchMarketCapData();
       }
     }, 30000);
-
     return () => clearInterval(interval);
   }, [tokenPXBBets, marketCapData]);
-
-  const calculateProgress = (bet) => {
+  const calculateProgress = bet => {
     if (bet.status !== 'pending') {
       return bet.status === 'won' ? 100 : 0;
     }
-
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
-
     if (currentMarketCap && initialMarketCap) {
-      const actualChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
+      const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
       const targetChange = bet.percentageChange;
-
       if (bet.betType === 'up') {
         if (actualChange < 0) return 0;
-        return Math.min(100, (actualChange / targetChange) * 100);
+        return Math.min(100, actualChange / targetChange * 100);
       } else {
         if (actualChange > 0) return 0;
-        return Math.min(100, (Math.abs(actualChange) / targetChange) * 100);
+        return Math.min(100, Math.abs(actualChange) / targetChange * 100);
       }
     }
-
     return 0;
   };
-
-  const calculateTargetMarketCap = (bet) => {
+  const calculateTargetMarketCap = bet => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     if (!initialMarketCap) return null;
-
     if (bet.betType === 'up') {
       return initialMarketCap * (1 + bet.percentageChange / 100);
     } else {
       return initialMarketCap * (1 - bet.percentageChange / 100);
     }
   };
-
-  const calculateMarketCapChange = (bet) => {
+  const calculateMarketCapChange = bet => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
-
     if (currentMarketCap && initialMarketCap) {
-      return ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
+      return (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
     }
     return null;
   };
-
   useEffect(() => {
     if (userProfile && id) {
       fetchUserBets();
     }
   }, [userProfile, id, fetchUserBets]);
-
-  return (
-    <>
+  return <>
       <OrbitingParticles />
       <Navbar />
       
       <main className="pt-24 min-h-screen px-4 pb-16">
         <div className="max-w-7xl mx-auto">
-          {loading && !token ? (
-            <div className="flex justify-center py-16">
+          {loading && !token ? <div className="flex justify-center py-16">
               <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : !token ? (
-            <div className="glass-panel p-8 text-center">
+            </div> : !token ? <div className="glass-panel p-8 text-center">
               <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
               <p className="text-dream-foreground/70 mb-4">
                 The token you're looking for could not be found or has been removed.
               </p>
               <Button onClick={() => window.history.back()}>Go Back</Button>
-            </div>
-          ) : (
-            <>
+            </div> : <>
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
                 <span>Back to Tokens</span>
@@ -760,25 +684,20 @@ const TokenDetail = () => {
                   <div>
                     <h1 className="text-2xl font-display font-bold flex items-center">
                       {token.name}
-                      {isLive && (
-                        <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full flex items-center">
+                      {isLive && <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full flex items-center">
                           <span className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1 animate-pulse"></span>
                           LIVE
-                        </span>
-                      )}
+                        </span>}
                     </h1>
                     <div className="flex items-center text-dream-foreground/70">
                       <span className="mr-2">{token.symbol}</span>
-                      <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText(token.id);
-                          toast({
-                            title: "Copied!",
-                            description: "Token address copied to clipboard",
-                          });
-                        }}
-                        className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center"
-                      >
+                      <button onClick={() => {
+                    navigator.clipboard.writeText(token.id);
+                    toast({
+                      title: "Copied!",
+                      description: "Token address copied to clipboard"
+                    });
+                  }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
                         {token.id.substring(0, 4)}...{token.id.substring(token.id.length - 4)}
                         <Copy className="w-3 h-3 ml-1" />
                       </button>
@@ -786,35 +705,12 @@ const TokenDetail = () => {
                   </div>
                 </div>
                 
-                <div className="glass-panel p-4 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-dream-foreground/70 text-sm">Current Price:</span>
-                    <span className="font-bold text-lg">${formatPrice(token.currentPrice)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-dream-foreground/70 text-sm">24h Change:</span>
-                    <span className={`font-medium flex items-center ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {token.change24h >= 0 ? (
-                        <ArrowUpRight className="w-3 h-3 mr-1" />
-                      ) : (
-                        <ArrowDownRight className="w-3 h-3 mr-1" />
-                      )}
-                      {Math.abs(token.change24h).toFixed(2)}%
-                    </span>
-                  </div>
-                </div>
+                
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 <div className="lg:col-span-2">
-                  <TokenChart 
-                    tokenId={id} 
-                    tokenName={token.name}
-                    refreshData={refreshData}
-                    loading={loading}
-                    onPriceUpdate={handleChartPriceUpdate}
-                    setShowCreateBet={setShowCreateBet}
-                  />
+                  <TokenChart tokenId={id} tokenName={token.name} refreshData={refreshData} loading={loading} onPriceUpdate={handleChartPriceUpdate} setShowCreateBet={setShowCreateBet} />
                 </div>
                 
                 <div className="space-y-8">
@@ -856,21 +752,13 @@ const TokenDetail = () => {
                           </div>
                         </div>
                         
-                        <Button 
-                          className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all"
-                          onClick={() => setShowCreateBet(true)}
-                        >
+                        <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
                           Place a Bet
                         </Button>
                       </div>
                       
                       <div>
-                        <a
-                          href={`https://dexscreener.com/solana/${token.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-dream-accent2 hover:underline flex items-center text-sm justify-end"
-                        >
+                        <a href={`https://dexscreener.com/solana/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm justify-end">
                           <ExternalLink className="w-3 h-3 mr-1" />
                           View on DexScreener
                         </a>
@@ -878,21 +766,13 @@ const TokenDetail = () => {
                     </div>
                   </div>
                   
-                  {showCreateBet && (
-                    <div className="glass-panel p-6">
+                  {showCreateBet && <div className="glass-panel p-6">
                       <h3 className="text-xl font-display font-bold mb-4">Create Bet</h3>
-                      <CreateBetForm 
-                        tokenId={token.id}
-                        tokenName={token.name}
-                        tokenSymbol={token.symbol}
-                        onBetCreated={() => {
-                          refreshData();
-                          setShowCreateBet(false);
-                        }}
-                        onCancel={() => setShowCreateBet(false)}
-                      />
-                    </div>
-                  )}
+                      <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol} onBetCreated={() => {
+                  refreshData();
+                  setShowCreateBet(false);
+                }} onCancel={() => setShowCreateBet(false)} />
+                    </div>}
                 </div>
               </div>
 
@@ -900,60 +780,33 @@ const TokenDetail = () => {
                 <div className="glass-panel p-6">
                   <h3 className="text-xl font-display font-bold mb-4">Token Bets</h3>
                   
-                  {bets.length === 0 ? (
-                    <div className="text-center py-8 text-dream-foreground/70">
+                  {bets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
                       <p>No bets available for this token yet.</p>
                       <p className="text-sm mt-2">Be the first to create a bet!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {bets.map(bet => (
-                        <BetCard 
-                          key={bet.id} 
-                          bet={bet}
-                          connected={connected}
-                          publicKeyString={publicKey?.toString() || null}
-                          onAcceptBet={handleAcceptBet}
-                        />
-                      ))}
-                    </div>
-                  )}
+                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey?.toString() || null} onAcceptBet={handleAcceptBet} />)}
+                    </div>}
                 </div>
                 
                 <div className="glass-panel p-6">
                   <h3 className="text-xl font-display font-bold mb-4">Your PXB Bets</h3>
                   
-                  {tokenPXBBets.length === 0 ? (
-                    <div className="text-center py-8 text-dream-foreground/70">
+                  {tokenPXBBets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
                       <p>You don't have any PXB bets on this token.</p>
                       <p className="text-sm mt-2">Place a bet to see it here!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {tokenPXBBets.map(bet => (
-                        <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4">
+                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {tokenPXBBets.map(bet => <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center">
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${
-                                bet.betType === 'up' 
-                                  ? 'bg-green-500/20 text-green-400' 
-                                  : 'bg-red-500/20 text-red-400'
-                              }`}>
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${bet.betType === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                                 {bet.betType === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                               </div>
                               <span className="font-semibold">
                                 {bet.amount} PXB
                               </span>
                             </div>
-                            <div className={`text-xs px-2 py-0.5 rounded-full ${
-                              bet.status === 'pending' ? 'bg-blue-500/20 text-blue-400' :
-                              bet.status === 'won' ? 'bg-green-500/20 text-green-400' :
-                              bet.status === 'lost' ? 'bg-red-500/20 text-red-400' :
-                              'bg-yellow-500/20 text-yellow-400'
-                            }`}>
-                              {bet.status === 'pending' ? 'Active' :
-                               bet.status === 'won' ? 'Won' :
-                               bet.status === 'lost' ? 'Lost' : 'Unknown'}
+                            <div className={`text-xs px-2 py-0.5 rounded-full ${bet.status === 'pending' ? 'bg-blue-500/20 text-blue-400' : bet.status === 'won' ? 'bg-green-500/20 text-green-400' : bet.status === 'lost' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                              {bet.status === 'pending' ? 'Active' : bet.status === 'won' ? 'Won' : bet.status === 'lost' ? 'Lost' : 'Unknown'}
                             </div>
                           </div>
                           
@@ -962,11 +815,12 @@ const TokenDetail = () => {
                           </div>
                           
                           <div className="text-xs text-dream-foreground/60 mb-2">
-                            Created {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
+                            Created {formatDistanceToNow(new Date(bet.createdAt), {
+                      addSuffix: true
+                    })}
                           </div>
                           
-                          {bet.status === 'pending' && marketCapData[bet.id] && (
-                            <div className="mt-3 space-y-2">
+                          {bet.status === 'pending' && marketCapData[bet.id] && <div className="mt-3 space-y-2">
                               <div className="flex justify-between text-xs">
                                 <div className="text-dream-foreground/70">
                                   Initial: {formatLargeNumber(marketCapData[bet.id]?.initialMarketCap || bet.initialMarketCap)}
@@ -981,48 +835,24 @@ const TokenDetail = () => {
                               
                               <Progress value={calculateProgress(bet)} className="h-2" />
                               
-                              {marketCapData[bet.id]?.currentMarketCap && (
-                                <div className="text-xs text-center">
-                                  {loadingMarketCaps[bet.id] ? (
-                                    'Updating market cap data...'
-                                  ) : (
-                                    <>
+                              {marketCapData[bet.id]?.currentMarketCap && <div className="text-xs text-center">
+                                  {loadingMarketCaps[bet.id] ? 'Updating market cap data...' : <>
                                       Market cap {calculateMarketCapChange(bet) > 0 ? 'up' : 'down'} {Math.abs(calculateMarketCapChange(bet) || 0).toFixed(2)}%
-                                      {bet.betType === 'up' ? (
-                                        calculateMarketCapChange(bet) > 0 ? (
-                                          <span className="text-green-400 ml-1">Moving toward target</span>
-                                        ) : (
-                                          <span className="text-red-400 ml-1">Moving away from target</span>
-                                        )
-                                      ) : (
-                                        calculateMarketCapChange(bet) < 0 ? (
-                                          <span className="text-green-400 ml-1">Moving toward target</span>
-                                        ) : (
-                                          <span className="text-red-400 ml-1">Moving away from target</span>
-                                        )
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                                      {bet.betType === 'up' ? calculateMarketCapChange(bet) > 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span> : calculateMarketCapChange(bet) < 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span>}
+                                    </>}
+                                </div>}
+                            </div>}
+                        </div>)}
+                    </div>}
                 </div>
               </div>
               
               <div className="mb-8">
                 <TokenComments tokenId={id} tokenName={token.name} />
               </div>
-            </>
-          )}
+            </>}
         </div>
       </main>
-    </>
-  );
+    </>;
 };
-
 export default TokenDetail;
