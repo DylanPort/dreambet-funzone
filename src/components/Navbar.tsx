@@ -68,8 +68,12 @@ const Navbar = () => {
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-1.5">
-          <Link to="/" className="text-lg font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-dream-accent1 to-dream-accent2 mx-px px-[3px] my-[1px] py-[6px]">
-            PumpXBounty
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/a2975835-e669-4129-b2d9-c4ec405cf5c5.png" 
+              alt="PumpBounty" 
+              className="h-10"
+            />
           </Link>
           
           <nav className="hidden md:flex space-x-4 items-center">
