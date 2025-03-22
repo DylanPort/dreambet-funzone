@@ -126,7 +126,7 @@ const BetCard: React.FC<BetCardProps> = ({ bet, connected, publicKeyString, onAc
           <div className="space-y-2">
             <div className="text-sm text-dream-foreground/70">Bet Amount</div>
             <div className="text-lg font-medium text-dream-accent1">
-              {bet.amount} SOL
+              {bet.amount} PXB
             </div>
           </div>
           
