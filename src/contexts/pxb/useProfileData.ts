@@ -40,7 +40,8 @@ export const useProfileData = () => {
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
-          createdAt: supabaseUser.created_at
+          createdAt: supabaseUser.created_at,
+          wallet_address: supabaseUser.wallet_address
         });
       } else {
         console.log('User not found in database yet');
