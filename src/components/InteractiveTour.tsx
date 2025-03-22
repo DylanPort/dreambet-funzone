@@ -339,23 +339,17 @@ const InteractiveTour = () => {
                 transform: 'translateZ(20px)'
               }} 
               initial={{
-                opacity: 0,
-                scale: 0.95,
-                filter: 'blur(10px)'
+                opacity: 0
               }} 
               animate={{
-                opacity: 1,
-                scale: 1,
-                filter: 'blur(0px)'
+                opacity: 1
               }} 
               exit={{
-                opacity: 0,
-                scale: 0.95,
-                filter: 'blur(10px)'
+                opacity: 0
               }} 
               transition={{
-                duration: 0.5,
-                ease: [0.22, 1, 0.36, 1]
+                duration: 0.3,
+                ease: "easeInOut"
               }} 
               className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-gradient-to-b from-black/95 to-black/85 backdrop-blur-md">
               {isMobile ? <ScrollArea className="h-full pr-2">
