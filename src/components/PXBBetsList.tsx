@@ -82,7 +82,6 @@ const PXBBetsList = () => {
     if (isRefreshing) return;
     
     toast({
-      title: "Refreshing market cap data",
       description: "Fetching the latest market cap information for your bets"
     });
     
@@ -232,7 +231,7 @@ const PXBBetsList = () => {
                   }`}>
                     {bet.betType === 'up' ? 
                       <ArrowUp className={`w-4 h-4 ${bet.betType === 'up' ? 'text-green-400' : 'text-red-400'}`} /> : 
-                      <ArrowDown className={`w-4 h-4 ${bet.betType === 'up' ? 'text-green-400' : 'text-red-400'}`} />
+                      <ArrowDown className={`w-4 h-4 ${bet.betType === 'down' ? 'text-red-400' : 'text-green-400'}`} />
                     }
                   </div>
                   <span>
@@ -298,7 +297,7 @@ const PXBBetsList = () => {
             className="w-full text-sm" 
             onClick={() => setShowAllBets(!showAllBets)}
           >
-            {showAllBets ? 'Show Less' : `Show All (${bets.length})`}
+            {showAllUsers ? 'Show Less' : `Show All (${bets.length})`}
             <ChevronRight className={`ml-2 h-4 w-4 transition-transform ${showAllBets ? 'rotate-90' : ''}`} />
           </Button>
         )}

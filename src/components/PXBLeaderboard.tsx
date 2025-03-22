@@ -1,12 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Trophy, Medal, User, ArrowUp, Flame, Star, BarChart, ChevronDown } from 'lucide-react';
+import { Trophy, Medal, User, ArrowUp, Flame, Star, BarChart, ChevronDown, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LeaderboardUser } from '@/contexts/pxb/useLeaderboardData';
+import { LeaderboardEntry } from '@/types/pxb';
 
 const PXBLeaderboard: React.FC = () => {
   const {
@@ -74,7 +74,7 @@ const PXBLeaderboard: React.FC = () => {
   const displayedPointsUsers = showAllUsers ? leaderboard : leaderboard.slice(0, 10);
   const displayedWinRateUsers = showAllUsers ? winRateLeaderboard : winRateLeaderboard.slice(0, 10);
   
-  const renderLeaderboardContent = (data: LeaderboardUser[], valueKey: string, valueLabel: string, isLoading: boolean) => {
+  const renderLeaderboardContent = (data: any[], valueKey: string, valueLabel: string, isLoading: boolean) => {
     if (isLoading) {
       return (
         <div className="flex justify-center items-center h-[320px]">
