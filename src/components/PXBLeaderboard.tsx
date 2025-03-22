@@ -1,15 +1,22 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Trophy, Medal, User, ArrowUp, Flame, Star, BarChart } from 'lucide-react';
+import { Trophy, Medal, User, ArrowUp, Flame, Star, BarChart, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from '@/components/ui/pagination';
+import { useLeaderboardData } from '@/contexts/pxb/useLeaderboardData';
 
 const PXBLeaderboard: React.FC = () => {
-  const { leaderboard, fetchLeaderboard, userProfile } = usePXBPoints();
+  const { userProfile } = usePXBPoints();
+  const { leaderboard, winrateLeaderboard, fetchLeaderboard, fetchFullLeaderboard } = useLeaderboardData();
   const [animate, setAnimate] = useState(false);
   const [leaderboardTab, setLeaderboardTab] = useState<'points' | 'winrate'>('points');
+  const [showingFull, setShowingFull] = useState(false);
+  const [fullLeaderboardData, setFullLeaderboardData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -20,12 +27,28 @@ const PXBLeaderboard: React.FC = () => {
     return () => clearTimeout(timer);
   }, [fetchLeaderboard]);
 
-  // This is a placeholder for winrate data - in a real implementation
-  // this would be fetched from your backend
-  const winrateLeaderboard = leaderboard.map(user => ({
-    ...user,
-    winRate: Math.round(Math.random() * 100) // Replace with actual win rate data
-  })).sort((a, b) => b.winRate - a.winRate);
+  const handleShowAll = async () => {
+    if (showingFull) {
+      setShowingFull(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const fullData = await fetchFullLeaderboard(leaderboardTab);
+      setFullLeaderboardData(fullData);
+      setShowingFull(true);
+    } catch (error) {
+      console.error('Error fetching full leaderboard:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Reset full view when tab changes
+  useEffect(() => {
+    setShowingFull(false);
+  }, [leaderboardTab]);
 
   const getLeaderIcon = (position: number) => {
     switch(position) {
@@ -160,13 +183,32 @@ const PXBLeaderboard: React.FC = () => {
         </TabsList>
         
         <TabsContent value="points" className="mt-0">
-          {renderLeaderboardContent(leaderboard, 'pxbPoints', 'PXB')}
+          {showingFull 
+            ? renderLeaderboardContent(fullLeaderboardData, 'pxbPoints', 'PXB')
+            : renderLeaderboardContent(leaderboard, 'pxbPoints', 'PXB')
+          }
         </TabsContent>
         
         <TabsContent value="winrate" className="mt-0">
-          {renderLeaderboardContent(winrateLeaderboard, 'winRate', '')}
+          {showingFull 
+            ? renderLeaderboardContent(fullLeaderboardData, 'winRate', '')
+            : renderLeaderboardContent(winrateLeaderboard, 'winRate', '')
+          }
         </TabsContent>
       </Tabs>
+      
+      <div className="mt-4 flex justify-center">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleShowAll}
+          disabled={isLoading}
+          className="flex items-center gap-1 text-xs"
+        >
+          {isLoading ? 'Loading...' : showingFull ? 'Show Less' : 'Show All Top 50'}
+          {!isLoading && <ChevronDown className={`h-3 w-3 transition-transform ${showingFull ? 'rotate-180' : ''}`} />}
+        </Button>
+      </div>
     </div>
   );
 };
