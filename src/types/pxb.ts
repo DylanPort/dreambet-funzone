@@ -1,3 +1,4 @@
+
 export interface UserProfile {
   id: string;
   username: string;
@@ -15,12 +16,13 @@ export interface PXBBet {
   betAmount: number;
   betType: 'up' | 'down';
   percentageChange: number;
-  status: 'pending' | 'won' | 'lost';
+  status: 'pending' | 'won' | 'lost' | 'open';
   pointsWon: number;
   createdAt: string;
   expiresAt: string;
   initialMarketCap?: number;
   currentMarketCap?: number;
+  userRole?: 'creator' | 'participant';
 }
 
 // Database schema interfaces for type safety with Supabase

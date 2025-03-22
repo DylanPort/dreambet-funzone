@@ -41,9 +41,16 @@ const PXBBetsHistory = () => {
     navigate(`/token/${tokenMint}`);
   };
 
+  // Check if bet is active (pending or open and not expired)
+  const isBetActive = (bet) => {
+    const now = new Date();
+    const expiryDate = new Date(bet.expiresAt);
+    return (bet.status === 'pending' || bet.status === 'open') && now < expiryDate;
+  };
+
   const filteredBets = bets.filter(bet => {
     if (activeFilter === 'all') return true;
-    if (activeFilter === 'active') return bet.status === 'pending';
+    if (activeFilter === 'active') return isBetActive(bet);
     return bet.status === 'won' || bet.status === 'lost';
   });
 
@@ -156,7 +163,7 @@ const PXBBetsHistory = () => {
                     {formatDate(bet.createdAt)}
                   </td>
                   <td className="py-4 px-4">
-                    {bet.status === 'pending' ? (
+                    {isBetActive(bet) ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">
                         Active
                       </span>

@@ -17,6 +17,7 @@ export const useBetProcessor = (
     console.log('Processing pending bets...', bets.length);
     
     // Get pending bets that need to be checked
+    // Now TypeScript knows that 'open' is a valid status
     const pendingBets = bets.filter(bet => bet.status === 'pending' || (bet.status === 'open' && new Date() >= new Date(bet.expiresAt)));
     console.log(`Found ${pendingBets.length} pending bets to process`);
     
