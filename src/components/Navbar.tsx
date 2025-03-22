@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Coins, Award } from 'lucide-react';
@@ -71,12 +70,13 @@ const Navbar = () => {
           </Link>
           
           <nav className="hidden md:flex space-x-4 items-center">
-            <Link to="/betting" className={`nav-link flex items-center gap-1 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+            <Link to="/betting" className={`nav-link flex items-center gap-1 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-green-400' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
               </div>
               <span className="text-sm">Playground</span>
             </Link>
+            
             <Link to="/betting/my-bets" className={`nav-link flex items-center gap-1 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105">
                 <img alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" src="/lovable-uploads/f4f0715a-b593-4250-b09f-b31137657bf2.png" />
@@ -121,12 +121,13 @@ const Navbar = () => {
       
       {isOpen && <div className="md:hidden glass-panel p-3">
           <nav className="flex flex-col space-y-2">
-            <Link to="/betting" className={`py-1 flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
+            <Link to="/betting" className={`py-1 flex items-center gap-1.5 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-green-400' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/0ac8fb50-def8-4e80-8f31-1c24a76d49de.png" alt="Betting" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,61,252,0.5)]" />
               </div>
               <span className="text-sm">Betting</span>
             </Link>
+            
             <Link to="/betting/my-bets" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/betting/my-bets' ? 'text-dream-accent2' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 flex items-center justify-center transition-transform hover:scale-105">
                 <img src="/lovable-uploads/e789c889-622a-41ff-8169-d6aadb9c09bf.png" alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" />
