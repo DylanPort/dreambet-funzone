@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, ExternalLink, RefreshCcw } from 'lucide-react';
 import { subscribeToMarketCap } from '@/services/dexScreenerService';
@@ -19,10 +18,8 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
   
-  // Reference to track if component is mounted
   const isMounted = useRef(true);
 
-  // Set up interval to refresh data every 10 seconds
   useEffect(() => {
     if (!tokenId) return;
     
@@ -43,11 +40,9 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   }, [tokenId]);
   
   useEffect(() => {
-    // Set mounted flag
     isMounted.current = true;
     
     return () => {
-      // Clear mounted flag on unmount
       isMounted.current = false;
     };
   }, []);
@@ -55,12 +50,10 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   useEffect(() => {
     if (!tokenId) return;
     
-    // Immediately try to load from localStorage for instant display
     try {
       const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY + tokenId);
       if (cachedData) {
         const { value, timestamp } = JSON.parse(cachedData);
-        // Only use if less than 2 minutes old
         if (Date.now() - timestamp < 2 * 60 * 1000) {
           setMarketCap(value);
           setLastUpdated(new Date(timestamp));
@@ -71,14 +64,12 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       console.error("Error loading cached market cap:", e);
     }
     
-    // Use DexScreener as the primary data source
     const cleanupDexScreener = subscribeToMarketCap(tokenId, (newMarketCap) => {
       if (isMounted.current) {
         setMarketCap(newMarketCap);
         setLastUpdated(new Date());
         setLoading(false);
         
-        // Trigger pulse animation
         setPulseEffect(true);
         setTimeout(() => {
           if (isMounted.current) {
@@ -86,7 +77,6 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
           }
         }, 1000);
         
-        // Cache in localStorage
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY + tokenId, JSON.stringify({
             value: newMarketCap,
@@ -96,7 +86,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
           console.error("Error caching market cap:", e);
         }
       }
-    }, 10000); // 10 seconds refresh interval
+    }, 10000);
     
     return () => {
       cleanupDexScreener();
@@ -118,7 +108,6 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
     return `$${num.toFixed(2)}`;
   };
 
-  // Format timestamp to show how recently the data was updated
   const getLastUpdatedText = () => {
     if (!lastUpdated) return "";
     
@@ -132,18 +121,13 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   };
 
   return (
-    <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in">
-      <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/20 to-dream-accent2/20 animate-gradient-move"></div>
-      <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
-        <BarChart3 size={20} className="mr-3 text-dream-accent1 animate-pulse-glow" />
-        <span className="text-lg font-semibold text-white">Market Cap</span>
-        {lastUpdated && (
-          <span className="ml-auto text-xs text-white/80">
-            {getLastUpdatedText()}
-          </span>
-        )}
+    <div className="glass-panel p-4 relative overflow-hidden transition-all duration-300 hover:scale-105 animate-fade-in min-w-[150px] flex-1">
+      <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/30 to-dream-accent2/30 animate-gradient-move"></div>
+      <div className="flex items-center text-white mb-2 relative z-10">
+        <BarChart3 size={18} className="mr-2 text-dream-accent1 animate-pulse-glow" />
+        <span className="text-sm font-semibold">Market Cap</span>
       </div>
-      <div className={`text-3xl font-bold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent1 transition-colors duration-500' : 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]'}`}>
+      <div className={`text-2xl font-extrabold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent1 transition-colors duration-500' : 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]'}`}>
         {loading ? (
           <span className="animate-pulse">Loading...</span>
         ) : (
@@ -151,7 +135,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
             <span className="mr-2">{formatLargeNumber(marketCap)}</span>
             <div className="flex items-center h-2">
               <div className="w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></div>
-              <span className="text-xs text-green-400 font-semibold animate-pulse-slow">LIVE</span>
+              <span className="text-xs text-green-400 font-bold animate-pulse-slow">LIVE</span>
             </div>
           </>
         )}
@@ -177,7 +161,6 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
         </a>
       </div>
       
-      {/* Add constant shimmering effect to bottom bar */}
       <div className="absolute bottom-0 left-0 right-0 overflow-hidden h-1">
         <div 
           className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent1 animate-pulse-glow" 

@@ -724,10 +724,10 @@ const TokenDetail = () => {
                     <h3 className="text-xl font-display font-bold mb-4">Token Metrics</h3>
                     
                     <div className="space-y-4">
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="flex flex-row gap-4 overflow-x-auto pb-2">
                         <TokenMarketCap tokenId={id || ''} />
                         <TokenVolume tokenId={id || ''} />
-                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1">
+                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1 min-w-[150px]">
                           <div className="text-dream-foreground/70 text-xs flex items-center">
                             <Users className="w-3 h-3 mr-1" />
                             Holders
@@ -758,13 +758,15 @@ const TokenDetail = () => {
                     </div>
                   </div>
                   
-                  {showCreateBet && <div className="glass-panel p-6">
+                  {showCreateBet && (
+                    <div className="glass-panel p-6">
                       <h3 className="text-xl font-display font-bold mb-4">Create Bet</h3>
                       <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol} onBetCreated={() => {
                   refreshData();
                   setShowCreateBet(false);
                 }} onCancel={() => setShowCreateBet(false)} />
-                    </div>}
+                    </div>
+                  )}
                 </div>
               </div>
               
