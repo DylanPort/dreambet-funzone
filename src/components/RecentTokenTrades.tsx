@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { ArrowUpRight, ArrowDownRight, Clock, TrendingUp, User, Users, Layers, DollarSign, Loader2, ExternalLink } from 'lucide-react';
@@ -12,10 +11,6 @@ import { BetPrediction, BetStatus } from '@/types/bet';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
-import { fetchTokenDataFromSolscan } from '@/services/solscanService';
-import { fetchTokenPairData } from '@/services/dexScreenerService';
-import { useToast } from '@/hooks/use-toast';
-
 const RecentTokenTrades: React.FC = () => {
   const {
     isConnected
@@ -29,15 +24,11 @@ const RecentTokenTrades: React.FC = () => {
   const [page, setPage] = useState(0);
   const pageSize = 5;
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [marketCapData, setMarketCapData] = useState<Record<string, {
     initialMarketCap: number | null;
     currentMarketCap: number | null;
   }>>({});
   const [loadingProgress, setLoadingProgress] = useState<Record<string, boolean>>({});
-  const [tokenIcons, setTokenIcons] = useState<Record<string, string | null>>({});
-  const [pairAddresses, setPairAddresses] = useState<Record<string, string | null>>({});
-
   const formatTimeAgo = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
@@ -48,7 +39,6 @@ const RecentTokenTrades: React.FC = () => {
       return 'recently';
     }
   };
-  
   const fetchRecentBets = async (pageNum = 0, append = false) => {
     const loadingState = append ? setIsLoadingMore : setIsLoading;
     loadingState(true);
@@ -66,8 +56,7 @@ const RecentTokenTrades: React.FC = () => {
           status,
           created_at,
           percentage_change,
-          initial_market_cap,
-          pair_address
+          initial_market_cap
         `).order('created_at', {
         ascending: false
       }).range(pageNum * pageSize, pageNum * pageSize + pageSize - 1);
@@ -99,8 +88,7 @@ const RecentTokenTrades: React.FC = () => {
           percentageChange: bet.percentage_change || 0,
           timestamp: bet.created_at,
           status: bet.status,
-          initialMarketCap: bet.initial_market_cap,
-          pairAddress: bet.pair_address
+          initialMarketCap: bet.initial_market_cap
         };
       });
       if (append) {
@@ -108,17 +96,8 @@ const RecentTokenTrades: React.FC = () => {
       } else {
         setRecentBets(formattedBets);
       }
-      
-      // Fetch market cap and icon data for each bet
       formattedBets.forEach(bet => {
         fetchBetMarketCapData(bet);
-        fetchTokenIcon(bet);
-        if (bet.pairAddress) {
-          setPairAddresses(prev => ({
-            ...prev,
-            [bet.tokenMint]: bet.pairAddress
-          }));
-        }
       });
     } catch (error) {
       console.error('Error in fetchRecentBets:', error);
@@ -126,47 +105,6 @@ const RecentTokenTrades: React.FC = () => {
       loadingState(false);
     }
   };
-  
-  const fetchTokenIcon = async (bet: any) => {
-    const tokenMint = bet.tokenMint;
-    if (!tokenMint || tokenIcons[tokenMint]) return;
-    
-    try {
-      // Try to get token image from DexScreener if we have a pair address
-      if (bet.pairAddress) {
-        const pairData = await fetchTokenPairData(bet.pairAddress);
-        if (pairData && pairData.baseToken && pairData.baseToken.address === tokenMint && pairData.info?.imageUrl) {
-          setTokenIcons(prev => ({
-            ...prev,
-            [tokenMint]: pairData.info.imageUrl
-          }));
-          return;
-        }
-      }
-      
-      // Fallback to Solscan if DexScreener didn't provide an image
-      const tokenData = await fetchTokenDataFromSolscan(tokenMint);
-      if (tokenData && tokenData.icon) {
-        setTokenIcons(prev => ({
-          ...prev,
-          [tokenMint]: tokenData.icon
-        }));
-      } else {
-        // Set null icon to avoid repeated fetches for tokens without icons
-        setTokenIcons(prev => ({
-          ...prev,
-          [tokenMint]: null
-        }));
-      }
-    } catch (error) {
-      console.error(`Error fetching token icon for ${tokenMint}:`, error);
-      setTokenIcons(prev => ({
-        ...prev,
-        [tokenMint]: null
-      }));
-    }
-  };
-  
   const fetchBetMarketCapData = async (bet: any) => {
     if (!bet.tokenMint || marketCapData[bet.id]?.currentMarketCap) return;
     setLoadingProgress(prev => ({
@@ -193,7 +131,6 @@ const RecentTokenTrades: React.FC = () => {
       }));
     }
   };
-  
   const calculateProgress = (bet: any) => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     const currentMarketCap = marketCapData[bet.id]?.currentMarketCap;
@@ -214,20 +151,6 @@ const RecentTokenTrades: React.FC = () => {
       return Math.min(100, Math.abs(percentageChange) / targetChange * 100);
     }
   };
-  
-  // Generate color based on token symbol for fallback icon
-  const getTokenIconOrFallback = (bet: any) => {
-    const tokenMint = bet.tokenMint;
-    
-    // If we have a cached icon, use it
-    if (tokenIcons[tokenMint]) {
-      return tokenIcons[tokenMint];
-    }
-    
-    // Return default icon path as fallback
-    return "/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png";
-  };
-
   useEffect(() => {
     if (isConnected) {
       fetchRecentBets();
@@ -235,14 +158,12 @@ const RecentTokenTrades: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isConnected]);
-  
   const handleShowMore = async () => {
     if (isLoadingMore || !hasMore) return;
     const nextPage = page + 1;
     setPage(nextPage);
     await fetchRecentBets(nextPage, true);
   };
-  
   const formatNumber = (num: number) => {
     if (num >= 1000000000) {
       return `${(num / 1000000000).toFixed(2)}B`;
@@ -255,11 +176,9 @@ const RecentTokenTrades: React.FC = () => {
     }
     return num.toFixed(2);
   };
-  
   const handleNavigateToBetting = () => {
     navigate('/betting');
   };
-  
   const formatMarketCap = (value: number | null | undefined) => {
     if (value === null || value === undefined) return "N/A";
     if (value >= 1000000000) {
@@ -273,7 +192,6 @@ const RecentTokenTrades: React.FC = () => {
     }
     return `$${value.toFixed(2)}`;
   };
-  
   const calculateTargetMarketCap = (bet: any) => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     if (!initialMarketCap) return null;
@@ -285,7 +203,6 @@ const RecentTokenTrades: React.FC = () => {
       return initialMarketCap * (1 - percentageChange / 100);
     }
   };
-
   if (isLoading) {
     return <div className="bg-dream-foreground/5 backdrop-blur-sm p-4 rounded-lg border border-dream-accent1/20">
         <div className="text-center py-4">
@@ -293,7 +210,6 @@ const RecentTokenTrades: React.FC = () => {
         </div>
       </div>;
   }
-  
   if (!isConnected) {
     return <div className="bg-dream-foreground/5 backdrop-blur-sm p-4 rounded-lg border border-dream-accent1/20">
         <div className="text-center py-4">
@@ -301,7 +217,6 @@ const RecentTokenTrades: React.FC = () => {
         </div>
       </div>;
   }
-  
   if (recentBets.length === 0) {
     return <div className="bg-dream-foreground/5 backdrop-blur-sm rounded-lg border border-dream-accent1/20 overflow-hidden">
         <div className="p-4 border-b border-dream-accent1/20 flex justify-between items-center">
@@ -314,7 +229,6 @@ const RecentTokenTrades: React.FC = () => {
         </div>
       </div>;
   }
-  
   return <div className="bg-dream-foreground/5 backdrop-blur-sm rounded-lg border border-dream-accent1/20 overflow-hidden">
       <div className="p-4 border-b border-dream-accent1/20 flex justify-between items-center">
         <h3 className="font-display font-semibold text-lg">
@@ -333,42 +247,17 @@ const RecentTokenTrades: React.FC = () => {
           {recentBets.map((bet, index) => <Link key={`bet-${bet.id}`} to={`/token/${bet.tokenMint}`} className="block">
               <div className="p-4 hover:bg-dream-accent1/5 transition-colors">
                 <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-dream-background/20 rounded-full overflow-hidden flex items-center justify-center">
-                      {tokenIcons[bet.tokenMint] ? (
-                        <img 
-                          src={tokenIcons[bet.tokenMint]} 
-                          alt={bet.tokenSymbol} 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.onerror = null; // Prevent infinite loop
-                            // If image fails to load, remove from state to show fallback
-                            setTokenIcons(prev => ({
-                              ...prev,
-                              [bet.tokenMint]: null
-                            }));
-                          }}
-                        />
-                      ) : (
-                        <img 
-                          src={getTokenIconOrFallback(bet)} 
-                          alt={bet.tokenSymbol} 
-                          className="w-full h-full object-contain" 
-                        />
-                      )}
+                  <div>
+                    <div className="font-medium text-dream-foreground flex items-center gap-1">
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">{bet.tokenName}</span>
+                      <span className="text-xs text-dream-foreground/60">{bet.tokenSymbol}</span>
                     </div>
-                    <div>
-                      <div className="font-medium text-dream-foreground flex items-center gap-1">
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">{bet.tokenName}</span>
-                        <span className="text-xs text-dream-foreground/60">{bet.tokenSymbol}</span>
-                      </div>
-                      <div className="text-xs text-dream-foreground/60 flex items-center gap-2 mt-1">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatTimeAgo(bet.timestamp)}
-                        </span>
-                        {bet.status}
-                      </div>
+                    <div className="text-xs text-dream-foreground/60 flex items-center gap-2 mt-1">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatTimeAgo(bet.timestamp)}
+                      </span>
+                      {bet.status}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 bg-dream-accent1/10 text-dream-accent1 text-xs px-2 py-1 rounded">
@@ -448,5 +337,4 @@ const RecentTokenTrades: React.FC = () => {
       </div>
     </div>;
 };
-
 export default RecentTokenTrades;
