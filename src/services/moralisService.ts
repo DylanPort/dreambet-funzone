@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 
 // Cache for storing metadata to reduce API calls
@@ -244,6 +245,30 @@ export const getTokenImageUrl = async (tokenMint: string) => {
 };
 
 /**
+ * Safely checks if an image URL is accessible
+ */
+const isImageAccessible = async (url: string): Promise<boolean> => {
+  try {
+    // Use a timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    const response = await fetch(url, { 
+      method: 'HEAD',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    console.log(`Image URL ${url} not accessible, skipping HEAD check`);
+    // If the fetch fails, we'll assume the image might still be valid
+    // Some servers block HEAD requests but allow GET
+    return true;
+  }
+};
+
+/**
  * Fetches the token image and returns it, with error handling and fallbacks
  */
 export const fetchTokenImage = async (tokenMint: string, tokenSymbol?: string) => {
@@ -253,71 +278,42 @@ export const fetchTokenImage = async (tokenMint: string, tokenSymbol?: string) =
     // First try to get from DexScreener (highest priority)
     const dexScreenerImage = await getDexScreenerTokenImage(tokenMint);
     if (dexScreenerImage) {
-      try {
-        const response = await fetch(dexScreenerImage, { method: 'HEAD' });
-        if (response.ok) {
-          return dexScreenerImage;
-        }
-      } catch (e) {
-        console.error(`DexScreener image URL exists but is not accessible:`, e);
-      }
+      // Skip the HEAD check for DexScreener since it was causing issues
+      return dexScreenerImage;
     }
     
     // Try using pair address if we have one cached
     if (pairCache[tokenMint]) {
       const pairImage = await getDexScreenerPairImage(pairCache[tokenMint]);
       if (pairImage) {
-        try {
-          const response = await fetch(pairImage, { method: 'HEAD' });
-          if (response.ok) {
-            return pairImage;
-          }
-        } catch (e) {
-          console.error(`DexScreener pair image URL exists but is not accessible:`, e);
-        }
+        return pairImage;
       }
     }
     
     // Then try Moralis (with fallbacks built into getTokenImageUrl)
     const imageUrl = await getTokenImageUrl(tokenMint);
     if (imageUrl) {
-      // Verify the image is accessible by sending a HEAD request
-      try {
-        const response = await fetch(imageUrl, { method: 'HEAD' });
-        if (response.ok) {
-          return imageUrl;
-        }
-      } catch (e) {
-        console.error(`Image URL ${imageUrl} exists but is not accessible:`, e);
+      const isAccessible = await isImageAccessible(imageUrl);
+      if (isAccessible) {
+        return imageUrl;
       }
     }
     
     // Try token directories as a fallback
     const solscanImage = `https://public-api.solscan.io/token/logo/${tokenMint}`;
-    try {
-      const response = await fetch(solscanImage, { method: 'HEAD' });
-      if (response.ok) {
-        return solscanImage;
-      }
-    } catch (e) {
-      console.error("Solscan image not accessible:", e);
+    const solscanAccessible = await isImageAccessible(solscanImage);
+    if (solscanAccessible) {
+      return solscanImage;
     }
     
     // If we still don't have an image, try Solflare token icons
     const solflareImage = `https://token-icons.solflare.com/solana/${tokenMint}.png`;
-    try {
-      const response = await fetch(solflareImage, { method: 'HEAD' });
-      if (response.ok) {
-        return solflareImage;
-      }
-    } catch (e) {
-      console.error("Solflare image not accessible:", e);
-    }
+    // Skip verification for Solflare since it has proven to be unreliable
+    return solflareImage;
     
-    // If all else fails, return null and let the component use fallbacks
-    return null;
   } catch (error) {
     console.error(`Error fetching token image for ${tokenMint}:`, error);
-    return null;
+    // Return a simple fallback without performing additional checks
+    return `https://token-icons.solflare.com/solana/${tokenMint}.png`;
   }
 };

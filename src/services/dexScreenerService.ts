@@ -319,7 +319,24 @@ export const subscribeToVolume = (tokenId: string, callback: (volume: number) =>
 export const fetchTokenPairData = async (pairAddress: string) => {
   try {
     console.log("Fetching pair data for:", pairAddress);
-    const response = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${pairAddress}`);
+    
+    // Check cache first
+    const cacheKey = `pair_data_${pairAddress}`;
+    const cachedData = tokenDataCache.get(cacheKey);
+    const now = Date.now();
+    if (cachedData && (now - cachedData.timestamp) < CACHE_EXPIRY_TIME) {
+      console.log("Using cached pair data for:", pairAddress);
+      return cachedData.data;
+    }
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
+    
+    const response = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${pairAddress}`, {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       console.error(`DexScreener API error for pair ${pairAddress}: ${response.status} ${response.statusText}`);
@@ -332,6 +349,12 @@ export const fetchTokenPairData = async (pairAddress: string) => {
       console.log("No pair data found for:", pairAddress);
       return null;
     }
+    
+    // Cache the result
+    tokenDataCache.set(cacheKey, {
+      data: data.pairs[0],
+      timestamp: now
+    });
     
     return data.pairs[0];
   } catch (error) {
