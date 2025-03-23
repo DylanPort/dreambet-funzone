@@ -14,6 +14,7 @@ import BettingDashboard from "./pages/BettingDashboard";
 import TokenBetting from "./pages/TokenBetting";
 import PXBSpace from "./pages/MyBets";
 import BetDetails from "./pages/BetDetails";
+import UserProfile from "./pages/UserProfile";
 
 // Configure Query Client with retry options for better error handling
 const queryClient = new QueryClient({
@@ -40,6 +41,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/:userId" element={<UserProfile />} />
                 <Route path="/token/:id" element={<TokenDetail />} />
                 <Route path="/betting" element={<BettingDashboard />} />
                 <Route path="/betting/token/:id" element={<TokenBetting />} />

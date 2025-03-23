@@ -1,189 +1,204 @@
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { PXBBet } from '@/types/pxb';
+import { ArrowUp, ArrowDown } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
 import { formatTimeRemaining } from '@/utils/betUtils';
-import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
 
-const PXBBetsHistory = () => {
-  const { bets, fetchUserBets } = usePXBPoints();
-  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+interface PXBBetsHistoryProps {
+  userId?: string;
+}
 
+const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId }) => {
+  const { userProfile, userBets, fetchUserBets, isLoadingBets } = usePXBPoints();
+  const [otherUserBets, setOtherUserBets] = useState<PXBBet[]>([]);
+  const [isLoadingOtherBets, setIsLoadingOtherBets] = useState(false);
+  
+  // Fetch bets for current user
   useEffect(() => {
-    loadBets();
-  }, []);
-
-  const loadBets = async () => {
-    setIsLoading(true);
-    try {
-      await fetchUserBets();
-    } finally {
-      setIsLoading(false);
+    if (!userId && userProfile) {
+      fetchUserBets();
     }
-  };
+  }, [userProfile, fetchUserBets, userId]);
+  
+  // Fetch bets for other user if userId is provided
+  useEffect(() => {
+    const fetchOtherUserBets = async () => {
+      if (!userId) return;
+      
+      setIsLoadingOtherBets(true);
+      try {
+        const { data, error } = await supabase
+          .from('bets')
+          .select('*')
+          .eq('bettor1_id', userId)
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error('Error fetching user bets:', error);
+          return;
+        }
+        
+        // Transform the data to match PXBBet format
+        const formattedBets: PXBBet[] = data.map(bet => ({
+          id: bet.bet_id,
+          tokenMint: bet.token_mint,
+          tokenName: bet.token_name || 'Unknown Token',
+          tokenSymbol: bet.token_symbol || 'UNKNOWN',
+          betAmount: Number(bet.sol_amount),
+          betType: bet.prediction_bettor1 as 'up' | 'down',
+          percentageChange: Number(bet.percentage_change || 0),
+          status: bet.status as 'pending' | 'won' | 'lost',
+          timestamp: new Date(bet.created_at).getTime(),
+          expiresAt: new Date(bet.end_time || Date.now()).getTime(),
+          owner: userId
+        }));
+        
+        setOtherUserBets(formattedBets);
+      } catch (error) {
+        console.error('Error fetching bets:', error);
+      } finally {
+        setIsLoadingOtherBets(false);
+      }
+    };
+    
+    fetchOtherUserBets();
+  }, [userId]);
+  
+  // Display the appropriate bets depending on whether we're viewing the current user or another user
+  const betsToShow = userId ? otherUserBets : userBets || [];
+  const isLoading = userId ? isLoadingOtherBets : isLoadingBets;
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const activeBets = betsToShow.filter(bet => 
+    bet.status === 'pending' && bet.expiresAt > Date.now()
+  );
+  
+  const completedBets = betsToShow.filter(bet => 
+    bet.status === 'won' || bet.status === 'lost' || 
+    (bet.status === 'pending' && bet.expiresAt <= Date.now())
+  );
 
-  const handleTokenClick = (tokenMint: string) => {
-    navigate(`/token/${tokenMint}`);
-  };
-
-  // Check if bet is active (pending or open and not expired)
-  const isBetActive = (bet) => {
-    const now = new Date();
-    const expiryDate = new Date(bet.expiresAt);
-    return (bet.status === 'pending' || bet.status === 'open') && now < expiryDate;
-  };
-
-  const filteredBets = bets.filter(bet => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'active') return isBetActive(bet);
-    return bet.status === 'won' || bet.status === 'lost';
-  });
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[200px]">
+        <div className="animate-spin h-8 w-8 border-4 border-green-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="glass-panel p-6 rounded-lg bg-gray-900/50 border border-gray-800 w-full">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold">Your Bets</h2>
-          <p className="text-gray-400">History of your token bets</p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={loadBets}
-          disabled={isLoading}
-          className="border-gray-700 text-gray-300"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
-      <div className="flex space-x-2 mb-6">
-        <Button
-          variant={activeFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveFilter('all')}
-          className={activeFilter === 'all' ? 'bg-purple-600 hover:bg-purple-700' : 'border-gray-700 text-gray-300'}
-        >
-          All
-        </Button>
-        <Button
-          variant={activeFilter === 'active' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveFilter('active')}
-          className={activeFilter === 'active' ? 'bg-blue-600 hover:bg-blue-700' : 'border-gray-700 text-gray-300'}
-        >
-          Active
-        </Button>
-        <Button
-          variant={activeFilter === 'completed' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveFilter('completed')}
-          className={activeFilter === 'completed' ? 'bg-green-600 hover:bg-green-700' : 'border-gray-700 text-gray-300'}
-        >
-          Completed
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div className="text-center py-8">
-          <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-gray-400">Loading bets...</p>
-        </div>
-      ) : filteredBets.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-400">No bets found</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-gray-400 border-b border-gray-800">
-                <th className="py-3 px-4">Type</th>
-                <th className="py-3 px-4">Token</th>
-                <th className="py-3 px-4">Prediction</th>
-                <th className="py-3 px-4">Amount</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBets.map((bet) => (
-                <motion.tr 
-                  key={bet.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="border-b border-gray-800 hover:bg-gray-800/30"
-                >
-                  <td className="py-4 px-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400">
-                      PXB
-                    </span>
-                  </td>
-                  <td 
-                    className="py-4 px-4 cursor-pointer hover:text-dream-accent1 transition-colors"
-                    onClick={() => bet.tokenMint && handleTokenClick(bet.tokenMint)}
-                  >
+    <Tabs defaultValue="active" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsTrigger value="active">Active Bets</TabsTrigger>
+        <TabsTrigger value="completed">Completed Bets</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="active">
+        <ScrollArea className="h-[300px]">
+          {activeBets.length === 0 ? (
+            <div className="text-center py-10 text-gray-400">
+              <p>No active bets found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeBets.map(bet => (
+                <div key={bet.id} className="flex items-center p-3 rounded-lg bg-[#0f1628]/80 backdrop-blur-lg border border-indigo-900/30">
+                  <div className="flex-1">
                     <div className="flex items-center">
-                      <span className="font-medium">{bet.tokenSymbol}</span>
+                      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center mr-2">
+                        {bet.betType === 'up' ? (
+                          <ArrowUp className="h-4 w-4 text-green-400" />
+                        ) : (
+                          <ArrowDown className="h-4 w-4 text-red-400" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-white">{bet.tokenName}</h3>
+                        <p className="text-xs text-indigo-300/70">{bet.tokenSymbol}</p>
+                      </div>
                     </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    {bet.betType === 'up' ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
-                        <TrendingUp className="w-3 h-3 mr-1" />
-                        Up
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
-                        <TrendingDown className="w-3 h-3 mr-1" />
-                        Down
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-4 px-4">
-                    {bet.betAmount} PXB
-                  </td>
-                  <td className="py-4 px-4">
-                    {formatDate(bet.createdAt)}
-                  </td>
-                  <td className="py-4 px-4">
-                    {isBetActive(bet) ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">
-                        Active
-                      </span>
-                    ) : bet.status === 'won' ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
-                        Won
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
-                        Lost
-                      </span>
-                    )}
-                  </td>
-                </motion.tr>
+                  </div>
+                  
+                  <div className="text-right">
+                    <p className="font-medium text-white">{bet.betAmount} PXB</p>
+                    <p className="text-xs text-indigo-300/70">
+                      Expires in {formatTimeRemaining(bet.expiresAt - Date.now())}
+                    </p>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+            </div>
+          )}
+        </ScrollArea>
+      </TabsContent>
+      
+      <TabsContent value="completed">
+        <ScrollArea className="h-[300px]">
+          {completedBets.length === 0 ? (
+            <div className="text-center py-10 text-gray-400">
+              <p>No completed bets found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {completedBets.map(bet => (
+                <div 
+                  key={bet.id} 
+                  className={`flex items-center p-3 rounded-lg bg-[#0f1628]/80 backdrop-blur-lg border ${
+                    bet.status === 'won' 
+                      ? 'border-green-500/30' 
+                      : bet.status === 'lost' 
+                        ? 'border-red-500/30' 
+                        : 'border-indigo-900/30'
+                  }`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 ${
+                        bet.status === 'won' 
+                          ? 'bg-green-500/20' 
+                          : bet.status === 'lost' 
+                            ? 'bg-red-500/20' 
+                            : 'bg-gray-500/20'
+                      }`}>
+                        {bet.betType === 'up' ? (
+                          <ArrowUp className={`h-4 w-4 ${
+                            bet.status === 'won' ? 'text-green-400' : 'text-gray-400'
+                          }`} />
+                        ) : (
+                          <ArrowDown className={`h-4 w-4 ${
+                            bet.status === 'won' ? 'text-green-400' : 'text-gray-400'
+                          }`} />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-white">{bet.tokenName}</h3>
+                        <p className="text-xs text-indigo-300/70">{bet.tokenSymbol}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <p className="font-medium text-white">{bet.betAmount} PXB</p>
+                    <p className={`text-xs ${
+                      bet.status === 'won' 
+                        ? 'text-green-400' 
+                        : bet.status === 'lost' 
+                          ? 'text-red-400' 
+                          : 'text-gray-400'
+                    }`}>
+                      {bet.status === 'won' ? 'WON' : bet.status === 'lost' ? 'LOST' : 'EXPIRED'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </TabsContent>
+    </Tabs>
   );
 };
 

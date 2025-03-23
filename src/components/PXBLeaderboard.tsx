@@ -1,12 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Medal, User, ArrowUp, Flame, Star, BarChart, ChevronDown, Coins } from 'lucide-react';
+import { Medal, User, Flame, Star, BarChart, ChevronDown, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LeaderboardEntry, WinRateLeaderboardEntry } from '@/types/pxb';
+import { Link } from 'react-router-dom';
 
 const PXBLeaderboard: React.FC = () => {
   const {
@@ -88,9 +88,11 @@ const PXBLeaderboard: React.FC = () => {
         <div className="space-y-3">
           {data.map((trader, index) => {
             const isCurrentUser = trader.id === userProfile?.id;
+            const userId = trader.id || trader.user_id;
+            
             return (
               <div 
-                key={trader.id} 
+                key={userId} 
                 className={cn(
                   `flex items-center p-2 rounded-lg transition-all duration-500 transform ${animate ? 'translate-x-0 opacity-100' : 'translate-x-[-20px] opacity-0'}`, 
                   getPositionStyle(index, isCurrentUser)
@@ -109,7 +111,11 @@ const PXBLeaderboard: React.FC = () => {
                 
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <div className="font-medium truncate max-w-[120px] flex items-center gap-1" title={trader.username}>
+                    <Link 
+                      to={`/profile/${userId}`}
+                      className="font-medium truncate max-w-[120px] flex items-center gap-1 hover:text-cyan-400 transition-colors" 
+                      title={trader.username}
+                    >
                       {trader.username}
                       {index < 3 && (
                         <span className="ml-1">
@@ -118,7 +124,7 @@ const PXBLeaderboard: React.FC = () => {
                           {index === 2 && <Star className="h-3 w-3 text-orange-500" />}
                         </span>
                       )}
-                    </div>
+                    </Link>
                     <div className={cn(
                       "font-medium", 
                       index === 0 ? "text-yellow-400" : 

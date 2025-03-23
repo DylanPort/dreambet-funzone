@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/pxb';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { toast } from 'sonner';
 import { PublicKey } from '@solana/web3.js';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 interface PXBProfilePanelProps {
   userProfile: UserProfile | null;
@@ -154,7 +156,12 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
               </div>
             </div> : <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center border border-indigo-900/30">
               <User className="text-indigo-300/70 w-4 h-4 mr-2" />
-              <span className="text-white">{userProfile?.username || 'Anonymous'}</span>
+              <Link 
+                to={userProfile ? `/profile/${userProfile.id}` : '#'} 
+                className="text-white hover:text-cyan-400 transition-colors"
+              >
+                {userProfile?.username || 'Anonymous'}
+              </Link>
             </div>}
         </div>
 
