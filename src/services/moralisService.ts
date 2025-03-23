@@ -1,9 +1,9 @@
-
 import { toast } from 'sonner';
 
 // Cache for storing metadata to reduce API calls
 const metadataCache: Record<string, any> = {};
 const imageCache: Record<string, string> = {};
+const pairCache: Record<string, string> = {};
 
 // Using a default API key as placeholder - the user should provide their own
 // This is meant to be replaced with an actual API key
@@ -96,10 +96,15 @@ const getGenericTokenImageUrl = (tokenMint: string): string | null => {
 };
 
 /**
- * Try to get token image from DexScreener
+ * Try to get token image from DexScreener using token address
  */
 const getDexScreenerTokenImage = async (tokenMint: string): Promise<string | null> => {
   try {
+    // Check cache first
+    if (imageCache[`dexscreener-${tokenMint}`]) {
+      return imageCache[`dexscreener-${tokenMint}`];
+    }
+    
     // DexScreener API endpoint that includes token info with logos
     const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${tokenMint}`);
     
@@ -112,8 +117,18 @@ const getDexScreenerTokenImage = async (tokenMint: string): Promise<string | nul
     
     // Check if we have valid data with pairs and token information
     if (data && data.pairs && data.pairs.length > 0) {
+      // Store pair addresses for future use
+      for (const pair of data.pairs) {
+        if (pair.pairAddress && pair.chainId === 'solana') {
+          pairCache[tokenMint] = pair.pairAddress;
+          break;
+        }
+      }
+      
       const baseToken = data.pairs[0].baseToken;
       if (baseToken && baseToken.logoURI) {
+        // Cache the image URL
+        imageCache[`dexscreener-${tokenMint}`] = baseToken.logoURI;
         return baseToken.logoURI;
       }
     }
@@ -121,6 +136,41 @@ const getDexScreenerTokenImage = async (tokenMint: string): Promise<string | nul
     return null;
   } catch (error) {
     console.error(`Error fetching DexScreener image for ${tokenMint}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Try to get token image from DexScreener using pair address
+ */
+const getDexScreenerPairImage = async (pairAddress: string): Promise<string | null> => {
+  try {
+    const response = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${pairAddress}`);
+    
+    if (!response.ok) {
+      console.error(`DexScreener API error for pair ${pairAddress}: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.pairs && data.pairs.length > 0) {
+      const pair = data.pairs[0];
+      
+      // Try to get baseToken logoURI
+      if (pair.baseToken && pair.baseToken.logoURI) {
+        return pair.baseToken.logoURI;
+      }
+      
+      // If no logoURI in baseToken, check if there's an imageUrl in the info object
+      if (pair.info && pair.info.imageUrl) {
+        return pair.info.imageUrl;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error fetching DexScreener pair image for ${pairAddress}:`, error);
     return null;
   }
 };
@@ -210,6 +260,21 @@ export const fetchTokenImage = async (tokenMint: string, tokenSymbol?: string) =
         }
       } catch (e) {
         console.error(`DexScreener image URL exists but is not accessible:`, e);
+      }
+    }
+    
+    // Try using pair address if we have one cached
+    if (pairCache[tokenMint]) {
+      const pairImage = await getDexScreenerPairImage(pairCache[tokenMint]);
+      if (pairImage) {
+        try {
+          const response = await fetch(pairImage, { method: 'HEAD' });
+          if (response.ok) {
+            return pairImage;
+          }
+        } catch (e) {
+          console.error(`DexScreener pair image URL exists but is not accessible:`, e);
+        }
       }
     }
     

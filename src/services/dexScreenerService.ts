@@ -54,7 +54,6 @@ interface TrendingToken {
   imageUrl?: string;
 }
 
-// Define callback types for the subscription functions
 type PriceCallback = (price: number) => void;
 
 const CACHE_EXPIRY_TIME = 30000; // 30 seconds
@@ -70,12 +69,8 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
   liquidity: number;
   priceUsd: number;
   priceChange24h: number;
-  // Note: We're not adding name and symbol to the return type
-  // as they should be accessed through baseToken in the response,
-  // not directly in the return object
 } | null> => {
   try {
-    // Check cache first
     const cachedData = tokenDataCache.get(tokenAddress);
     const now = Date.now();
     if (cachedData && (now - cachedData.timestamp) < CACHE_EXPIRY_TIME) {
@@ -97,7 +92,6 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
       return null;
     }
     
-    // Sort pairs by liquidity to get the most liquid one
     const sortedPairs = [...data.pairs].sort((a, b) => (b.liquidity || 0) - (a.liquidity || 0));
     const pair = sortedPairs[0];
     
@@ -107,11 +101,9 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
       liquidity: pair.liquidity || 0,
       priceUsd: parseFloat(pair.priceUsd || '0'),
       priceChange24h: pair.priceChange?.h24 || 0,
-      // Store baseToken info in the cache but don't include in the typed return value
       baseToken: pair.baseToken
     };
     
-    // Save to cache
     tokenDataCache.set(tokenAddress, {
       data: result,
       timestamp: now
@@ -127,7 +119,6 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
 
 export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
   try {
-    // Check cache first
     const cachedData = tokenDataCache.get('trending_tokens');
     const now = Date.now();
     if (cachedData && (now - cachedData.timestamp) < TRENDING_CACHE_EXPIRY) {
@@ -136,7 +127,6 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
     }
     
     console.log("Fetching trending tokens from DexScreener");
-    // Use the rankBy=trendingScoreH24 parameter to get actual trending tokens
     const response = await fetch('https://api.dexscreener.com/latest/dex/tokens/solana?rankBy=trendingScoreH24&order=desc');
     
     if (!response.ok) {
@@ -151,7 +141,6 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       return [];
     }
     
-    // Filter pairs by Solana chain and take top 20
     const sortedPairs = data.pairs
       .filter(pair => pair.chainId === 'solana')
       .slice(0, 20);
@@ -159,13 +148,11 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
     console.log(`Found ${sortedPairs.length} trending tokens on DexScreener`);
     
     const tokens = sortedPairs.map(pair => {
-      // Calculate time since creation for age display
       const pairCreatedAt = pair.pairCreatedAt ? new Date(pair.pairCreatedAt).getTime() : now;
       const minutesAgo = Math.floor((now - pairCreatedAt) / (60 * 1000));
       const hoursAgo = Math.floor(minutesAgo / 60);
       const daysAgo = Math.floor(hoursAgo / 24);
       
-      // Format age string based on time elapsed
       let age = '';
       if (daysAgo > 0) {
         age = `${daysAgo}d`;
@@ -180,9 +167,9 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
         name: pair.baseToken?.name || 'Unknown',
         symbol: pair.baseToken?.symbol || '???',
         price: parseFloat(pair.priceUsd || '0'),
-        priceChange: pair.priceChange?.h24 || 0, // 24h price change
-        priceChange1h: pair.priceChange?.h1 || 0, // 1h price change
-        priceChange6h: pair.priceChange?.h6 || 0, // 6h price change
+        priceChange: pair.priceChange?.h24 || 0,
+        priceChange1h: pair.priceChange?.h1 || 0,
+        priceChange6h: pair.priceChange?.h6 || 0,
         timeRemaining: minutesAgo > 0 ? minutesAgo : 1,
         volume24h: pair.volume?.h24 || 0,
         marketCap: pair.fdv || 0,
@@ -196,7 +183,6 @@ export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
       };
     });
     
-    // Save to cache
     tokenDataCache.set('trending_tokens', {
       data: tokens,
       timestamp: now
@@ -223,13 +209,11 @@ const pollAllActiveTokens = async () => {
   for (const token of tokens) {
     const data = await fetchDexScreenerData(token);
     
-    // Call the main callback
     const callbackFn = tokenCallbacks.get(token);
     if (data && callbackFn) {
       callbackFn(data);
     }
     
-    // Call specific metric callbacks
     if (data) {
       const marketCapFn = marketCapCallbacks.get(token);
       if (marketCapFn) {
@@ -247,32 +231,26 @@ const pollAllActiveTokens = async () => {
 export const startDexScreenerPolling = (
   tokenAddress: string, 
   onData: (data: ReturnType<typeof fetchDexScreenerData> extends Promise<infer T> ? T : never) => void,
-  interval = 30000 // Default 30 seconds (increased from 15s)
+  interval = 30000
 ) => {
-  // Save the callback
   tokenCallbacks.set(tokenAddress, onData);
   
-  // Add token to active polling list
   activePollingTokens.add(tokenAddress);
   
-  // Fetch immediately
   fetchDexScreenerData(tokenAddress).then(data => {
     if (data) onData(data);
   });
   
-  // Start global polling interval if not already running
   if (!pollingIntervalId) {
     pollingIntervalId = window.setInterval(pollAllActiveTokens, interval);
   }
   
-  // Return cleanup function
   return () => {
     activePollingTokens.delete(tokenAddress);
     tokenCallbacks.delete(tokenAddress);
     marketCapCallbacks.delete(tokenAddress);
     volumeCallbacks.delete(tokenAddress);
     
-    // If no more tokens, clear the interval
     if (activePollingTokens.size === 0 && pollingIntervalId) {
       window.clearInterval(pollingIntervalId);
       pollingIntervalId = null;
@@ -332,4 +310,32 @@ export const subscribeToVolume = (tokenId: string, callback: (volume: number) =>
   return () => {
     isActive = false;
   };
+};
+
+/**
+ * Fetches token pair data by pair address
+ * This is useful for getting token images and additional metadata
+ */
+export const fetchTokenPairData = async (pairAddress: string) => {
+  try {
+    console.log("Fetching pair data for:", pairAddress);
+    const response = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${pairAddress}`);
+    
+    if (!response.ok) {
+      console.error(`DexScreener API error for pair ${pairAddress}: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (!data.pairs || data.pairs.length === 0) {
+      console.log("No pair data found for:", pairAddress);
+      return null;
+    }
+    
+    return data.pairs[0];
+  } catch (error) {
+    console.error("Error fetching token pair data:", error);
+    return null;
+  }
 };
