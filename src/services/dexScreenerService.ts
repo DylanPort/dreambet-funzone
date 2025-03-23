@@ -1,4 +1,3 @@
-
 interface DexScreenerPair {
   liquidity: number;
   volume: {
@@ -281,58 +280,56 @@ export const startDexScreenerPolling = (
   };
 };
 
-export const subscribeToMarketCap = (
-  tokenAddress: string,
-  onMarketCapUpdate: (marketCap: number) => void
-) => {
-  marketCapCallbacks.set(tokenAddress, onMarketCapUpdate);
+export const subscribeToMarketCap = (tokenId: string, callback: (marketCap: number) => void, refreshInterval = 30000) => {
+  let isActive = true;
   
-  // If we already have cached data, use it immediately
-  const cachedData = tokenDataCache.get(tokenAddress);
-  if (cachedData && cachedData.data && cachedData.data.marketCap !== undefined) {
-    onMarketCapUpdate(cachedData.data.marketCap);
-  }
-  
-  // Make sure the token is being polled
-  if (!activePollingTokens.has(tokenAddress)) {
-    activePollingTokens.add(tokenAddress);
+  const fetchData = async () => {
+    if (!isActive) return;
     
-    // Start polling if not already running
-    if (!pollingIntervalId) {
-      pollingIntervalId = window.setInterval(pollAllActiveTokens, 30000);
+    try {
+      const data = await fetchDexScreenerData(tokenId);
+      if (data && data.marketCap !== undefined && isActive) {
+        callback(data.marketCap);
+      }
+    } catch (error) {
+      console.error('Error fetching market cap:', error);
     }
-  }
+    
+    if (isActive) {
+      setTimeout(fetchData, refreshInterval);
+    }
+  };
   
-  // Return cleanup function
+  fetchData();
+  
   return () => {
-    marketCapCallbacks.delete(tokenAddress);
+    isActive = false;
   };
 };
 
-export const subscribeToVolume = (
-  tokenAddress: string,
-  onVolumeUpdate: (volume24h: number) => void
-) => {
-  volumeCallbacks.set(tokenAddress, onVolumeUpdate);
+export const subscribeToVolume = (tokenId: string, callback: (volume: number) => void, refreshInterval = 30000) => {
+  let isActive = true;
   
-  // If we already have cached data, use it immediately
-  const cachedData = tokenDataCache.get(tokenAddress);
-  if (cachedData && cachedData.data && cachedData.data.volume24h !== undefined) {
-    onVolumeUpdate(cachedData.data.volume24h);
-  }
-  
-  // Make sure the token is being polled
-  if (!activePollingTokens.has(tokenAddress)) {
-    activePollingTokens.add(tokenAddress);
+  const fetchData = async () => {
+    if (!isActive) return;
     
-    // Start polling if not already running
-    if (!pollingIntervalId) {
-      pollingIntervalId = window.setInterval(pollAllActiveTokens, 30000);
+    try {
+      const data = await fetchDexScreenerData(tokenId);
+      if (data && data.volume24h !== undefined && isActive) {
+        callback(data.volume24h);
+      }
+    } catch (error) {
+      console.error('Error fetching volume:', error);
     }
-  }
+    
+    if (isActive) {
+      setTimeout(fetchData, refreshInterval);
+    }
+  };
   
-  // Return cleanup function
+  fetchData();
+  
   return () => {
-    volumeCallbacks.delete(tokenAddress);
+    isActive = false;
   };
 };

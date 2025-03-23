@@ -22,6 +22,7 @@ import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
+
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -89,6 +90,7 @@ const TokenChart = ({
       
     </div>;
 };
+
 const TokenDetail = () => {
   const {
     id
@@ -719,22 +721,8 @@ const TokenDetail = () => {
                     
                     <div className="space-y-4">
                       <div className="grid grid-cols-3 gap-4">
-                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1">
-                          <div className="text-dream-foreground/70 text-xs flex items-center">
-                            <DollarSign className="w-3 h-3 mr-1" />
-                            Market Cap
-                          </div>
-                          <div className="font-bold">{formatLargeNumber(tokenMetrics.marketCap)}</div>
-                        </div>
-                        
-                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1">
-                          <div className="text-dream-foreground/70 text-xs flex items-center">
-                            <RefreshCw className="w-3 h-3 mr-1" />
-                            24h Volume
-                          </div>
-                          <div className="font-bold">{formatLargeNumber(tokenMetrics.volume24h)}</div>
-                        </div>
-                        
+                        <TokenMarketCap tokenId={id || ''} />
+                        <TokenVolume tokenId={id || ''} />
                         <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1">
                           <div className="text-dream-foreground/70 text-xs flex items-center">
                             <Users className="w-3 h-3 mr-1" />
@@ -775,7 +763,7 @@ const TokenDetail = () => {
                     </div>}
                 </div>
               </div>
-
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 <div className="glass-panel p-6">
                   <h3 className="text-xl font-display font-bold mb-4">Token Bets</h3>
@@ -850,9 +838,10 @@ const TokenDetail = () => {
               <div className="mb-8">
                 <TokenComments tokenId={id} tokenName={token.name} />
               </div>
-            </>}
+            </>
         </div>
       </main>
     </>;
 };
+
 export default TokenDetail;
