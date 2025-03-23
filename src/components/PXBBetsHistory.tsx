@@ -12,10 +12,11 @@ import { fetchTokenMetrics } from '@/services/tokenDataCache';
 
 interface PXBBetsHistoryProps {
   userId?: string;
+  walletAddress?: string;
   limit?: number;
 }
 
-const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) => {
+const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, walletAddress, limit = 5 }) => {
   const { publicKey } = useWallet();
   const [bets, setBets] = useState<PXBBet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,11 +27,36 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
       try {
         setLoading(true);
         
-        // Determine which user ID to use
-        const targetUserId = userId || publicKey?.toString();
+        // If no userId or walletAddress is provided, use the connected wallet
+        const userWalletAddress = walletAddress || publicKey?.toString();
+        let targetUserId = userId;
         
-        if (!targetUserId) {
+        if (!targetUserId && userWalletAddress) {
+          // If we only have a wallet address, we need to look up the user ID
+          console.log("Looking up user ID for wallet:", userWalletAddress);
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('wallet_address', userWalletAddress)
+            .maybeSingle();
+          
+          if (userError) {
+            console.error('Error fetching user by wallet address:', userError);
+          } else if (userData) {
+            targetUserId = userData.id;
+            console.log("Found user ID:", targetUserId, "for wallet:", userWalletAddress);
+          } else {
+            console.log("No user found for wallet address:", userWalletAddress);
+            setLoading(false);
+            setBets([]);
+            return;
+          }
+        }
+        
+        if (!targetUserId && !userWalletAddress) {
+          console.log("No user ID or wallet address provided");
           setLoading(false);
+          setBets([]);
           return;
         }
         
@@ -55,6 +81,7 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
         
         if (error) {
           console.error('Error fetching bets:', error);
+          setLoading(false);
           return;
         }
         
@@ -125,7 +152,7 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
     };
 
     fetchBets();
-  }, [publicKey, userId]);
+  }, [publicKey, userId, walletAddress, limit]);
 
   const getBetStatusClass = (bet: PXBBet) => {
     const now = Date.now();

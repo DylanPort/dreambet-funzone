@@ -122,7 +122,10 @@ const Profile = () => {
                 <h2 className="text-2xl font-bold text-white">Your Betting History</h2>
               </div>
               <div className="p-6">
-                <PXBBetsHistory />
+                <PXBBetsHistory 
+                  userId={userProfile?.id} 
+                  walletAddress={publicKey.toString()}
+                />
               </div>
             </div>
           </div>
