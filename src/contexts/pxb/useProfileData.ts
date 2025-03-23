@@ -40,7 +40,8 @@ export const useProfileData = () => {
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
-          createdAt: supabaseUser.created_at
+          createdAt: supabaseUser.created_at,
+          isTemporary: false
         });
       } else {
         console.log('User not found in database, will create temporary profile');
@@ -76,7 +77,8 @@ export const useProfileData = () => {
                 id: newUser.id,
                 username: newUser.username || walletAddress.substring(0, 8),
                 pxbPoints: newUser.points || 0,
-                createdAt: newUser.created_at
+                createdAt: newUser.created_at,
+                isTemporary: false
               });
             }
           } catch (createError) {
@@ -113,8 +115,27 @@ export const useProfileData = () => {
     console.log(`Adding ${amount} points to user ${walletAddress} for ${reason}`);
 
     try {
-      // Skip points history check for temporary users
-      if (userProfile && !userProfile.isTemporary) {
+      // Check if user has a temporary profile
+      const isTemporaryUser = userProfile?.isTemporary || (userProfile?.id && userProfile.id.startsWith('temp-'));
+      
+      // For temporary users, just update the state without database operations
+      if (isTemporaryUser && userProfile) {
+        // Update the local state for temporary users
+        setUserProfile(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            pxbPoints: prev.pxbPoints + amount
+          };
+        });
+        
+        toast.success(`Added ${amount} PXB points!`);
+        return true;
+      }
+      
+      // For permanent users, continue with database operations
+      // Skip points history check for new users that aren't temporary
+      if (userProfile && !isTemporaryUser) {
         // Get minting history for this wallet in the last 24 hours
         const now = new Date();
         const periodStart = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
@@ -187,19 +208,18 @@ export const useProfileData = () => {
             id: newUser.id,
             username: newUser.username || walletAddress.substring(0, 8),
             pxbPoints: newUser.points || amount,
-            createdAt: newUser.created_at
+            createdAt: newUser.created_at,
+            isTemporary: false
           });
           
           // Record the transaction for the new user
-          if (!newUser.id.startsWith('temp-')) {
-            await supabase.from('points_history').insert({
-              user_id: newUser.id,
-              amount: amount,
-              action: 'mint',
-              reference_id: `mint_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
-              reference_name: reason || 'Initial mint'
-            });
-          }
+          await supabase.from('points_history').insert({
+            user_id: newUser.id,
+            amount: amount,
+            action: 'mint',
+            reference_id: `mint_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+            reference_name: reason || 'Initial mint'
+          });
         }
       } else {
         // Update existing user points
@@ -222,25 +242,25 @@ export const useProfileData = () => {
               id: updatedUser.id,
               username: updatedUser.username || walletAddress.substring(0, 8),
               pxbPoints: updatedUser.points || 0,
-              createdAt: updatedUser.created_at
+              createdAt: updatedUser.created_at,
+              isTemporary: false
             };
             
             return {
               ...prev,
-              pxbPoints: updatedUser.points || 0
+              pxbPoints: updatedUser.points || 0,
+              isTemporary: false
             };
           });
           
           // Record the transaction for the existing user
-          if (existingUser.id && !existingUser.id.toString().startsWith('temp-')) {
-            await supabase.from('points_history').insert({
-              user_id: existingUser.id,
-              amount: amount,
-              action: 'mint',
-              reference_id: `mint_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
-              reference_name: reason || 'Points mint'
-            });
-          }
+          await supabase.from('points_history').insert({
+            user_id: existingUser.id,
+            amount: amount,
+            action: 'mint',
+            reference_id: `mint_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+            reference_name: reason || 'Points mint'
+          });
         }
       }
 

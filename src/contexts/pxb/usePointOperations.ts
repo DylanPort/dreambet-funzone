@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -46,42 +45,69 @@ export const usePointOperations = (
     
     setMintingPoints(true);
     try {
-      // Get minting history for this wallet in the last 24 hours
-      const now = new Date();
-      const periodStart = new Date(now.getTime() - MINT_PERIOD_MS);
+      // Check if user has a temporary profile
+      const isTemporaryUser = userProfile.isTemporary || userProfile.id.startsWith('temp-');
+      let mintAmount = amount;
       
-      const { data: mintHistory, error: historyError } = await supabase
-        .from('points_history')
-        .select('amount')
-        .eq('user_id', userProfile.id)
-        .eq('action', 'mint')
-        .gte('created_at', periodStart.toISOString());
+      // Only check minting history for permanent users
+      if (!isTemporaryUser) {
+        // Get minting history for this wallet in the last 24 hours
+        const now = new Date();
+        const periodStart = new Date(now.getTime() - MINT_PERIOD_MS);
         
-      if (historyError) {
-        console.error('Error fetching mint history:', historyError);
-        toast.error('Failed to check minting history');
-        return;
+        try {
+          const { data: mintHistory, error: historyError } = await supabase
+            .from('points_history')
+            .select('amount')
+            .eq('user_id', userProfile.id)
+            .eq('action', 'mint')
+            .gte('created_at', periodStart.toISOString());
+            
+          if (historyError) {
+            console.error('Error fetching mint history:', historyError);
+            // Continue with minting anyway to not block the user
+          } else {
+            // Calculate how much has been minted in the current period
+            const mintedInPeriod = mintHistory?.reduce((total, record) => total + record.amount, 0) || 0;
+            const remainingAllowance = MINT_LIMIT_PER_PERIOD - mintedInPeriod;
+            
+            if (remainingAllowance <= 0) {
+              toast.error(`You've reached your minting limit of ${MINT_LIMIT_PER_PERIOD} PXB per ${MINT_PERIOD_HOURS} hours`);
+              setMintingPoints(false);
+              return;
+            }
+            
+            // If requested amount exceeds remaining allowance, limit it
+            mintAmount = Math.min(amount, remainingAllowance);
+            if (mintAmount < amount) {
+              toast({
+                title: `Mint limit reached`,
+                description: `You can only mint ${mintAmount} more PXB within this ${MINT_PERIOD_HOURS}-hour period`,
+                variant: "default"
+              });
+            }
+          }
+        } catch (historyErr) {
+          console.error('Error processing mint history:', historyErr);
+          // Continue with minting anyway
+        }
       }
       
-      // Calculate how much has been minted in the current period
-      const mintedInPeriod = mintHistory?.reduce((total, record) => total + record.amount, 0) || 0;
-      const remainingAllowance = MINT_LIMIT_PER_PERIOD - mintedInPeriod;
-      
-      if (remainingAllowance <= 0) {
-        toast.error(`You've reached your minting limit of ${MINT_LIMIT_PER_PERIOD} PXB per ${MINT_PERIOD_HOURS} hours`);
-        return;
-      }
-      
-      // If requested amount exceeds remaining allowance, limit it
-      const mintAmount = Math.min(amount, remainingAllowance);
-      if (mintAmount < amount) {
-        toast({
-          title: `Mint limit reached`,
-          description: `You can only mint ${mintAmount} more PXB within this ${MINT_PERIOD_HOURS}-hour period`,
-          variant: "default"
+      // For temporary users, just update the state without database operations
+      if (isTemporaryUser) {
+        // Update the user profile with new points for temporary users
+        const newPointsTotal = userProfile.pxbPoints + mintAmount;
+        setUserProfile({
+          ...userProfile,
+          pxbPoints: newPointsTotal
         });
+        
+        toast.success(`Successfully minted ${mintAmount} PXB points!`);
+        setMintingPoints(false);
+        return;
       }
       
+      // For permanent users, continue with database operations
       // Get the current user profile to ensure we have the latest data
       const { data: userData, error: fetchError } = await supabase
         .from('users')
@@ -92,6 +118,7 @@ export const usePointOperations = (
       if (fetchError) {
         console.error('Error fetching current points:', fetchError);
         toast.error('Failed to mint points');
+        setMintingPoints(false);
         return;
       }
       
@@ -108,6 +135,7 @@ export const usePointOperations = (
       if (error) {
         console.error('Error minting points:', error);
         toast.error('Failed to mint points');
+        setMintingPoints(false);
         return;
       }
 
@@ -138,7 +166,6 @@ export const usePointOperations = (
       } else {
         toast.success(`Successfully minted ${mintAmount} PXB points! (Limit reached)`);
       }
-
     } catch (error) {
       console.error('Error in mintPoints:', error);
       toast.error('Failed to mint points');
