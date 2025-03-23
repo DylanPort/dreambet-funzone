@@ -1,23 +1,28 @@
 
+
 export interface PXBBet {
   id: string;
   userId: string;
   tokenMint: string;
   tokenName: string;
   tokenSymbol: string;
-  amount: number;
+  betAmount: number;  // Changed from 'amount' to 'betAmount' to match usage in context
   betType: 'up' | 'down';
   percentageChange: number;
-  timeframe: number;
-  status: 'pending' | 'won' | 'lost' | 'expired';
+  timeframe: number;  // Added this field which was missing
+  status: 'pending' | 'won' | 'lost' | 'expired' | 'open';  // Added 'open' and 'expired' to match all usages
+  pointsWon: number;  // Added this field from the PXB.ts version
   createdAt: string;
-  resolvedAt?: string;
+  expiresAt: string;  // Added this from PXB.ts version
+  resolvedAt?: string;  // Added this field which was missing
   initialMarketCap?: number;
   currentMarketCap?: number;
+  userRole?: 'creator' | 'participant';  // Added from PXB.ts version
 }
 
 export interface LeaderboardEntry {
-  userId: string;
+  id: string;
+  userId?: string;
   username: string;
   pxbPoints: number;
   walletAddress: string;
@@ -26,7 +31,8 @@ export interface LeaderboardEntry {
 }
 
 export interface WinRateLeaderboardEntry {
-  userId: string;
+  id: string;
+  userId?: string;
   username: string;
   totalBets: number;
   wonBets: number;
@@ -46,9 +52,12 @@ export interface Referral {
 }
 
 export interface ReferralStats {
-  totalReferrals: number;
-  totalPointsEarned: number;
-  referrals: Referral[];
+  referrals_count: number;
+  points_earned: number;
+  referral_code: string | null;
+  referrals?: Referral[];
+  totalReferrals?: number;
+  totalPointsEarned?: number;
 }
 
 export interface UserPXBProfile {
@@ -65,3 +74,4 @@ export interface UserPXBProfile {
   referralCode?: string;
   referrerId?: string;
 }
+

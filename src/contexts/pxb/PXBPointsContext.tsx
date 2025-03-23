@@ -103,6 +103,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         userProfile,
         isLoading,
         bets,
+        userBets: bets, // Added this property to expose bets as userBets for BetDetails.tsx
         leaderboard,
         winRateLeaderboard,
         mintPoints: mintPointsWrapper,

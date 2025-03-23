@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -176,10 +177,9 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
 
     try {
       setIsBetting(true);
-      toast({
-        title: `Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${token?.symbol}`,
+      toast.success(`Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${token?.symbol}`, {
         description: `Starting MCAP: ${formatLargeNumber(marketCap)}
-        Target: ${betType === 'up' ? formatLargeNumber(marketCap * (1 + percentageChange / 100)) : formatLargeNumber(marketCap * (1 - percentageChange / 100))}`,
+        Target: ${betType === 'up' ? formatLargeNumber(marketCap * (1 + percentageChange / 100)) : formatLargeNumber(marketCap * (1 - percentageChange / 100))}`
       });
 
       await placeBet(token.id, token.name, token.symbol, betAmount, betType, percentageChange, timeframe);
@@ -232,10 +232,9 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
 
     try {
       setIsBetting(true);
-      toast({
-        title: `Placing ${values.direction === 'up' ? 'MOON' : 'DIE'} bet on ${token?.symbol}`,
+      toast.success(`Placing ${values.direction === 'up' ? 'MOON' : 'DIE'} bet on ${token?.symbol}`, {
         description: `Starting MCAP: ${formatLargeNumber(marketCap)}
-        Target: ${values.direction === 'up' ? formatLargeNumber(marketCap * (1 + values.percentageChange / 100)) : formatLargeNumber(marketCap * (1 - values.percentageChange / 100))}`,
+        Target: ${values.direction === 'up' ? formatLargeNumber(marketCap * (1 + values.percentageChange / 100)) : formatLargeNumber(marketCap * (1 - values.percentageChange / 100))}`
       });
 
       placeBet(token.id, token.name, token.symbol, values.amount, values.direction, values.percentageChange, values.timeframe).then(() => {
@@ -260,6 +259,8 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
         return <span className="text-red-500">Lost</span>;
       case 'expired':
         return <span className="text-gray-500">Expired</span>;
+      case 'open':
+        return <span className="text-blue-500">Open</span>;
       default:
         return <span className="text-gray-500">Unknown</span>;
     }
@@ -277,7 +278,7 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
 
   const calculatePayout = (bet: PXBBet) => {
     if (bet.status === 'won') {
-      return bet.amount * (bet.percentageChange / 100);
+      return bet.pointsWon || bet.betAmount * (bet.percentageChange / 100);
     }
     return 0;
   };
@@ -487,7 +488,7 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
                           {bet.betType === 'up' ? 'Moon' : 'Die'}
                         </div>
                       </td>
-                      <td>{bet.amount} PXB</td>
+                      <td>{bet.betAmount} PXB</td>
                       <td>{bet.percentageChange}%</td>
                       <td>{bet.timeframe} min</td>
                       <td>{renderBetStatus(bet)}</td>
@@ -531,7 +532,7 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
                           {bet.betType === 'up' ? 'Moon' : 'Die'}
                         </div>
                       </td>
-                      <td>{bet.amount} PXB</td>
+                      <td>{bet.betAmount} PXB</td>
                       <td>{bet.percentageChange}%</td>
                       <td>{bet.timeframe} min</td>
                       <td>{renderBetStatus(bet)}</td>

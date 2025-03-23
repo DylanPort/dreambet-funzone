@@ -5,6 +5,7 @@ export interface PXBPointsContextType {
   userProfile: UserProfile | null;
   isLoading: boolean;
   bets: PXBBet[];
+  userBets?: PXBBet[]; // Added this property to match the usage in BetDetails.tsx
   leaderboard: LeaderboardEntry[];
   winRateLeaderboard: WinRateLeaderboardEntry[];
   isLeaderboardLoading: boolean;
