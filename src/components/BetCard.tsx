@@ -8,14 +8,12 @@ import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
-
 interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
   onAcceptBet: (bet: Bet) => void;
 }
-
 const BetCard: React.FC<BetCardProps> = ({
   bet,
   connected,
@@ -60,18 +58,15 @@ const BetCard: React.FC<BetCardProps> = ({
     };
     fetchMarketCap();
   }, [bet.tokenMint, bet.initialMarketCap, bet.prediction]);
-
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
       toast.error('Connect your wallet to accept a bet');
       return;
     }
-
     if (bet.initiator === publicKeyString) {
       toast.error('You cannot accept your own bet');
       return;
     }
-
     try {
       setAccepting(true);
       await onAcceptBet(bet);
@@ -82,7 +77,6 @@ const BetCard: React.FC<BetCardProps> = ({
       setAccepting(false);
     }
   };
-
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text).then(() => {
       toast.success(`${label} copied to clipboard`);
@@ -131,55 +125,30 @@ const BetCard: React.FC<BetCardProps> = ({
     }
     return `$${value.toFixed(2)}`;
   };
-
-  return (
-    <div
-      className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${
-        bet.status === 'open'
-          ? 'bg-black/20 border-dream-accent1/30'
-          : bet.status === 'matched'
-            ? 'bg-black/30 border-purple-500/30'
-            : bet.status === 'expired'
-              ? 'bg-black/20 border-red-500/30'
-              : bet.outcome === 'win'
-                ? 'bg-black/20 border-green-500/30'
-                : bet.outcome === 'loss'
-                  ? 'bg-black/20 border-red-500/30'
-                  : 'bg-black/20 border-yellow-500/30'
-      }`}
-    >
+  return <div className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${bet.status === 'open' ? 'bg-black/20 border-dream-accent1/30' : bet.status === 'matched' ? 'bg-black/30 border-purple-500/30' : bet.status === 'expired' ? 'bg-black/20 border-red-500/30' : bet.outcome === 'win' ? 'bg-black/20 border-green-500/30' : bet.outcome === 'loss' ? 'bg-black/20 border-red-500/30' : 'bg-black/20 border-yellow-500/30'}`}>
       <div className="px-6 py-4">
         <div className="flex justify-between items-center">
-          <Link
-            to={`/betting/token/${bet.tokenId}`}
-            className="text-xl font-display font-bold hover:underline transition-all duration-300"
-          >
+          <Link to={`/betting/token/${bet.tokenId}`} className="text-xl font-display font-bold hover:underline transition-all duration-300">
             {bet.tokenName}
             <span className="text-dream-foreground/50 text-sm ml-2">
               ({bet.tokenSymbol})
             </span>
           </Link>
 
-          <div className={`text-xs px-3 py-1.5 rounded-full border ${statusClass}`}>
-            {statusDisplay}
-          </div>
+          
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <div className="text-sm text-dream-foreground/70">Prediction</div>
             <div className={`text-lg font-medium flex items-center ${bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'text-green-400' : 'text-red-400'}`}>
-              {bet.prediction === 'moon' || bet.prediction === 'migrate' ? (
-                <>
+              {bet.prediction === 'moon' || bet.prediction === 'migrate' ? <>
                   <ArrowUp className="w-5 h-5 mr-1" />
                   MOON
-                </>
-              ) : (
-                <>
+                </> : <>
                   <ArrowDown className="w-5 h-5 mr-1" />
                   DUST
-                </>
-              )}
+                </>}
             </div>
           </div>
 
@@ -196,10 +165,7 @@ const BetCard: React.FC<BetCardProps> = ({
               <span title={bet.initiator}>
                 {bet.initiator.substring(0, 4)}...{bet.initiator.substring(bet.initiator.length - 4)}
               </span>
-              <button
-                onClick={() => copyToClipboard(bet.initiator, 'Wallet address')}
-                className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
-              >
+              <button onClick={() => copyToClipboard(bet.initiator, 'Wallet address')} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
                 <Copy className="w-3 h-3" />
               </button>
             </div>
@@ -221,46 +187,30 @@ const BetCard: React.FC<BetCardProps> = ({
             <div className="flex items-center">
               <span>Bet ID: </span>
               <span className="font-mono ml-1">{bet.id?.substring(0, 8) || 'Unknown'}</span>
-              <button
-                onClick={() => copyToClipboard(bet.id || 'Unknown', 'Bet ID')}
-                className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
-              >
+              <button onClick={() => copyToClipboard(bet.id || 'Unknown', 'Bet ID')} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
                 <Copy className="w-3 h-3" />
               </button>
             </div>
 
-            {bet.transactionSignature && (
-              <a
-                href={`https://solscan.io/tx/${bet.transactionSignature}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-dream-accent2 hover:underline inline-flex items-center"
-              >
+            {bet.transactionSignature && <a href={`https://solscan.io/tx/${bet.transactionSignature}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline inline-flex items-center">
                 <ExternalLink className="w-3 h-3 mr-1" />
                 View on Solscan
-              </a>
-            )}
+              </a>}
           </div>
         </div>
 
-        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && (
-          <div className="mt-4">
+        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && <div className="mt-4">
             
-          </div>
-        )}
+          </div>}
 
-        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && (
-          <div className="mt-4">
+        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && <div className="mt-4">
             <Button disabled className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed">
               Connect wallet to accept
             </Button>
-          </div>
-        )}
+          </div>}
 
-        {(bet.status !== 'open' || isExpired) && (
-          <div className="mt-4 space-y-3">
-            {bet.initialMarketCap !== null && bet.initialMarketCap !== undefined && (
-              <div className="space-y-2">
+        {(bet.status !== 'open' || isExpired) && <div className="mt-4 space-y-3">
+            {bet.initialMarketCap !== null && bet.initialMarketCap !== undefined && <div className="space-y-2">
                 <div className="flex justify-between text-xs mb-1">
                   <div className="text-green-400">Initial: {formatMarketCap(bet.initialMarketCap)}</div>
                   <div className="text-dream-foreground/70">Current: {formatMarketCap(currentMarketCap)}</div>
@@ -272,43 +222,13 @@ const BetCard: React.FC<BetCardProps> = ({
                 <Progress value={progressValue} className="h-3" />
 
                 <div className="text-xs text-center text-dream-foreground/60">
-                  {isLoading
-                    ? "Fetching market cap data..."
-                    : bet.prediction === 'moon' || bet.prediction === 'migrate'
-                      ? `${progressValue.toFixed(1)}% toward 30% gain target`
-                      : `${progressValue.toFixed(1)}% toward 30% loss target`}
+                  {isLoading ? "Fetching market cap data..." : bet.prediction === 'moon' || bet.prediction === 'migrate' ? `${progressValue.toFixed(1)}% toward 30% gain target` : `${progressValue.toFixed(1)}% toward 30% loss target`}
                 </div>
-              </div>
-            )}
+              </div>}
 
-            <div
-              className={`text-sm px-3 py-1.5 rounded-md text-center ${
-                bet.status === 'matched'
-                  ? 'bg-purple-500/10 text-purple-400'
-                  : bet.outcome === 'win'
-                    ? 'bg-green-500/10 text-green-400'
-                    : bet.outcome === 'loss'
-                      ? 'bg-red-500/10 text-red-400'
-                      : isExpired
-                        ? 'bg-red-500/10 text-red-400'
-                        : 'bg-yellow-500/10 text-yellow-400'
-              }`}
-            >
-              {bet.status === 'matched'
-                ? 'Bet is active and matched'
-                : bet.outcome === 'win'
-                  ? 'Bet ended with a win'
-                  : bet.outcome === 'loss'
-                    ? 'Bet ended with a loss'
-                    : isExpired
-                      ? 'This bet has expired'
-                      : 'This bet is no longer available'}
-            </div>
-          </div>
-        )}
+            
+          </div>}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default BetCard;
