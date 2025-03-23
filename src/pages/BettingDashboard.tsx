@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Wallet, HelpCircle, Rocket, Skull, Trophy, Zap, Check, Gift, Star, Hand, HandMetal, Sparkles } from 'lucide-react';
@@ -15,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
 const BettingDashboard = () => {
   const {
     connected
@@ -34,11 +32,8 @@ const BettingDashboard = () => {
   const [isHovering, setIsHovering] = useState(false);
   const [pulseEffect, setPulseEffect] = useState(false);
   const [glowIntensity, setGlowIntensity] = useState(10);
-  
   console.log("BettingDashboard rendering, wallet connected:", connected);
-  
   const allStepsCompleted = Object.values(readSteps).every(step => step);
-  
   useEffect(() => {
     if (allStepsCompleted && !showGift) {
       setTimeout(() => {
@@ -51,7 +46,6 @@ const BettingDashboard = () => {
       }, 500);
     }
   }, [readSteps, showGift, toast]);
-  
   useEffect(() => {
     const interval = setInterval(() => {
       setPulseEffect(prev => !prev);
@@ -59,7 +53,6 @@ const BettingDashboard = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
-  
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -107,19 +100,7 @@ const BettingDashboard = () => {
         </div>
       </main>
       
-      <footer className="glass-panel px-4 sm:px-6 py-6 sm:py-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <p className="text-dream-foreground/60 max-w-md mx-auto text-xs sm:text-sm">
-              This app allows you to bet on tokens migrating from PumpFun to Raydium. All bets are facilitated through smart contracts on the Solana blockchain.
-            </p>
-            <div className="mt-4 sm:mt-6 border-t border-white/10 pt-4 sm:pt-6 text-xs sm:text-sm text-dream-foreground/40">
-              © {new Date().getFullYear()} PumpXBounty. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
+      
     </>;
 };
-
 export default BettingDashboard;
