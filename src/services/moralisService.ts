@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 
 // Cache for storing metadata to reduce API calls
@@ -6,9 +5,8 @@ const metadataCache: Record<string, any> = {};
 const imageCache: Record<string, string> = {};
 const pairCache: Record<string, string> = {};
 
-// Using a default API key as placeholder - the user should provide their own
-// This is meant to be replaced with an actual API key
-const MORALIS_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjYxNGVlMjhmLWQ5M2MtNDczNi1iMGEyLWVkODc2N2JlMDlkYiIsIm9yZ0lkIjoiMzY5OTkwIiwidXNlcklkIjoiMzgwMTg5IiwidHlwZUlkIjoiMDJjYWJjY2ItNzgwMC00Y2E5LTljZjEtY2Y0NDc1OTRiYWU2IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3MTYwNTMxMjEsImV4cCI6NDg3MTgxMzEyMX0.qGrJrF_lNIE8wGOMibOuylXWiOa-L8TbQGC1QS9-ZIM";
+// Updated Moralis API key
+const MORALIS_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjkzMWQxZGM3LTkxODgtNGM0MC04ZTUwLTg4YTE0NmRhNTI3MyIsIm9yZ0lkIjoiMzE0NjEzIiwidXNlcklkIjoiMzIzNDg0IiwidHlwZSI6IlBST0pFQ1QiLCJ0eXBlSWQiOiIzODM1ODhkYi1jOWNkLTQ4YTYtODllYS1hYTRhMTIwMzMwNWUiLCJpYXQiOjE3MzY2OTQyNjMsImV4cCI6NDg5MjQ1NDI2M30.Gq57k_Xb-nJZwpnqocoKEKev_1chmdlSwmPoavO_1SY";
 
 /**
  * Checks if there's a token metadata API key issue
@@ -269,12 +267,79 @@ const isImageAccessible = async (url: string): Promise<boolean> => {
 };
 
 /**
+ * Direct fetch from Moralis API for token metadata and image
+ */
+export const fetchMoralisTokenData = async (tokenMint: string) => {
+  if (!tokenMint) return null;
+  
+  try {
+    console.log(`Fetching Moralis data for token: ${tokenMint}`);
+    const response = await fetch(`https://solana-gateway.moralis.io/token/mainnet/${tokenMint}/metadata`, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'X-API-Key': MORALIS_API_KEY
+      }
+    });
+    
+    if (!response.ok) {
+      console.error(`Moralis API error: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
+    const metadata = await response.json();
+    console.log("Moralis metadata:", metadata);
+    
+    // If we have metadata.uri, fetch the actual image
+    if (metadata && metadata.uri) {
+      // Convert IPFS URI to HTTP URL if needed
+      const uri = metadata.uri;
+      const offChainUrl = uri.startsWith('ipfs://') 
+        ? `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`
+        : uri;
+      
+      try {
+        const offChainResponse = await fetch(offChainUrl);
+        if (offChainResponse.ok) {
+          const offChainData = await offChainResponse.json();
+          
+          if (offChainData && offChainData.image) {
+            let imageUrl = offChainData.image;
+            if (imageUrl.startsWith('ipfs://')) {
+              imageUrl = `https://ipfs.io/ipfs/${imageUrl.replace('ipfs://', '')}`;
+            }
+            return {
+              metadata,
+              offChainData,
+              imageUrl
+            };
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching off-chain data: ${error}`);
+      }
+    }
+    
+    return { metadata };
+  } catch (error) {
+    console.error(`Error fetching Moralis token data for ${tokenMint}:`, error);
+    return null;
+  }
+};
+
+/**
  * Fetches the token image and returns it, with error handling and fallbacks
  */
 export const fetchTokenImage = async (tokenMint: string, tokenSymbol?: string) => {
   if (!tokenMint) return null;
   
   try {
+    // Try direct Moralis fetch first (with new API key)
+    const moralisData = await fetchMoralisTokenData(tokenMint);
+    if (moralisData && moralisData.imageUrl) {
+      return moralisData.imageUrl;
+    }
+    
     // First try to get from DexScreener (highest priority)
     const dexScreenerImage = await getDexScreenerTokenImage(tokenMint);
     if (dexScreenerImage) {
