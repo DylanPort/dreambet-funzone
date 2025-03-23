@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Trophy, Medal, User, ArrowUp, Flame, Star, BarChart, ChevronDown, Coins } from 'lucide-react';
+import { Medal, User, ArrowUp, Flame, Star, BarChart, ChevronDown, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,7 +39,7 @@ const PXBLeaderboard: React.FC = () => {
   const getLeaderIcon = (position: number) => {
     switch (position) {
       case 0:
-        return <Trophy className="w-5 h-5 text-yellow-400 animate-pulse-glow" />;
+        return <img src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" className="w-7 h-7 animate-pulse-glow" alt="Trophy" />;
       case 1:
         return <Medal className="w-5 h-5 text-gray-300 animate-bob" />;
       case 2:
@@ -163,7 +163,11 @@ const PXBLeaderboard: React.FC = () => {
   return (
     <div className="glass-panel p-6">
       <h2 className="font-semibold text-lg mb-4 flex items-center">
-        <Trophy className="mr-2 h-5 w-5 text-yellow-400" />
+        <img 
+          src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" 
+          className="mr-2 h-6 w-6" 
+          alt="Trophy" 
+        />
         Leaderboard
       </h2>
       
