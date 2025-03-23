@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VideoUploader from './VideoUploader';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TourVideoManagerProps {
   onClose?: () => void;
@@ -28,6 +29,7 @@ const TourVideoManager: React.FC<TourVideoManagerProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState('welcome');
   const [videos, setVideos] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Fetch existing videos from Supabase
   useEffect(() => {
@@ -49,21 +51,25 @@ const TourVideoManager: React.FC<TourVideoManagerProps> = ({ onClose }) => {
           const videoMap: Record<string, string> = {};
           
           // Filter for videos that match our step IDs
-          defaultTourSteps.forEach(step => {
-            const matchingFile = files.find(file => file.name.startsWith(`tour_${step.id}_`));
-            if (matchingFile) {
+          for (const step of defaultTourSteps) {
+            const matchingFiles = files.filter(file => file.name.startsWith(`tour_${step.id}_`));
+            if (matchingFiles.length > 0) {
+              // Get the most recent file (sort by name which includes timestamp)
+              const mostRecentFile = matchingFiles.sort((a, b) => b.name.localeCompare(a.name))[0];
+              
               const { data } = supabase.storage
                 .from('tourvideo')
-                .getPublicUrl(matchingFile.name);
+                .getPublicUrl(mostRecentFile.name);
               
               videoMap[step.id] = data.publicUrl;
             }
-          });
+          }
           
           setVideos(videoMap);
         }
       } catch (error) {
         console.error('Error fetching videos:', error);
+        setUploadError('Failed to load videos');
       } finally {
         setIsLoading(false);
       }
@@ -77,6 +83,14 @@ const TourVideoManager: React.FC<TourVideoManagerProps> = ({ onClose }) => {
       ...prev,
       [stepId]: url
     }));
+    
+    // Show a success toast
+    toast.success(`Video for ${defaultTourSteps.find(step => step.id === stepId)?.title} updated successfully`);
+  };
+  
+  const handleUploadError = (error: string) => {
+    setUploadError(error);
+    toast.error(`Upload failed: ${error}`);
   };
   
   if (isLoading) {
@@ -117,8 +131,10 @@ const TourVideoManager: React.FC<TourVideoManagerProps> = ({ onClose }) => {
                 
                 <VideoUploader 
                   onUploadComplete={(url) => handleUploadComplete(step.id, url)}
+                  onError={handleUploadError}
                   label={`Upload video for "${step.title}"`}
                   currentVideoUrl={videos[step.id]}
+                  tourId={step.id}
                 />
               </div>
             </TabsContent>

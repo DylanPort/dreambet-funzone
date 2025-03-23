@@ -3,23 +3,28 @@ import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, CheckCircle2, X, AlertCircle } from 'lucide-react';
+import { Upload, CheckCircle2, X, AlertCircle, Play } from 'lucide-react';
 
 interface VideoUploaderProps {
   onUploadComplete: (url: string) => void;
+  onError?: (error: string) => void;
   label?: string;
   currentVideoUrl?: string;
+  tourId?: string;
 }
 
 const VideoUploader: React.FC<VideoUploaderProps> = ({
   onUploadComplete,
+  onError,
   label = "Upload Video",
-  currentVideoUrl
+  currentVideoUrl,
+  tourId
 }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   
   const handleUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -31,35 +36,32 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
       
       // Validate file is a video
       if (!file.type.startsWith('video/')) {
-        setError('Please upload a video file');
+        const errorMsg = 'Please upload a video file';
+        setError(errorMsg);
+        if (onError) onError(errorMsg);
         return;
       }
       
       // Check file size (limit to 50MB)
       if (file.size > 50 * 1024 * 1024) {
-        setError('Video must be smaller than 50MB');
+        const errorMsg = 'Video must be smaller than 50MB';
+        setError(errorMsg);
+        if (onError) onError(errorMsg);
         return;
       }
       
       setUploading(true);
       
-      // Create a unique file name
+      // Create a unique file name with timestamp and tour ID if provided
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `tour_videos/${fileName}`;
+      const timestamp = Date.now();
+      const fileName = tourId 
+        ? `tour_${tourId}_${timestamp}.${fileExt}`
+        : `video_${timestamp}.${fileExt}`;
       
-      // Track upload progress manually
-      let lastLoaded = 0;
-      const xhr = new XMLHttpRequest();
+      const filePath = tourId ? fileName : `uploads/${fileName}`;
       
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percent);
-        }
-      });
-      
-      // Upload file to Supabase Storage (use tourvideo bucket)
+      // Upload file to Supabase Storage
       const { data, error: uploadError } = await supabase.storage
         .from('tourvideo')
         .upload(filePath, file, {
@@ -76,25 +78,36 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
         .from('tourvideo')
         .getPublicUrl(filePath);
       
+      // Create a cachebuster URL to avoid browser caching
+      const cacheBustedUrl = `${publicUrl}?t=${timestamp}`;
+      
+      // Preload the video
+      setVideoPreviewUrl(cacheBustedUrl);
+      
       // Notify parent component
-      onUploadComplete(publicUrl);
+      onUploadComplete(cacheBustedUrl);
       setUploadSuccess(true);
       
     } catch (error: any) {
       console.error('Error uploading video:', error);
-      setError(error.message || 'Error uploading video');
+      const errorMsg = error.message || 'Error uploading video';
+      setError(errorMsg);
+      if (onError) onError(errorMsg);
     } finally {
       setUploading(false);
       // Reset file input
       event.target.value = '';
     }
-  }, [onUploadComplete]);
+  }, [onUploadComplete, onError, tourId]);
   
   const handleCancel = useCallback(() => {
     setUploading(false);
     setUploadProgress(0);
     setError(null);
   }, []);
+  
+  // Use the latest video URL
+  const displayVideoUrl = videoPreviewUrl || currentVideoUrl;
   
   return (
     <div className="w-full space-y-2">
@@ -160,13 +173,17 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
         </div>
       )}
       
-      {currentVideoUrl && (
+      {displayVideoUrl && (
         <div className="mt-4 rounded-md overflow-hidden border border-dream-accent1/30">
           <video 
-            src={currentVideoUrl} 
+            src={displayVideoUrl} 
             controls 
             className="w-full h-auto max-h-[200px]" 
             preload="metadata"
+            onError={(e) => {
+              console.error('Video loading error:', e);
+              setError('Failed to load video preview');
+            }}
           />
         </div>
       )}
