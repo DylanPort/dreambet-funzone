@@ -106,13 +106,12 @@ export const hasBetWon = (
  */
 export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics | null> => {
   try {
-    // First check cache
+    // Remove all toast notifications
     const cached = getCachedTokenMetrics(tokenId);
     if (cached) {
       return cached;
     }
     
-    // Create a null metrics object first - keep metrics as null to maintain loading state
     const nullMetrics: TokenMetrics = {
       marketCap: null,
       volume24h: null,
@@ -122,10 +121,8 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
       timestamp: Date.now()
     };
     
-    // Save null data to cache temporarily to indicate loading
     setCachedTokenMetrics(tokenId, nullMetrics);
     
-    // If not in cache or expired, fetch from API
     const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${tokenId}`);
     
     if (!response.ok) {
@@ -136,31 +133,7 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
     
     if (!data.pairs || data.pairs.length === 0) {
       console.log("No pairs found for token:", tokenId);
-      
-      // Save null data to cache temporarily
       setCachedTokenMetrics(tokenId, nullMetrics);
-      
-      console.log(`No data available for token ${tokenId}, keeping null values to maintain loading state`);
-      
-      // Show a toast about estimated data after a small delay
-      setTimeout(() => {
-        // Now create fallback metrics with estimated values
-        const fallbackMetrics: TokenMetrics = {
-          marketCap: 1000, // Default to a small market cap value
-          volume24h: 0,
-          priceUsd: 0.000001, // Default to a small price
-          priceChange24h: 0,
-          liquidity: 0,
-          timestamp: Date.now()
-        };
-        
-        // Update cache with fallback data
-        setCachedTokenMetrics(tokenId, fallbackMetrics);
-        
-        toast.info("Using estimated token data for bet placement");
-        console.log(`Using fallback data for token ${tokenId}:`, fallbackMetrics);
-      }, 1500);
-      
       return nullMetrics;
     }
     
@@ -185,7 +158,6 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
   } catch (error) {
     console.error("Error fetching token metrics:", error);
     
-    // Create a null metrics object first - keep metrics as null to maintain loading state
     const nullMetrics: TokenMetrics = {
       marketCap: null,
       volume24h: null,
@@ -195,27 +167,7 @@ export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics |
       timestamp: Date.now()
     };
     
-    // Save null data to cache temporarily
     setCachedTokenMetrics(tokenId, nullMetrics);
-    
-    // After a delay, apply the fallback values
-    setTimeout(() => {
-      const fallbackMetrics: TokenMetrics = {
-        marketCap: 1000, // Default to a small market cap value
-        volume24h: 0,
-        priceUsd: 0.000001, // Default to a small price
-        priceChange24h: 0,
-        liquidity: 0,
-        timestamp: Date.now()
-      };
-      
-      // Update cache with fallback data
-      setCachedTokenMetrics(tokenId, fallbackMetrics);
-      
-      toast.info("Using estimated token data for bet placement");
-      console.log(`Using fallback data after error for token ${tokenId}:`, fallbackMetrics);
-    }, 1500);
-    
     return nullMetrics;
   }
 };
@@ -283,23 +235,18 @@ export const subscribeToTokenMetric = (
 
 // Add support for custom token search results
 export const addCustomTokenToCache = (tokenAddress: string, tokenData: any) => {
-  // Create estimated metrics for the token
   const estimatedMetrics: TokenMetrics = {
-    marketCap: 1000, // Default to a small market cap value
+    marketCap: 1000,
     volume24h: 0,
-    priceUsd: 0.000001, // Default to a small price
+    priceUsd: 0.000001,
     priceChange24h: 0,
     liquidity: 0,
     timestamp: Date.now()
   };
   
-  // Add to cache
   setCachedTokenMetrics(tokenAddress, estimatedMetrics);
+  console.log("Using estimated data for this token");
   
-  // Let the user know we're using estimated data
-  toast.info("Using estimated data for this token");
-  
-  // Trigger DexScreener fetch to get real data if available
   fetchTokenMetrics(tokenAddress);
   
   return estimatedMetrics;

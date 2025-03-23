@@ -32,12 +32,12 @@ export const usePointOperations = (
 
   const mintPoints = useCallback(async (amount: number): Promise<void> => {
     if (!publicKey || !userProfile) {
-      toast.error('Connect your wallet to mint points');
+      console.error('Connect your wallet to mint points');
       return;
     }
 
     if (amount <= 0) {
-      toast.error('Amount must be greater than zero');
+      console.error('Amount must be greater than zero');
       return;
     }
 
@@ -72,7 +72,7 @@ export const usePointOperations = (
             const remainingAllowance = MINT_LIMIT_PER_PERIOD - mintedInPeriod;
             
             if (remainingAllowance <= 0) {
-              toast.error(`You've reached your minting limit of ${MINT_LIMIT_PER_PERIOD} PXB per ${MINT_PERIOD_HOURS} hours`);
+              console.error(`You've reached your minting limit of ${MINT_LIMIT_PER_PERIOD} PXB per ${MINT_PERIOD_HOURS} hours`);
               setMintingPoints(false);
               return;
             }
@@ -80,11 +80,7 @@ export const usePointOperations = (
             // If requested amount exceeds remaining allowance, limit it
             mintAmount = Math.min(amount, remainingAllowance);
             if (mintAmount < amount) {
-              toast({
-                title: `Mint limit reached`,
-                description: `You can only mint ${mintAmount} more PXB within this ${MINT_PERIOD_HOURS}-hour period`,
-                variant: "default"
-              });
+              console.log(`Mint limit reached. You can only mint ${mintAmount} more PXB within this ${MINT_PERIOD_HOURS}-hour period`);
             }
           }
         } catch (historyErr) {
@@ -102,7 +98,7 @@ export const usePointOperations = (
           pxbPoints: newPointsTotal
         });
         
-        toast.success(`Successfully minted ${mintAmount} PXB points!`);
+        console.log(`Successfully minted ${mintAmount} PXB points!`);
         setMintingPoints(false);
         return;
       }
@@ -117,7 +113,7 @@ export const usePointOperations = (
         
       if (fetchError) {
         console.error('Error fetching current points:', fetchError);
-        toast.error('Failed to mint points');
+        console.error('Failed to mint points');
         setMintingPoints(false);
         return;
       }
@@ -134,7 +130,7 @@ export const usePointOperations = (
 
       if (error) {
         console.error('Error minting points:', error);
-        toast.error('Failed to mint points');
+        console.error('Failed to mint points');
         setMintingPoints(false);
         return;
       }
@@ -162,13 +158,13 @@ export const usePointOperations = (
       });
       
       if (mintAmount === amount) {
-        toast.success(`Successfully minted ${mintAmount} PXB points!`);
+        console.log(`Successfully minted ${mintAmount} PXB points!`);
       } else {
-        toast.success(`Successfully minted ${mintAmount} PXB points! (Limit reached)`);
+        console.log(`Successfully minted ${mintAmount} PXB points! (Limit reached)`);
       }
     } catch (error) {
       console.error('Error in mintPoints:', error);
-      toast.error('Failed to mint points');
+      console.error('Failed to mint points');
     } finally {
       setMintingPoints(false);
     }
@@ -184,12 +180,12 @@ export const usePointOperations = (
     duration: number
   ): Promise<PXBBet | void> => {
     if (!userProfile || !publicKey) {
-      toast.error('Please connect your wallet to place a bet.');
+      console.error('Please connect your wallet to place a bet.');
       return;
     }
 
     if (betAmount > userProfile.pxbPoints) {
-      toast.error('Insufficient PXB points to place this bet.');
+      console.error('Insufficient PXB points to place this bet.');
       return;
     }
 
@@ -275,7 +271,7 @@ export const usePointOperations = (
       }
     } catch (error: any) {
       console.error('Error placing bet:', error);
-      toast.error(error.message || 'Failed to place bet');
+      console.error(error.message || 'Failed to place bet');
       // Revert optimistic update if any error occurs
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
       return;
