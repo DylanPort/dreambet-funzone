@@ -61,12 +61,13 @@ export const useProfileData = () => {
               
             if (createError) {
               console.warn('Could not create user profile:', createError);
-              // Fall back to temporary profile
+              // Fall back to temporary profile with a non-UUID id format
               setUserProfile({
-                id: 'temporary-' + walletAddress.substring(0, 8),
+                id: `temp-${walletAddress.substring(0, 8)}`,
                 username: walletAddress.substring(0, 8),
                 pxbPoints: 0,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                isTemporary: true // Add flag to identify temporary profiles
               });
             } else if (newUser) {
               console.log('New user created:', newUser);
@@ -80,12 +81,13 @@ export const useProfileData = () => {
             }
           } catch (createError) {
             console.error('Error creating user profile:', createError);
-            // Fall back to temporary profile
+            // Fall back to temporary profile with a non-UUID id format
             setUserProfile({
-              id: 'temporary-' + walletAddress.substring(0, 8),
+              id: `temp-${walletAddress.substring(0, 8)}`,
               username: walletAddress.substring(0, 8),
               pxbPoints: 0,
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              isTemporary: true // Add flag to identify temporary profiles
             });
           }
         } else {
@@ -111,6 +113,46 @@ export const useProfileData = () => {
     console.log(`Adding ${amount} points to user ${walletAddress} for ${reason}`);
 
     try {
+      // Skip points history check for temporary users
+      if (userProfile && !userProfile.isTemporary) {
+        // Get minting history for this wallet in the last 24 hours
+        const now = new Date();
+        const periodStart = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+        
+        try {
+          const { data: mintHistory, error: historyError } = await supabase
+            .from('points_history')
+            .select('amount')
+            .eq('user_id', userProfile.id)
+            .eq('action', 'mint')
+            .gte('created_at', periodStart.toISOString());
+          
+          if (historyError) {
+            console.error('Error fetching mint history:', historyError);
+            // Continue anyway, assuming no previous mints
+          } else if (mintHistory && mintHistory.length > 0) {
+            // Calculate how much has been minted in the current period
+            const mintedInPeriod = mintHistory.reduce((total, record) => total + record.amount, 0);
+            const limit = 2000; // Daily mint limit
+            
+            if (mintedInPeriod + amount > limit) {
+              const remaining = Math.max(0, limit - mintedInPeriod);
+              toast.warning(`You can only mint ${remaining} more points today. Try again tomorrow.`);
+              
+              if (remaining <= 0) {
+                return false;
+              }
+              
+              // Adjust amount to remaining limit
+              amount = remaining;
+            }
+          }
+        } catch (historyErr) {
+          console.error('Error processing mint history:', historyErr);
+          // Continue anyway
+        }
+      }
+
       // First, get the current user profile to ensure it exists
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
@@ -147,6 +189,17 @@ export const useProfileData = () => {
             pxbPoints: newUser.points || amount,
             createdAt: newUser.created_at
           });
+          
+          // Record the transaction for the new user
+          if (!newUser.id.startsWith('temp-')) {
+            await supabase.from('points_history').insert({
+              user_id: newUser.id,
+              amount: amount,
+              action: 'mint',
+              reference_id: `mint_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+              reference_name: reason || 'Initial mint'
+            });
+          }
         }
       } else {
         // Update existing user points
@@ -177,19 +230,28 @@ export const useProfileData = () => {
               pxbPoints: updatedUser.points || 0
             };
           });
+          
+          // Record the transaction for the existing user
+          if (existingUser.id && !existingUser.id.toString().startsWith('temp-')) {
+            await supabase.from('points_history').insert({
+              user_id: existingUser.id,
+              amount: amount,
+              action: 'mint',
+              reference_id: `mint_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+              reference_name: reason || 'Points mint'
+            });
+          }
         }
       }
 
-      // Record the transaction in a transaction log table if needed
-      // This could be implemented when a transactions table is available
-
+      toast.success(`Added ${amount} PXB points!`);
       return true;
     } catch (error) {
       console.error('Error in addPointsToUser:', error);
       toast.error('Failed to add points to your profile');
-      throw error;
+      return false;
     }
-  }, [connected, publicKey]);
+  }, [connected, publicKey, userProfile]);
 
   // Re-fetch when connection state changes
   useEffect(() => {
