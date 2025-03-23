@@ -12,6 +12,7 @@ export const useReferralSystem = (
     totalReferrals: 0,
     activeReferrals: 0,
     pointsEarned: 0,
+    totalPointsEarned: 0, // Added for compatibility
     referrals_count: 0,
     points_earned: 0,
     referral_code: null,
@@ -164,19 +165,25 @@ export const useReferralSystem = (
       // Calculate total points earned from referrals
       const totalPointsEarned = referralsData.reduce((sum, r) => sum + r.points_awarded, 0);
       
-      // Format referrals data
+      // Format referrals data with all required fields for the component
       const formattedReferrals: Referral[] = referralsData.map(r => ({
+        id: r.id, // Added id field
         referrer: userProfile.id,
         referee: r.referred_id,
+        referred_id: r.referred_id, // For backend compatibility
         date: r.created_at,
+        createdAt: r.created_at, // Added for component compatibility
         status: 'active',
-        pointsEarned: r.points_awarded
+        pointsEarned: r.points_awarded,
+        pointsAwarded: r.points_awarded, // Added alias for component compatibility
+        referredUsername: r.users?.username || 'Anonymous User' // Added for display in component
       }));
       
       setReferralStats({
         totalReferrals: referralsData.length,
         activeReferrals: referralsData.length,
         pointsEarned: totalPointsEarned,
+        totalPointsEarned: totalPointsEarned, // Added for component compatibility
         referrals_count: referralsData.length,
         points_earned: totalPointsEarned,
         referral_code: userData?.referral_code || null,

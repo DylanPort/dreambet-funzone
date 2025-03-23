@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -221,7 +220,7 @@ const PXBSpace = () => {
                       <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
                         <p className="text-sm text-dream-foreground/60 mb-1">Points Earned</p>
                         <p className="text-2xl font-display font-bold text-gradient">
-                          {isLoadingReferrals ? "..." : (referralStats?.points_earned || 0).toLocaleString()}
+                          {isLoadingReferrals ? "..." : (referralStats?.pointsEarned || 0).toLocaleString()}
                         </p>
                       </div>
                     </div>

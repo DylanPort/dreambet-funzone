@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useSearchParams } from 'react-router-dom';
+
 interface Transaction {
   id: string;
   amount: number;
@@ -17,6 +18,7 @@ interface Transaction {
   reference_id: string;
   reference_name?: string;
 }
+
 const PXBWallet: React.FC = () => {
   const {
     userProfile,
@@ -46,12 +48,14 @@ const PXBWallet: React.FC = () => {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
   const [searchParams] = useSearchParams();
+
   useEffect(() => {
     if (userProfile && generatePxbId) {
       const id = generatePxbId();
       setMyPxbId(id);
     }
   }, [userProfile, generatePxbId]);
+
   useEffect(() => {
     const storedLastClaimTime = localStorage.getItem('lastPxbClaim');
     if (storedLastClaimTime) {
@@ -71,6 +75,7 @@ const PXBWallet: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [lastClaimTime]);
+
   useEffect(() => {
     if (activeTab === 'activity' && userProfile) {
       fetchTransactionHistory();
@@ -80,12 +85,14 @@ const PXBWallet: React.FC = () => {
       handleGenerateReferralLink();
     }
   }, [activeTab, userProfile, fetchReferralStats]);
+
   useEffect(() => {
     const refCode = searchParams.get('ref');
     if (refCode && activeTab !== 'referrals') {
       setActiveTab('referrals');
     }
   }, [searchParams]);
+
   const fetchTransactionHistory = async () => {
     if (!userProfile) return;
     setIsLoadingTransactions(true);
@@ -108,6 +115,7 @@ const PXBWallet: React.FC = () => {
       setIsLoadingTransactions(false);
     }
   };
+
   const handleSendPoints = async () => {
     if (!sendPoints) return;
     if (!recipientId.trim()) {
@@ -139,11 +147,13 @@ const PXBWallet: React.FC = () => {
       setIsSending(false);
     }
   };
+
   const handleGenerateId = () => {
     if (!generatePxbId) return;
     const newId = generatePxbId();
     setMyPxbId(newId);
   };
+
   const handleGenerateReferralLink = async () => {
     if (!generateReferralLink || !userProfile) return;
     setIsGeneratingLink(true);
@@ -157,10 +167,12 @@ const PXBWallet: React.FC = () => {
       setIsGeneratingLink(false);
     }
   };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
   };
+
   const formatCooldownTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
@@ -168,6 +180,7 @@ const PXBWallet: React.FC = () => {
     const seconds = totalSeconds % 60;
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
+
   const handleClaimPoints = async () => {
     if (!userProfile) return;
     setIsClaiming(true);
@@ -183,6 +196,7 @@ const PXBWallet: React.FC = () => {
       setIsClaiming(false);
     }
   };
+
   const getTransactionDescription = (transaction: Transaction) => {
     switch (transaction.action) {
       case 'bet_placed':
@@ -203,22 +217,26 @@ const PXBWallet: React.FC = () => {
         return transaction.action.replace(/_/g, ' ');
     }
   };
+
   const formatTransactionTime = (timestamp: string) => {
     return formatDistanceToNow(new Date(timestamp), {
       addSuffix: true
     });
   };
+
   if (isLoading) {
     return <div className="glass-panel p-6 mb-6 animate-pulse bg-gray-900/50 rounded-lg border border-gray-800">
         <div className="w-full h-12 bg-gray-800 rounded-lg mb-4"></div>
         <div className="w-1/2 h-8 bg-gray-800 rounded-lg"></div>
       </div>;
   }
+
   if (!connected) {
     return <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
         <p className="text-center text-gray-400">Connect your wallet to view your PXB balance</p>
       </div>;
   }
+
   if (!userProfile) {
     return <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
         <div className="text-center space-y-4">
@@ -227,6 +245,7 @@ const PXBWallet: React.FC = () => {
         </div>
       </div>;
   }
+
   return <div className="mb-6 overflow-hidden relative rounded-lg bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
       <div className="p-6 flex justify-between items-center bg-gradient-to-r from-[#131c36] to-[#1a2542]">
         <div className="flex items-center">
@@ -430,7 +449,7 @@ const PXBWallet: React.FC = () => {
                   
                   <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-900/30">
                     <p className="text-sm text-indigo-300/70 mb-1">Points Earned</p>
-                    <p className="text-2xl font-bold text-white">{referralStats.totalPointsEarned.toLocaleString()} PXB</p>
+                    <p className="text-2xl font-bold text-white">{referralStats.pointsEarned.toLocaleString()} PXB</p>
                   </div>
                 </div>
                 
@@ -438,7 +457,7 @@ const PXBWallet: React.FC = () => {
                 
                 {isLoadingReferrals ? <div className="flex justify-center py-8">
                     <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div> : referralStats.referrals.length > 0 ? <div className="space-y-3">
+                  </div> : referralStats.referrals && referralStats.referrals.length > 0 ? <div className="space-y-3">
                     {referralStats.referrals.map(referral => <div key={referral.id} className="flex items-center justify-between p-3 bg-indigo-900/10 rounded-lg hover:bg-indigo-900/20 transition-colors border border-indigo-900/20">
                         <div className="flex items-center">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -446,13 +465,13 @@ const PXBWallet: React.FC = () => {
                           </div>
                           <div>
                             <p className="font-medium text-sm text-white">{referral.referredUsername}</p>
-                            <p className="text-xs text-indigo-300/70">{formatDistanceToNow(new Date(referral.createdAt), {
+                            <p className="text-xs text-indigo-300/70">{formatDistanceToNow(new Date(referral.date), {
                         addSuffix: true
                       })}</p>
                           </div>
                         </div>
                         <div className="font-medium text-indigo-400">
-                          +{referral.pointsAwarded.toLocaleString()} PXB
+                          +{referral.pointsEarned.toLocaleString()} PXB
                         </div>
                       </div>)}
                   </div> : <div className="text-center py-6 text-indigo-300/50 bg-indigo-900/10 rounded-lg border border-indigo-900/20">
@@ -511,4 +530,6 @@ const PXBWallet: React.FC = () => {
       </div>
     </div>;
 };
-export default PXBWallet;
+
+
+
