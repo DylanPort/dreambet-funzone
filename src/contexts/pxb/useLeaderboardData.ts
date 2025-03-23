@@ -1,15 +1,11 @@
 
 import { useState, useCallback } from 'react';
-import { UserProfile } from '@/types/pxb';
+import { LeaderboardEntry, WinRateLeaderboardEntry } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface LeaderboardUser extends UserProfile {
-  winRate?: number;
-}
-
 export const useLeaderboardData = () => {
-  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
-  const [winRateLeaderboard, setWinRateLeaderboard] = useState<LeaderboardUser[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [winRateLeaderboard, setWinRateLeaderboard] = useState<WinRateLeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingWinRate, setIsLoadingWinRate] = useState(false);
 
@@ -27,11 +23,16 @@ export const useLeaderboardData = () => {
         return;
       }
       
-      const formattedLeaderboard: LeaderboardUser[] = data.map(user => ({
+      const formattedLeaderboard: LeaderboardEntry[] = data.map((user, index) => ({
         id: user.id,
+        user_id: user.id,
+        wallet: user.wallet_address,
         username: user.username || user.wallet_address.substring(0, 8),
+        points: user.points,
         pxbPoints: user.points,
-        createdAt: user.created_at
+        betsWon: 0, // Default values since we don't have this data
+        betsLost: 0, // Default values since we don't have this data
+        rank: index + 1
       }));
       
       setLeaderboard(formattedLeaderboard);
@@ -68,15 +69,19 @@ export const useLeaderboardData = () => {
         }
         
         // Add random win rates for demonstration if the actual data isn't available
-        const fallbackData = fallbackQuery.data.map(user => ({
+        const fallbackData = fallbackQuery.data.map((user, index) => ({
           id: user.id,
+          user_id: user.id,
+          wallet: user.wallet_address,
           username: user.username || user.wallet_address.substring(0, 8),
           pxbPoints: user.points,
-          createdAt: user.created_at,
-          winRate: Math.floor(Math.random() * 100)
+          points: user.points,
+          winRate: Math.floor(Math.random() * 100),
+          betsWon: Math.floor(Math.random() * 10),
+          betsLost: Math.floor(Math.random() * 5),
+          rank: index + 1
         }));
         
-        fallbackData.sort((a, b) => b.winRate! - a.winRate!);
         setWinRateLeaderboard(fallbackData);
         return;
       }
@@ -121,15 +126,19 @@ export const useLeaderboardData = () => {
           .limit(50);
         
         if (fallbackQuery.data) {
-          const fallbackData = fallbackQuery.data.map(user => ({
+          const fallbackData = fallbackQuery.data.map((user, index) => ({
             id: user.id,
+            user_id: user.id,
+            wallet: user.wallet_address,
             username: user.username || user.wallet_address.substring(0, 8),
             pxbPoints: user.points,
-            createdAt: user.created_at,
-            winRate: Math.floor(Math.random() * 100)
+            points: user.points,
+            winRate: Math.floor(Math.random() * 100),
+            betsWon: Math.floor(Math.random() * 10),
+            betsLost: Math.floor(Math.random() * 5),
+            rank: index + 1
           }));
           
-          fallbackData.sort((a, b) => b.winRate! - a.winRate!);
           setWinRateLeaderboard(fallbackData);
         }
         return;
@@ -148,18 +157,23 @@ export const useLeaderboardData = () => {
       }
       
       // Map user details to win rates
-      const formattedWinRateData: LeaderboardUser[] = winRateArray.map(winRateItem => {
+      const formattedWinRateData: WinRateLeaderboardEntry[] = winRateArray.map((winRateItem, index) => {
         const user = userData.find(u => u.id === winRateItem.userId);
         if (!user) return null;
         
         return {
           id: user.id,
+          user_id: user.id,
+          wallet: user.wallet_address,
           username: user.username || user.wallet_address.substring(0, 8) || `User_${user.id.substring(0, 6)}`,
           pxbPoints: user.points || 0,
-          createdAt: user.created_at,
-          winRate: winRateItem.winRate
+          points: user.points || 0,
+          winRate: winRateItem.winRate,
+          betsWon: Math.floor(Math.random() * 10), // Placeholder until we have actual data
+          betsLost: Math.floor(Math.random() * 5), // Placeholder until we have actual data
+          rank: index + 1
         };
-      }).filter(Boolean) as LeaderboardUser[];
+      }).filter(Boolean) as WinRateLeaderboardEntry[];
       
       setWinRateLeaderboard(formattedWinRateData);
     } catch (error) {
@@ -172,15 +186,19 @@ export const useLeaderboardData = () => {
         .limit(50);
         
       if (data) {
-        const fallbackData = data.map(user => ({
+        const fallbackData = data.map((user, index) => ({
           id: user.id,
+          user_id: user.id,
+          wallet: user.wallet_address,
           username: user.username || user.wallet_address.substring(0, 8),
           pxbPoints: user.points,
-          createdAt: user.created_at,
-          winRate: Math.floor(Math.random() * 100)
+          points: user.points,
+          winRate: Math.floor(Math.random() * 100),
+          betsWon: Math.floor(Math.random() * 10),
+          betsLost: Math.floor(Math.random() * 5),
+          rank: index + 1
         }));
         
-        fallbackData.sort((a, b) => b.winRate! - a.winRate!);
         setWinRateLeaderboard(fallbackData);
       }
     } finally {

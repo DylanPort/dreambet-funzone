@@ -149,7 +149,7 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
                 {isLoadingReferrals ? (
                   <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  (referralStats?.totalPointsEarned || referralStats?.points_earned || 0).toLocaleString()
+                  (referralStats?.pointsEarned || referralStats?.points_earned || 0).toLocaleString()
                 )}
               </div>
               <div className="text-sm text-indigo-300/70">PXB</div>

@@ -23,29 +23,37 @@ export interface PXBBet {
   initialMarketCap?: number;
   currentMarketCap?: number;
   userRole?: 'creator' | 'participant';
-  timeframe?: number; // Added timeframe in minutes
-  resolvedAt?: string; // Added resolvedAt timestamp
+  timeframe?: number; // In minutes
+  resolvedAt?: string; // Timestamp when the bet was resolved
 }
 
-// Add LeaderboardEntry interface
+// Add LeaderboardEntry interface with all required fields
 export interface LeaderboardEntry {
+  id?: string;          // Added to match usage in PXBProfilePanel
+  user_id?: string;     // Added to match usage in PXBProfilePanel
   wallet: string;
+  username?: string;    // Added to match component implementation
   points: number;
+  pxbPoints?: number;   // For compatibility with both naming conventions
   betsWon: number;
   betsLost: number;
   rank: number;
 }
 
-// Add WinRateLeaderboardEntry interface
+// Add WinRateLeaderboardEntry interface with all required fields
 export interface WinRateLeaderboardEntry {
+  id?: string;          // Added to match usage in PXBProfilePanel
+  user_id?: string;     // Added to match usage in PXBProfilePanel
   wallet: string;
+  username?: string;    // Added to match component implementation
   winRate: number;
+  pxbPoints?: number;   // For compatibility with both naming conventions
   betsWon: number;
   betsLost: number;
   rank: number;
 }
 
-// Add ReferralStats interface
+// Update ReferralStats interface with all required fields
 export interface ReferralStats {
   totalReferrals: number;
   activeReferrals: number;
@@ -53,6 +61,7 @@ export interface ReferralStats {
   referral_code?: string | null;
   referrals_count?: number;
   points_earned?: number;
+  referrals?: Referral[]; // Added to match usage in PXBWallet
 }
 
 // Add Referral interface

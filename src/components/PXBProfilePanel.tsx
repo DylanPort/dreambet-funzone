@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/pxb';
 import { Button } from '@/components/ui/button';
@@ -47,7 +46,7 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
     console.log("Finding rank for user ID:", userProfile.id);
     console.log("Leaderboard entries:", leaderboard);
     
-    // Find the user in the leaderboard by matching any available ID field
+    // Find the user in the leaderboard by matching ID
     const userEntry = leaderboard.find(entry => {
       const entryId = entry.id || entry.user_id;
       const userId = userProfile.id;

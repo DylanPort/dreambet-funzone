@@ -14,7 +14,8 @@ export const useReferralSystem = (
     pointsEarned: 0,
     referrals_count: 0,
     points_earned: 0,
-    referral_code: null
+    referral_code: null,
+    referrals: []
   });
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
 
@@ -163,13 +164,23 @@ export const useReferralSystem = (
       // Calculate total points earned from referrals
       const totalPointsEarned = referralsData.reduce((sum, r) => sum + r.points_awarded, 0);
       
+      // Format referrals data
+      const formattedReferrals: Referral[] = referralsData.map(r => ({
+        referrer: userProfile.id,
+        referee: r.referred_id,
+        date: r.created_at,
+        status: 'active',
+        pointsEarned: r.points_awarded
+      }));
+      
       setReferralStats({
         totalReferrals: referralsData.length,
         activeReferrals: referralsData.length,
         pointsEarned: totalPointsEarned,
         referrals_count: referralsData.length,
         points_earned: totalPointsEarned,
-        referral_code: userData?.referral_code || null
+        referral_code: userData?.referral_code || null,
+        referrals: formattedReferrals
       });
     } catch (error) {
       console.error('Error in fetchReferralStats:', error);

@@ -32,7 +32,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     addPointsToUser
   } = useProfileData();
   
-  const { bets, setBets, fetchUserBets } = useBetsData(userProfile);
+  const { bets, setBets, fetchUserBets, isLoading: isLoadingBets } = useBetsData(userProfile);
   const { 
     leaderboard, 
     winRateLeaderboard,
@@ -103,7 +103,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         userProfile,
         isLoading,
         bets,
-        userBets: bets, // Added this property to expose bets as userBets for BetDetails.tsx
+        userBets: bets, // Expose bets as userBets for BetDetails.tsx
         leaderboard,
         winRateLeaderboard,
         mintPoints: mintPointsWrapper,
@@ -118,6 +118,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         mintingPoints,
         isLeaderboardLoading,
         isLoadingWinRate,
+        isLoadingBets,
         // Referral system
         generateReferralLink,
         checkAndProcessReferral,
