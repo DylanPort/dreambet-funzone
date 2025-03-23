@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Wallet, Clock, Sparkles, Zap, ExternalLink, BarChart } from 'lucide-react';
 import { Bet, BetPrediction, BetStatus } from '@/types/bet';
@@ -6,6 +7,9 @@ import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTrendingTokens } from "@/services/supabaseService";
 import { toast } from 'sonner';
+import { fetchTokenImage } from '@/services/moralisService';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface TrendingToken {
   tokenMint: string;
@@ -13,6 +17,8 @@ interface TrendingToken {
   tokenSymbol: string;
   betCount: number;
   totalAmount: number;
+  imageUrl?: string | null;
+  imageLoading?: boolean;
 }
 
 const BetReel: React.FC = () => {
@@ -24,7 +30,43 @@ const BetReel: React.FC = () => {
       try {
         setLoading(true);
         const tokens = await fetchTrendingTokens(15);
-        setTrendingTokens(tokens);
+        
+        // Initialize tokens with loading state for images
+        const tokensWithImageLoading = tokens.map(token => ({
+          ...token,
+          imageLoading: true,
+          imageUrl: null
+        }));
+        
+        setTrendingTokens(tokensWithImageLoading);
+        
+        // Fetch images for each token
+        tokensWithImageLoading.forEach(async (token, index) => {
+          try {
+            const imageUrl = await fetchTokenImage(token.tokenMint, token.tokenSymbol);
+            
+            setTrendingTokens(current => {
+              const updated = [...current];
+              updated[index] = {
+                ...updated[index],
+                imageUrl,
+                imageLoading: false
+              };
+              return updated;
+            });
+          } catch (error) {
+            console.error(`Error fetching image for ${token.tokenMint}:`, error);
+            
+            setTrendingTokens(current => {
+              const updated = [...current];
+              updated[index] = {
+                ...updated[index],
+                imageLoading: false
+              };
+              return updated;
+            });
+          }
+        });
       } catch (error) {
         console.error('Error fetching trending tokens for reel:', error);
         toast.error('Error loading trending tokens');
@@ -47,6 +89,51 @@ const BetReel: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Generate a color based on token symbol for fallback background
+  const generateColorFromSymbol = (symbol: string) => {
+    const colors = [
+      'from-pink-500 to-purple-500',
+      'from-blue-500 to-cyan-500',
+      'from-green-500 to-emerald-500',
+      'from-yellow-500 to-orange-500',
+      'from-red-500 to-pink-500',
+      'from-indigo-500 to-blue-500',
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < symbol.length; i++) {
+      hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+  
+  const renderTokenAvatar = (token: TrendingToken) => {
+    const colorGradient = generateColorFromSymbol(token.tokenSymbol);
+    
+    if (token.imageLoading) {
+      return <Skeleton className="w-8 h-8 rounded-full" />;
+    }
+    
+    if (token.imageUrl) {
+      return (
+        <Avatar className="w-8 h-8 border border-white/10">
+          <AvatarImage src={token.imageUrl} alt={token.tokenSymbol} />
+          <AvatarFallback className={`bg-gradient-to-br ${colorGradient}`}>
+            {token.tokenSymbol.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      );
+    }
+    
+    return (
+      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center text-white`}>
+        {token.tokenSymbol.charAt(0)}
+      </div>
+    );
+  };
 
   if (loading) {
     return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 py-2 overflow-hidden">
@@ -93,9 +180,7 @@ const BetReel: React.FC = () => {
           <div className="flex gap-4 items-center animate-scroll">
             {trendingTokens.map((token, index) => <Link key={`${token.tokenMint}-${index}`} to={`/betting/token/${token.tokenMint}`} className="flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500 hover:bg-black/40">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
-                    <span className="font-display font-bold text-sm">{token.tokenSymbol.charAt(0)}</span>
-                  </div>
+                  {renderTokenAvatar(token)}
                   
                   <div className="mr-3">
                     <div className="flex items-center gap-1">

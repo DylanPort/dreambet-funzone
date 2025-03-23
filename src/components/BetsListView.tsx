@@ -3,6 +3,7 @@ import React from 'react';
 import BetCard from './BetCard';
 import { Bet } from '@/types/bet';
 import { motion, AnimatePresence } from 'framer-motion';
+import PXBTokenCard from './PXBTokenCard';
 
 interface BetsListViewProps {
   bets: Bet[];

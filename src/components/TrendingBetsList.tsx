@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +10,10 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import { fetchTokenImage } from '@/services/moralisService';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+
 interface TrendingToken {
   token_mint: string;
   token_name: string;
@@ -17,14 +22,19 @@ interface TrendingToken {
   total_amount: number;
   moon_bets: number;
   die_bets: number;
+  image_url?: string;
 }
+
 const TrendingBetsList = () => {
   const [trendingTokens, setTrendingTokens] = useState<TrendingToken[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [tokenImages, setTokenImages] = useState<Record<string, string | null>>({});
+  const [imagesLoading, setImagesLoading] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
+
   const scrollLeft = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({
@@ -33,6 +43,7 @@ const TrendingBetsList = () => {
       });
     }
   };
+
   const scrollRight = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({
@@ -41,6 +52,7 @@ const TrendingBetsList = () => {
       });
     }
   };
+
   useEffect(() => {
     const fetchTrendingTokens = async () => {
       setIsLoading(true);
@@ -98,6 +110,34 @@ const TrendingBetsList = () => {
         });
         const sortedTokens = Array.from(tokenMap.values()).sort((a, b) => b.bet_count - a.bet_count);
         setTrendingTokens(sortedTokens);
+        
+        // Initialize loading state for all tokens
+        const newImagesLoading: Record<string, boolean> = {};
+        sortedTokens.forEach(token => {
+          newImagesLoading[token.token_mint] = true;
+        });
+        setImagesLoading(newImagesLoading);
+        
+        // Fetch token images
+        sortedTokens.forEach(token => {
+          fetchTokenImage(token.token_mint, token.token_symbol)
+            .then(imageUrl => {
+              setTokenImages(prev => ({
+                ...prev,
+                [token.token_mint]: imageUrl
+              }));
+              setImagesLoading(prev => ({
+                ...prev,
+                [token.token_mint]: false
+              }));
+            })
+            .catch(() => {
+              setImagesLoading(prev => ({
+                ...prev,
+                [token.token_mint]: false
+              }));
+            });
+        });
       } catch (err) {
         console.error('Exception in fetchTrendingTokens:', err);
         toast.error('Failed to load trending tokens');
@@ -113,7 +153,35 @@ const TrendingBetsList = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
   const visibleTokens = isExpanded ? trendingTokens : trendingTokens.slice(0, 5);
+  
+  const renderTokenAvatar = (token: TrendingToken) => {
+    const imageUrl = tokenImages[token.token_mint];
+    const isLoading = imagesLoading[token.token_mint];
+    
+    if (isLoading) {
+      return <Skeleton className="h-8 w-8 rounded-full" />;
+    }
+    
+    if (imageUrl) {
+      return (
+        <Avatar className="h-8 w-8 border border-dream-accent1/30">
+          <AvatarImage src={imageUrl} alt={token.token_symbol} />
+          <AvatarFallback className={`bg-gradient-to-br ${getHeatColor(token.bet_count)}`}>
+            {token.token_symbol.charAt(0)}
+          </AvatarFallback>
+        </Avatar>
+      );
+    }
+    
+    return (
+      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getHeatColor(token.bet_count)} flex items-center justify-center`}>
+        <span className="text-sm font-bold text-white">{token.token_symbol.charAt(0)}</span>
+      </div>
+    );
+  };
+
   if (isLoading) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <div className="flex justify-center items-center py-8">
@@ -124,6 +192,7 @@ const TrendingBetsList = () => {
         </div>
       </Card>;
   }
+
   if (trendingTokens.length === 0) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <p className="text-center text-dream-foreground/60">
@@ -131,16 +200,19 @@ const TrendingBetsList = () => {
         </p>
       </Card>;
   }
+
   const getHeatColor = (betCount: number) => {
     if (betCount > 10) return "from-amber-500 to-red-500";
     if (betCount > 5) return "from-orange-400 to-amber-500";
     return "from-yellow-400 to-orange-400";
   };
+
   const getHeatText = (betCount: number) => {
     if (betCount > 10) return "Very Hot";
     if (betCount > 5) return "Hot";
     return "Warming Up";
   };
+
   return <>
       <div className="mb-2 overflow-hidden bg-gradient-to-r from-dream-accent3/20 to-dream-accent1/20 rounded-lg border border-dream-accent1/30 backdrop-blur-lg">
         <div className="flex items-center gap-1 px-1">
@@ -152,9 +224,7 @@ const TrendingBetsList = () => {
           <div className="overflow-hidden flex-1">
             <div className="flex animate-scroll items-center gap-2">
               {trendingTokens.map((token, index) => <div key={`${token.token_mint}-${index}`} className="flex-shrink-0 py-1 px-2 bg-dream-background/40 rounded-lg border border-dream-accent1/20 flex items-center gap-1 hover:bg-dream-background/60 transition-all duration-300">
-                  <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${getHeatColor(token.bet_count)} flex items-center justify-center`}>
-                    <span className="text-xs font-bold text-white">{token.token_symbol.charAt(0)}</span>
-                  </div>
+                  {renderTokenAvatar(token)}
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold">{token.token_symbol}</span>
                     <span className="text-[10px] text-dream-foreground/60">{token.bet_count} bets</span>
@@ -168,7 +238,6 @@ const TrendingBetsList = () => {
       <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
         <div className="flex items-center justify-between mb-4">
           <CardTitle className="text-xl text-dream-foreground flex items-center gap-2">
-            
             <span>TRENDING BETS</span>
           </CardTitle>
           
@@ -185,9 +254,7 @@ const TrendingBetsList = () => {
                       <div className="rounded-xl overflow-hidden bg-gradient-to-br from-dream-background/70 to-dream-background/40 border border-dream-accent1/10 p-4 h-full backdrop-blur-md hover:border-dream-accent1/30 transition-all duration-300">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getHeatColor(token.bet_count)} flex items-center justify-center`}>
-                              <span className="text-sm font-bold text-white">{token.token_symbol.charAt(0)}</span>
-                            </div>
+                            {renderTokenAvatar(token)}
                             <div>
                               <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">
                                 {token.token_symbol}
@@ -275,9 +342,7 @@ const TrendingBetsList = () => {
                     <div className="rounded-xl overflow-hidden bg-gradient-to-br from-dream-background/70 to-dream-background/40 border border-dream-accent1/10 p-4 h-full backdrop-blur-md hover:border-dream-accent1/30 transition-all duration-300">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getHeatColor(token.bet_count)} flex items-center justify-center`}>
-                            <span className="text-sm font-bold text-white">{token.token_symbol.charAt(0)}</span>
-                          </div>
+                          {renderTokenAvatar(token)}
                           <div>
                             <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">
                               {token.token_symbol}

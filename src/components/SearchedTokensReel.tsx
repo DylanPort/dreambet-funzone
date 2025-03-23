@@ -7,11 +7,18 @@ import { fetchTopSearchedTokens, fetchRecentlySearchedTokens, SearchedToken } fr
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { fetchTokenImage } from '@/services/moralisService';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+interface ExtendedSearchedToken extends SearchedToken {
+  imageUrl?: string | null;
+  imageLoading?: boolean;
+}
 
 const SearchedTokensReel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('top');
-  const [topTokens, setTopTokens] = useState<SearchedToken[]>([]);
-  const [recentTokens, setRecentTokens] = useState<SearchedToken[]>([]);
+  const [topTokens, setTopTokens] = useState<ExtendedSearchedToken[]>([]);
+  const [recentTokens, setRecentTokens] = useState<ExtendedSearchedToken[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -22,10 +29,72 @@ const SearchedTokensReel: React.FC = () => {
       try {
         if (activeTab === 'top') {
           const data = await fetchTopSearchedTokens(10);
-          setTopTokens(data);
+          // Mark all tokens as having images loading initially
+          const processedData = data.map(token => ({ 
+            ...token, 
+            imageLoading: true 
+          }));
+          setTopTokens(processedData);
+          
+          // Fetch images for each token
+          processedData.forEach(async (token, index) => {
+            try {
+              const imageUrl = await fetchTokenImage(token.token_mint, token.token_symbol);
+              setTopTokens(current => {
+                const updated = [...current];
+                updated[index] = {
+                  ...updated[index],
+                  imageUrl,
+                  imageLoading: false
+                };
+                return updated;
+              });
+            } catch (err) {
+              console.error(`Error fetching image for ${token.token_mint}:`, err);
+              setTopTokens(current => {
+                const updated = [...current];
+                updated[index] = {
+                  ...updated[index],
+                  imageLoading: false
+                };
+                return updated;
+              });
+            }
+          });
         } else {
           const data = await fetchRecentlySearchedTokens(10);
-          setRecentTokens(data);
+          // Mark all tokens as having images loading initially
+          const processedData = data.map(token => ({ 
+            ...token, 
+            imageLoading: true 
+          }));
+          setRecentTokens(processedData);
+          
+          // Fetch images for each token
+          processedData.forEach(async (token, index) => {
+            try {
+              const imageUrl = await fetchTokenImage(token.token_mint, token.token_symbol);
+              setRecentTokens(current => {
+                const updated = [...current];
+                updated[index] = {
+                  ...updated[index],
+                  imageUrl,
+                  imageLoading: false
+                };
+                return updated;
+              });
+            } catch (err) {
+              console.error(`Error fetching image for ${token.token_mint}:`, err);
+              setRecentTokens(current => {
+                const updated = [...current];
+                updated[index] = {
+                  ...updated[index],
+                  imageLoading: false
+                };
+                return updated;
+              });
+            }
+          });
         }
       } catch (error) {
         console.error(`Error loading ${activeTab} tokens:`, error);
@@ -45,7 +114,52 @@ const SearchedTokensReel: React.FC = () => {
     }
   };
   
-  const renderTokenCard = (token: SearchedToken) => (
+  // Generate a color based on token symbol for fallback background
+  const generateColorFromSymbol = (symbol: string) => {
+    const colors = [
+      'from-pink-500 to-purple-500',
+      'from-blue-500 to-cyan-500',
+      'from-green-500 to-emerald-500',
+      'from-yellow-500 to-orange-500',
+      'from-red-500 to-pink-500',
+      'from-indigo-500 to-blue-500',
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < symbol.length; i++) {
+      hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+  
+  const renderTokenAvatar = (token: ExtendedSearchedToken) => {
+    const colorGradient = generateColorFromSymbol(token.token_symbol || '?');
+    
+    if (token.imageLoading) {
+      return <Skeleton className="w-8 h-8 rounded-full" />;
+    }
+    
+    if (token.imageUrl) {
+      return (
+        <Avatar className="w-8 h-8 border border-white/10">
+          <AvatarImage src={token.imageUrl} alt={token.token_symbol} />
+          <AvatarFallback className={`bg-gradient-to-br ${colorGradient}`}>
+            {token.token_symbol ? token.token_symbol.charAt(0).toUpperCase() : '?'}
+          </AvatarFallback>
+        </Avatar>
+      );
+    }
+    
+    return (
+      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center text-white`}>
+        {token.token_symbol ? token.token_symbol.charAt(0).toUpperCase() : '?'}
+      </div>
+    );
+  };
+  
+  const renderTokenCard = (token: ExtendedSearchedToken) => (
     <Link 
       to={`/token/${token.token_mint}`} 
       key={token.id} 
@@ -53,9 +167,7 @@ const SearchedTokensReel: React.FC = () => {
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center text-lg">
-            {token.token_symbol ? token.token_symbol.charAt(0) : '?'}
-          </div>
+          {renderTokenAvatar(token)}
           <div className="overflow-hidden">
             <h3 className="font-semibold truncate max-w-[150px]">{token.token_name}</h3>
             <p className="text-dream-foreground/60 text-xs">{token.token_symbol}</p>
