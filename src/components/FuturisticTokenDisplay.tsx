@@ -168,9 +168,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
           <span className="text-xs text-dream-foreground/70 hover:text-dream-foreground transition-colors duration-300">
             View Details
           </span>
-          <a href={`https://pumpfun.io/token/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-xs text-dream-foreground/70 hover:text-dream-foreground transition-colors duration-300 flex items-center" onClick={e => e.stopPropagation()}>
-            <ExternalLink className="w-3 h-3 mr-1" /> Pump.fun
-          </a>
+          
         </div>
       </div>
     </Link>;
