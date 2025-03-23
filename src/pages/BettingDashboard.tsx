@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import Footer from '@/components/Footer';
+
 const BettingDashboard = () => {
   const {
     connected
@@ -34,6 +36,7 @@ const BettingDashboard = () => {
   const [glowIntensity, setGlowIntensity] = useState(10);
   console.log("BettingDashboard rendering, wallet connected:", connected);
   const allStepsCompleted = Object.values(readSteps).every(step => step);
+
   useEffect(() => {
     if (allStepsCompleted && !showGift) {
       setTimeout(() => {
@@ -46,6 +49,7 @@ const BettingDashboard = () => {
       }, 500);
     }
   }, [readSteps, showGift, toast]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setPulseEffect(prev => !prev);
@@ -53,6 +57,7 @@ const BettingDashboard = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -100,7 +105,8 @@ const BettingDashboard = () => {
         </div>
       </main>
       
-      
+      <Footer />
     </>;
 };
+
 export default BettingDashboard;
