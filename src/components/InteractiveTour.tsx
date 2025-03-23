@@ -303,13 +303,30 @@ const InteractiveTour = () => {
     if (videoLoadErrors[index] || !videoUrl) {
       return (
         <div className="relative">
-          <img 
-            src={placeholderImage} 
-            alt={`Step ${index + 1}`} 
-            className={imageClassName} 
+          <video 
+            src="https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/sign/tourvideo/Untitled%20video%20-%20Made%20with%20Clipchamp%20(7)%20(online-video-cutter.com).mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJ0b3VydmlkZW8vVW50aXRsZWQgdmlkZW8gLSBNYWRlIHdpdGggQ2xpcGNoYW1wICg3KSAob25saW5lLXZpZGVvLWN1dHRlci5jb20pLm1wNCIsImlhdCI6MTc0MjcyNTgxOSwiZXhwIjoxNzc0MjYxODE5fQ.ghAwVrE-1mXQiHgZ579j6cjDtXGno-mo9LSWwhTLYhk"
+            className={imageClassName}
+            autoPlay
+            loop
+            muted
+            playsInline
             style={{
               transformStyle: 'preserve-3d',
               transform: 'translateZ(10px) rotateY(-5deg)'
+            }}
+            onError={(e) => {
+              console.error("Error loading fallback video:", e);
+              const target = e.target as HTMLVideoElement;
+              target.style.display = 'none';
+              // Find parent and add fallback image
+              if (target.parentElement) {
+                const fallbackImg = document.createElement('img');
+                fallbackImg.src = placeholderImage;
+                fallbackImg.className = imageClassName;
+                fallbackImg.style.transformStyle = 'preserve-3d';
+                fallbackImg.style.transform = 'translateZ(10px) rotateY(-5deg)';
+                target.parentElement.appendChild(fallbackImg);
+              }
             }}
           />
           {userProfile?.id === 'admin' && (
