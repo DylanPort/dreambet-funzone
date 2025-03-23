@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -33,10 +32,12 @@ export const usePointOperations = (
 
   const mintPoints = useCallback(async (amount: number): Promise<void> => {
     if (!publicKey || !userProfile) {
+      toast.error('Connect your wallet to mint points');
       return;
     }
 
     if (amount <= 0) {
+      toast.error('Amount must be greater than zero');
       return;
     }
 
@@ -71,12 +72,20 @@ export const usePointOperations = (
             const remainingAllowance = MINT_LIMIT_PER_PERIOD - mintedInPeriod;
             
             if (remainingAllowance <= 0) {
+              toast.error(`You've reached your minting limit of ${MINT_LIMIT_PER_PERIOD} PXB per ${MINT_PERIOD_HOURS} hours`);
               setMintingPoints(false);
               return;
             }
             
             // If requested amount exceeds remaining allowance, limit it
             mintAmount = Math.min(amount, remainingAllowance);
+            if (mintAmount < amount) {
+              toast({
+                title: `Mint limit reached`,
+                description: `You can only mint ${mintAmount} more PXB within this ${MINT_PERIOD_HOURS}-hour period`,
+                variant: "default"
+              });
+            }
           }
         } catch (historyErr) {
           console.error('Error processing mint history:', historyErr);
@@ -93,6 +102,7 @@ export const usePointOperations = (
           pxbPoints: newPointsTotal
         });
         
+        toast.success(`Successfully minted ${mintAmount} PXB points!`);
         setMintingPoints(false);
         return;
       }
@@ -107,6 +117,7 @@ export const usePointOperations = (
         
       if (fetchError) {
         console.error('Error fetching current points:', fetchError);
+        toast.error('Failed to mint points');
         setMintingPoints(false);
         return;
       }
@@ -123,6 +134,7 @@ export const usePointOperations = (
 
       if (error) {
         console.error('Error minting points:', error);
+        toast.error('Failed to mint points');
         setMintingPoints(false);
         return;
       }
@@ -148,8 +160,15 @@ export const usePointOperations = (
         ...userProfile,
         pxbPoints: newPointsTotal
       });
+      
+      if (mintAmount === amount) {
+        toast.success(`Successfully minted ${mintAmount} PXB points!`);
+      } else {
+        toast.success(`Successfully minted ${mintAmount} PXB points! (Limit reached)`);
+      }
     } catch (error) {
       console.error('Error in mintPoints:', error);
+      toast.error('Failed to mint points');
     } finally {
       setMintingPoints(false);
     }
@@ -165,10 +184,12 @@ export const usePointOperations = (
     duration: number
   ): Promise<PXBBet | void> => {
     if (!userProfile || !publicKey) {
+      toast.error('Please connect your wallet to place a bet.');
       return;
     }
 
     if (betAmount > userProfile.pxbPoints) {
+      toast.error('Insufficient PXB points to place this bet.');
       return;
     }
 
@@ -244,7 +265,7 @@ export const usePointOperations = (
         // Update bets state
         setBets(prevBets => [...prevBets, pxbBet]);
 
-        toast.success(`Bet created successfully!`);
+        toast.success(`Bet placed successfully!`);
         return pxbBet;
       } catch (supabaseError: any) {
         console.error('Error with Supabase operations:', supabaseError);
@@ -254,6 +275,7 @@ export const usePointOperations = (
       }
     } catch (error: any) {
       console.error('Error placing bet:', error);
+      toast.error(error.message || 'Failed to place bet');
       // Revert optimistic update if any error occurs
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
       return;
@@ -264,14 +286,17 @@ export const usePointOperations = (
 
   const sendPoints = useCallback(async (recipientId: string, amount: number) => {
     if (!userProfile || !publicKey) {
+      toast.error('Connect your wallet to send points');
       return false;
     }
 
     if (amount <= 0) {
+      toast.error('Amount must be greater than zero');
       return false;
     }
 
     if (amount > userProfile.pxbPoints) {
+      toast.error('Insufficient PXB points');
       return false;
     }
 
@@ -343,9 +368,11 @@ export const usePointOperations = (
       // Refresh sender's profile
       await fetchUserProfile();
 
+      toast.success(`Successfully sent ${amount} PXB points!`);
       return true;
     } catch (error) {
       console.error('Error sending points:', error);
+      toast.error('Failed to send points');
       return false;
     } finally {
       setIsLoading(false);

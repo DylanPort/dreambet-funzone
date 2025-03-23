@@ -24,6 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
+
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -91,31 +92,19 @@ const TokenChart = ({
       
     </div>;
 };
+
 const TokenDetail = () => {
-  const {
-    id
-  } = useParams<{
-    id: string;
-  }>();
+  const { id } = useParams<{ id: string; }>();
   const [token, setToken] = useState<any>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [priceData, setPriceData] = useState<{
-    time: string;
-    price: number;
-  }[]>([]);
+  const [priceData, setPriceData] = useState<{ time: string; price: number; }[]>([]);
   const [showCreateBet, setShowCreateBet] = useState(false);
   const [newActiveBet, setNewActiveBet] = useState<Bet | null>(null);
   const [activeBetsCount, setActiveBetsCount] = useState(0);
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const pumpPortal = usePumpPortalWebSocket();
-  const {
-    connected,
-    publicKey,
-    wallet
-  } = useWallet();
+  const { connected, publicKey, wallet } = useWallet();
   const [tokenMetrics, setTokenMetrics] = useState({
     marketCap: null,
     volume24h: null,
@@ -128,6 +117,7 @@ const TokenDetail = () => {
   const lastPriceUpdateRef = useRef<number>(0);
   const lastMetricsUpdateRef = useRef<number>(0);
   const dexScreenerCleanupRef = useRef<Function | null>(null);
+
   useEffect(() => {
     const loadToken = async () => {
       if (!id) return;
@@ -292,12 +282,15 @@ const TokenDetail = () => {
     };
     loadToken();
   }, [id, toast, pumpPortal.connected, pumpPortal.recentTokens]);
+
   useEffect(() => {
     const loadTokenImage = async () => {
       if (!id || !token) return;
+      
       try {
         setImageLoading(true);
         setImageError(false);
+        
         const imageUrl = await fetchTokenImage(id, token.symbol);
         setTokenImage(imageUrl);
       } catch (error) {
@@ -307,8 +300,10 @@ const TokenDetail = () => {
         setImageLoading(false);
       }
     };
+    
     loadTokenImage();
   }, [id, token]);
+
   const updateTokenPrice = useCallback((price: number, change24h: number) => {
     const now = Date.now();
     if (now - lastPriceUpdateRef.current > 2000) {
@@ -330,6 +325,7 @@ const TokenDetail = () => {
       });
     }
   }, []);
+
   const handleChartPriceUpdate = useCallback((price: number, change24h: number = 0) => {
     console.log("Received price update from chart:", price, change24h);
     updateTokenPrice(price, change24h);
@@ -343,6 +339,7 @@ const TokenDetail = () => {
       console.error("Error caching price:", error);
     }
   }, [id, updateTokenPrice]);
+
   const updateTokenMetrics = useCallback((newMetrics: any) => {
     const now = Date.now();
     if (now - lastMetricsUpdateRef.current > 2000) {
@@ -353,6 +350,7 @@ const TokenDetail = () => {
       }));
     }
   }, []);
+
   useEffect(() => {
     if (id && pumpPortal.recentTrades[id]) {
       const trades = pumpPortal.recentTrades[id];
@@ -395,6 +393,7 @@ const TokenDetail = () => {
       }
     }
   }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
+
   useEffect(() => {
     if (id && pumpPortal.tokenMetrics[id]) {
       const metrics = pumpPortal.tokenMetrics[id];
@@ -407,6 +406,7 @@ const TokenDetail = () => {
       console.log("Updated token metrics from WebSocket:", metrics);
     }
   }, [id, pumpPortal.tokenMetrics, updateTokenMetrics]);
+
   useEffect(() => {
     if (id) {
       const stopPolling = startDexScreenerPolling(id, data => {
@@ -428,6 +428,7 @@ const TokenDetail = () => {
       };
     }
   }, [id, updateTokenPrice, updateTokenMetrics]);
+
   useEffect(() => {
     if (bets.length > 0) {
       const activeBets = bets.filter(bet => bet.status === 'open' || bet.status === 'matched');
@@ -443,6 +444,7 @@ const TokenDetail = () => {
       setActiveBetsCount(activeBets.length);
     }
   }, [bets, activeBetsCount, toast, token]);
+
   const refreshData = useCallback(async (betType = null) => {
     if (!id) return;
     try {
@@ -503,6 +505,7 @@ const TokenDetail = () => {
       setLoading(false);
     }
   }, [id, pumpPortal, toast, updateTokenMetrics, token]);
+
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
       toast({
@@ -533,6 +536,7 @@ const TokenDetail = () => {
       });
     }
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -543,6 +547,7 @@ const TokenDetail = () => {
       maximumFractionDigits: 2
     });
   };
+
   const formatLargeNumber = (num: number | null) => {
     if (num === null || num === undefined) return "N/A";
     if (num >= 1000000000) {
@@ -555,7 +560,9 @@ const TokenDetail = () => {
       return `$${num.toFixed(2)}`;
     }
   };
+
   const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
+
   const renderActiveBetBanner = () => {
     if (!newActiveBet) return null;
     return <div className="bg-gradient-to-r from-dream-accent1/20 to-dream-accent3/20 border border-dream-accent2/30 rounded-md p-3 mb-4 animate-pulse-slow">
@@ -568,21 +575,26 @@ const TokenDetail = () => {
             ×
           </Button>
         </div>
-        
+        <p className="text-sm mt-1">
+          A {newActiveBet.amount} PXB bet that this token will {newActiveBet.prediction === 'up' ? 'moon' : 'die'} is now active!
+        </p>
       </div>;
   };
+
   const {
     userProfile,
     bets: userPXBBets,
     fetchUserBets,
     isLoading: pxbLoading
   } = usePXBPoints();
+
   const [tokenPXBBets, setTokenPXBBets] = useState<any[]>([]);
   const [loadingMarketCaps, setLoadingMarketCaps] = useState<Record<string, boolean>>({});
   const [marketCapData, setMarketCapData] = useState<Record<string, {
     initialMarketCap: number | null;
     currentMarketCap: number | null;
   }>>({});
+
   useEffect(() => {
     if (userProfile && userPXBBets && userPXBBets.length > 0 && id) {
       const filteredBets = userPXBBets.filter(bet => bet.tokenMint === id);
@@ -591,6 +603,7 @@ const TokenDetail = () => {
       setTokenPXBBets([]);
     }
   }, [userProfile, userPXBBets, id]);
+
   useEffect(() => {
     const fetchMarketCapData = async () => {
       if (!tokenPXBBets || tokenPXBBets.length === 0) return;
@@ -632,6 +645,7 @@ const TokenDetail = () => {
     }, 30000);
     return () => clearInterval(interval);
   }, [tokenPXBBets, marketCapData]);
+
   const calculateProgress = bet => {
     if (bet.status !== 'pending') {
       return bet.status === 'won' ? 100 : 0;
@@ -651,6 +665,7 @@ const TokenDetail = () => {
     }
     return 0;
   };
+
   const calculateTargetMarketCap = bet => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     if (!initialMarketCap) return null;
@@ -660,6 +675,7 @@ const TokenDetail = () => {
       return initialMarketCap * (1 - bet.percentageChange / 100);
     }
   };
+
   const calculateMarketCapChange = bet => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
@@ -668,47 +684,77 @@ const TokenDetail = () => {
     }
     return null;
   };
+
   useEffect(() => {
     if (userProfile && id) {
       fetchUserBets();
     }
   }, [userProfile, id, fetchUserBets]);
+
   const renderTokenImage = () => {
     if (imageLoading) {
       return <Skeleton className="w-16 h-16 rounded-full" />;
     }
+    
     if (tokenImage && !imageError) {
-      return <img src={tokenImage} alt={token?.symbol || 'Token'} className="w-16 h-16 rounded-full object-cover border border-white/10" onError={() => setImageError(true)} />;
+      return (
+        <img 
+          src={tokenImage} 
+          alt={token?.symbol || 'Token'}
+          className="w-16 h-16 rounded-full object-cover border border-white/10"
+          onError={() => setImageError(true)}
+        />
+      );
     }
+    
     const colorGradient = token?.symbol ? generateColorFromSymbol(token.symbol) : 'from-dream-accent1/20 to-dream-accent3/20';
-    return <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center text-3xl border border-white/10`}>
+    return (
+      <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center text-3xl border border-white/10`}>
         {token?.symbol ? token.symbol.charAt(0) : '🪙'}
-      </div>;
+      </div>
+    );
   };
+
   const generateColorFromSymbol = (symbol: string) => {
-    const colors = ['from-pink-500 to-purple-500', 'from-blue-500 to-cyan-500', 'from-green-500 to-emerald-500', 'from-yellow-500 to-orange-500', 'from-red-500 to-pink-500', 'from-indigo-500 to-blue-500'];
+    const colors = [
+      'from-pink-500 to-purple-500',
+      'from-blue-500 to-cyan-500',
+      'from-green-500 to-emerald-500',
+      'from-yellow-500 to-orange-500',
+      'from-red-500 to-pink-500',
+      'from-indigo-500 to-blue-500',
+    ];
+    
     let hash = 0;
     for (let i = 0; i < symbol.length; i++) {
       hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
     }
+    
     const index = Math.abs(hash) % colors.length;
     return colors[index];
   };
-  return <>
+
+  return (
+    <>
       <OrbitingParticles />
       <Navbar />
       
       <main className="pt-24 min-h-screen px-4 pb-16">
         <div className="max-w-7xl mx-auto">
-          {loading && !token ? <div className="flex justify-center py-16">
+          {loading && !token ? (
+            <div className="flex justify-center py-16">
               <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
-            </div> : !token ? <div className="glass-panel p-8 text-center">
+            </div>
+          ) : !token ? (
+            <div className="glass-panel p-8 text-center">
               <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
               <p className="text-dream-foreground/70 mb-4">
                 The token you're looking for could not be found or has been removed.
               </p>
               <Button onClick={() => window.history.back()}>Go Back</Button>
-            </div> : <>
+            </div>
+          ) : (
+            <>
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
                 <span>Back to Tokens</span>
@@ -731,12 +777,12 @@ const TokenDetail = () => {
                     <div className="flex items-center text-dream-foreground/70">
                       <span className="mr-2">{token.symbol}</span>
                       <button onClick={() => {
-                    navigator.clipboard.writeText(token.id);
-                    toast({
-                      title: "Copied!",
-                      description: "Token address copied to clipboard"
-                    });
-                  }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
+                        navigator.clipboard.writeText(token.id);
+                        toast({
+                          title: "Copied!",
+                          description: "Token address copied to clipboard"
+                        });
+                      }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
                         {token.id.substring(0, 4)}...{token.id.substring(token.id.length - 4)}
                         <Copy className="w-3 h-3 ml-1" />
                       </button>
@@ -789,13 +835,15 @@ const TokenDetail = () => {
                     </div>
                   </div>
                   
-                  {showCreateBet && <div className="glass-panel p-6">
+                  {showCreateBet && (
+                    <div className="glass-panel p-6">
                       <h3 className="text-xl font-display font-bold mb-4">Create Bet</h3>
                       <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol} onBetCreated={() => {
                   refreshData();
                   setShowCreateBet(false);
                 }} onCancel={() => setShowCreateBet(false)} />
-                    </div>}
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -803,22 +851,38 @@ const TokenDetail = () => {
                 <div className="glass-panel p-6">
                   <h3 className="text-xl font-display font-bold mb-4">Token Bets</h3>
                   
-                  {bets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                  {bets.length === 0 ? (
+                    <div className="text-center py-8 text-dream-foreground/70">
                       <p>No bets available for this token yet.</p>
                       <p className="text-sm mt-2">Be the first to create a bet!</p>
-                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey?.toString() || null} onAcceptBet={handleAcceptBet} />)}
-                    </div>}
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {bets.map(bet => (
+                        <BetCard 
+                          key={bet.id} 
+                          bet={bet} 
+                          connected={connected} 
+                          publicKeyString={publicKey?.toString() || null} 
+                          onAcceptBet={handleAcceptBet} 
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="glass-panel p-6">
                   <h3 className="text-xl font-display font-bold mb-4">Your PXB Bets</h3>
                   
-                  {tokenPXBBets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                  {tokenPXBBets.length === 0 ? (
+                    <div className="text-center py-8 text-dream-foreground/70">
                       <p>You don't have any PXB bets on this token.</p>
                       <p className="text-sm mt-2">Place a bet to see it here!</p>
-                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {tokenPXBBets.map(bet => <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4">
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {tokenPXBBets.map(bet => (
+                        <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center">
                               <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${bet.betType === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
@@ -828,8 +892,18 @@ const TokenDetail = () => {
                                 {bet.betAmount} PXB
                               </span>
                             </div>
-                            <div className={`text-xs px-2 py-0.5 rounded-full ${bet.status === 'pending' ? 'bg-blue-500/20 text-blue-400' : bet.status === 'won' ? 'bg-green-500/20 text-green-400' : bet.status === 'lost' ? 'bg-red-500/20 text-red-400' : bet.status === 'expired' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                              {bet.status === 'pending' ? 'Active' : bet.status === 'won' ? 'Won' : bet.status === 'lost' ? 'Lost' : bet.status === 'expired' ? 'Expired' : 'Unknown'}
+                            <div className={`text-xs px-2 py-0.5 rounded-full ${
+                              bet.status === 'pending' ? 'bg-blue-500/20 text-blue-400' : 
+                              bet.status === 'won' ? 'bg-green-500/20 text-green-400' : 
+                              bet.status === 'lost' ? 'bg-red-500/20 text-red-400' : 
+                              bet.status === 'expired' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-yellow-500/20 text-yellow-400'
+                            }`}>
+                              {bet.status === 'pending' ? 'Active' : 
+                               bet.status === 'won' ? 'Won' : 
+                               bet.status === 'lost' ? 'Lost' : 
+                               bet.status === 'expired' ? 'Expired' : 
+                               'Unknown'}
                             </div>
                           </div>
                           
@@ -839,14 +913,13 @@ const TokenDetail = () => {
                           
                           <div className="text-xs text-dream-foreground/60 mb-2">
                             <div className="flex justify-between">
-                              <span>Created {formatDistanceToNow(new Date(bet.createdAt), {
-                          addSuffix: true
-                        })}</span>
+                              <span>Created {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}</span>
                               <span>Creator: {bet.creator ? `${bet.creator.slice(0, 4)}...${bet.creator.slice(-4)}` : 'Unknown'}</span>
                             </div>
                           </div>
                           
-                          {(bet.status === 'pending' || bet.status === 'expired') && marketCapData[bet.id] && <div className="mt-3 space-y-2">
+                          {(bet.status === 'pending' || bet.status === 'expired') && marketCapData[bet.id] && (
+                            <div className="mt-3 space-y-2">
                               <div className="flex justify-between text-xs">
                                 <div className="text-dream-foreground/70">
                                   Initial: {formatLargeNumber(marketCapData[bet.id]?.initialMarketCap || bet.initialMarketCap)}
@@ -861,24 +934,47 @@ const TokenDetail = () => {
                               
                               <Progress value={calculateProgress(bet)} className="h-2" />
                               
-                              {marketCapData[bet.id]?.currentMarketCap && <div className="text-xs text-center">
-                                  {loadingMarketCaps[bet.id] ? 'Updating market cap data...' : <>
+                              {marketCapData[bet.id]?.currentMarketCap && (
+                                <div className="text-xs text-center">
+                                  {loadingMarketCaps[bet.id] ? (
+                                    'Updating market cap data...'
+                                  ) : (
+                                    <>
                                       Market cap {calculateMarketCapChange(bet) > 0 ? 'up' : 'down'} {Math.abs(calculateMarketCapChange(bet) || 0).toFixed(2)}%
-                                      {bet.status === 'expired' ? <span className="text-yellow-400 ml-1">Bet expired</span> : bet.betType === 'up' ? calculateMarketCapChange(bet) > 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span> : calculateMarketCapChange(bet) < 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span>}
-                                    </>}
-                                </div>}
-                            </div>}
-                        </div>)}
-                    </div>}
+                                      {bet.status === 'expired' ? (
+                                        <span className="text-yellow-400 ml-1">Bet expired</span>
+                                      ) : (
+                                        bet.betType === 'up' ? 
+                                          calculateMarketCapChange(bet) > 0 ? 
+                                            <span className="text-green-400 ml-1">Moving toward target</span> : 
+                                            <span className="text-red-400 ml-1">Moving away from target</span> 
+                                          : 
+                                          calculateMarketCapChange(bet) < 0 ? 
+                                            <span className="text-green-400 ml-1">Moving toward target</span> : 
+                                            <span className="text-red-400 ml-1">Moving away from target</span>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               
               <div className="mb-8">
                 <TokenComments tokenId={id} tokenName={token.name} />
               </div>
-            </>}
+            </>
+          )}
         </div>
       </main>
-    </>;
+    </>
+  );
 };
+
 export default TokenDetail;
