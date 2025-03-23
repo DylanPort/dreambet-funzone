@@ -12,59 +12,111 @@ import { ChevronRight, Upload, Loader2, Cpu, Zap, Twitter, MessageSquare, Github
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
+
 interface PXBOnboardingProps {
   onClose: () => void;
 }
+
 const InteractiveTour = () => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
   const [hasClaimedPoints, setHasClaimedPoints] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const [videoSources, setVideoSources] = useState<string[]>(["/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png", "/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png", "/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png", "/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png", "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"]);
+  const [videoSources, setVideoSources] = useState<string[]>(Array(5).fill(''));
+  const [videoLoadErrors, setVideoLoadErrors] = useState<boolean[]>(Array(5).fill(false));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null, null, null]);
+  
   const {
     userProfile,
     addPointsToUser
   } = usePXBPoints();
+  
   const {
     connected
   } = useWallet();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
+
+  const mainVideoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/public/tourvideo/Untitled%20video%20-%20Made%20with%20Clipchamp%20(7)%20(online-video-cutter.com).mp4";
+  const fallbackVideoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/public/tourvideo/tour_fallback.mp4";
+  
   useEffect(() => {
     setCurrentStep(0);
     const tourCompleted = localStorage.getItem('pxb-tour-completed');
     if (tourCompleted) {
       setCurrentStep(0);
     }
-    const mainVideoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/sign/tourvideo/Untitled%20video%20-%20Made%20with%20Clipchamp%20(7)%20(online-video-cutter.com).mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJ0b3VydmlkZW8vVW50aXRsZWQgdmlkZW8gLSBNYWRlIHdpdGggQ2xpcGNoYW1wICg3KSAob25saW5lLXZpZGVvLWN1dHRlci5jb20pLmmpNCIsImlhdCI6MTc0MjY2NTY1MiwiZXhwIjoxNzc0MjAxNjUyfQ.FOnoYScf0r244PUOjega7OzIC0KEEmB2O6l4T-_UY9E";
-    const newVideoSources = [...videoSources];
-    for (let i = 0; i < newVideoSources.length; i++) {
-      newVideoSources[i] = mainVideoUrl;
-    }
-    setVideoSources(newVideoSources);
+    
+    const fetchVideos = async () => {
+      try {
+        const newVideoSources = Array(5).fill(mainVideoUrl);
+        setVideoSources(newVideoSources);
+        
+        const { data: files, error } = await supabase.storage
+          .from('tourvideo')
+          .list();
+          
+        if (!error && files) {
+          for (let i = 0; i < 5; i++) {
+            const stepPrefix = `tour_step_${i + 1}_`;
+            const matchingFiles = files.filter(f => f.name.startsWith(stepPrefix));
+            
+            if (matchingFiles.length > 0) {
+              const latestFile = matchingFiles.sort((a, b) => 
+                b.name.localeCompare(a.name)
+              )[0];
+              
+              const { data } = supabase.storage
+                .from('tourvideo')
+                .getPublicUrl(latestFile.name);
+                
+              newVideoSources[i] = `${data.publicUrl}?t=${Date.now()}`;
+            }
+          }
+          
+          setVideoSources(newVideoSources);
+        }
+      } catch (err) {
+        console.error("Error fetching tour videos:", err);
+      }
+    };
+    
+    fetchVideos();
   }, []);
+
   const playVideoIfVisible = (index: number) => {
-    if (index === currentStep && videoRefs.current[index]) {
+    if (index === currentStep && videoRefs.current[index] && !videoLoadErrors[index]) {
       const videoElement = videoRefs.current[index];
       if (videoElement) {
         const playPromise = videoElement.play();
         if (playPromise !== undefined) {
           playPromise.catch(error => {
             console.warn('Error playing video:', error);
+            const newErrors = [...videoLoadErrors];
+            newErrors[index] = true;
+            setVideoLoadErrors(newErrors);
           });
         }
       }
     }
   };
+
   useEffect(() => {
-    playVideoIfVisible(currentStep);
+    const newErrors = [...videoLoadErrors];
+    newErrors[currentStep] = false;
+    setVideoLoadErrors(newErrors);
+    
+    setTimeout(() => {
+      playVideoIfVisible(currentStep);
+    }, 100);
   }, [currentStep, videoSources]);
+
   const handleNextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -72,11 +124,13 @@ const InteractiveTour = () => {
       localStorage.setItem('pxb-tour-completed', 'true');
     }
   };
+
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
+
   const handleClaimPoints = async () => {
     if (!connected) {
       toast.error("Please connect your wallet first!");
@@ -95,6 +149,7 @@ const InteractiveTour = () => {
       toast.error("Failed to claim points. Please try again later.");
     }
   };
+
   const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -104,11 +159,11 @@ const InteractiveTour = () => {
     }
     setIsUploading(true);
     try {
-      const fileName = `step-${currentStep + 1}.${file.name.split('.').pop()}`;
+      const fileName = `tour_step_${currentStep + 1}_${Date.now()}.${file.name.split('.').pop()}`;
       const {
         data,
         error
-      } = await supabase.storage.from('tour-videos').upload(fileName, file, {
+      } = await supabase.storage.from('tourvideo').upload(fileName, file, {
         cacheControl: '3600',
         upsert: true
       });
@@ -119,11 +174,20 @@ const InteractiveTour = () => {
         data: {
           publicUrl
         }
-      } = supabase.storage.from('tour-videos').getPublicUrl(fileName);
+      } = supabase.storage.from('tourvideo').getPublicUrl(fileName);
+      
+      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+      
       const newVideoSources = [...videoSources];
-      newVideoSources[currentStep] = publicUrl;
+      newVideoSources[currentStep] = cacheBustedUrl;
       setVideoSources(newVideoSources);
+      
+      const newErrors = [...videoLoadErrors];
+      newErrors[currentStep] = false;
+      setVideoLoadErrors(newErrors);
+      
       toast.success(`Video uploaded for Step ${currentStep + 1}`);
+      
       setTimeout(() => {
         playVideoIfVisible(currentStep);
       }, 500);
@@ -137,9 +201,19 @@ const InteractiveTour = () => {
       }
     }
   };
+
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
+
+  const placeholderImages = [
+    "/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png",
+    "/lovable-uploads/90de812c-ed2e-41af-bc5b-33f452833151.png", 
+    "/lovable-uploads/0107f44c-b620-4ddc-8263-65650ed1ba7b.png", 
+    "/lovable-uploads/6b0abde7-e707-444b-ae6c-40795243d6f7.png",
+    "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
+  ];
+  
   const steps = [{
     title: "Welcome, Explorer!",
     description: "You've stumbled upon a treasure chest of opportunity in the wild Trenches!",
@@ -206,30 +280,81 @@ const InteractiveTour = () => {
       </Link>,
     image: videoSources[4]
   }];
+
   const fileInput = <Input ref={fileInputRef} type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />;
+
   const renderVideo = (index: number, size: 'small' | 'large') => {
     const videoUrl = videoSources[index];
-    const videoClassName = size === 'small' ? "w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" : "w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]";
-    const placeholderClassName = size === 'small' ? "w-[100px] h-[100px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30" : "w-[200px] h-[150px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30";
+    const placeholderImage = placeholderImages[index];
+    const videoClassName = size === 'small' 
+      ? "w-[100px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]" 
+      : "w-[200px] h-auto rounded-lg object-cover border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]";
+    
+    const placeholderClassName = size === 'small' 
+      ? "w-[100px] h-[100px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30" 
+      : "w-[200px] h-[150px] flex items-center justify-center rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)] bg-indigo-900/30";
+    
+    const imageClassName = size === 'small'
+      ? "w-[100px] h-[100px] object-cover rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]"
+      : "w-[200px] h-[150px] object-cover rounded-lg border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.2)]";
+    
     const uploadIconSize = size === 'small' ? "w-8 h-8" : "w-12 h-12";
-    if (videoUrl) {
-      return <video ref={el => videoRefs.current[index] = el} src={videoUrl} className={videoClassName} style={{
-        transformStyle: 'preserve-3d',
-        transform: 'translateZ(10px) rotateY(-5deg)'
-      }} autoPlay loop muted playsInline onError={e => {
-        console.error(`Error loading video for step ${index + 1}:`, e);
-        const target = e.target as HTMLVideoElement;
-        if (videoUrl && !videoUrl.includes('?')) {
-          target.src = `${videoUrl}?t=${Date.now()}`;
-        } else if (videoUrl && videoUrl.includes('?')) {
-          target.src = `${videoUrl}&t=${Date.now()}`;
-        }
-      }} />;
-    } else {
-      return <div className={placeholderClassName}>
-          <Upload className={`${uploadIconSize} text-indigo-400/50`} />
-        </div>;
+
+    if (videoLoadErrors[index] || !videoUrl) {
+      return (
+        <div className="relative">
+          <img 
+            src={placeholderImage} 
+            alt={`Step ${index + 1}`} 
+            className={imageClassName} 
+            style={{
+              transformStyle: 'preserve-3d',
+              transform: 'translateZ(10px) rotateY(-5deg)'
+            }}
+          />
+          {userProfile?.id === 'admin' && (
+            <button 
+              onClick={triggerFileInput} 
+              className="absolute -bottom-2 -right-2 p-1 bg-indigo-900/80 rounded-full hover:bg-indigo-800/90 transition-colors"
+            >
+              <Upload className="h-4 w-4 text-indigo-200" />
+            </button>
+          )}
+        </div>
+      );
     }
+
+    return (
+      <div className="relative">
+        <video 
+          ref={el => videoRefs.current[index] = el} 
+          src={videoUrl} 
+          className={videoClassName} 
+          style={{
+            transformStyle: 'preserve-3d',
+            transform: 'translateZ(10px) rotateY(-5deg)'
+          }} 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          onError={e => {
+            console.error(`Error loading video for step ${index + 1}:`, e);
+            const newErrors = [...videoLoadErrors];
+            newErrors[index] = true;
+            setVideoLoadErrors(newErrors);
+          }} 
+        />
+        {userProfile?.id === 'admin' && (
+          <button 
+            onClick={triggerFileInput} 
+            className="absolute -bottom-2 -right-2 p-1 bg-indigo-900/80 rounded-full hover:bg-indigo-800/90 transition-colors"
+          >
+            <Upload className="h-4 w-4 text-indigo-200" />
+          </button>
+        )}
+      </div>
+    );
   };
 
   const renderSocialButtons = () => {
