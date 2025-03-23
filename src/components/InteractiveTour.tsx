@@ -429,7 +429,7 @@ const InteractiveTour = () => {
         </a>
         
         <a 
-          href="https://docs.pumpxbounty.com" 
+          href="https://pumpxbounty.gitbook.io/pumpxbounty" 
           target="_blank" 
           rel="noopener noreferrer"
           className="relative group"
