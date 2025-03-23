@@ -52,11 +52,21 @@ export const fetchTokenDataFromSolscan = async (tokenAddress: string): Promise<{
     
     console.log("Token found on Solscan:", data.data);
     
+    // If the icon is not provided by Solscan, we can try to get it from alternative sources
+    let icon = data.data.icon;
+    
+    // If no icon from Solscan, try a fallback
+    if (!icon) {
+      // Try Solflare token icons as fallback
+      icon = `https://token-icons.solflare.com/solana/${formattedAddress}.png`;
+      console.log(`Using fallback icon from Solflare: ${icon}`);
+    }
+    
     return {
       symbol: data.data.symbol,
       name: data.data.name,
       address: data.data.address,
-      icon: data.data.icon
+      icon: icon
     };
   } catch (error) {
     console.error("Error fetching token data:", error);

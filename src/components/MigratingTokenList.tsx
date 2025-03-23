@@ -11,6 +11,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from '@/integrations/supabase/client';
 import { fetchOpenBets } from '@/services/supabaseService';
+import { fetchTokenDataFromSolscan } from '@/services/solscanService';
 import { toast } from "sonner";
 import { Bet, BetStatus } from '@/types/bet';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -28,6 +29,7 @@ const MigratingTokenList = () => {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState<'all' | 'highValue'>('all');
+  const [tokenImages, setTokenImages] = useState<Record<string, string>>({});
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   
@@ -58,6 +60,23 @@ const MigratingTokenList = () => {
         setTotalValue(valueTotal);
         setUpVotes(upPredictions);
         setDownVotes(downPredictions);
+        
+        const uniqueTokens = [...new Set(fetchedBets.map(bet => bet.tokenMint))];
+        const tokenImagesMap: Record<string, string> = {};
+        
+        for (const tokenMint of uniqueTokens) {
+          try {
+            const tokenData = await fetchTokenDataFromSolscan(tokenMint);
+            if (tokenData && tokenData.icon) {
+              tokenImagesMap[tokenMint] = tokenData.icon;
+            }
+          } catch (error) {
+            console.error(`Error fetching token image for ${tokenMint}:`, error);
+          }
+        }
+        
+        setTokenImages(tokenImagesMap);
+        
         const {
           data: tokensData,
           error: tokensError
@@ -150,6 +169,10 @@ const MigratingTokenList = () => {
     }
   };
   
+  const getTokenImage = (tokenMint: string) => {
+    return tokenImages[tokenMint] || "/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png";
+  };
+  
   if (loading) {
     return <div className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <div className="text-center py-8">
@@ -234,7 +257,7 @@ const MigratingTokenList = () => {
                 <div onClick={() => navigateToTokenDetails(bet.tokenMint)} className="cursor-pointer glass-panel bg-dream-foreground/5 p-4 rounded-lg border border-dream-accent1/20 h-full hover:bg-dream-accent1/5 transition-colors">
                   <div className="flex items-center mb-3">
                     <div className="w-10 h-10 mr-3 flex items-center justify-center">
-                      <img src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" alt="Token" className="w-full h-full object-contain" />
+                      <img src={getTokenImage(bet.tokenMint)} alt={bet.tokenSymbol || 'Token'} className="w-full h-full object-contain" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-dream-foreground flex items-center gap-1">
@@ -415,7 +438,7 @@ const MigratingTokenList = () => {
                     <TableCell className="py-3 px-4">
                       <div className="flex items-center">
                         <div className="w-8 h-8 mr-3 flex items-center justify-center">
-                          <img src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" alt="Token" className="w-full h-full object-contain" />
+                          <img src={getTokenImage(bet.tokenMint)} alt={bet.tokenSymbol || 'Token'} className="w-full h-full object-contain" />
                         </div>
                         <div>
                           <HoverCard>
