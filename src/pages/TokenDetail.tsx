@@ -744,4 +744,79 @@ const TokenDetail = () => {
                           </div>
                         </div>
                         
-                        <Button className
+                        <Button className="w-full bg-gradient-to-r from-dream-accent2 to-dream-accent3 font-semibold"
+                          onClick={() => setShowCreateBet(prevState => !prevState)}>
+                          {showCreateBet ? 'Cancel' : 'Create Bet'}
+                        </Button>
+                      </div>
+                      
+                      {showCreateBet && (
+                        <div className="glass-panel border border-dream-accent1/30 p-4">
+                          <CreateBetForm token={token} onBetCreated={() => {
+                            setShowCreateBet(false);
+                            refreshData();
+                          }} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {tokenPXBBets.length > 0 && (
+                    <div className="glass-panel p-6">
+                      <h3 className="text-xl font-display font-bold mb-4">Your PXB Bets</h3>
+                      <div className="space-y-4">
+                        {tokenPXBBets.map(bet => (
+                          <div key={bet.id} className="bg-black/10 p-4 rounded-lg border border-dream-accent2/20">
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="flex items-center">
+                                {bet.betType === 'up' ? (
+                                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
+                                ) : (
+                                  <ArrowDownRight className="w-4 h-4 text-red-500 mr-1" />
+                                )}
+                                <span className={`font-bold ${bet.betType === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                                  {bet.betType === 'up' ? 'Up' : 'Down'} {bet.percentageChange}%
+                                </span>
+                              </div>
+                              <div className="text-sm text-dream-foreground/70">
+                                {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
+                              </div>
+                            </div>
+                            <div className="mb-2">
+                              <Progress 
+                                value={calculateProgress(bet)} 
+                                className={`h-2 ${bet.betType === 'up' ? 'bg-green-500/20' : 'bg-red-500/20'}`} 
+                              />
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <div>
+                                <span className="text-dream-foreground/70">Bet:</span> {bet.amount} PXB
+                              </div>
+                              <div>
+                                <span className="text-dream-foreground/70">Potential win:</span> {bet.potentialWin} PXB
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center mt-2 text-xs text-dream-foreground/70">
+                              <div>
+                                Target: {formatLargeNumber(calculateTargetMarketCap(bet))}
+                              </div>
+                              <div>
+                                Change: {calculateMarketCapChange(bet)?.toFixed(2)}%
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </>
+  );
+};
+
+export default TokenDetail;
