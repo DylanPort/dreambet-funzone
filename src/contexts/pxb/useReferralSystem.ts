@@ -9,6 +9,9 @@ export const useReferralSystem = (
   fetchUserProfile: () => Promise<void>
 ) => {
   const [referralStats, setReferralStats] = useState<ReferralStats>({
+    totalReferrals: 0,
+    activeReferrals: 0,
+    pointsEarned: 0,
     referrals_count: 0,
     points_earned: 0,
     referral_code: null
@@ -161,6 +164,9 @@ export const useReferralSystem = (
       const totalPointsEarned = referralsData.reduce((sum, r) => sum + r.points_awarded, 0);
       
       setReferralStats({
+        totalReferrals: referralsData.length,
+        activeReferrals: referralsData.length,
+        pointsEarned: totalPointsEarned,
         referrals_count: referralsData.length,
         points_earned: totalPointsEarned,
         referral_code: userData?.referral_code || null

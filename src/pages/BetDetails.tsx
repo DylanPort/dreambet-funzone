@@ -490,7 +490,7 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
                       </td>
                       <td>{bet.betAmount} PXB</td>
                       <td>{bet.percentageChange}%</td>
-                      <td>{bet.timeframe} min</td>
+                      <td>{bet.timeframe || 30} min</td>
                       <td>{renderBetStatus(bet)}</td>
                       <td>
                         <Clock className="mr-2 h-4 w-4" />
@@ -534,7 +534,7 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
                       </td>
                       <td>{bet.betAmount} PXB</td>
                       <td>{bet.percentageChange}%</td>
-                      <td>{bet.timeframe} min</td>
+                      <td>{bet.timeframe || 30} min</td>
                       <td>{renderBetStatus(bet)}</td>
                       <td>{calculatePayout(bet)} PXB</td>
                       <td>

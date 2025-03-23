@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LeaderboardEntry } from '@/types/pxb';
+import { LeaderboardEntry, WinRateLeaderboardEntry } from '@/types/pxb';
 
 const PXBLeaderboard: React.FC = () => {
   const {

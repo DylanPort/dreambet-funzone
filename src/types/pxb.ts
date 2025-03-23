@@ -6,7 +6,7 @@ export interface UserProfile {
   createdAt: string;
 }
 
-// Updated to match Supabase schema names and include percentage prediction
+// Updated PXBBet interface with all required fields
 export interface PXBBet {
   id: string;
   userId: string;
@@ -16,13 +16,52 @@ export interface PXBBet {
   betAmount: number;
   betType: 'up' | 'down';
   percentageChange: number;
-  status: 'pending' | 'won' | 'lost' | 'open';
+  status: 'pending' | 'won' | 'lost' | 'open' | 'expired';
   pointsWon: number;
   createdAt: string;
   expiresAt: string;
   initialMarketCap?: number;
   currentMarketCap?: number;
   userRole?: 'creator' | 'participant';
+  timeframe?: number; // Added timeframe in minutes
+  resolvedAt?: string; // Added resolvedAt timestamp
+}
+
+// Add LeaderboardEntry interface
+export interface LeaderboardEntry {
+  wallet: string;
+  points: number;
+  betsWon: number;
+  betsLost: number;
+  rank: number;
+}
+
+// Add WinRateLeaderboardEntry interface
+export interface WinRateLeaderboardEntry {
+  wallet: string;
+  winRate: number;
+  betsWon: number;
+  betsLost: number;
+  rank: number;
+}
+
+// Add ReferralStats interface
+export interface ReferralStats {
+  totalReferrals: number;
+  activeReferrals: number;
+  pointsEarned: number;
+  referral_code?: string | null;
+  referrals_count?: number;
+  points_earned?: number;
+}
+
+// Add Referral interface
+export interface Referral {
+  referrer: string;
+  referee: string;
+  date: string;
+  status: 'active' | 'inactive';
+  pointsEarned: number;
 }
 
 // Database schema interfaces for type safety with Supabase
