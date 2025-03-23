@@ -420,7 +420,11 @@ const InteractiveTour = () => {
                       hover:bg-[#0088cc]/20 hover:border-[#0088cc]/50 
                       text-white rounded-full h-9 w-9 p-0 flex items-center justify-center"
           >
-            <MessageSquare className="h-4 w-4 text-[#0088cc]" />
+            <img 
+              src="/lovable-uploads/453531e5-a1ba-4b7f-8283-33c16f62306b.png" 
+              alt="Telegram" 
+              className="h-4 w-4" 
+            />
           </Button>
         </a>
         
