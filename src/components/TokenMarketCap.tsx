@@ -133,17 +133,17 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
 
   return (
     <div className="glass-panel p-6 relative overflow-hidden transition-all duration-300 transform hover:scale-105 animate-fade-in">
-      <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/10 to-dream-accent2/10 animate-gradient-move"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/20 to-dream-accent2/20 animate-gradient-move"></div>
       <div className="flex items-center text-dream-foreground/70 mb-2 relative z-10">
         <BarChart3 size={20} className="mr-3 text-dream-accent1 animate-pulse-glow" />
-        <span className="text-lg font-semibold">Market Cap</span>
+        <span className="text-lg font-semibold text-white">Market Cap</span>
         {lastUpdated && (
-          <span className="ml-auto text-xs text-dream-foreground/50">
+          <span className="ml-auto text-xs text-white/80">
             {getLastUpdatedText()}
           </span>
         )}
       </div>
-      <div className={`text-3xl font-bold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent1 transition-colors duration-500' : ''}`}>
+      <div className={`text-3xl font-bold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent1 transition-colors duration-500' : 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]'}`}>
         {loading ? (
           <span className="animate-pulse">Loading...</span>
         ) : (
@@ -159,7 +159,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
       <div className="absolute top-2 right-2 flex items-center gap-2">
         <div className="relative group">
           <RefreshCcw 
-            className={`w-4 h-4 text-dream-accent2/70 ${refreshing ? 'animate-spin' : ''}`} 
+            className={`w-4 h-4 text-white/80 ${refreshing ? 'animate-spin' : ''}`} 
             aria-label="Updates every 10 seconds"
           />
           <span className="absolute -top-8 right-0 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -170,7 +170,7 @@ const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
           href={`https://dexscreener.com/solana/${tokenId}`} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
+          className="text-white/80 hover:text-white transition-colors"
           aria-label="View on DexScreener"
         >
           <ExternalLink className="w-4 h-4" />
