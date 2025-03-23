@@ -96,6 +96,36 @@ const getGenericTokenImageUrl = (tokenMint: string): string | null => {
 };
 
 /**
+ * Try to get token image from DexScreener
+ */
+const getDexScreenerTokenImage = async (tokenMint: string): Promise<string | null> => {
+  try {
+    // DexScreener API endpoint that includes token info with logos
+    const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${tokenMint}`);
+    
+    if (!response.ok) {
+      console.error(`DexScreener API error: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    // Check if we have valid data with pairs and token information
+    if (data && data.pairs && data.pairs.length > 0) {
+      const baseToken = data.pairs[0].baseToken;
+      if (baseToken && baseToken.logoURI) {
+        return baseToken.logoURI;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error fetching DexScreener image for ${tokenMint}:`, error);
+    return null;
+  }
+};
+
+/**
  * Gets a token image URL based on its mint address
  */
 export const getTokenImageUrl = async (tokenMint: string) => {
@@ -107,7 +137,14 @@ export const getTokenImageUrl = async (tokenMint: string) => {
   }
   
   try {
-    // First, try to get the generic token image URL as a fallback
+    // First, try to get from DexScreener (newest addition)
+    const dexScreenerImage = await getDexScreenerTokenImage(tokenMint);
+    if (dexScreenerImage) {
+      imageCache[tokenMint] = dexScreenerImage;
+      return dexScreenerImage;
+    }
+    
+    // Then, try to get the generic token image URL as a fallback
     const genericImageUrl = getGenericTokenImageUrl(tokenMint);
     
     // Then, try to get the token metadata which contains the URI to off-chain data
@@ -163,7 +200,20 @@ export const fetchTokenImage = async (tokenMint: string, tokenSymbol?: string) =
   if (!tokenMint) return null;
   
   try {
-    // First try to get from Moralis (with fallbacks built into getTokenImageUrl)
+    // First try to get from DexScreener (highest priority)
+    const dexScreenerImage = await getDexScreenerTokenImage(tokenMint);
+    if (dexScreenerImage) {
+      try {
+        const response = await fetch(dexScreenerImage, { method: 'HEAD' });
+        if (response.ok) {
+          return dexScreenerImage;
+        }
+      } catch (e) {
+        console.error(`DexScreener image URL exists but is not accessible:`, e);
+      }
+    }
+    
+    // Then try Moralis (with fallbacks built into getTokenImageUrl)
     const imageUrl = await getTokenImageUrl(tokenMint);
     if (imageUrl) {
       // Verify the image is accessible by sending a HEAD request
