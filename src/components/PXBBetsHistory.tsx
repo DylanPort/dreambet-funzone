@@ -33,15 +33,15 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
           return;
         }
         
-        // Query the bets from Supabase
+        // Query the bets from Supabase - using "bets" table, not "pxb_bets"
         let query = supabase
-          .from('pxb_bets')
+          .from('bets')
           .select('*')
           .order('created_at', { ascending: false });
         
         // Filter by user ID if provided  
         if (targetUserId) {
-          query = query.eq('user_id', targetUserId);
+          query = query.eq('bettor1_id', targetUserId);
         }
         
         const { data, error } = await query;
@@ -53,24 +53,30 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
         
         if (data) {
           // Transform the data to match PXBBet type
-          const transformedBets: PXBBet[] = data.map(bet => ({
-            id: bet.id,
-            userId: bet.user_id,
-            tokenMint: bet.token_mint,
-            tokenName: bet.token_name,
-            tokenSymbol: bet.token_symbol,
-            betAmount: bet.bet_amount,
-            betType: bet.bet_type as 'up' | 'down',
-            percentageChange: bet.percentage_change,
-            status: bet.status as 'pending' | 'won' | 'lost',
-            pointsWon: bet.points_won || 0,
-            timestamp: new Date(bet.created_at).getTime(),
-            expiresAt: new Date(bet.expires_at).getTime(),
-            createdAt: bet.created_at,
-            creator: bet.creator,
-            initialMarketCap: bet.initial_market_cap,
-            currentMarketCap: bet.current_market_cap
-          }));
+          const transformedBets: PXBBet[] = data.map(bet => {
+            // Calculate expiration time based on created_at and duration
+            const createdTime = new Date(bet.created_at).getTime();
+            const expiryTime = new Date(createdTime + (bet.duration * 1000)).toISOString();
+            
+            return {
+              id: bet.bet_id,
+              userId: bet.bettor1_id,
+              tokenMint: bet.token_mint,
+              tokenName: bet.token_name || 'Unknown Token',
+              tokenSymbol: bet.token_symbol || 'UNK',
+              betAmount: bet.sol_amount,
+              betType: bet.prediction_bettor1 as 'up' | 'down',
+              percentageChange: bet.percentage_change || 0,
+              status: bet.status as 'pending' | 'won' | 'lost',
+              pointsWon: bet.points_won || 0,
+              timestamp: new Date(bet.created_at).getTime(),
+              expiresAt: expiryTime,
+              createdAt: bet.created_at,
+              creator: bet.creator,
+              initialMarketCap: bet.initial_market_cap,
+              currentMarketCap: bet.current_market_cap
+            };
+          });
           
           setBets(transformedBets);
         }
@@ -86,12 +92,13 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
 
   const getBetStatusClass = (bet: PXBBet) => {
     const now = Date.now();
+    const expiresAtTimestamp = new Date(bet.expiresAt).getTime();
     
     if (bet.status === 'won') {
       return 'bg-green-500/20 text-green-400';
     } else if (bet.status === 'lost') {
       return 'bg-red-500/20 text-red-400';
-    } else if (now > bet.expiresAt) {
+    } else if (now > expiresAtTimestamp) {
       return 'bg-yellow-500/20 text-yellow-400';
     } else {
       return 'bg-blue-500/20 text-blue-400';
@@ -100,12 +107,13 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
 
   const getBetStatusText = (bet: PXBBet) => {
     const now = Date.now();
+    const expiresAtTimestamp = new Date(bet.expiresAt).getTime();
     
     if (bet.status === 'won') {
       return 'Won';
     } else if (bet.status === 'lost') {
       return 'Lost';
-    } else if (now > bet.expiresAt) {
+    } else if (now > expiresAtTimestamp) {
       return 'Expired';
     } else {
       return 'Active';
