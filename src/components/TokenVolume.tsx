@@ -120,21 +120,26 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
   };
 
   return (
-    <div className="glass-panel p-4 relative overflow-hidden transition-all duration-300 hover:scale-105 animate-fade-in min-w-[150px] flex-1">
-      <div className="absolute inset-0 bg-gradient-to-r from-dream-accent2/30 to-dream-accent3/30 animate-gradient-move"></div>
-      <div className="flex items-center text-white mb-2 relative z-10">
-        <BarChart2 size={18} className="mr-2 text-dream-accent2 animate-pulse-glow" />
-        <span className="text-sm font-semibold">24h Volume</span>
+    <div className="glass-panel p-4 relative overflow-hidden transition-all duration-300 transform hover:scale-102 animate-fade-in hover:shadow-lg backdrop-blur-sm border border-dream-accent2/30 hover:border-dream-accent2/50 rounded-lg">
+      <div className="absolute inset-0 bg-gradient-to-r from-dream-accent2/20 to-dream-accent3/20 animate-gradient-move"></div>
+      <div className="flex items-center text-dream-foreground/80 mb-2 relative z-10">
+        <BarChart2 size={20} className="mr-3 text-dream-accent2 animate-pulse-glow" />
+        <span className="text-base font-semibold">24h Volume</span>
+        {lastUpdated && (
+          <span className="ml-auto text-xs text-dream-foreground/70">
+            {getLastUpdatedText()}
+          </span>
+        )}
       </div>
-      <div className={`text-2xl font-extrabold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent2 transition-colors duration-500' : 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]'}`}>
+      <div className={`text-2xl md:text-3xl font-bold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent2 transition-colors duration-500' : 'text-dream-foreground'}`}>
         {loading ? (
           <span className="animate-pulse">Loading...</span>
         ) : (
           <>
             <span className="mr-2">{formatLargeNumber(volume)}</span>
             <div className="flex items-center h-2">
-              <div className="w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></div>
-              <span className="text-xs text-green-400 font-bold animate-pulse-slow">LIVE</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 mr-1 animate-pulse"></div>
+              <span className="text-xs text-green-500 font-semibold animate-pulse-slow">LIVE</span>
             </div>
           </>
         )}
@@ -142,7 +147,7 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
       <div className="absolute top-2 right-2 flex items-center gap-2">
         <div className="relative group">
           <RefreshCcw 
-            className={`w-4 h-4 text-white/80 ${refreshing ? 'animate-spin' : ''}`} 
+            className={`w-4 h-4 text-dream-accent2/70 ${refreshing ? 'animate-spin' : ''}`} 
             aria-label="Updates every 10 seconds"
           />
           <span className="absolute -top-8 right-0 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -153,7 +158,7 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
           href={`https://dexscreener.com/solana/${tokenId}`} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-white/80 hover:text-white transition-colors"
+          className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
           aria-label="View on DexScreener"
         >
           <ExternalLink className="w-4 h-4" />
@@ -164,7 +169,7 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
         <div 
           className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-dream-accent2 via-dream-accent3 to-dream-accent2 animate-pulse-glow" 
         ></div>
-        <div className="absolute bottom-0 left-0 h-1 w-1/3 bg-white/30 backdrop-blur-sm transform -skew-x-45 animate-shine"></div>
+        <div className="absolute bottom-0 left-0 h-1 w-1/3 bg-white/50 backdrop-blur-sm transform -skew-x-45 animate-shine"></div>
       </div>
     </div>
   );
