@@ -196,7 +196,7 @@ const PXBBetsList = () => {
                   {bet.tokenName} ({bet.tokenSymbol})
                 </Link>
                 <div className="flex items-center text-sm mt-1">
-                  <span className="mr-2">{bet.amount} PXB</span>
+                  <span className="mr-2">{bet.betAmount} PXB</span>
                   <span className={`flex items-center ${
                     bet.betType === 'up' ? 'text-green-400' : 'text-red-400'
                   }`}>
