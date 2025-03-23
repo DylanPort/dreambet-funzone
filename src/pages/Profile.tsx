@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
@@ -10,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import PXBProfilePanel from '@/components/PXBProfilePanel';
 import PXBStatsPanel from '@/components/PXBStatsPanel';
 import PXBBetsHistory from '@/components/PXBBetsHistory';
-import PXBWallet from '@/components/PXBWallet';
+import { PXBWallet } from '@/components/PXBWallet';
 
 const Profile = () => {
   const { connected, publicKey } = useWallet();
@@ -97,13 +96,11 @@ const Profile = () => {
       <Navbar />
       <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 space-y-8">
-          {/* PXB Wallet at the top - full width */}
           <div className="w-full">
             <PXBWallet />
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-8">
-            {/* Left column - Profile info */}
             <div className="lg:col-span-3">
               <PXBProfilePanel 
                 userProfile={userProfile} 
@@ -112,16 +109,13 @@ const Profile = () => {
               />
             </div>
             
-            {/* Right column - Stats */}
             <div className="lg:col-span-4">
-              {/* PXB Stats Panel */}
               <div className="w-full">
                 <PXBStatsPanel userProfile={userProfile} />
               </div>
             </div>
           </div>
           
-          {/* Betting History - Full width */}
           <div className="w-full">
             <PXBBetsHistory />
           </div>
