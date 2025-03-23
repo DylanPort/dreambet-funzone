@@ -1,16 +1,12 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, ArrowUp, ArrowDown, Zap, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
-import { getTokenImageUrl, getTokenFallbackImage } from '@/services/moralisService';
-
 interface FuturisticTokenCardProps {
   token: any;
   flipping: boolean;
 }
-
 const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
   token,
   flipping
@@ -18,7 +14,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
   const [isHovering, setIsHovering] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [marketCap, setMarketCap] = useState<number | null>(null);
-  const [tokenImage, setTokenImage] = useState<string | null>(null);
   const isPositive = token.change24h >= 0;
 
   // Use the PumpPortal hook to get token metrics
@@ -40,28 +35,10 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       setMarketCap(tokenMetrics.market_cap);
     }
   }, [tokenMetrics]);
-
-  // Fetch token image when component mounts
-  useEffect(() => {
-    const fetchTokenImage = async () => {
-      if (token && token.id) {
-        try {
-          const imageUrl = await getTokenImageUrl(token.id);
-          setTokenImage(imageUrl);
-        } catch (error) {
-          console.error("Error fetching token image:", error);
-        }
-      }
-    };
-
-    fetchTokenImage();
-  }, [token]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -79,7 +56,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
     const totalSupply = 1000000000;
     return price * totalSupply;
   };
-
   const copyToClipboard = () => {
     if (token && token.id) {
       navigator.clipboard.writeText(token.id).then(() => {
@@ -95,7 +71,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
 
   // Get the market cap to display - use tokenMetrics if available, otherwise calculate
   const displayMarketCap = marketCap !== null ? marketCap : calculateMarketCap(token.currentPrice);
-  
   return <Link to={`/token/${token.id}`} className="block">
       <div className={`glass-panel transform transition-all duration-500 w-[280px] p-5 h-[420px] flex flex-col justify-between ${flipping ? 'animate-flip' : ''} ${isHovering ? 'scale-105 z-50' : 'z-10'} cursor-pointer`} style={{
       transform: `perspective(1000px) rotateY(${isHovering ? '0' : '-15'}deg) rotateX(${isHovering ? '0' : '5'}deg)`,
@@ -113,22 +88,17 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         {/* Token Info */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
-            {tokenImage ? (
-              <img 
-                src={tokenImage} 
-                alt={token.name} 
-                className="w-10 h-10 rounded-full object-cover" 
-                onError={(e) => {
-                  const imgElement = e.target as HTMLImageElement;
-                  imgElement.onerror = null; // Prevent infinite loop
-                  imgElement.src = getTokenFallbackImage(token.symbol);
-                }} 
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10">
-                <span className="font-display font-bold">{getTokenSymbol(token)}</span>
-              </div>
-            )}
+            {token.imageUrl ? <img src={token.imageUrl} alt={token.name} className="w-10 h-10 rounded-full object-cover" onError={e => {
+            const imgElement = e.target as HTMLImageElement;
+            imgElement.style.display = 'none';
+            const nextElement = imgElement.nextElementSibling as HTMLElement;
+            if (nextElement) {
+              nextElement.style.display = 'flex';
+            }
+          }} /> : null}
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}>
+              <span className="font-display font-bold">{getTokenSymbol(token)}</span>
+            </div>
             <span className="ml-2 font-semibold text-lg">{token.name}</span>
           </div>
           <div className="flex items-center">
@@ -203,7 +173,6 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       </div>
     </Link>;
 };
-
 const FuturisticTokenDisplay: React.FC<{
   tokens: any[];
 }> = ({
@@ -243,5 +212,4 @@ const FuturisticTokenDisplay: React.FC<{
       </div>
     </div>;
 };
-
 export default FuturisticTokenDisplay;

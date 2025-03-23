@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Clock, Zap, ExternalLink, Flame, Sparkles, Moon } from 'lucide-react';
 import { 
@@ -10,7 +9,6 @@ import {
 import CreateBetForm from './CreateBetForm';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { getTokenImageUrl, getTokenFallbackImage } from '@/services/moralisService';
 
 interface TokenCardProps {
   id: string;
@@ -38,7 +36,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
   price,
   priceChange,
   timeRemaining,
-  imageUrl: initialImageUrl,
+  imageUrl,
   index,
   liquidity,
   marketCap,
@@ -54,7 +52,6 @@ const TokenCard: React.FC<TokenCardProps> = ({
   const isPositive6h = priceChange6h ? priceChange6h >= 0 : true;
   const [selectedPrediction, setSelectedPrediction] = useState<'moon' | 'die' | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [tokenImage, setTokenImage] = useState<string | null>(initialImageUrl || null);
 
   // Format price with appropriate decimals
   const formatPrice = (price: number) => {
@@ -89,24 +86,6 @@ const TokenCard: React.FC<TokenCardProps> = ({
     }
     return `$${num.toFixed(2)}`;
   };
-
-  // Fetch token image when component mounts
-  useEffect(() => {
-    const fetchTokenImage = async () => {
-      if (!tokenImage && id) {
-        try {
-          const imageUrl = await getTokenImageUrl(id);
-          if (imageUrl) {
-            setTokenImage(imageUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching token image:", error);
-        }
-      }
-    };
-
-    fetchTokenImage();
-  }, [id, tokenImage]);
 
   // Custom bet dialog handler
   const handleBetSelection = (type: 'moon' | 'die') => {
@@ -150,22 +129,11 @@ const TokenCard: React.FC<TokenCardProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center">
-              {tokenImage ? (
-                <img 
-                  src={tokenImage} 
-                  alt={name} 
-                  className="w-full h-full object-contain rounded-full"
-                  onError={(e) => {
-                    const imgElement = e.target as HTMLImageElement;
-                    imgElement.onerror = null; // Prevent infinite loop
-                    imgElement.src = getTokenFallbackImage(symbol);
-                  }}
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
-                  <span className="font-display font-bold">{symbol ? symbol.charAt(0).toUpperCase() : 'T'}</span>
-                </div>
-              )}
+              <img 
+                src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png" 
+                alt={name} 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1">
