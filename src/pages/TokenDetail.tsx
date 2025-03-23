@@ -672,5 +672,17 @@ const TokenDetail = () => {
     
     loadTokenImage();
   }, [id]);
- 
+  
+  return (
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16">
+          {/* Token Content would be here */}
+        </div>
+      </main>
+    </>
+  );
+};
 
+export default TokenDetail;
