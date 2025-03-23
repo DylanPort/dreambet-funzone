@@ -243,7 +243,15 @@
     padding-right: 1rem;
   }
   
-  .animate-scroll:hover {
+  .animate-scroll-slow {
+    display: flex;
+    animation: scroll 40s linear infinite;
+    width: max-content;
+    padding-right: 1rem;
+  }
+  
+  .animate-scroll:hover,
+  .animate-scroll-slow:hover {
     animation-play-state: paused;
   }
   

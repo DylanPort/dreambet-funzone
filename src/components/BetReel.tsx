@@ -177,37 +177,49 @@ const BetReel: React.FC = () => {
         </div>
         
         <div className="overflow-hidden mx-4 flex-1">
-          <div className="flex gap-4 items-center animate-scroll">
-            {trendingTokens.map((token, index) => <Link key={`${token.tokenMint}-${index}`} to={`/betting/token/${token.tokenMint}`} className="flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500 hover:bg-black/40">
-                <div className="flex items-center gap-3">
-                  {renderTokenAvatar(token)}
-                  
-                  <div className="mr-3">
-                    <div className="flex items-center gap-1">
-                      <div className="text-sm font-semibold">{token.tokenName}</div>
-                      <ExternalLink className="w-3 h-3 text-dream-foreground/40" />
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] text-dream-foreground/60">
-                      <span>{token.tokenSymbol}</span>
-                      <span className="flex items-center">
-                        <span>{formatAddress(token.tokenMint)}</span>
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3 items-center">
-                    <div className={`flex items-center px-2 py-0.5 rounded-md text-xs ${getHeatColor(token.betCount)}`}>
-                      <BarChart className="h-3 w-3 mr-1" />
-                      <span>{token.betCount} bets</span>
+          <div className="flex gap-4 items-center animate-scroll-slow">
+            {trendingTokens.map((token, index) => {
+              const TokenWrapper = index === 0 ? 'div' : Link;
+              const wrapperProps = index === 0 
+                ? { className: "flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500" }
+                : { 
+                    to: `/betting/token/${token.tokenMint}`,
+                    className: "flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500 hover:bg-black/40"
+                  };
+              
+              return (
+                <TokenWrapper key={`${token.tokenMint}-${index}`} {...wrapperProps}>
+                  <div className="flex items-center gap-3">
+                    {renderTokenAvatar(token)}
+                    
+                    <div className="mr-3">
+                      <div className="flex items-center gap-1">
+                        <div className="text-sm font-semibold">{token.tokenName}</div>
+                        {index !== 0 && <ExternalLink className="w-3 h-3 text-dream-foreground/40" />}
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-dream-foreground/60">
+                        <span>{token.tokenSymbol}</span>
+                        <span className="flex items-center">
+                          <span>{formatAddress(token.tokenMint)}</span>
+                        </span>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center text-xs bg-dream-accent2/10 px-2 py-0.5 rounded-md">
-                      <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
-                      <span className="font-semibold">{token.totalAmount.toFixed(2)} PXB</span>
+                    <div className="flex gap-3 items-center">
+                      <div className={`flex items-center px-2 py-0.5 rounded-md text-xs ${getHeatColor(token.betCount)}`}>
+                        <BarChart className="h-3 w-3 mr-1" />
+                        <span>{token.betCount} bets</span>
+                      </div>
+                      
+                      <div className="flex items-center text-xs bg-dream-accent2/10 px-2 py-0.5 rounded-md">
+                        <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
+                        <span className="font-semibold">{token.totalAmount.toFixed(2)} PXB</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>)}
+                </TokenWrapper>
+              );
+            })}
           </div>
         </div>
       </div>
