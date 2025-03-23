@@ -17,7 +17,10 @@ export const useBetProcessor = (
     console.log('Processing pending bets...', bets.length);
     
     // Get pending bets that need to be checked
-    const pendingBets = bets.filter(bet => bet.status === 'pending' || (bet.status === 'open' && new Date() >= new Date(bet.expiresAt)));
+    const pendingBets = bets.filter(bet => 
+      bet.status === 'pending' || 
+      (bet.status === 'open' && new Date() >= new Date(bet.expiresAt))
+    );
     console.log(`Found ${pendingBets.length} pending bets to process`);
     
     // Process each pending bet
@@ -93,12 +96,17 @@ export const useBetProcessor = (
           
           // Calculate points won (double for winning)
           const pointsWon = betWon ? bet.betAmount * 2 : 0;
+          const newStatus = betWon ? 'won' : 'lost';
+
+          // Check if the bet might have expired without reaching target before being processed
+          const betExpired = bet.status === 'open' && !betWon;
+          const finalStatus = betExpired ? 'expired' : newStatus;
           
           // Update bet status in database - using database column naming convention but with type assertion
           const { error: betUpdateError } = await supabase
             .from('bets')
             .update({
-              status: betWon ? 'won' : 'lost',
+              status: finalStatus,
               points_won: pointsWon,
               current_market_cap: currentMarketCap,
               initial_market_cap: initialMarketCap // Ensure initial market cap is saved
@@ -116,7 +124,7 @@ export const useBetProcessor = (
             .insert({
               bet_id: bet.id,
               user_id: userProfile.id,
-              action: betWon ? 'bet_won' : 'bet_lost',
+              action: finalStatus === 'expired' ? 'bet_expired' : (betWon ? 'bet_won' : 'bet_lost'),
               details: {
                 initial_market_cap: initialMarketCap,
                 final_market_cap: currentMarketCap,
@@ -124,7 +132,7 @@ export const useBetProcessor = (
                 percentage_change_predicted: bet.percentageChange,
                 prediction: bet.betType,
                 points_won: pointsWon,
-                supply_impact: betWon ? -pointsWon : bet.betAmount // Track impact on total supply
+                supply_impact: finalStatus === 'expired' ? 0 : (betWon ? -pointsWon : bet.betAmount) // Track impact on total supply
               },
               market_cap_at_action: currentMarketCap
             });
@@ -153,6 +161,11 @@ export const useBetProcessor = (
             
             // Show win notification
             toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points from the house.`);
+          } else if (finalStatus === 'expired') {
+            // Show expired notification
+            toast.error(`Your bet on ${bet.tokenSymbol} has expired.`, {
+              description: `The timeframe passed without reaching the target. Your ${bet.betAmount} PXB Points have been returned.`
+            });
           } else {
             // Show loss notification
             toast.error(`Your bet on ${bet.tokenSymbol} didn't win this time.`, {
@@ -165,7 +178,7 @@ export const useBetProcessor = (
             b.id === bet.id 
               ? { 
                   ...b, 
-                  status: betWon ? 'won' : 'lost', 
+                  status: finalStatus, 
                   pointsWon, 
                   currentMarketCap,
                   initialMarketCap // Ensure initial market cap is updated in state

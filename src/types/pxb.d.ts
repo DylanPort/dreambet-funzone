@@ -9,7 +9,7 @@ export interface PXBBet {
   status: 'open' | 'pending' | 'won' | 'lost' | 'expired'; // Status of the bet
   createdAt: string; // ISO date string
   resolvedAt?: string; // ISO date string, when the bet was resolved
-  amount: number; // Amount of PXB tokens
+  betAmount: number; // Amount of PXB tokens
   initialMarketCap: number | null;
   percentageChange: number;
   timeframe?: number; // Timeframe in minutes
