@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
@@ -62,11 +61,6 @@ const WalletConnectionMonitor = ({ children }: { children: React.ReactNode }) =>
           console.error("Error verifying wallet connection:", error);
           if (connectionChecked) {
             setConnectionChecked(false);
-            toast({
-              title: "Wallet Connection Issue",
-              description: "Please disconnect and reconnect your wallet",
-              variant: "destructive",
-            });
           }
         }
       } else if (!connected && connectionChecked) {
