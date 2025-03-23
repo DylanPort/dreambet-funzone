@@ -19,7 +19,7 @@ interface Transaction {
   reference_name?: string;
 }
 
-const PXBWallet: React.FC = () => {
+export const PXBWallet: React.FC = () => {
   const {
     userProfile,
     isLoading,
@@ -530,6 +530,3 @@ const PXBWallet: React.FC = () => {
       </div>
     </div>;
 };
-
-
-
