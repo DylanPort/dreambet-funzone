@@ -10,6 +10,13 @@ const imageCache: Record<string, string> = {};
 const MORALIS_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjYxNGVlMjhmLWQ5M2MtNDczNi1iMGEyLWVkODc2N2JlMDlkYiIsIm9yZ0lkIjoiMzY5OTkwIiwidXNlcklkIjoiMzgwMTg5IiwidHlwZUlkIjoiMDJjYWJjY2ItNzgwMC00Y2E5LTljZjEtY2Y0NDc1OTRiYWU2IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3MTYwNTMxMjEsImV4cCI6NDg3MTgxMzEyMX0.qGrJrF_lNIE8wGOMibOuylXWiOa-L8TbQGC1QS9-ZIM";
 
 /**
+ * Checks if there's a token metadata API key issue
+ */
+const isApiKeyIssue = (status: number): boolean => {
+  return status === 401 || status === 403;
+};
+
+/**
  * Fetches token metadata from Moralis API
  */
 export const fetchTokenMetadata = async (tokenMint: string) => {
@@ -30,6 +37,11 @@ export const fetchTokenMetadata = async (tokenMint: string) => {
     });
     
     if (!response.ok) {
+      // Check if it's an API key issue and handle it gracefully
+      if (isApiKeyIssue(response.status)) {
+        console.error(`Moralis API key error: ${response.status}. Please check your API key.`);
+        return null;
+      }
       throw new Error(`Failed to fetch metadata: ${response.status}`);
     }
     
@@ -72,6 +84,18 @@ export const fetchOffChainMetadata = async (uri: string) => {
 };
 
 /**
+ * Try to construct a generic image URL for a token
+ */
+const getGenericTokenImageUrl = (tokenMint: string): string | null => {
+  try {
+    // Try Jupiter image service first
+    return `https://token-icons.solflare.com/solana/${tokenMint}.png`;
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
  * Gets a token image URL based on its mint address
  */
 export const getTokenImageUrl = async (tokenMint: string) => {
@@ -83,15 +107,28 @@ export const getTokenImageUrl = async (tokenMint: string) => {
   }
   
   try {
-    // First, get the token metadata which contains the URI to off-chain data
+    // First, try to get the generic token image URL as a fallback
+    const genericImageUrl = getGenericTokenImageUrl(tokenMint);
+    
+    // Then, try to get the token metadata which contains the URI to off-chain data
     const metadata = await fetchTokenMetadata(tokenMint);
     if (!metadata || !metadata.uri) {
+      // If Moralis metadata fetch failed, return the generic URL as fallback
+      if (genericImageUrl) {
+        imageCache[tokenMint] = genericImageUrl;
+        return genericImageUrl;
+      }
       return null;
     }
     
     // Then, fetch the off-chain metadata to get the image URL
     const offChainData = await fetchOffChainMetadata(metadata.uri);
     if (!offChainData || !offChainData.image) {
+      // If off-chain metadata fetch failed, return the generic URL as fallback
+      if (genericImageUrl) {
+        imageCache[tokenMint] = genericImageUrl;
+        return genericImageUrl;
+      }
       return null;
     }
     
@@ -107,6 +144,14 @@ export const getTokenImageUrl = async (tokenMint: string) => {
     return imageUrl;
   } catch (error) {
     console.error(`Error getting token image URL for ${tokenMint}:`, error);
+    
+    // Try generic image URL as a fallback
+    const genericImageUrl = getGenericTokenImageUrl(tokenMint);
+    if (genericImageUrl) {
+      imageCache[tokenMint] = genericImageUrl;
+      return genericImageUrl;
+    }
+    
     return null;
   }
 };
@@ -118,12 +163,43 @@ export const fetchTokenImage = async (tokenMint: string, tokenSymbol?: string) =
   if (!tokenMint) return null;
   
   try {
+    // First try to get from Moralis (with fallbacks built into getTokenImageUrl)
     const imageUrl = await getTokenImageUrl(tokenMint);
     if (imageUrl) {
-      return imageUrl;
+      // Verify the image is accessible by sending a HEAD request
+      try {
+        const response = await fetch(imageUrl, { method: 'HEAD' });
+        if (response.ok) {
+          return imageUrl;
+        }
+      } catch (e) {
+        console.error(`Image URL ${imageUrl} exists but is not accessible:`, e);
+      }
     }
     
-    // If we couldn't get the image, return null and let the component use fallbacks
+    // Try token directories as a fallback
+    const solscanImage = `https://public-api.solscan.io/token/logo/${tokenMint}`;
+    try {
+      const response = await fetch(solscanImage, { method: 'HEAD' });
+      if (response.ok) {
+        return solscanImage;
+      }
+    } catch (e) {
+      console.error("Solscan image not accessible:", e);
+    }
+    
+    // If we still don't have an image, try Solflare token icons
+    const solflareImage = `https://token-icons.solflare.com/solana/${tokenMint}.png`;
+    try {
+      const response = await fetch(solflareImage, { method: 'HEAD' });
+      if (response.ok) {
+        return solflareImage;
+      }
+    } catch (e) {
+      console.error("Solflare image not accessible:", e);
+    }
+    
+    // If all else fails, return null and let the component use fallbacks
     return null;
   } catch (error) {
     console.error(`Error fetching token image for ${tokenMint}:`, error);
