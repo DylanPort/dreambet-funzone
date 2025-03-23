@@ -40,8 +40,8 @@ const MigratingTokenList = () => {
     });
   };
   
-  const navigateToBetDetails = (betId: string) => {
-    navigate(`/betting/bet/${betId}`);
+  const navigateToTokenDetails = (tokenMint: string) => {
+    navigate(`/token/${tokenMint}`);
   };
   
   useEffect(() => {
@@ -231,7 +231,7 @@ const MigratingTokenList = () => {
             bgColor
           } = getPredictionDetails(bet.prediction);
           return <CarouselItem key={bet.id} className="pl-2 md:pl-0 basis-[85%] sm:basis-[60%] md:basis-full">
-                <div onClick={() => navigateToBetDetails(bet.id)} className="cursor-pointer glass-panel bg-dream-foreground/5 p-4 rounded-lg border border-dream-accent1/20 h-full hover:bg-dream-accent1/5 transition-colors">
+                <div onClick={() => navigateToTokenDetails(bet.tokenMint)} className="cursor-pointer glass-panel bg-dream-foreground/5 p-4 rounded-lg border border-dream-accent1/20 h-full hover:bg-dream-accent1/5 transition-colors">
                   <div className="flex items-center mb-3">
                     <div className="w-10 h-10 mr-3 flex items-center justify-center">
                       <img src="/lovable-uploads/5887548a-f14d-402c-8906-777603cd0875.png" alt="Token" className="w-full h-full object-contain" />
@@ -410,7 +410,7 @@ const MigratingTokenList = () => {
             return <TableRow 
                     key={bet.id} 
                     className="hover:bg-dream-accent1/5 transition-colors cursor-pointer"
-                    onClick={() => navigateToBetDetails(bet.id)}
+                    onClick={() => navigateToTokenDetails(bet.tokenMint)}
                   >
                     <TableCell className="py-3 px-4">
                       <div className="flex items-center">
