@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
@@ -8,12 +9,15 @@ import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
+import { getTokenImageUrl, getTokenFallbackImage } from '@/services/moralisService';
+
 interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
   onAcceptBet: (bet: Bet) => void;
 }
+
 const BetCard: React.FC<BetCardProps> = ({
   bet,
   connected,
@@ -24,6 +28,25 @@ const BetCard: React.FC<BetCardProps> = ({
   const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(bet.currentMarketCap || null);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [tokenImage, setTokenImage] = useState<string | null>(null);
+
+  // Fetch token image when component mounts
+  useEffect(() => {
+    const fetchTokenImage = async () => {
+      if (bet.tokenMint) {
+        try {
+          const imageUrl = await getTokenImageUrl(bet.tokenMint);
+          if (imageUrl) {
+            setTokenImage(imageUrl);
+          }
+        } catch (error) {
+          console.error("Error fetching token image:", error);
+        }
+      }
+    };
+
+    fetchTokenImage();
+  }, [bet.tokenMint]);
 
   // Fetch the latest market cap data when component mounts
   useEffect(() => {
@@ -58,6 +81,7 @@ const BetCard: React.FC<BetCardProps> = ({
     };
     fetchMarketCap();
   }, [bet.tokenMint, bet.initialMarketCap, bet.prediction]);
+
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
       toast.error('Connect your wallet to accept a bet');
@@ -77,6 +101,7 @@ const BetCard: React.FC<BetCardProps> = ({
       setAccepting(false);
     }
   };
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text).then(() => {
       toast.success(`${label} copied to clipboard`);
@@ -125,17 +150,34 @@ const BetCard: React.FC<BetCardProps> = ({
     }
     return `$${value.toFixed(2)}`;
   };
+
   return <div className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${bet.status === 'open' ? 'bg-black/20 border-dream-accent1/30' : bet.status === 'matched' ? 'bg-black/30 border-purple-500/30' : bet.status === 'expired' ? 'bg-black/20 border-red-500/30' : bet.outcome === 'win' ? 'bg-black/20 border-green-500/30' : bet.outcome === 'loss' ? 'bg-black/20 border-red-500/30' : 'bg-black/20 border-yellow-500/30'}`}>
       <div className="px-6 py-4">
         <div className="flex justify-between items-center">
-          <Link to={`/betting/token/${bet.tokenId}`} className="text-xl font-display font-bold hover:underline transition-all duration-300">
-            {bet.tokenName}
-            <span className="text-dream-foreground/50 text-sm ml-2">
-              ({bet.tokenSymbol})
+          <Link to={`/betting/token/${bet.tokenId}`} className="flex items-center gap-2">
+            {tokenImage ? (
+              <img 
+                src={tokenImage} 
+                alt={bet.tokenName} 
+                className="w-6 h-6 rounded-full object-cover"
+                onError={(e) => {
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.onerror = null; // Prevent infinite loop
+                  imgElement.src = getTokenFallbackImage(bet.tokenSymbol);
+                }}
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent3/20 flex items-center justify-center border border-white/10">
+                <span className="font-display font-bold text-xs">{bet.tokenSymbol ? bet.tokenSymbol.charAt(0).toUpperCase() : 'T'}</span>
+              </div>
+            )}
+            <span className="text-xl font-display font-bold hover:underline transition-all duration-300">
+              {bet.tokenName}
+              <span className="text-dream-foreground/50 text-sm ml-2">
+                ({bet.tokenSymbol})
+              </span>
             </span>
           </Link>
-
-          
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-4">
@@ -225,10 +267,9 @@ const BetCard: React.FC<BetCardProps> = ({
                   {isLoading ? "Fetching market cap data..." : bet.prediction === 'moon' || bet.prediction === 'migrate' ? `${progressValue.toFixed(1)}% toward 30% gain target` : `${progressValue.toFixed(1)}% toward 30% loss target`}
                 </div>
               </div>}
-
-            
           </div>}
       </div>
     </div>;
 };
+
 export default BetCard;
