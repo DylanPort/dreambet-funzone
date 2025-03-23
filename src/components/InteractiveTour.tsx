@@ -8,7 +8,7 @@ import PXBOnboarding from '@/components/PXBOnboarding';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
-import { ChevronRight, Upload, Loader2, Cpu, Zap, Twitter, MessageSquare, GithubIcon, BookOpen } from 'lucide-react';
+import { ChevronRight, Upload, Loader2, Cpu, Zap, MessageSquare, GithubIcon, BookOpen } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -383,21 +383,25 @@ const InteractiveTour = () => {
         transition={{ delay: 0.5, duration: 0.3 }}
       >
         <a 
-          href="https://twitter.com/pumpxbounty" 
+          href="https://x.com/PumpXBounty" 
           target="_blank" 
           rel="noopener noreferrer"
           className="relative group"
         >
-          <div className="absolute inset-0 bg-[#1DA1F2]/20 rounded-full blur-md 
-              group-hover:bg-[#1DA1F2]/40 transition-all duration-300"></div>
+          <div className="absolute inset-0 bg-[#000000]/20 rounded-full blur-md 
+              group-hover:bg-[#000000]/40 transition-all duration-300"></div>
           <Button 
             size="sm" 
             variant="ghost" 
-            className="bg-[#111]/50 border border-[#1DA1F2]/30 
-                      hover:bg-[#1DA1F2]/20 hover:border-[#1DA1F2]/50 
+            className="bg-[#111]/50 border border-[#000000]/30 
+                      hover:bg-[#000000]/20 hover:border-[#000000]/50 
                       text-white rounded-full h-9 w-9 p-0 flex items-center justify-center"
           >
-            <Twitter className="h-4 w-4 text-[#1DA1F2]" />
+            <img 
+              src="/lovable-uploads/5bd9e4de-2164-4b82-9ff6-6d123e221c1c.png" 
+              alt="X (formerly Twitter)" 
+              className="h-4 w-4" 
+            />
           </Button>
         </a>
         
@@ -709,4 +713,3 @@ const InteractiveTour = () => {
 };
 
 export default InteractiveTour;
-
