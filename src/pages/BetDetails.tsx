@@ -124,7 +124,10 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
     setToken(mockToken);
   }, [id]);
 
-  const formatPrice = (price: number) => {
+  // Update the formatPrice function to safely handle undefined values
+  const formatPrice = (price: number | undefined) => {
+    if (price === undefined || price === null) return "0.00";
+    
     if (price < 0.01) return price.toFixed(6);
     if (price < 1) return price.toFixed(4);
     if (price < 1000) return price.toFixed(2);
@@ -132,7 +135,7 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
   };
 
   const formatLargeNumber = (num: number | undefined) => {
-    if (num === undefined) return "-";
+    if (num === undefined || num === null) return "-";
 
     if (num >= 1000000000) {
       return `$${(num / 1000000000).toFixed(2)}B`;
@@ -331,11 +334,11 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
             <div className="flex items-center">
               <span className={`inline-block w-3 h-3 rounded-full mr-1.5 ${isPositive ? 'bg-green-500' : 'bg-red-500'}`}></span>
               <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                {Math.abs(token?.priceChange).toFixed(2)}%
+                {Math.abs(token?.priceChange || 0).toFixed(2)}%
               </span>
             </div>
             <div className="text-xs text-dream-foreground/40 border border-dream-foreground/10 px-1.5 py-0.5 rounded">
-              {isPositive ? '+' : '-'}{Math.abs(token?.priceChange).toFixed(2)}%
+              {isPositive ? '+' : '-'}{Math.abs(token?.priceChange || 0).toFixed(2)}%
             </div>
           </div>
           <div className="text-right">

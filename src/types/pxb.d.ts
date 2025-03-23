@@ -1,3 +1,4 @@
+
 // Define the PXB types
 export interface PXBBet {
   id: string;
@@ -14,6 +15,8 @@ export interface PXBBet {
   percentageChange: number;
   timeframe?: number; // Timeframe in minutes
   currentMarketCap?: number | null;
+  pointsWon?: number; // Points won from the bet
+  expiresAt?: string; // ISO date string, when the bet expires
 }
 
 export interface LeaderboardEntry {
