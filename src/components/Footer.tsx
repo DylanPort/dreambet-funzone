@@ -16,7 +16,7 @@ const Footer = () => {
     {
       name: 'Telegram',
       url: 'https://t.me/PumpXBounty',
-      icon: <img src="/lovable-uploads/b202d0ff-b32c-4588-9d6a-772fb5cbbe0b.png" className="h-5 w-5" alt="Telegram" />
+      icon: <img src="/lovable-uploads/81fb2dc7-59da-424e-8569-4202a7967758.png" className="h-5 w-5" alt="Telegram" />
     },
     {
       name: 'GitBook',
