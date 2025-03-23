@@ -151,7 +151,11 @@ const PXBLeaderboard: React.FC = () => {
             <div className="text-center py-4 text-dream-foreground/60">
               <p className="animate-pulse">No data yet. Be the first on the leaderboard!</p>
               <div className="mt-2 w-32 h-32 mx-auto opacity-20">
-                <Trophy className="w-full h-full text-yellow-400 animate-float" />
+                <img 
+                  src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" 
+                  className="w-full h-full text-yellow-400 animate-float" 
+                  alt="Trophy" 
+                />
               </div>
             </div>
           )}
