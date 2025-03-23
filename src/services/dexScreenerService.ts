@@ -28,6 +28,13 @@ interface DexScreenerPair {
       sells: number;
     }
   };
+  info?: {
+    imageUrl?: string;
+    header?: string;
+    openGraph?: string;
+    websites?: Array<{label: string, url: string}>;
+    socials?: Array<{type: string, url: string}>;
+  };
 }
 
 interface DexScreenerTokenData {
@@ -69,6 +76,11 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
   liquidity: number;
   priceUsd: number;
   priceChange24h: number;
+  baseToken?: {
+    address: string;
+    name: string;
+    symbol: string;
+  };
 } | null> => {
   try {
     const cachedData = tokenDataCache.get(tokenAddress);
@@ -101,7 +113,8 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
       liquidity: pair.liquidity || 0,
       priceUsd: parseFloat(pair.priceUsd || '0'),
       priceChange24h: pair.priceChange?.h24 || 0,
-      baseToken: pair.baseToken
+      baseToken: pair.baseToken,
+      info: pair.info
     };
     
     tokenDataCache.set(tokenAddress, {
@@ -316,7 +329,7 @@ export const subscribeToVolume = (tokenId: string, callback: (volume: number) =>
  * Fetches token pair data by pair address
  * This is useful for getting token images and additional metadata
  */
-export const fetchTokenPairData = async (pairAddress: string) => {
+export const fetchTokenPairData = async (pairAddress: string): Promise<DexScreenerPair | null> => {
   try {
     console.log("Fetching pair data for:", pairAddress);
     

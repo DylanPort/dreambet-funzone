@@ -13,6 +13,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
 import { fetchTokenDataFromSolscan } from '@/services/solscanService';
+import { fetchTokenPairData } from '@/services/dexScreenerService';
+import { useToast } from '@/hooks/use-toast';
 
 const RecentTokenTrades: React.FC = () => {
   const {
@@ -27,12 +29,14 @@ const RecentTokenTrades: React.FC = () => {
   const [page, setPage] = useState(0);
   const pageSize = 5;
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [marketCapData, setMarketCapData] = useState<Record<string, {
     initialMarketCap: number | null;
     currentMarketCap: number | null;
   }>>({});
   const [loadingProgress, setLoadingProgress] = useState<Record<string, boolean>>({});
   const [tokenIcons, setTokenIcons] = useState<Record<string, string | null>>({});
+  const [pairAddresses, setPairAddresses] = useState<Record<string, string | null>>({});
 
   const formatTimeAgo = (timestamp: string) => {
     try {
@@ -62,7 +66,8 @@ const RecentTokenTrades: React.FC = () => {
           status,
           created_at,
           percentage_change,
-          initial_market_cap
+          initial_market_cap,
+          pair_address
         `).order('created_at', {
         ascending: false
       }).range(pageNum * pageSize, pageNum * pageSize + pageSize - 1);
@@ -94,7 +99,8 @@ const RecentTokenTrades: React.FC = () => {
           percentageChange: bet.percentage_change || 0,
           timestamp: bet.created_at,
           status: bet.status,
-          initialMarketCap: bet.initial_market_cap
+          initialMarketCap: bet.initial_market_cap,
+          pairAddress: bet.pair_address
         };
       });
       if (append) {
@@ -106,7 +112,13 @@ const RecentTokenTrades: React.FC = () => {
       // Fetch market cap and icon data for each bet
       formattedBets.forEach(bet => {
         fetchBetMarketCapData(bet);
-        fetchTokenIcon(bet.tokenMint);
+        fetchTokenIcon(bet);
+        if (bet.pairAddress) {
+          setPairAddresses(prev => ({
+            ...prev,
+            [bet.tokenMint]: bet.pairAddress
+          }));
+        }
       });
     } catch (error) {
       console.error('Error in fetchRecentBets:', error);
@@ -115,10 +127,24 @@ const RecentTokenTrades: React.FC = () => {
     }
   };
   
-  const fetchTokenIcon = async (tokenMint: string) => {
+  const fetchTokenIcon = async (bet: any) => {
+    const tokenMint = bet.tokenMint;
     if (!tokenMint || tokenIcons[tokenMint]) return;
     
     try {
+      // Try to get token image from DexScreener if we have a pair address
+      if (bet.pairAddress) {
+        const pairData = await fetchTokenPairData(bet.pairAddress);
+        if (pairData && pairData.baseToken && pairData.baseToken.address === tokenMint && pairData.info?.imageUrl) {
+          setTokenIcons(prev => ({
+            ...prev,
+            [tokenMint]: pairData.info.imageUrl
+          }));
+          return;
+        }
+      }
+      
+      // Fallback to Solscan if DexScreener didn't provide an image
       const tokenData = await fetchTokenDataFromSolscan(tokenMint);
       if (tokenData && tokenData.icon) {
         setTokenIcons(prev => ({
@@ -192,7 +218,6 @@ const RecentTokenTrades: React.FC = () => {
   // Generate color based on token symbol for fallback icon
   const getTokenIconOrFallback = (bet: any) => {
     const tokenMint = bet.tokenMint;
-    const tokenSymbol = bet.tokenSymbol;
     
     // If we have a cached icon, use it
     if (tokenIcons[tokenMint]) {
@@ -316,6 +341,7 @@ const RecentTokenTrades: React.FC = () => {
                           alt={bet.tokenSymbol} 
                           className="w-full h-full object-cover"
                           onError={(e) => {
+                            e.currentTarget.onerror = null; // Prevent infinite loop
                             // If image fails to load, remove from state to show fallback
                             setTokenIcons(prev => ({
                               ...prev,
@@ -324,7 +350,11 @@ const RecentTokenTrades: React.FC = () => {
                           }}
                         />
                       ) : (
-                        <img src={getTokenIconOrFallback(bet)} alt={bet.tokenSymbol} className="w-full h-full object-contain" />
+                        <img 
+                          src={getTokenIconOrFallback(bet)} 
+                          alt={bet.tokenSymbol} 
+                          className="w-full h-full object-contain" 
+                        />
                       )}
                     </div>
                     <div>
