@@ -1,4 +1,3 @@
-
 import * as React from "react"
 
 import type {
@@ -6,8 +5,8 @@ import type {
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_LIMIT = 3
+const TOAST_REMOVE_DELAY = 5000
 
 type ToasterToast = ToastProps & {
   id: string
@@ -169,7 +168,6 @@ function toast({ ...props }: Toast) {
   }
 }
 
-// Add success and error helper methods
 toast.success = (title: string, props?: Omit<Toast, "title" | "variant">) => {
   return toast({
     title,
@@ -182,6 +180,14 @@ toast.error = (title: string, props?: Omit<Toast, "title" | "variant">) => {
   return toast({
     title,
     variant: "destructive",
+    ...props,
+  })
+}
+
+toast.bet = (title: string, props?: Omit<Toast, "title" | "variant">) => {
+  return toast({
+    title,
+    variant: "success",
     ...props,
   })
 }

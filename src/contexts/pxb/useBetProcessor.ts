@@ -23,6 +23,21 @@ export const useBetProcessor = (
     );
     console.log(`Found ${pendingBets.length} pending bets to process`);
     
+    // Check for any high-value active bets (1000+ PXB) and notify
+    const highValueActiveBets = bets.filter(bet => 
+      bet.status === 'open' && 
+      bet.betAmount >= 1000 && 
+      new Date() < new Date(bet.expiresAt)
+    );
+
+    if (highValueActiveBets.length > 0) {
+      highValueActiveBets.forEach(bet => {
+        toast.bet(`💰 High Value Bet Active: ${bet.betAmount} PXB on ${bet.tokenSymbol}!`, {
+          description: `A ${bet.betAmount} PXB bet is currently active on ${bet.tokenName}.\nPrediction: ${bet.betType === 'up' ? 'MOON 🚀' : 'DIE 📉'}\nTarget: ${bet.percentageChange}% change`
+        });
+      });
+    }
+    
     // Process each pending bet
     for (const bet of pendingBets) {
       try {
