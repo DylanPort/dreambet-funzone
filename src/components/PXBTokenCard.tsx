@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ExternalLink, Flame } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface PXBTokenCardProps {
   id: string;
