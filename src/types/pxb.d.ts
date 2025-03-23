@@ -1,4 +1,3 @@
-
 // Define the PXB types
 export interface PXBBet {
   id: string;
@@ -10,15 +9,11 @@ export interface PXBBet {
   status: 'open' | 'pending' | 'won' | 'lost' | 'expired'; // Status of the bet
   createdAt: string; // ISO date string
   resolvedAt?: string; // ISO date string, when the bet was resolved
-  betAmount: number; // Amount of PXB tokens
+  amount: number; // Amount of PXB tokens
   initialMarketCap: number | null;
   percentageChange: number;
   timeframe?: number; // Timeframe in minutes
   currentMarketCap?: number | null;
-  expiresAt: string;
-  userId?: string;
-  pointsWon?: number;
-  userRole?: 'creator' | 'participant';
 }
 
 export interface LeaderboardEntry {

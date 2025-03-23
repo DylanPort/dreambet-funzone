@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { BarChart2, ExternalLink, RefreshCcw } from 'lucide-react';
 import { subscribeToVolume } from '@/services/dexScreenerService';
@@ -121,46 +120,44 @@ const TokenVolume: React.FC<TokenVolumeProps> = ({ tokenId }) => {
   };
 
   return (
-    <div className="glass-panel p-3 relative overflow-hidden transition-all duration-300 hover:scale-105 animate-fade-in flex-1 h-full">
+    <div className="glass-panel p-4 relative overflow-hidden transition-all duration-300 hover:scale-105 animate-fade-in min-w-[150px] flex-1">
       <div className="absolute inset-0 bg-gradient-to-r from-dream-accent2/30 to-dream-accent3/30 animate-gradient-move"></div>
-      <div className="flex flex-col h-full justify-between">
-        <div className="flex items-center text-white mb-1 relative z-10">
-          <BarChart2 size={16} className="mr-2 text-dream-accent2 animate-pulse-glow" />
-          <span className="text-sm font-semibold">24h Volume</span>
+      <div className="flex items-center text-white mb-2 relative z-10">
+        <BarChart2 size={18} className="mr-2 text-dream-accent2 animate-pulse-glow" />
+        <span className="text-sm font-semibold">24h Volume</span>
+      </div>
+      <div className={`text-2xl font-extrabold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent2 transition-colors duration-500' : 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]'}`}>
+        {loading ? (
+          <span className="animate-pulse">Loading...</span>
+        ) : (
+          <>
+            <span className="mr-2">{formatLargeNumber(volume)}</span>
+            <div className="flex items-center h-2">
+              <div className="w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></div>
+              <span className="text-xs text-green-400 font-bold animate-pulse-slow">LIVE</span>
+            </div>
+          </>
+        )}
+      </div>
+      <div className="absolute top-2 right-2 flex items-center gap-2">
+        <div className="relative group">
+          <RefreshCcw 
+            className={`w-4 h-4 text-white/80 ${refreshing ? 'animate-spin' : ''}`} 
+            aria-label="Updates every 10 seconds"
+          />
+          <span className="absolute -top-8 right-0 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+            Updates every 10 seconds
+          </span>
         </div>
-        <div className={`text-xl md:text-2xl font-extrabold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent2 transition-colors duration-500' : 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]'}`}>
-          {loading ? (
-            <span className="animate-pulse">Loading...</span>
-          ) : (
-            <>
-              <span className="mr-2">{formatLargeNumber(volume)}</span>
-              <div className="flex items-center h-2">
-                <div className="w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></div>
-                <span className="text-xs text-green-400 font-bold animate-pulse-slow">LIVE</span>
-              </div>
-            </>
-          )}
-        </div>
-        <div className="absolute top-2 right-2 flex items-center gap-2">
-          <div className="relative group">
-            <RefreshCcw 
-              className={`w-4 h-4 text-white/80 ${refreshing ? 'animate-spin' : ''}`} 
-              aria-label="Updates every 10 seconds"
-            />
-            <span className="absolute -top-8 right-0 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-              Updates every 10 seconds
-            </span>
-          </div>
-          <a 
-            href={`https://dexscreener.com/solana/${tokenId}`} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-white/80 hover:text-white transition-colors"
-            aria-label="View on DexScreener"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        </div>
+        <a 
+          href={`https://dexscreener.com/solana/${tokenId}`} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-white/80 hover:text-white transition-colors"
+          aria-label="View on DexScreener"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </a>
       </div>
       
       <div className="absolute bottom-0 left-0 right-0 overflow-hidden h-1">

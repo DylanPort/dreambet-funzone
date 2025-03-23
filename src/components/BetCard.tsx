@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
