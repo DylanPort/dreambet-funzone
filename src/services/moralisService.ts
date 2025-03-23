@@ -1,7 +1,10 @@
 
 import { toast } from "sonner";
 
-const MORALIS_API_KEY = "YOUR_MORALIS_API_KEY"; // Replace with your actual Moralis API key or use environment variables
+// Check for stored API key in localStorage
+const getStoredMoralisApiKey = (): string => {
+  return localStorage.getItem('moralis_api_key') || '';
+};
 
 /**
  * Fetch token metadata from Moralis API
@@ -12,6 +15,16 @@ export const fetchTokenMetadataFromMoralis = async (tokenAddress: string): Promi
   symbol?: string;
 } | null> => {
   try {
+    // Get API key from localStorage
+    const moralisApiKey = getStoredMoralisApiKey();
+    
+    // Check if API key exists
+    if (!moralisApiKey) {
+      console.error("Moralis API key not found");
+      toast.error("Moralis API key is missing. Please set it in settings.");
+      return null;
+    }
+    
     // Show loading toast
     const loadingToastId = toast.loading("Fetching token image...");
     
@@ -25,7 +38,7 @@ export const fetchTokenMetadataFromMoralis = async (tokenAddress: string): Promi
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'X-API-Key': MORALIS_API_KEY
+        'X-API-Key': moralisApiKey
       },
     });
     
@@ -103,4 +116,25 @@ export const getTokenImage = async (tokenAddress: string): Promise<string | null
     console.error("Error getting token image:", error);
     return null;
   }
+};
+
+/**
+ * Set Moralis API key
+ */
+export const setMoralisApiKey = (apiKey: string): void => {
+  if (!apiKey) {
+    toast.error("Please enter a valid API key");
+    return;
+  }
+  
+  localStorage.setItem('moralis_api_key', apiKey);
+  toast.success("Moralis API key saved successfully");
+};
+
+/**
+ * Check if Moralis API key is set
+ */
+export const hasMoralisApiKey = (): boolean => {
+  const key = getStoredMoralisApiKey();
+  return !!key;
 };
