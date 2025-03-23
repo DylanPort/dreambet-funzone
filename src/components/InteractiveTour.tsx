@@ -8,7 +8,7 @@ import PXBOnboarding from '@/components/PXBOnboarding';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
-import { ChevronRight, Upload, Loader2, Cpu, Zap } from 'lucide-react';
+import { ChevronRight, Upload, Loader2, Cpu, Zap, Twitter, MessageSquare, GithubIcon } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +42,7 @@ const InteractiveTour = () => {
     if (tourCompleted) {
       setCurrentStep(0);
     }
-    const mainVideoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/sign/tourvideo/Untitled%20video%20-%20Made%20with%20Clipchamp%20(7)%20(online-video-cutter.com).mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJ0b3VydmlkZW8vVW50aXRsZWQgdmlkZW8gLSBNYWRlIHdpdGggQ2xpcGNoYW1wICg3KSAob25saW5lLXZpZGVvLWN1dHRlci5jb20pLm1wNCIsImlhdCI6MTc0MjY2NTY1MiwiZXhwIjoxNzc0MjAxNjUyfQ.FOnoYScf0r244PUOjega7OzIC0KEEmB2O6l4T-_UY9E";
+    const mainVideoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/sign/tourvideo/Untitled%20video%20-%20Made%20with%20Clipchamp%20(7)%20(online-video-cutter.com).mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJ0b3VydmlkZW8vVW50aXRsZWQgdmlkZW8gLSBNYWRlIHdpdGggQ2xpcGNoYW1wICg3KSAob25saW5lLXZpZGVvLWN1dHRlci5jb20pLmmpNCIsImlhdCI6MTc0MjY2NTY1MiwiZXhwIjoxNzc0MjAxNjUyfQ.FOnoYScf0r244PUOjega7OzIC0KEEmB2O6l4T-_UY9E";
     const newVideoSources = [...videoSources];
     for (let i = 0; i < newVideoSources.length; i++) {
       newVideoSources[i] = mainVideoUrl;
@@ -231,7 +231,77 @@ const InteractiveTour = () => {
         </div>;
     }
   };
-  return <div className={`flex justify-center items-center w-full my-4 md:my-8 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
+
+  const renderSocialButtons = () => {
+    return (
+      <motion.div 
+        className="absolute bottom-8 left-8 flex space-x-3 z-20"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.3 }}
+      >
+        <a 
+          href="https://twitter.com/pumpxbounty" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="relative group"
+        >
+          <div className="absolute inset-0 bg-[#1DA1F2]/20 rounded-full blur-md 
+              group-hover:bg-[#1DA1F2]/40 transition-all duration-300"></div>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="bg-[#111]/50 border border-[#1DA1F2]/30 
+                      hover:bg-[#1DA1F2]/20 hover:border-[#1DA1F2]/50 
+                      text-white rounded-full h-9 w-9 p-0 flex items-center justify-center"
+          >
+            <Twitter className="h-4 w-4 text-[#1DA1F2]" />
+          </Button>
+        </a>
+        
+        <a 
+          href="https://t.me/pumpxbounty" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="relative group"
+        >
+          <div className="absolute inset-0 bg-[#0088cc]/20 rounded-full blur-md 
+              group-hover:bg-[#0088cc]/40 transition-all duration-300"></div>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="bg-[#111]/50 border border-[#0088cc]/30 
+                      hover:bg-[#0088cc]/20 hover:border-[#0088cc]/50 
+                      text-white rounded-full h-9 w-9 p-0 flex items-center justify-center"
+          >
+            <MessageSquare className="h-4 w-4 text-[#0088cc]" />
+          </Button>
+        </a>
+        
+        <a 
+          href="https://discord.gg/pumpxbounty" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="relative group"
+        >
+          <div className="absolute inset-0 bg-[#5865F2]/20 rounded-full blur-md 
+              group-hover:bg-[#5865F2]/40 transition-all duration-300"></div>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="bg-[#111]/50 border border-[#5865F2]/30 
+                      hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 
+                      text-white rounded-full h-9 w-9 p-0 flex items-center justify-center"
+          >
+            <GithubIcon className="h-4 w-4 text-[#5865F2]" />
+          </Button>
+        </a>
+      </motion.div>
+    );
+  };
+
+  return (
+    <div className={`flex justify-center items-center w-full my-4 md:my-8 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
       {fileInput}
       <motion.div className={`relative ${isMobile ? 'w-[300px] h-[350px]' : 'w-[400px] md:w-[600px] h-[250px] md:h-[330px]'} flex items-center justify-center rounded-2xl overflow-hidden`} style={{
       perspective: '1000px',
@@ -371,6 +441,7 @@ const InteractiveTour = () => {
                       </motion.div>
                     </div>
                   </div>
+                  {currentStep === 0 && renderSocialButtons()}
                 </ScrollArea> : <div className="flex flex-row items-center justify-center gap-6">
                   <motion.div className="w-1/2 flex justify-center items-center mb-0 relative" style={{
                 transformStyle: 'preserve-3d',
@@ -421,6 +492,7 @@ const InteractiveTour = () => {
                       {steps[currentStep].action}
                     </motion.div>
                   </div>
+                  {currentStep === 0 && renderSocialButtons()}
                 </div>}
               
               <div className="mt-3 md:mt-5 flex justify-center space-x-2">
@@ -471,6 +543,8 @@ const InteractiveTour = () => {
           </div>
         </motion.div>
       </motion.div>
-    </div>;
+    </div>
+  );
 };
+
 export default InteractiveTour;

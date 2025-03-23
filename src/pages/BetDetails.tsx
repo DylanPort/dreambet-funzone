@@ -1,385 +1,561 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Bet, BetPrediction, BetStatus } from '@/types/bet';
-import { formatTimeRemaining, formatAddress, formatNumberWithCommas } from '@/utils/betUtils';
-import { ArrowUp, ArrowDown, Clock, User, Calendar, ExternalLink, ArrowLeft, Coins, Trophy, Rocket, Zap } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { useParams, useNavigate } from 'react-router-dom';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { toast } from 'sonner';
-import { fetchGMGNTokenData, subscribeToGMGNTokenData } from '@/services/gmgnService';
-interface PriceChartDataPoint {
-  time: string;
-  price: number;
+import {
+  ArrowUp,
+  ArrowDown,
+  Flame,
+  ExternalLink,
+  Copy,
+  CheckCircle2,
+  Plus,
+  X,
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Percent,
+  LucideIcon,
+} from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Button } from '@/components/ui/button';
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useIsMobile } from '@/hooks/use-mobile';
+import { usePumpPortal } from '@/hooks/usePumpPortal';
+import { formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
+import { PXBBet } from '@/types/pxb';
+
+interface BetDetailsProps {
+  // Define any props if needed
 }
-const BetDetails = () => {
-  const {
-    id
-  } = useParams<{
-    id: string;
-  }>();
-  const [loading, setLoading] = useState(true);
-  const [bet, setBet] = useState<Bet | null>(null);
-  const [tokenDetails, setTokenDetails] = useState<any>(null);
-  const [chartData, setChartData] = useState<PriceChartDataPoint[]>([]);
-  const [chartLoading, setChartLoading] = useState(true);
+
+const BetDetails: React.FC<BetDetailsProps> = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { userProfile, placeBet, isLoading, userBets } = usePXBPoints();
+  const [token, setToken] = useState<any>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  const [showCreateBet, setShowCreateBet] = useState(false);
+  const [betAmount, setBetAmount] = useState(10);
+  const [betType, setBetType] = useState<'up' | 'down'>('up');
+  const [timeframe, setTimeframe] = useState(30);
+  const [percentageChange, setPercentageChange] = useState(10);
+  const [marketCap, setMarketCap] = useState<number | null>(null);
+  const [isPositive, setIsPositive] = useState(true);
+  const [isBetting, setIsBetting] = useState(false);
+  const isMobile = useIsMobile();
+  const [activeBets, setActiveBets] = useState<PXBBet[]>([]);
+  const [pastBets, setPastBets] = useState<PXBBet[]>([]);
+
+  const { tokenMetrics, subscribeToToken } = usePumpPortal(id || '');
+
   useEffect(() => {
-    const fetchBetDetails = async () => {
-      if (!id) return;
-      setLoading(true);
-      try {
-        const {
-          data,
-          error
-        } = await supabase.from('bets').select(`
-            *,
-            tokens (*)
-          `).eq('bet_id', id).single();
-        if (error) {
-          console.error('Error fetching bet details:', error);
-          toast.error('Failed to load bet details');
-          return;
-        }
-        if (data) {
-          let predictionValue: BetPrediction;
-          if (data.prediction_bettor1 === 'up') {
-            predictionValue = 'migrate';
-          } else if (data.prediction_bettor1 === 'down') {
-            predictionValue = 'die';
-          } else {
-            predictionValue = data.prediction_bettor1 as BetPrediction;
-          }
-          const status = data.status as BetStatus;
-          let outcomeValue: 'win' | 'loss' | undefined = undefined;
-          if (data.outcome === 'win') {
-            outcomeValue = 'win';
-          } else if (data.outcome === 'loss') {
-            outcomeValue = 'loss';
-          }
-          const betData: Bet = {
-            id: data.bet_id,
-            tokenId: data.token_mint,
-            tokenName: data.tokens?.token_name || 'Unknown Token',
-            tokenSymbol: data.tokens?.token_symbol || 'UNKNOWN',
-            tokenMint: data.token_mint,
-            initiator: data.creator,
-            counterParty: data.bettor2_id || undefined,
-            amount: data.sol_amount,
-            prediction: predictionValue,
-            timestamp: new Date(data.created_at).getTime(),
-            expiresAt: new Date(data.created_at).getTime() + data.duration * 1000,
-            status: status,
-            initialMarketCap: data.initial_market_cap,
-            currentMarketCap: data.current_market_cap,
-            duration: data.duration,
-            winner: data.winner,
-            onChainBetId: data.on_chain_id,
-            transactionSignature: data.transaction_signature,
-            outcome: outcomeValue
-          };
-          setBet(betData);
-          setTokenDetails(data.tokens);
-          if (data.token_mint) {
-            fetchTokenChartData(data.token_mint);
-          }
-        }
-      } catch (error) {
-        console.error('Error in fetchBetDetails:', error);
-        toast.error('An error occurred while loading the bet details');
-      } finally {
-        setLoading(false);
-      }
+    if (id) {
+      subscribeToToken(id);
+    }
+  }, [id, subscribeToToken]);
+
+  useEffect(() => {
+    if (tokenMetrics && tokenMetrics.market_cap) {
+      setMarketCap(tokenMetrics.market_cap);
+    }
+  }, [tokenMetrics]);
+
+  useEffect(() => {
+    if (userBets) {
+      setActiveBets(userBets.filter(bet => bet.tokenMint === id && bet.status === 'pending'));
+      setPastBets(userBets.filter(bet => bet.tokenMint === id && bet.status !== 'pending'));
+    }
+  }, [userBets, id]);
+
+  useEffect(() => {
+    // Mock token data (replace with actual data fetching)
+    const mockToken = {
+      id: id || 'unknown',
+      name: 'Mock Token',
+      symbol: 'MOCK',
+      price: 0.000123,
+      priceChange: 5.23,
+      imageUrl: '/placeholder-image.png',
+      liquidity: 123456,
+      volume24h: 789012,
+      marketCap: 123456789,
     };
-    fetchBetDetails();
+
+    setToken(mockToken);
   }, [id]);
-  const fetchTokenChartData = async (tokenMint: string) => {
-    setChartLoading(true);
-    try {
-      const tokenData = await fetchGMGNTokenData(tokenMint);
-      console.log('GMGN token data for chart:', tokenData);
-      if (tokenData.price) {
-        const data: PriceChartDataPoint[] = [];
-        const now = new Date();
-        data.push({
-          time: now.toISOString(),
-          price: tokenData.price
-        });
-        const priorPrice = tokenData.change24h ? tokenData.price / (1 + tokenData.change24h / 100) : tokenData.price * (0.9 + Math.random() * 0.2);
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        data.unshift({
-          time: yesterday.toISOString(),
-          price: priorPrice
-        });
-        for (let i = 1; i <= 10; i++) {
-          const hoursPast = 24 * (i / 10);
-          const intermediateTime = new Date(now);
-          intermediateTime.setHours(now.getHours() - hoursPast);
-          const ratio = i / 10;
-          const intermediatePrice = priorPrice + (tokenData.price - priorPrice) * ratio;
-          const noise = intermediatePrice * (Math.random() * 0.05 - 0.025);
-          data.push({
-            time: intermediateTime.toISOString(),
-            price: intermediatePrice + noise
-          });
-        }
-        data.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
-        setChartData(data);
-        console.log('Generated chart data:', data);
-      }
-    } catch (error) {
-      console.error('Error fetching token chart data:', error);
-    } finally {
-      setChartLoading(false);
+
+  const formatPrice = (price: number) => {
+    if (price < 0.01) return price.toFixed(6);
+    if (price < 1) return price.toFixed(4);
+    if (price < 1000) return price.toFixed(2);
+    return price.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  };
+
+  const formatLargeNumber = (num: number | undefined) => {
+    if (num === undefined) return "-";
+
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    }
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    }
+    if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    }
+    return `$${num.toFixed(2)}`;
+  };
+
+  const copyToClipboard = () => {
+    if (token && token.id) {
+      navigator.clipboard.writeText(token.id).then(() => {
+        setIsCopied(true);
+        toast.success('Contract address copied to clipboard');
+        setTimeout(() => setIsCopied(false), 2000);
+      }).catch(err => {
+        toast.error('Failed to copy address');
+        console.error('Could not copy text: ', err);
+      });
     }
   };
-  useEffect(() => {
-    if (!bet?.tokenMint) return;
-    const unsubscribe = subscribeToGMGNTokenData(bet.tokenMint, data => {
-      if (data.price && chartData.length > 0) {
-        const now = new Date();
-        const newPoint = {
-          time: now.toISOString(),
-          price: data.price
-        };
-        setChartData(prev => {
-          const updatedData = [...prev, newPoint].slice(-12);
-          return updatedData;
-        });
-      }
-    });
-    return () => {
-      unsubscribe();
-    };
-  }, [bet?.tokenMint, chartData.length]);
-  if (loading) {
-    return <div className="min-h-screen bg-dream-background text-dream-foreground p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-center p-12">
-            <div className="w-10 h-10 border-4 border-dream-accent1 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        </div>
-      </div>;
-  }
-  if (!bet) {
-    return <div className="min-h-screen bg-dream-background text-dream-foreground p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center p-12">
-            <h2 className="text-2xl font-bold mb-4">Bet Not Found</h2>
-            <p className="mb-6">The bet you're looking for doesn't exist or has been removed.</p>
-            <Button asChild>
-              <Link to="/betting">Return to Betting</Link>
-            </Button>
-          </div>
-        </div>
-      </div>;
-  }
-  const isPredictionUp = ['migrate', 'up', 'moon'].includes(bet.prediction);
-  const predictionDisplay = isPredictionUp ? 'MOON' : 'DIE';
-  const predictionColor = isPredictionUp ? 'text-green-400' : 'text-red-400';
-  const predictionBgColor = isPredictionUp ? 'bg-green-400/10' : 'bg-red-400/10';
-  let statusDisplay = bet.status.toUpperCase();
-  let statusClass = 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30';
-  if (bet.status === 'pending') {
-    statusClass = 'bg-blue-500/20 text-blue-400 border-blue-400/30';
-  } else if (bet.status === 'completed' || bet.status === 'closed') {
-    if (bet.outcome === 'win') {
-      statusDisplay = 'ENDED WIN';
-      statusClass = 'bg-green-500/20 text-green-400 border-green-400/30';
-    } else {
-      statusDisplay = 'ENDED LOSS';
-      statusClass = 'bg-red-500/20 text-red-400 border-red-400/30';
+
+  const handlePlaceBet = async () => {
+    if (!userProfile) {
+      toast.error('You must be logged in to place a bet');
+      return;
     }
-  } else if (new Date().getTime() > bet.expiresAt) {
-    statusDisplay = 'EXPIRED';
-    statusClass = 'bg-red-500/20 text-red-400 border-red-400/30';
-  } else if (bet.status === 'matched') {
-    statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
+
+    if (userProfile.pxbPoints < betAmount) {
+      toast.error('Insufficient PXB Points. ');
+      return;
+    }
+
+    if (!marketCap) {
+      toast.error('Market cap data is not available for this token');
+      return;
+    }
+
+    try {
+      setIsBetting(true);
+      toast({
+        title: `Placing ${betType === 'up' ? 'MOON' : 'DIE'} bet on ${token?.symbol}`,
+        description: `Starting MCAP: ${formatLargeNumber(marketCap)}
+        Target: ${betType === 'up' ? formatLargeNumber(marketCap * (1 + percentageChange / 100)) : formatLargeNumber(marketCap * (1 - percentageChange / 100))}`,
+      });
+
+      await placeBet(token.id, token.name, token.symbol, betAmount, betType, percentageChange, timeframe);
+      setShowCreateBet(false);
+    } catch (error) {
+      console.error('Error placing bet:', error);
+      toast.error('Failed to place bet. Please try again.');
+    } finally {
+      setIsBetting(false);
+    }
+  };
+
+  const BetSchema = z.object({
+    amount: z.number().min(10, {
+      message: "Amount must be at least 10 PXB.",
+    }).max(userProfile?.pxbPoints || 10, {
+      message: "Amount must be less than your balance.",
+    }),
+    direction: z.enum(["up", "down"]),
+    timeframe: z.number(),
+    percentageChange: z.number(),
+  })
+
+  const form = useForm<z.infer<typeof BetSchema>>({
+    resolver: zodResolver(BetSchema),
+    defaultValues: {
+      amount: 10,
+      direction: "up",
+      timeframe: 30,
+      percentageChange: 10,
+    },
+  })
+
+  function onSubmit(values: z.infer<typeof BetSchema>) {
+    console.log(values)
+    if (!userProfile) {
+      toast.error('You must be logged in to place a bet');
+      return;
+    }
+
+    if (userProfile.pxbPoints < values.amount) {
+      toast.error('Insufficient PXB Points. ');
+      return;
+    }
+
+    if (!marketCap) {
+      toast.error('Market cap data is not available for this token');
+      return;
+    }
+
+    try {
+      setIsBetting(true);
+      toast({
+        title: `Placing ${values.direction === 'up' ? 'MOON' : 'DIE'} bet on ${token?.symbol}`,
+        description: `Starting MCAP: ${formatLargeNumber(marketCap)}
+        Target: ${values.direction === 'up' ? formatLargeNumber(marketCap * (1 + values.percentageChange / 100)) : formatLargeNumber(marketCap * (1 - values.percentageChange / 100))}`,
+      });
+
+      placeBet(token.id, token.name, token.symbol, values.amount, values.direction, values.percentageChange, values.timeframe).then(() => {
+        setShowCreateBet(false);
+        form.reset();
+      });
+    } catch (error) {
+      console.error('Error placing bet:', error);
+      toast.error('Failed to place bet. Please try again.');
+    } finally {
+      setIsBetting(false);
+    }
   }
-  return <div className="min-h-screen bg-dream-background text-dream-foreground p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to betting
-          </Link>
-        </div>
-        
-        <div className="glass-panel bg-dream-foreground/5 backdrop-blur-lg border border-dream-accent1/20 rounded-xl p-6">
-          <div className="flex justify-between items-start mb-6">
+
+  const renderBetStatus = (bet: PXBBet) => {
+    switch (bet.status) {
+      case 'pending':
+        return <span className="text-yellow-500">Pending</span>;
+      case 'won':
+        return <span className="text-green-500">Won</span>;
+      case 'lost':
+        return <span className="text-red-500">Lost</span>;
+      case 'expired':
+        return <span className="text-gray-500">Expired</span>;
+      default:
+        return <span className="text-gray-500">Unknown</span>;
+    }
+  };
+
+  const renderBetTrend = (bet: PXBBet) => {
+    if (bet.betType === 'up') {
+      return <TrendingUp className="text-green-500 w-4 h-4" />;
+    } else if (bet.betType === 'down') {
+      return <TrendingDown className="text-red-500 w-4 h-4" />;
+    } else {
+      return null;
+    }
+  };
+
+  const calculatePayout = (bet: PXBBet) => {
+    if (bet.status === 'won') {
+      return bet.amount * (bet.percentageChange / 100);
+    }
+    return 0;
+  };
+
+  return (
+    <div className="min-h-screen bg-dream-background overflow-hidden">
+      <div className="relative glass-panel p-4 md:p-8 max-w-4xl mx-auto mt-10 md:mt-20 mb-10 md:mb-20 border border-white/10 group-hover:border-white/20 transition-all duration-300">
+        {/* Back Button */}
+        <Button variant="ghost" size="sm" className="absolute top-2 left-2 md:top-4 md:left-4" onClick={() => navigate(-1)}>
+          Back
+        </Button>
+
+        {/* Token Info */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 flex items-center justify-center">
+              <img
+                src="/lovable-uploads/74707f80-3a88-4b9c-82d2-5a590a3a32df.png"
+                alt={token?.name}
+                className="w-full h-full object-contain"
+              />
+            </div>
             <div>
-              <h1 className="text-3xl font-display font-bold flex items-center gap-2">
-                <span>{bet.tokenName}</span>
-                <span className="text-lg text-dream-foreground/60">({bet.tokenSymbol})</span>
-              </h1>
-              <div className="flex items-center mt-2">
-                <Badge className={`${predictionBgColor} ${predictionColor} border-none mr-3`}>
-                  {predictionDisplay}
-                </Badge>
-                <Badge variant="outline" className={`border-none ${statusClass}`}>
-                  {statusDisplay}
-                </Badge>
+              <div className="flex items-center gap-1">
+                <h3 className="font-display font-semibold text-2xl">{token?.name}</h3>
+                <a
+                  href={`https://dexscreener.com/solana/${token?.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-dream-foreground/40"
+                >
+                  <ExternalLink className="w-4 h-4 text-dream-foreground/40" />
+                </a>
               </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-dream-foreground/60 mb-1">Bet Amount</div>
-              <div className="text-2xl font-bold text-dream-accent1 flex items-center justify-end">
-                <Coins className="w-5 h-5 mr-2" />
-                {bet.amount} PXB
-              </div>
+              <p className="text-dream-foreground/60 text-sm">{token?.symbol}</p>
             </div>
           </div>
-          
-          {/* Replacing chart with a futuristic token details button */}
-          <div className="mb-8 flex justify-center">
-            <Link to={`/token/${bet.tokenMint}`} className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-dream-accent1 to-dream-accent2 rounded-lg blur-lg opacity-60 group-hover:opacity-100 transition-all duration-300"></div>
-              <div className="relative flex items-center justify-center px-8 py-4 bg-black/70 rounded-lg border border-dream-accent1/30 overflow-hidden">
-                {/* Tech circuits corners */}
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-dream-accent1/60"></div>
-                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-dream-accent2/60"></div>
-                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-dream-accent1/60"></div>
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-dream-accent2/60"></div>
-                
-                {/* Pulsing background effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/5 to-dream-accent2/5 opacity-50 group-hover:opacity-100 transition-opacity duration-300"></div>
-                
-                {/* Futuristic button content */}
-                <div className="flex items-center gap-3 text-white">
-                  <Rocket className="w-5 h-5 text-dream-accent1 group-hover:animate-pulse" />
-                  <span className="font-medium text-lg">View Token Details</span>
-                  <Zap className="w-5 h-5 text-dream-accent2 group-hover:animate-pulse" />
-                </div>
-                
-                {/* Animated border light effect */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-dream-accent1 to-transparent opacity-50 group-hover:opacity-100 animate-[border-flow_3s_linear_infinite] transition-opacity duration-300"></div>
-                </div>
-              </div>
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Bet Details</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="flex items-center">
-                      <User className="w-4 h-4 mr-2 text-dream-foreground/60" />
-                      <span className="text-dream-foreground/70">Initiated by</span>
-                    </div>
-                    <div className="font-medium">{formatAddress(bet.initiator)}</div>
-                  </div>
-                  
-                  {bet.counterParty && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                      <div className="flex items-center">
-                        <User className="w-4 h-4 mr-2 text-dream-foreground/60" />
-                        <span className="text-dream-foreground/70">Counter Party</span>
-                      </div>
-                      <div className="font-medium">{formatAddress(bet.counterParty)}</div>
-                    </div>}
-                  
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-2 text-dream-foreground/60" />
-                      <span className="text-dream-foreground/70">Created on</span>
-                    </div>
-                    <div className="font-medium">{new Date(bet.timestamp).toLocaleString()}</div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-2 text-dream-foreground/60" />
-                      <span className="text-dream-foreground/70">Time Remaining</span>
-                    </div>
-                    <div className="font-medium">{formatTimeRemaining(bet.expiresAt)}</div>
-                  </div>
-                </div>
-              </div>
-              
-              {bet.initialMarketCap && <div>
-                  
-                  <div className="space-y-3">
-                    
-                    
-                    {bet.currentMarketCap && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                        <div className="text-dream-foreground/70">Current Market Cap</div>
-                        <div className="font-medium">${formatNumberWithCommas(bet.currentMarketCap)}</div>
-                      </div>}
-                    
-                    {bet.initialMarketCap && bet.currentMarketCap}
-                  </div>
-                </div>}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 h-6 px-2 rounded-md bg-dream-background/40 text-xs text-dream-foreground/60">
+              <Flame className="w-3 h-3" />
+              <span>#{1}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Price and Change */}
+        <div className="flex justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <span className={`inline-block w-3 h-3 rounded-full mr-1.5 ${isPositive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+              <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                {Math.abs(token?.priceChange).toFixed(2)}%
+              </span>
+            </div>
+            <div className="text-xs text-dream-foreground/40 border border-dream-foreground/10 px-1.5 py-0.5 rounded">
+              {isPositive ? '+' : '-'}{Math.abs(token?.priceChange).toFixed(2)}%
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-medium flex items-center">
+              <span className="mr-1 text-dream-foreground/60">Price</span>
+              <span className="text-dream-foreground/90">${formatPrice(token?.price)}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Market Stats */}
+        <div className="grid grid-cols-3 gap-2 mb-4 text-xs">
+          <div className="bg-dream-foreground/5 px-2 py-1.5 rounded">
+            <div className="text-dream-foreground/50 mb-1">Volume</div>
+            <div className="font-medium">{formatLargeNumber(token?.volume24h)}</div>
+          </div>
+          <div className="bg-dream-foreground/5 px-2 py-1.5 rounded">
+            <div className="text-dream-foreground/50 mb-1">Liquidity</div>
+            <div className="font-medium">{formatLargeNumber(token?.liquidity)}</div>
+          </div>
+          <div className="bg-dream-foreground/5 px-2 py-1.5 rounded">
+            <div className="text-dream-foreground/50 mb-1">MCAP</div>
+            <div className="font-medium">{formatLargeNumber(token?.marketCap)}</div>
+          </div>
+        </div>
+
+        {/* Contract Address */}
+        <div className="flex items-center mb-3 bg-black/30 rounded-lg p-2 text-xs">
+          <div className="truncate mr-2 text-white/70 flex-1">
+            {token?.id || 'Unknown Address'}
+          </div>
+          <button onClick={copyToClipboard} className="text-cyan-400 hover:text-cyan-300 transition-colors">
+            {isCopied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+          </button>
+        </div>
+
+        {/* Create Bet Section */}
+        <div className="mb-6">
+          <h4 className="font-semibold text-lg mb-3">Place a Bet</h4>
+          {showCreateBet ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Create Bet</CardTitle>
+                <CardDescription>
+                  Enter the details for your bet.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="amount">Amount (PXB)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    min="10"
+                    value={betAmount}
+                    onChange={(e) => setBetAmount(Number(e.target.value))}
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Direction</Label>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant={betType === 'up' ? 'default' : 'outline'}
+                      onClick={() => setBetType('up')}
+                    >
+                      <ArrowUp className="mr-2 h-4 w-4" />
+                      Up
+                    </Button>
+                    <Button
+                      variant={betType === 'down' ? 'default' : 'outline'}
+                      onClick={() => setBetType('down')}
+                    >
+                      <ArrowDown className="mr-2 h-4 w-4" />
+                      Down
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="timeframe">Timeframe (minutes)</Label>
+                  <Input
+                    id="timeframe"
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={timeframe}
+                    onChange={(e) => setTimeframe(Number(e.target.value))}
+                    placeholder="Enter timeframe"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="percentageChange">Target Change (%)</Label>
+                  <Input
+                    id="percentageChange"
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={percentageChange}
+                    onChange={(e) => setPercentageChange(Number(e.target.value))}
+                    placeholder="Enter percentage"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="ghost" onClick={() => setShowCreateBet(false)}>
+                  Cancel
+                </Button>
+                <Button disabled={isBetting} onClick={handlePlaceBet}>
+                  {isBetting ? (
+                    <>
+                      Placing Bet...
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    </>
+                  ) : (
+                    'Place Bet'
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          ) : (
             
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Token Details</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="text-dream-foreground/70">Name</div>
-                    <div className="font-medium">{bet.tokenName}</div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="text-dream-foreground/70">Symbol</div>
-                    <div className="font-medium">{bet.tokenSymbol}</div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="text-dream-foreground/70">Mint Address</div>
-                    <div className="font-medium truncate max-w-[200px]" title={bet.tokenMint}>
-                      {formatAddress(bet.tokenMint)}
-                    </div>
-                  </div>
-                  
-                  {tokenDetails?.total_supply && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                      <div className="text-dream-foreground/70">Total Supply</div>
-                      <div className="font-medium">{formatNumberWithCommas(tokenDetails.total_supply)}</div>
-                    </div>}
-                </div>
-              </div>
-              
-              <div>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                    <div className="text-dream-foreground/70">Bet ID</div>
-                    <div className="font-medium">{bet.id}</div>
-                  </div>
-                  
-                  {bet.onChainBetId && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                      <div className="text-dream-foreground/70">On-Chain ID</div>
-                      <div className="font-medium">{bet.onChainBetId}</div>
-                    </div>}
-                  
-                  {bet.transactionSignature && <div className="flex justify-between items-center p-3 bg-dream-foreground/5 rounded-lg">
-                      <div className="text-dream-foreground/70">Transaction</div>
-                      <a href={`https://solscan.io/tx/${bet.transactionSignature}`} target="_blank" rel="noopener noreferrer" className="font-medium text-dream-accent1 flex items-center">
-                        {bet.transactionSignature.substring(0, 8)}...
-                        <ExternalLink className="w-3 h-3 ml-1" />
-                      </a>
-                    </div>}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-8 text-center">
-            {bet.status === 'open'}
-            
-            {(bet.status === 'completed' || bet.status === 'closed') && bet.winner && <div className="p-4 rounded-lg bg-dream-foreground/5">
-                <h3 className="text-xl font-semibold mb-2">
-                  {bet.winner === bet.initiator ? "Initiator Won!" : "Challenger Won!"}
-                </h3>
-                <p className="text-dream-foreground/70">
-                  Winner: {formatAddress(bet.winner)}
-                </p>
-              </div>}
-          </div>
+            <Button className="w-full" variant="default" onClick={() => setShowCreateBet(true)}>
+              Place a Bet
+            </Button>
+          )}
+        </div>
+
+        {/* Active Bets */}
+        <div>
+          <h4 className="font-semibold text-lg mb-3">Active Bets</h4>
+          {activeBets.length > 0 ? (
+            <ScrollArea className="rounded-md border">
+              <table className="w-full text-sm">
+                <thead className="[&_th]:px-4 [&_th]:py-2 [&_th]:[border-bottom:1px_solid_hsl(var(--border))]">
+                  <tr>
+                    <th>Direction</th>
+                    <th>Amount</th>
+                    <th>Target</th>
+                    <th>Timeframe</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody className="[&_td]:p-4 [&_tr:last-child_td]:border-0">
+                  {activeBets.map((bet) => (
+                    <tr key={bet.id}>
+                      <td>
+                        <div className="flex items-center">
+                          {renderBetTrend(bet)}
+                          {bet.betType === 'up' ? 'Moon' : 'Die'}
+                        </div>
+                      </td>
+                      <td>{bet.amount} PXB</td>
+                      <td>{bet.percentageChange}%</td>
+                      <td>{bet.timeframe} min</td>
+                      <td>{renderBetStatus(bet)}</td>
+                      <td>
+                        <Clock className="mr-2 h-4 w-4" />
+                        {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollArea>
+          ) : (
+            <div className="text-sm text-dream-foreground/60">No active bets for this token.</div>
+          )}
+        </div>
+
+        {/* Past Bets */}
+        <div className="mt-6">
+          <h4 className="font-semibold text-lg mb-3">Past Bets</h4>
+          {pastBets.length > 0 ? (
+            <ScrollArea className="rounded-md border">
+              <table className="w-full text-sm">
+                <thead className="[&_th]:px-4 [&_th]:py-2 [&_th]:[border-bottom:1px_solid_hsl(var(--border))]">
+                  <tr>
+                    <th>Direction</th>
+                    <th>Amount</th>
+                    <th>Target</th>
+                    <th>Timeframe</th>
+                    <th>Status</th>
+                    <th>Payout</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody className="[&_td]:p-4 [&_tr:last-child_td]:border-0">
+                  {pastBets.map((bet) => (
+                    <tr key={bet.id}>
+                      <td>
+                        <div className="flex items-center">
+                          {renderBetTrend(bet)}
+                          {bet.betType === 'up' ? 'Moon' : 'Die'}
+                        </div>
+                      </td>
+                      <td>{bet.amount} PXB</td>
+                      <td>{bet.percentageChange}%</td>
+                      <td>{bet.timeframe} min</td>
+                      <td>{renderBetStatus(bet)}</td>
+                      <td>{calculatePayout(bet)} PXB</td>
+                      <td>
+                        {bet.resolvedAt && (
+                          <>
+                            <Clock className="mr-2 h-4 w-4" />
+                            {formatDistanceToNow(new Date(bet.resolvedAt), { addSuffix: true })}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollArea>
+          ) : (
+            <div className="text-sm text-dream-foreground/60">No past bets for this token.</div>
+          )}
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default BetDetails;
