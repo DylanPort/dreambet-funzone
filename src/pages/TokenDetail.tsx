@@ -562,7 +562,7 @@ const TokenDetail = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <div className="w-2 h-2 bg-dream-accent2 rounded-full mr-2 animate-pulse"></div>
-            <span className="text-dream-accent2 font-semibold">New Active Bet!</span>
+            <span className="font-semibold text-[#28f900]">New Active Bet!</span>
           </div>
           <Button variant="ghost" size="sm" onClick={() => setNewActiveBet(null)} className="h-6 w-6 p-0">
             ×
