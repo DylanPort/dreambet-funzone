@@ -724,15 +724,15 @@ const TokenDetail = () => {
                     <h3 className="text-xl font-display font-bold mb-4">Token Metrics</h3>
                     
                     <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-black/5 p-4 rounded-lg shadow-inner border border-dream-accent1/10">
+                      <div className="flex flex-row gap-4 overflow-x-auto pb-2">
                         <TokenMarketCap tokenId={id || ''} />
                         <TokenVolume tokenId={id || ''} />
-                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1 hover:border-dream-accent1/40 transition-all duration-300 shadow-lg backdrop-blur-sm">
+                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1 min-w-[150px]">
                           <div className="text-dream-foreground/70 text-xs flex items-center">
                             <Users className="w-3 h-3 mr-1" />
                             Holders
                           </div>
-                          <div className="font-bold text-dream-foreground">{tokenMetrics.holders || 'N/A'}</div>
+                          <div className="font-bold">{tokenMetrics.holders || 'N/A'}</div>
                         </div>
                       </div>
                       
@@ -744,4 +744,112 @@ const TokenDetail = () => {
                           </div>
                         </div>
                         
-                        <Button className
+                        <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
+                          Place a Bet
+                        </Button>
+                      </div>
+                      
+                      <div>
+                        <a href={`https://dexscreener.com/solana/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm justify-end">
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          View on DexScreener
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {showCreateBet && (
+                    <div className="glass-panel p-6">
+                      <h3 className="text-xl font-display font-bold mb-4">Create Bet</h3>
+                      <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol} onBetCreated={() => {
+                  refreshData();
+                  setShowCreateBet(false);
+                }} onCancel={() => setShowCreateBet(false)} />
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div className="glass-panel p-6">
+                  <h3 className="text-xl font-display font-bold mb-4">Token Bets</h3>
+                  
+                  {bets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                      <p>No bets available for this token yet.</p>
+                      <p className="text-sm mt-2">Be the first to create a bet!</p>
+                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey?.toString() || null} onAcceptBet={handleAcceptBet} />)}
+                    </div>}
+                </div>
+                
+                <div className="glass-panel p-6">
+                  <h3 className="text-xl font-display font-bold mb-4">Your PXB Bets</h3>
+                  
+                  {tokenPXBBets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                      <p>You don't have any PXB bets on this token.</p>
+                      <p className="text-sm mt-2">Place a bet to see it here!</p>
+                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {tokenPXBBets.map(bet => <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${bet.betType === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                {bet.betType === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                              </div>
+                              <span className="font-semibold">
+                                {bet.amount} PXB
+                              </span>
+                            </div>
+                            <div className={`text-xs px-2 py-0.5 rounded-full ${bet.status === 'pending' ? 'bg-blue-500/20 text-blue-400' : bet.status === 'won' ? 'bg-green-500/20 text-green-400' : bet.status === 'lost' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                              {bet.status === 'pending' ? 'Active' : bet.status === 'won' ? 'Won' : bet.status === 'lost' ? 'Lost' : 'Unknown'}
+                            </div>
+                          </div>
+                          
+                          <div className="text-sm text-dream-foreground/70 mb-1">
+                            Prediction: {bet.betType === 'up' ? 'Price will increase' : 'Price will decrease'} by {bet.percentageChange}%
+                          </div>
+                          
+                          <div className="text-xs text-dream-foreground/60 mb-2">
+                            Created {formatDistanceToNow(new Date(bet.createdAt), {
+                      addSuffix: true
+                    })}
+                          </div>
+                          
+                          {bet.status === 'pending' && marketCapData[bet.id] && <div className="mt-3 space-y-2">
+                              <div className="flex justify-between text-xs">
+                                <div className="text-dream-foreground/70">
+                                  Initial: {formatLargeNumber(marketCapData[bet.id]?.initialMarketCap || bet.initialMarketCap)}
+                                </div>
+                                <div className="text-dream-foreground/70">
+                                  Current: {formatLargeNumber(marketCapData[bet.id]?.currentMarketCap)}
+                                </div>
+                                <div className={bet.betType === 'up' ? 'text-green-400' : 'text-red-400'}>
+                                  Target: {formatLargeNumber(calculateTargetMarketCap(bet))}
+                                </div>
+                              </div>
+                              
+                              <Progress value={calculateProgress(bet)} className="h-2" />
+                              
+                              {marketCapData[bet.id]?.currentMarketCap && <div className="text-xs text-center">
+                                  {loadingMarketCaps[bet.id] ? 'Updating market cap data...' : <>
+                                      Market cap {calculateMarketCapChange(bet) > 0 ? 'up' : 'down'} {Math.abs(calculateMarketCapChange(bet) || 0).toFixed(2)}%
+                                      {bet.betType === 'up' ? calculateMarketCapChange(bet) > 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span> : calculateMarketCapChange(bet) < 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span>}
+                                    </>}
+                                </div>}
+                            </div>}
+                        </div>)}
+                    </div>}
+                </div>
+              </div>
+              
+              <div className="mb-8">
+                <TokenComments tokenId={id} tokenName={token.name} />
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </>
+  );
+};
+
+export default TokenDetail;
