@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { UserProfile, SupabaseUserProfile } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,15 +35,16 @@ export const useProfileData = () => {
         const supabaseUser = userData as SupabaseUserProfile;
         console.log("User profile data from Supabase:", supabaseUser);
         
+        // Set permanent user profile from database
         setUserProfile({
           id: supabaseUser.id,
           username: supabaseUser.username || walletAddress.substring(0, 8),
           pxbPoints: supabaseUser.points || 0,
           createdAt: supabaseUser.created_at,
-          isTemporary: false
+          isTemporary: false // Explicitly set to false for database profiles
         });
       } else {
-        console.log('User not found in database, will create temporary profile');
+        console.log('User not found in database, will create new profile');
         
         // Create a new user in the database
         if (connected && publicKey) {
@@ -118,22 +118,123 @@ export const useProfileData = () => {
       // Check if user has a temporary profile
       const isTemporaryUser = userProfile?.isTemporary || (userProfile?.id && userProfile.id.startsWith('temp-'));
       
-      // For temporary users, just update the state without database operations
-      if (isTemporaryUser && userProfile) {
-        // Update the local state for temporary users
-        setUserProfile(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            pxbPoints: prev.pxbPoints + amount
-          };
-        });
+      if (isTemporaryUser) {
+        // For temporary users, try to fetch or create a permanent profile first
+        console.log('Temporary user detected, attempting to create permanent profile');
+        
+        // Try to fetch existing user or create new one
+        const { data: existingUser, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('wallet_address', walletAddress)
+          .maybeSingle();
+          
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          console.error('Error checking for existing user:', fetchError);
+        }
+        
+        let userId: string;
+        let currentPoints: number = 0;
+        
+        if (!existingUser) {
+          // Create new user if not exists
+          const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert({
+              wallet_address: walletAddress,
+              username: walletAddress.substring(0, 8),
+              points: amount // Initialize with the points being added
+            })
+            .select()
+            .single();
+            
+          if (createError) {
+            console.error('Error creating permanent user:', createError);
+            // Keep using temporary profile
+            setUserProfile(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                pxbPoints: prev.pxbPoints + amount
+              };
+            });
+            
+            toast.success(`Added ${amount} PXB points!`);
+            return true;
+          }
+          
+          if (newUser) {
+            userId = newUser.id;
+            currentPoints = amount;
+            
+            // Update the user profile to permanent one
+            setUserProfile({
+              id: newUser.id,
+              username: newUser.username || walletAddress.substring(0, 8),
+              pxbPoints: amount,
+              createdAt: newUser.created_at,
+              isTemporary: false
+            });
+            
+            // Record the transaction
+            await supabase.from('points_history').insert({
+              user_id: newUser.id,
+              amount: amount,
+              action: 'mint',
+              reference_id: `mint_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+              reference_name: reason || 'Initial mint'
+            });
+          }
+        } else {
+          // Use existing user
+          userId = existingUser.id;
+          currentPoints = existingUser.points || 0;
+          
+          // Update points
+          const newPointsTotal = currentPoints + amount;
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ points: newPointsTotal })
+            .eq('wallet_address', walletAddress);
+            
+          if (updateError) {
+            console.error('Error updating points for existing user:', updateError);
+            // Keep using temporary profile but update points
+            setUserProfile(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                pxbPoints: prev.pxbPoints + amount
+              };
+            });
+            
+            toast.success(`Added ${amount} PXB points!`);
+            return true;
+          }
+          
+          // Update profile to permanent one
+          setUserProfile({
+            id: existingUser.id,
+            username: existingUser.username || walletAddress.substring(0, 8),
+            pxbPoints: newPointsTotal,
+            createdAt: existingUser.created_at,
+            isTemporary: false
+          });
+          
+          // Record the transaction
+          await supabase.from('points_history').insert({
+            user_id: existingUser.id,
+            amount: amount,
+            action: 'mint',
+            reference_id: `mint_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+            reference_name: reason || 'Points mint'
+          });
+        }
         
         toast.success(`Added ${amount} PXB points!`);
         return true;
       }
       
-      // For permanent users, continue with database operations
       // Skip points history check for new users that aren't temporary
       if (userProfile && !isTemporaryUser) {
         // Get minting history for this wallet in the last 24 hours
