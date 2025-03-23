@@ -213,7 +213,7 @@ const BetReel: React.FC = () => {
                 return (
                   <Link 
                     key={`${token.tokenMint}-${index}`}
-                    to={`/betting/token/${token.tokenMint}`}
+                    to={`/token/${token.tokenMint}`}
                     className="flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500 hover:bg-black/40"
                   >
                     <div className="flex items-center gap-3">
