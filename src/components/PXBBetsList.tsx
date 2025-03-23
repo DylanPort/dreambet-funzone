@@ -70,18 +70,7 @@ const PXBBetsList = () => {
     await fetchMarketCapData();
   };
   if (!bets || bets.length === 0) {
-    return <div className="glass-panel p-6">
-        <h2 className="font-semibold text-lg mb-4 flex items-center">
-          <Clock className="mr-2 h-5 w-5 text-dream-accent1" />
-          Your PXB Bets
-        </h2>
-        <div className="text-center py-6">
-          <p className="text-dream-foreground/70 mb-4">You haven't placed any PXB bets yet</p>
-          <Button asChild>
-            <Link to="/betting">Place Your First Bet</Link>
-          </Button>
-        </div>
-      </div>;
+    return;
   }
   const calculateProgress = bet => {
     if (bet.status !== 'pending' && bet.status !== 'open') {
