@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { PXBBet } from '@/types/pxb';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { fetchTokenMetrics } from '@/services/tokenDataCache';
 
 interface PXBBetsHistoryProps {
   userId?: string;
@@ -33,15 +34,21 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
           return;
         }
         
-        // Query the bets from Supabase - using "bets" table, not "pxb_bets"
+        // Query the bets from Supabase - joining with tokens table for token info
         let query = supabase
           .from('bets')
-          .select('*')
+          .select(`
+            *,
+            tokens:token_mint (
+              token_name,
+              token_symbol
+            )
+          `)
           .order('created_at', { ascending: false });
         
         // Filter by user ID if provided  
         if (targetUserId) {
-          query = query.eq('bettor1_id', targetUserId);
+          query = query.or(`bettor1_id.eq.${targetUserId},creator.eq.${targetUserId}`);
         }
         
         const { data, error } = await query;
@@ -52,22 +59,51 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
         }
         
         if (data) {
+          console.log('Raw bets data:', data);
+          
           // Transform the data to match PXBBet type
           const transformedBets: PXBBet[] = data.map(bet => {
             // Calculate expiration time based on created_at and duration
             const createdTime = new Date(bet.created_at).getTime();
             const expiryTime = new Date(createdTime + (bet.duration * 1000)).toISOString();
             
+            // Get token info from tokens relation or fallback to direct fields
+            const tokenName = bet.tokens?.token_name || bet.token_name || 'Unknown Token';
+            const tokenSymbol = bet.tokens?.token_symbol || bet.token_symbol || 'UNK';
+            
+            // Determine bet status
+            let status: 'open' | 'pending' | 'won' | 'lost' | 'expired' = 'open';
+            
+            if (bet.status === 'open') {
+              const now = new Date().getTime();
+              const expiry = new Date(expiryTime).getTime();
+              
+              if (now > expiry) {
+                status = 'expired';
+              } else {
+                status = 'open';
+              }
+            } else if (bet.status === 'matched') {
+              status = 'pending';
+            } else if (bet.outcome === 'win') {
+              status = 'won';
+            } else if (bet.outcome === 'loss') {
+              status = 'lost';
+            }
+            
+            // Determine bet type
+            const betType = bet.prediction_bettor1 === 'up' ? 'up' : 'down';
+            
             return {
               id: bet.bet_id,
               userId: bet.bettor1_id,
               tokenMint: bet.token_mint,
-              tokenName: bet.token_name || 'Unknown Token',
-              tokenSymbol: bet.token_symbol || 'UNK',
+              tokenName: tokenName,
+              tokenSymbol: tokenSymbol,
               betAmount: bet.sol_amount,
-              betType: bet.prediction_bettor1 as 'up' | 'down',
+              betType: betType as 'up' | 'down',
               percentageChange: bet.percentage_change || 0,
-              status: bet.status as 'pending' | 'won' | 'lost',
+              status: status,
               pointsWon: bet.points_won || 0,
               timestamp: new Date(bet.created_at).getTime(),
               expiresAt: expiryTime,
@@ -78,6 +114,7 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
             };
           });
           
+          console.log('Transformed bets:', transformedBets);
           setBets(transformedBets);
         }
       } catch (error) {
@@ -113,6 +150,8 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
       return 'Won';
     } else if (bet.status === 'lost') {
       return 'Lost';
+    } else if (bet.status === 'pending') {
+      return 'Pending';
     } else if (now > expiresAtTimestamp) {
       return 'Expired';
     } else {
@@ -144,7 +183,7 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, limit = 5 }) =>
   return (
     <div className="space-y-4">
       {bets.slice(0, visibleCount).map((bet) => (
-        <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4">
+        <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4 backdrop-blur-lg bg-black/20 hover:border-dream-accent1/30 transition-all duration-300">
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${bet.betType === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>

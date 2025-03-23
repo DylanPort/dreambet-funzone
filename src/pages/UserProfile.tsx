@@ -171,11 +171,13 @@ const UserProfilePage = () => {
           
           {/* Bets History (reusing component) */}
           <div className="w-full">
-            <div className="glass-panel p-6">
-              <h2 className="font-semibold text-lg mb-4 flex items-center">
-                {profileData.username}'s Betting History
-              </h2>
-              <PXBBetsHistory userId={userId} />
+            <div className="rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
+              <div className="p-6 border-b border-indigo-900/30">
+                <h2 className="text-2xl font-bold text-white">{profileData.username}'s Betting History</h2>
+              </div>
+              <div className="p-6">
+                <PXBBetsHistory userId={userId} />
+              </div>
             </div>
           </div>
         </div>

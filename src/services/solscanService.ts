@@ -1,4 +1,14 @@
 
+interface SolscanTokenResponse {
+  success: boolean;
+  data: {
+    symbol: string;
+    name: string;
+    address: string;
+    icon?: string;
+  }
+}
+
 export const fetchTokenDataFromSolscan = async (tokenAddress: string): Promise<{
   symbol: string;
   name: string;

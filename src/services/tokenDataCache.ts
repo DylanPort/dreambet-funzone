@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 
 export interface TokenMetrics {
   marketCap: number | null;
@@ -106,7 +105,6 @@ export const hasBetWon = (
  */
 export const fetchTokenMetrics = async (tokenId: string): Promise<TokenMetrics | null> => {
   try {
-    // Remove all toast notifications
     const cached = getCachedTokenMetrics(tokenId);
     if (cached) {
       return cached;

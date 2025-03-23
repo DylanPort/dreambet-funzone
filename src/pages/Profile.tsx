@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { toast } from 'sonner';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { supabase } from '@/integrations/supabase/client';
 import PXBProfilePanel from '@/components/PXBProfilePanel';
@@ -117,7 +117,14 @@ const Profile = () => {
           </div>
           
           <div className="w-full">
-            <PXBBetsHistory />
+            <div className="overflow-hidden rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
+              <div className="p-6 border-b border-indigo-900/30 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-white">Your Betting History</h2>
+              </div>
+              <div className="p-6">
+                <PXBBetsHistory />
+              </div>
+            </div>
           </div>
         </div>
       </main>
