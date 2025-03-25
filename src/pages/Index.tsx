@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
@@ -127,11 +128,10 @@ const Index = () => {
           <div className="flex justify-center gap-4 mt-10 mb-16">
             <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
               
-              <EarlyUserBonusBanner />
-              
               <Dialog>
                 <DialogTrigger asChild>
                   <div className="flex flex-col items-center transform transition-all duration-500 hover:scale-105 animate-float-delayed">
+                    <EarlyUserBonusBanner />
                     <img alt="Mint PXB Points" className="w-64 h-auto transition-all duration-500" src="/lovable-uploads/75b9d39b-4705-4e43-8bf5-99c97463da79.png" />
                     <div className="mt-4 text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
                       drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
