@@ -8,8 +8,6 @@ import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import EarlyUserBonusBanner from './EarlyUserBonusBanner';
-
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -23,7 +21,6 @@ const Navbar = () => {
     fetchUserProfile
   } = usePXBPoints();
   const [pxbPoints, setPxbPoints] = useState<number | null>(null);
-
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -35,17 +32,14 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
-
   useEffect(() => {
     if (userProfile) {
       setPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
-
   useEffect(() => {
     if (!userProfile) return;
     const channel = supabase.channel('public:users').on('postgres_changes', {
@@ -64,7 +58,6 @@ const Navbar = () => {
       supabase.removeChannel(channel);
     };
   }, [userProfile, fetchUserProfile]);
-
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-1.5">
@@ -107,6 +100,7 @@ const Navbar = () => {
           </nav>
           
           <div className="md:hidden flex items-center gap-3">
+            {/* Mobile PXB Points display */}
             {userProfile && pxbPoints !== null && <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400">
                 <div className="w-4 h-4 flex items-center justify-center">
                   <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
@@ -120,8 +114,6 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-      
-      <EarlyUserBonusBanner />
       
       {isOpen && <div className="md:hidden glass-panel p-3">
           <nav className="flex flex-col space-y-2">
@@ -169,5 +161,4 @@ const Navbar = () => {
         </div>}
     </header>;
 };
-
 export default Navbar;

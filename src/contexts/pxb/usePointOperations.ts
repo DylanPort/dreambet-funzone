@@ -6,7 +6,11 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet, BetPrediction } from '@/types/bet';
 import { createSupabaseBet } from '@/services/supabaseService';
 import { toast } from '@/hooks/use-toast';
-import { useFeatureFlags } from '@/hooks/use-feature-flags';
+
+// Constants for minting limits
+const MINT_LIMIT_PER_PERIOD = 2000; // Max tokens per period
+const MINT_PERIOD_HOURS = 24; // Period in hours
+const MINT_PERIOD_MS = MINT_PERIOD_HOURS * 60 * 60 * 1000; // Period in milliseconds
 
 // Define generatePxbId at the top level to avoid using it before declaration
 const generatePxbId = (userProfile: UserProfile | null): string => {
@@ -25,7 +29,6 @@ export const usePointOperations = (
 ) => {
   const { publicKey } = useWallet();
   const [mintingPoints, setMintingPoints] = useState(false);
-  const { isFeatureEnabled, getFeatureConfig } = useFeatureFlags('early_user_bonus');
 
   const mintPoints = useCallback(async (amount: number): Promise<void> => {
     if (!publicKey || !userProfile) {
@@ -48,13 +51,6 @@ export const usePointOperations = (
       
       // Only check minting history for permanent users
       if (!isTemporaryUser) {
-        // Check if early user bonus is active
-        const earlyUserBonusActive = isFeatureEnabled('early_user_bonus');
-        const config = earlyUserBonusActive ? getFeatureConfig('early_user_bonus') : null;
-        const MINT_LIMIT_PER_PERIOD = config ? (config.mint_amount || 50000) : 2000;
-        const MINT_PERIOD_HOURS = 24; // Period in hours
-        const MINT_PERIOD_MS = MINT_PERIOD_HOURS * 60 * 60 * 1000; // Period in milliseconds
-        
         // Get minting history for this wallet in the last 24 hours
         const now = new Date();
         const periodStart = new Date(now.getTime() - MINT_PERIOD_MS);
@@ -172,7 +168,7 @@ export const usePointOperations = (
     } finally {
       setMintingPoints(false);
     }
-  }, [publicKey, userProfile, setUserProfile, isFeatureEnabled, getFeatureConfig]);
+  }, [publicKey, userProfile, setUserProfile]);
 
   const placeBet = useCallback(async (
     tokenMint: string,
