@@ -35,7 +35,10 @@ export async function getFeatureFlag(featureName: string): Promise<FeatureFlag |
     
     if (now < startDate || now > endDate) return null;
     
-    return data;
+    return {
+      ...data,
+      config: data.config as Record<string, any>
+    };
   } catch (error) {
     console.error('Unexpected error in getFeatureFlag:', error);
     return null;
@@ -56,12 +59,17 @@ export async function getAllActiveFeatures(): Promise<FeatureFlag[]> {
     
     const now = new Date();
     
-    // Filter features based on date ranges
-    return (data || []).filter(feature => {
-      const startDate = new Date(feature.start_date);
-      const endDate = new Date(feature.end_date);
-      return now >= startDate && now <= endDate;
-    });
+    // Filter features based on date ranges and convert config to the correct type
+    return (data || [])
+      .filter(feature => {
+        const startDate = new Date(feature.start_date);
+        const endDate = new Date(feature.end_date);
+        return now >= startDate && now <= endDate;
+      })
+      .map(feature => ({
+        ...feature,
+        config: feature.config as Record<string, any>
+      }));
   } catch (error) {
     console.error('Unexpected error in getAllActiveFeatures:', error);
     return [];

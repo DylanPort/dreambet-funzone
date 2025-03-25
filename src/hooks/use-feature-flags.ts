@@ -38,7 +38,13 @@ export function useFeatureFlags(featureName?: string) {
           throw error;
         }
         
-        setFeatures(data || []);
+        // Convert the config from Json to Record<string, any>
+        const typedFeatures: FeatureFlag[] = (data || []).map(feature => ({
+          ...feature,
+          config: feature.config as Record<string, any>
+        }));
+        
+        setFeatures(typedFeatures);
       } catch (err) {
         console.error('Error fetching feature flags:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch feature flags'));
