@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 interface GhibliTokenPromotionProps {
   tokenAddress: string;
@@ -43,22 +43,40 @@ const GhibliTokenPromotion: React.FC<GhibliTokenPromotionProps> = ({ tokenAddres
     try {
       if (!tokenData) return;
       
-      const result = await placeBet({
-        tokenId: tokenAddress,
-        prediction: prediction,
-        amount: 25,
-        targetPercentage: prediction === 'moon' ? 10 : 5,
-        expirationHours: 24
-      });
+      // Convert prediction type to match expected "up" or "down"
+      const betType = prediction === 'moon' ? 'up' : 'down';
+      const percentageChange = prediction === 'moon' ? 10 : 5;
+      const betAmount = 25;
+      const duration = 24 * 60 * 60; // 24 hours in seconds
       
-      if (result.success) {
-        toast.success(`Successfully placed ${prediction === 'moon' ? 'MOON' : 'DUST'} bet!`);
+      // Call placeBet with all required arguments
+      const result = await placeBet(
+        tokenAddress,
+        tokenData.baseToken?.name || "Ghiblification",
+        tokenData.baseToken?.symbol || "GHIBLI",
+        betAmount,
+        betType,
+        percentageChange,
+        duration
+      );
+      
+      if (result) {
+        toast({
+          title: `Successfully placed ${prediction === 'moon' ? 'MOON' : 'DUST'} bet!`,
+          variant: "default",
+        });
       } else {
-        toast.error(result.message || 'Failed to place bet');
+        toast({
+          title: "Failed to place bet",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error placing bet:', error);
-      toast.error('Something went wrong. Please try again.');
+      toast({
+        title: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -105,23 +123,23 @@ const GhibliTokenPromotion: React.FC<GhibliTokenPromotionProps> = ({ tokenAddres
             <div className="flex items-center gap-3 mb-2">
               <Avatar className="w-12 h-12 border-2 border-white/20 shadow-glow">
                 <AvatarImage 
-                  src={tokenData.baseToken?.imageUrl || `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${tokenAddress}/logo.png`} 
-                  alt={tokenData.baseToken?.name || "Token"} 
+                  src={tokenData?.baseToken?.imageUrl || `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${tokenAddress}/logo.png`} 
+                  alt={tokenData?.baseToken?.name || "Token"} 
                 />
                 <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500">
-                  {tokenData.baseToken?.symbol?.charAt(0).toUpperCase() || "G"}
+                  {tokenData?.baseToken?.symbol?.charAt(0).toUpperCase() || "G"}
                 </AvatarFallback>
               </Avatar>
               
               <div>
                 <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 flex items-center gap-2">
-                  {tokenData.baseToken?.name || "Ghiblification"} 
+                  {tokenData?.baseToken?.name || "Ghiblification"} 
                   <Link to={`/token/${tokenAddress}`}>
                     <ExternalLink className="w-4 h-4 text-white/60 hover:text-white/90 transition-colors" />
                   </Link>
                 </h2>
                 <div className="text-sm text-white/70 flex items-center gap-2">
-                  <span>{tokenData.baseToken?.symbol || "GHIBLI"}</span>
+                  <span>{tokenData?.baseToken?.symbol || "GHIBLI"}</span>
                   <span className="text-xs text-white/50">{tokenAddress.substring(0, 4)}...{tokenAddress.substring(tokenAddress.length - 4)}</span>
                 </div>
               </div>
@@ -131,16 +149,16 @@ const GhibliTokenPromotion: React.FC<GhibliTokenPromotionProps> = ({ tokenAddres
               <div className="p-3 rounded-lg bg-white/5 backdrop-blur-md">
                 <div className="text-xs text-white/60">Price</div>
                 <div className="text-lg font-bold flex items-center gap-2">
-                  ${parseFloat(tokenData.priceUsd || '0').toFixed(6)}
-                  <span className={`text-xs px-2 py-0.5 rounded ${tokenData.priceChange?.h24 >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {tokenData.priceChange?.h24 >= 0 ? '+' : ''}{tokenData.priceChange?.h24?.toFixed(2)}%
+                  ${parseFloat(tokenData?.priceUsd || '0').toFixed(6)}
+                  <span className={`text-xs px-2 py-0.5 rounded ${tokenData?.priceChange?.h24 >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {tokenData?.priceChange?.h24 >= 0 ? '+' : ''}{tokenData?.priceChange?.h24?.toFixed(2)}%
                   </span>
                 </div>
               </div>
               
               <div className="p-3 rounded-lg bg-white/5 backdrop-blur-md">
                 <div className="text-xs text-white/60">24h Volume</div>
-                <div className="text-lg font-bold">${tokenData.volume?.h24?.toLocaleString() || '0'}</div>
+                <div className="text-lg font-bold">${tokenData?.volume?.h24?.toLocaleString() || '0'}</div>
               </div>
             </div>
           </div>
