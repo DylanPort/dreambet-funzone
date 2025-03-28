@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import GhibliTokenPromotion from '@/components/GhibliTokenPromotion';
 
 interface TrendingToken {
   tokenMint: string;
@@ -165,99 +164,94 @@ const BetReel: React.FC = () => {
     return "text-green-400 bg-green-500/20";
   };
 
-  return (
-    <>
-      <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 overflow-hidden py-0 my-[27px]">
-        <div className="flex items-center">
-          <div className="flex-shrink-0 px-3 py-1 bg-dream-accent3/40 border-r border-white/10 flex items-center">
-            <img src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" alt="Fire" className="h-8 w-8 text-dream-accent2 mr-1.5 animate-pulse" />
-            <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">TRENDING </span>
-          </div>
-          
-          <div className="overflow-hidden mx-4 flex-1">
-            <div className="flex gap-4 items-center animate-scroll-slow">
-              {trendingTokens.map((token, index) => {
-                if (index === 0) {
-                  return (
-                    <div 
-                      key={`${token.tokenMint}-${index}`}
-                      className="flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500"
-                    >
-                      <div className="flex items-center gap-3">
-                        {renderTokenAvatar(token)}
-                        
-                        <div className="mr-3">
-                          <div className="flex items-center gap-1">
-                            <div className="text-sm font-semibold">{token.tokenName}</div>
-                          </div>
-                          <div className="flex items-center gap-2 text-[10px] text-dream-foreground/60">
-                            <span>{token.tokenSymbol}</span>
-                            <span className="flex items-center">
-                              <span>{formatAddress(token.tokenMint)}</span>
-                            </span>
-                          </div>
+  return <div className="bet-reel-container fixed top-16 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 overflow-hidden py-0 my-[27px]">
+      <div className="flex items-center">
+        <div className="flex-shrink-0 px-3 py-1 bg-dream-accent3/40 border-r border-white/10 flex items-center">
+          <img src="/lovable-uploads/7367ad18-8501-4cb1-9eb2-79a2aa97c082.png" alt="Fire" className="h-8 w-8 text-dream-accent2 mr-1.5 animate-pulse" />
+          <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-emerald-500">TRENDING </span>
+        </div>
+        
+        <div className="overflow-hidden mx-4 flex-1">
+          <div className="flex gap-4 items-center animate-scroll-slow">
+            {trendingTokens.map((token, index) => {
+              if (index === 0) {
+                return (
+                  <div 
+                    key={`${token.tokenMint}-${index}`}
+                    className="flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500"
+                  >
+                    <div className="flex items-center gap-3">
+                      {renderTokenAvatar(token)}
+                      
+                      <div className="mr-3">
+                        <div className="flex items-center gap-1">
+                          <div className="text-sm font-semibold">{token.tokenName}</div>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-dream-foreground/60">
+                          <span>{token.tokenSymbol}</span>
+                          <span className="flex items-center">
+                            <span>{formatAddress(token.tokenMint)}</span>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-3 items-center">
+                        <div className={`flex items-center px-2 py-0.5 rounded-md text-xs ${getHeatColor(token.betCount)}`}>
+                          <BarChart className="h-3 w-3 mr-1" />
+                          <span>{token.betCount} bets</span>
                         </div>
                         
-                        <div className="flex gap-3 items-center">
-                          <div className={`flex items-center px-2 py-0.5 rounded-md text-xs ${getHeatColor(token.betCount)}`}>
-                            <BarChart className="h-3 w-3 mr-1" />
-                            <span>{token.betCount} bets</span>
-                          </div>
-                          
-                          <div className="flex items-center text-xs bg-dream-accent2/10 px-2 py-0.5 rounded-md">
-                            <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
-                            <span className="font-semibold">{token.totalAmount.toFixed(2)} PXB</span>
-                          </div>
+                        <div className="flex items-center text-xs bg-dream-accent2/10 px-2 py-0.5 rounded-md">
+                          <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
+                          <span className="font-semibold">{token.totalAmount.toFixed(2)} PXB</span>
                         </div>
                       </div>
                     </div>
-                  );
-                } else {
-                  return (
-                    <Link 
-                      key={`${token.tokenMint}-${index}`}
-                      to={`/token/${token.tokenMint}`}
-                      className="flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500 hover:bg-black/40"
-                    >
-                      <div className="flex items-center gap-3">
-                        {renderTokenAvatar(token)}
-                        
-                        <div className="mr-3">
-                          <div className="flex items-center gap-1">
-                            <div className="text-sm font-semibold">{token.tokenName}</div>
-                            <ExternalLink className="w-3 h-3 text-dream-foreground/40" />
-                          </div>
-                          <div className="flex items-center gap-2 text-[10px] text-dream-foreground/60">
-                            <span>{token.tokenSymbol}</span>
-                            <span className="flex items-center">
-                              <span>{formatAddress(token.tokenMint)}</span>
-                            </span>
-                          </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <Link 
+                    key={`${token.tokenMint}-${index}`}
+                    to={`/token/${token.tokenMint}`}
+                    className="flex-shrink-0 flex items-center glass-panel px-3 py-2 rounded-md border border-dream-accent1/30 bg-dream-accent1/5 transition-all duration-500 hover:bg-black/40"
+                  >
+                    <div className="flex items-center gap-3">
+                      {renderTokenAvatar(token)}
+                      
+                      <div className="mr-3">
+                        <div className="flex items-center gap-1">
+                          <div className="text-sm font-semibold">{token.tokenName}</div>
+                          <ExternalLink className="w-3 h-3 text-dream-foreground/40" />
                         </div>
-                        
-                        <div className="flex gap-3 items-center">
-                          <div className={`flex items-center px-2 py-0.5 rounded-md text-xs ${getHeatColor(token.betCount)}`}>
-                            <BarChart className="h-3 w-3 mr-1" />
-                            <span>{token.betCount} bets</span>
-                          </div>
-                          
-                          <div className="flex items-center text-xs bg-dream-accent2/10 px-2 py-0.5 rounded-md">
-                            <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
-                            <span className="font-semibold">{token.totalAmount.toFixed(2)} PXB</span>
-                          </div>
+                        <div className="flex items-center gap-2 text-[10px] text-dream-foreground/60">
+                          <span>{token.tokenSymbol}</span>
+                          <span className="flex items-center">
+                            <span>{formatAddress(token.tokenMint)}</span>
+                          </span>
                         </div>
                       </div>
-                    </Link>
-                  );
-                }
-              })}
-            </div>
+                      
+                      <div className="flex gap-3 items-center">
+                        <div className={`flex items-center px-2 py-0.5 rounded-md text-xs ${getHeatColor(token.betCount)}`}>
+                          <BarChart className="h-3 w-3 mr-1" />
+                          <span>{token.betCount} bets</span>
+                        </div>
+                        
+                        <div className="flex items-center text-xs bg-dream-accent2/10 px-2 py-0.5 rounded-md">
+                          <Wallet className="h-3 w-3 mr-1 text-dream-accent2" />
+                          <span className="font-semibold">{token.totalAmount.toFixed(2)} PXB</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              }
+            })}
           </div>
         </div>
       </div>
-      <GhibliTokenPromotion tokenAddress="4TBi66vi32S7J8X1A6eWfaLHYmUXu7CStcEmsJQdpump" />
-    </>
-  );
+    </div>;
 };
 
 export default BetReel;
