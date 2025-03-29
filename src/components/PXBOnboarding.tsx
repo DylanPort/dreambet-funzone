@@ -9,11 +9,9 @@ import { Link } from 'react-router-dom';
 import CountdownTimer from './CountdownTimer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
-
 interface PXBOnboardingProps {
   onClose?: () => void;
 }
-
 const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
   onClose
 }) => {
@@ -22,7 +20,9 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     mintPoints,
     mintingPoints
   } = usePXBPoints();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [showTour, setShowTour] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [pointAmount, setPointAmount] = useState(20000);
@@ -30,9 +30,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
   const [showCountdown, setShowCountdown] = useState(false);
   const [tourVideos, setTourVideos] = useState<Record<string, string>>({});
   const [loadingVideos, setLoadingVideos] = useState(true);
-  
   const promoEndDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
-  
   const tourSteps = [{
     id: 'welcome',
     title: 'Welcome to PXB',
@@ -50,39 +48,31 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     title: 'Leaderboard',
     description: 'Compete with others on the leaderboard'
   }];
-
   useEffect(() => {
     const fetchTourVideos = async () => {
       try {
         setLoadingVideos(true);
-        
-        const { data: files, error } = await supabase.storage
-          .from('tourvideo')
-          .list();
-        
+        const {
+          data: files,
+          error
+        } = await supabase.storage.from('tourvideo').list();
         if (error) {
           throw error;
         }
-        
         const videoMap: Record<string, string> = {};
-        
         for (const step of tourSteps) {
           const matchingFiles = files?.filter(file => file.name.startsWith(`tour_${step.id}_`)) || [];
-          
           if (matchingFiles.length > 0) {
             const mostRecentFile = matchingFiles.sort((a, b) => b.name.localeCompare(a.name))[0];
-            
-            const { data } = supabase.storage
-              .from('tourvideo')
-              .getPublicUrl(mostRecentFile.name);
-            
+            const {
+              data
+            } = supabase.storage.from('tourvideo').getPublicUrl(mostRecentFile.name);
             videoMap[step.id] = `${data.publicUrl}?t=${Date.now()}`;
           } else {
             const fallbackVideoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/sign/tourvideo/tour_fallback.mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJ0b3VydmlkZW8vdG91cl9mYWxsYmFjay5tcDQiLCJpYXQiOjE3NDMwNTU2NTIsImV4cCI6MTc3NDU5MTY1Mn0.UZ4OZYx_PL3hUrTZDwgC4m2-YKIjzFCpQQZHGsQ5Kqs";
             videoMap[step.id] = fallbackVideoUrl;
           }
         }
-        
         setTourVideos(videoMap);
       } catch (error) {
         console.error('Error fetching tour videos:', error);
@@ -90,10 +80,8 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
         setLoadingVideos(false);
       }
     };
-    
     fetchTourVideos();
   }, []);
-
   useEffect(() => {
     if (userProfile) {
       const savedNextMintTime = localStorage.getItem(`nextMintTime_${userProfile.id}`);
@@ -108,58 +96,48 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
       }
     }
   }, [userProfile]);
-  
   useEffect(() => {
     const hasCompletedTour = localStorage.getItem('pxbTourCompleted');
     if (!hasCompletedTour) {
       setShowTour(true);
     }
   }, []);
-  
   const completeTour = () => {
     localStorage.setItem('pxbTourCompleted', 'true');
     setShowTour(false);
     if (onClose) onClose();
   };
-  
   const tourStepTitle = (step: number) => {
     return tourSteps[step].title;
   };
-  
   const tourStepDescription = (step: number) => {
     return tourSteps[step].description;
   };
-  
   const [tourVideoModalOpen, setTourVideoModalOpen] = useState(false);
-  
   const handleMintPoints = async () => {
     try {
       await mintPoints(pointAmount);
-
       const now = new Date();
       const nextTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
       setNextMintTime(nextTime);
       setShowCountdown(true);
       if (userProfile) {
         localStorage.setItem(`nextMintTime_${userProfile.id}`, nextTime.toISOString());
       }
-      
       toast({
         title: "Points Minted!",
         description: `You've successfully minted ${pointAmount} PXB Points.`,
-        variant: "default",
+        variant: "default"
       });
     } catch (error) {
       console.error("Failed to mint points:", error);
       toast({
         title: "Minting Failed",
         description: "There was an error minting your points. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleCountdownComplete = () => {
     setShowCountdown(false);
     setNextMintTime(null);
@@ -167,7 +145,6 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
       localStorage.removeItem(`nextMintTime_${userProfile.id}`);
     }
   };
-  
   const renderPXBInfo = () => {
     return <div className="flex flex-col space-y-6 p-4">
         <div className="text-center py-4">
@@ -198,13 +175,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
                   </Tooltip>
                 </div>
                 
-                <div className="mt-2 pt-2 border-t border-amber-500/20">
-                  <p className="text-xs text-amber-300 mb-1">Promotion ends in:</p>
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-2 text-amber-300" />
-                    <CountdownTimer endTime={promoEndDate} />
-                  </div>
-                </div>
+                
               </div>
               
               <TooltipProvider>
@@ -246,39 +217,21 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
         </div>
       </div>;
   };
-  
   const renderTourStep = (step: number) => {
     const stepId = tourSteps[step].id;
     const videoUrl = tourVideos[stepId];
     const fallbackImage = `/lovable-uploads/05f6e261-54bf-4bf4-ba9d-52794f1b3b3c.png`;
-    
-    return (
-      <div className="flex flex-col space-y-6 p-4">
+    return <div className="flex flex-col space-y-6 p-4">
         <div className="rounded-lg overflow-hidden bg-gray-800 aspect-video w-full relative">
-          {videoUrl && (
-            <video 
-              key={`${stepId}-${Date.now()}`}
-              src={videoUrl} 
-              className="w-full h-full object-cover"
-              controls
-              autoPlay
-              playsInline
-              muted
-              onError={(e) => {
-                console.error(`Error loading video for step ${step}:`, e);
-                const target = e.target as HTMLVideoElement;
-                target.style.display = 'none';
-                const fallback = target.parentElement?.querySelector('img');
-                if (fallback) fallback.style.display = 'block';
-              }}
-            />
-          )}
+          {videoUrl && <video key={`${stepId}-${Date.now()}`} src={videoUrl} className="w-full h-full object-cover" controls autoPlay playsInline muted onError={e => {
+          console.error(`Error loading video for step ${step}:`, e);
+          const target = e.target as HTMLVideoElement;
+          target.style.display = 'none';
+          const fallback = target.parentElement?.querySelector('img');
+          if (fallback) fallback.style.display = 'block';
+        }} />}
           
-          <img 
-            src={fallbackImage}
-            alt={`Tour step ${step + 1}`} 
-            className={`w-full h-full object-cover ${videoUrl ? 'hidden' : 'block'}`} 
-          />
+          <img src={fallbackImage} alt={`Tour step ${step + 1}`} className={`w-full h-full object-cover ${videoUrl ? 'hidden' : 'block'}`} />
         </div>
         
         <div className="space-y-2">
@@ -287,50 +240,28 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
         </div>
         
         <div className="flex justify-between mt-4">
-          {step > 0 && (
-            <Button variant="outline" onClick={() => setCurrentStep(step - 1)}>
+          {step > 0 && <Button variant="outline" onClick={() => setCurrentStep(step - 1)}>
               Previous
-            </Button>
-          )}
+            </Button>}
           
-          {step < tourSteps.length - 1 ? (
-            <Button onClick={() => setCurrentStep(step + 1)} className="ml-auto">
+          {step < tourSteps.length - 1 ? <Button onClick={() => setCurrentStep(step + 1)} className="ml-auto">
               Next
-            </Button>
-          ) : (
-            <Button onClick={completeTour} className="ml-auto bg-dream-accent1 hover:bg-dream-accent1/80">
+            </Button> : <Button onClick={completeTour} className="ml-auto bg-dream-accent1 hover:bg-dream-accent1/80">
               Complete Tour
-            </Button>
-          )}
+            </Button>}
         </div>
-      </div>
-    );
+      </div>;
   };
-  
-  return (
-    <>
-      {showTour ? (
-        <div className="bg-dream-background rounded-lg shadow-xl overflow-hidden w-full">
+  return <>
+      {showTour ? <div className="bg-dream-background rounded-lg shadow-xl overflow-hidden w-full">
           <div className="p-4 bg-gradient-to-r from-dream-accent1 to-dream-accent3 flex justify-between items-center">
             <h2 className="text-white font-bold">Interactive Tour</h2>
             <div className="flex space-x-2">
-              {userProfile?.id === 'admin' && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 text-white hover:bg-white/20" 
-                  onClick={() => setTourVideoModalOpen(true)}
-                >
+              {userProfile?.id === 'admin' && <Button variant="ghost" size="sm" className="h-8 text-white hover:bg-white/20" onClick={() => setTourVideoModalOpen(true)}>
                   <Settings className="h-4 w-4 mr-1" />
                   Manage Videos
-                </Button>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 text-white hover:bg-white/20" 
-                onClick={completeTour}
-              >
+                </Button>}
+              <Button variant="ghost" size="sm" className="h-8 text-white hover:bg-white/20" onClick={completeTour}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -341,41 +272,26 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
           <div className="px-4 pb-4 pt-0">
             <div className="flex justify-between items-center text-xs text-dream-foreground/60 mt-2">
               <span>Step {currentStep + 1} of {tourSteps.length}</span>
-              <button 
-                onClick={completeTour} 
-                className="underline hover:text-dream-foreground/80 transition-colors"
-              >
+              <button onClick={completeTour} className="underline hover:text-dream-foreground/80 transition-colors">
                 Skip Tour
               </button>
             </div>
             <Progress value={(currentStep + 1) / tourSteps.length * 100} className="h-1 mt-2" />
           </div>
-        </div>
-      ) : (
-        <div className="bg-dream-background/90 backdrop-blur-md rounded-lg shadow-xl overflow-hidden">
+        </div> : <div className="bg-dream-background/90 backdrop-blur-md rounded-lg shadow-xl overflow-hidden">
           {renderPXBInfo()}
-        </div>
-      )}
+        </div>}
       
-      {tourVideoModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto">
+      {tourVideoModalOpen && <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto">
           <div className="w-full max-w-3xl">
             <div className="flex justify-end mb-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 text-white hover:bg-white/20" 
-                onClick={() => setTourVideoModalOpen(false)}
-              >
+              <Button variant="ghost" size="sm" className="h-8 text-white hover:bg-white/20" onClick={() => setTourVideoModalOpen(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <TourVideoManager onClose={() => setTourVideoModalOpen(false)} />
           </div>
-        </div>
-      )}
-    </>
-  );
+        </div>}
+    </>;
 };
-
 export default PXBOnboarding;
