@@ -9,39 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      app_features: {
-        Row: {
-          config: Json | null
-          created_at: string
-          end_date: string
-          feature_name: string
-          id: string
-          is_active: boolean
-          start_date: string
-          updated_at: string
-        }
-        Insert: {
-          config?: Json | null
-          created_at?: string
-          end_date: string
-          feature_name: string
-          id?: string
-          is_active?: boolean
-          start_date?: string
-          updated_at?: string
-        }
-        Update: {
-          config?: Json | null
-          created_at?: string
-          end_date?: string
-          feature_name?: string
-          id?: string
-          is_active?: boolean
-          start_date?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       bet_history: {
         Row: {
           action: string

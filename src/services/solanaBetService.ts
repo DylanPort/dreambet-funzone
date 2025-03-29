@@ -2,7 +2,6 @@ import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstructi
 import { BetPrediction, Bet } from '@/types/bet';
 import { toast } from '@/hooks/use-toast';
 import { createSupabaseBet } from './supabaseService';
-import { safeWindowProperty } from '@/utils/browserUtils';
 
 // Mock PDA (Program Derived Address) for bet contract
 const BET_PROGRAM_ID = new PublicKey('BETh1cV519tFPhe6GWzGJmcfdshugH7XAi3iNGnXx5z');
@@ -27,18 +26,12 @@ const getWalletPublicKey = (wallet: any): PublicKey => {
     throw new Error('Wallet not connected');
   }
 
-  // First try the adapter pattern (newer API)
-  if (wallet.adapter && wallet.adapter.publicKey) {
-    return wallet.adapter.publicKey;
+  const publicKey = wallet.publicKey || wallet.adapter?.publicKey;
+  if (!publicKey) {
+    throw new Error('Wallet public key not found');
   }
   
-  // Then try direct publicKey property
-  if (wallet.publicKey) {
-    return wallet.publicKey;
-  }
-  
-  // If we get here, we couldn't find a valid public key
-  throw new Error('Wallet public key not found');
+  return publicKey;
 };
 
 // Function to create a bet on Solana blockchain
