@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
-import { X, Settings, Info, Gamepad } from 'lucide-react';
+import { X, Settings, Info, Gamepad, Clock } from 'lucide-react';
 import TourVideoManager from './TourVideoManager';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link } from 'react-router-dom';
 import CountdownTimer from './CountdownTimer';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from "@/hooks/use-toast";
 
 interface PXBOnboardingProps {
   onClose?: () => void;
@@ -21,6 +22,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     mintPoints,
     mintingPoints
   } = usePXBPoints();
+  const { toast } = useToast();
   const [showTour, setShowTour] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [pointAmount, setPointAmount] = useState(20000);
@@ -28,6 +30,8 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
   const [showCountdown, setShowCountdown] = useState(false);
   const [tourVideos, setTourVideos] = useState<Record<string, string>>({});
   const [loadingVideos, setLoadingVideos] = useState(true);
+  
+  const promoEndDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
   
   const tourSteps = [{
     id: 'welcome',
@@ -140,8 +144,19 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
       if (userProfile) {
         localStorage.setItem(`nextMintTime_${userProfile.id}`, nextTime.toISOString());
       }
+      
+      toast({
+        title: "Points Minted!",
+        description: `You've successfully minted ${pointAmount} PXB Points.`,
+        variant: "default",
+      });
     } catch (error) {
       console.error("Failed to mint points:", error);
+      toast({
+        title: "Minting Failed",
+        description: "There was an error minting your points. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -167,6 +182,31 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
             </div> : <p className="text-white/70 mt-2">Connect your wallet to manage PXB Points</p>}
           
           {userProfile && <div className="mt-8 space-y-2">
+              <div className="p-3 rounded-md mb-4 bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <span className="bg-amber-500/20 px-2 py-1 rounded text-amber-300 font-semibold">PROMO</span>
+                    <span className="ml-2 text-white/80">Limited Time Offer!</span>
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="w-4 h-4 text-white/50" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-sm">Get 20,000 PXB points daily for a limited time!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                
+                <div className="mt-2 pt-2 border-t border-amber-500/20">
+                  <p className="text-xs text-amber-300 mb-1">Promotion ends in:</p>
+                  <div className="flex items-center">
+                    <Clock className="w-4 h-4 mr-2 text-amber-300" />
+                    <CountdownTimer endTime={promoEndDate} />
+                  </div>
+                </div>
+              </div>
+              
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
