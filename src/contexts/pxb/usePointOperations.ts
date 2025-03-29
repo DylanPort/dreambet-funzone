@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,7 +9,7 @@ import { createSupabaseBet } from '@/services/supabaseService';
 import { toast } from '@/hooks/use-toast';
 
 // Constants for minting limits
-const MINT_LIMIT_PER_PERIOD = 2000; // Max tokens per period
+const MINT_LIMIT_PER_PERIOD = 20000; // Increased from 2000 for the promotion
 const MINT_PERIOD_HOURS = 24; // Period in hours
 const MINT_PERIOD_MS = MINT_PERIOD_HOURS * 60 * 60 * 1000; // Period in milliseconds
 

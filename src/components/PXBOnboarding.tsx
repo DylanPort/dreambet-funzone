@@ -23,7 +23,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
   } = usePXBPoints();
   const [showTour, setShowTour] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [pointAmount, setPointAmount] = useState(2000);
+  const [pointAmount, setPointAmount] = useState(20000);
   const [nextMintTime, setNextMintTime] = useState<Date | null>(null);
   const [showCountdown, setShowCountdown] = useState(false);
   const [tourVideos, setTourVideos] = useState<Record<string, string>>({});
@@ -47,13 +47,11 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     description: 'Compete with others on the leaderboard'
   }];
 
-  // Load videos for tour
   useEffect(() => {
     const fetchTourVideos = async () => {
       try {
         setLoadingVideos(true);
         
-        // List all files in the tourvideo bucket
         const { data: files, error } = await supabase.storage
           .from('tourvideo')
           .list();
@@ -64,22 +62,18 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
         
         const videoMap: Record<string, string> = {};
         
-        // Process each tour step
         for (const step of tourSteps) {
           const matchingFiles = files?.filter(file => file.name.startsWith(`tour_${step.id}_`)) || [];
           
           if (matchingFiles.length > 0) {
-            // Get the most recent file (sort by name which includes timestamp)
             const mostRecentFile = matchingFiles.sort((a, b) => b.name.localeCompare(a.name))[0];
             
             const { data } = supabase.storage
               .from('tourvideo')
               .getPublicUrl(mostRecentFile.name);
             
-            // Add cache-busting parameter
             videoMap[step.id] = `${data.publicUrl}?t=${Date.now()}`;
           } else {
-            // Use fallback video if no specific video is found
             const fallbackVideoUrl = "https://vjerwqqhcedemgfgfzbg.supabase.co/storage/v1/object/sign/tourvideo/tour_fallback.mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJ0b3VydmlkZW8vdG91cl9mYWxsYmFjay5tcDQiLCJpYXQiOjE3NDMwNTU2NTIsImV4cCI6MTc3NDU5MTY1Mn0.UZ4OZYx_PL3hUrTZDwgC4m2-YKIjzFCpQQZHGsQ5Kqs";
             videoMap[step.id] = fallbackVideoUrl;
           }
@@ -96,18 +90,15 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     fetchTourVideos();
   }, []);
 
-  // Load mint countdown state from localStorage on initial render
   useEffect(() => {
     if (userProfile) {
       const savedNextMintTime = localStorage.getItem(`nextMintTime_${userProfile.id}`);
       if (savedNextMintTime) {
         const nextTime = new Date(savedNextMintTime);
-        // Only use saved time if it's in the future
         if (nextTime.getTime() > Date.now()) {
           setNextMintTime(nextTime);
           setShowCountdown(true);
         } else {
-          // If the time has passed, clear the storage
           localStorage.removeItem(`nextMintTime_${userProfile.id}`);
         }
       }
@@ -141,11 +132,9 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     try {
       await mintPoints(pointAmount);
 
-      // Set next mint time to 24 hours from now
       const now = new Date();
       const nextTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-      // Save to state and localStorage
       setNextMintTime(nextTime);
       setShowCountdown(true);
       if (userProfile) {
@@ -156,7 +145,6 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     }
   };
 
-  // Reset countdown when timer completes
   const handleCountdownComplete = () => {
     setShowCountdown(false);
     setNextMintTime(null);
@@ -183,12 +171,14 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center justify-center mb-1">
-                      <p className="text-sm text-white/70">Daily Limit: 2000 PXB</p>
+                      <p className="text-sm text-white/70">
+                        <span className="bg-amber-500/20 px-2 py-1 rounded text-amber-300 font-semibold">PROMO</span> Daily Limit: 20000 PXB
+                      </p>
                       <Info className="w-4 h-4 ml-1 text-white/50" />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="text-sm">You can mint up to 2000 PXB tokens every 24 hours</p>
+                    <p className="text-sm">Special promotion: You can mint up to 20000 PXB tokens every 24 hours</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
