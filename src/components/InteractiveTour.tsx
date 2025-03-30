@@ -8,10 +8,13 @@ import PXBOnboarding from '@/components/PXBOnboarding';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
-import { ChevronRight, Upload, Loader2, Cpu, Zap, BookOpen } from 'lucide-react';
+import { ChevronRight, Upload, Loader2, Cpu, Zap, BookOpen, Coins, Timer, Gift, AlertCircle, TrendingUp, Lock, ArrowDownUp } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 
 interface PXBOnboardingProps {
   onClose: () => void;
@@ -27,7 +30,10 @@ const InteractiveTour = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null, null, null]);
-  
+  const [showStaking, setShowStaking] = useState(false);
+  const [stakeAmount, setStakeAmount] = useState<string>('');
+  const [stakeDuration, setStakeDuration] = useState<number>(30);
+
   const {
     userProfile,
     addPointsToUser
@@ -450,6 +456,168 @@ const InteractiveTour = () => {
     );
   };
 
+  const stakingPanel = () => (
+    <Card className="bg-black/30 border-dream-foreground/10 backdrop-blur-sm overflow-hidden mt-4 relative">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent3"></div>
+      <div className="absolute top-2 right-2 z-10">
+        <Badge variant="outline" className="bg-dream-accent2/10 text-dream-accent2 border-dream-accent2/30 animate-pulse-slow">
+          <Gift className="h-3 w-3 mr-1" />
+          Launching Today
+        </Badge>
+      </div>
+      
+      <CardHeader>
+        <CardTitle className="flex items-center text-xl">
+          <Lock className="mr-2 h-5 w-5 text-dream-accent1" />
+          Stake $POINTS to Earn PXB
+        </CardTitle>
+        <CardDescription>
+          Stake your $POINTS tokens to earn PXB rewards with dynamic APY
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        {/* Contract Address Section */}
+        <div className="bg-dream-foreground/5 rounded-md p-3 flex justify-between items-center">
+          <div className="flex items-center text-sm">
+            <Lock className="mr-1 h-4 w-4 text-dream-accent1" />
+            <span>$POINTS Contract</span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-xs text-dream-accent1 hover:text-dream-accent1/80"
+            onClick={copyToClipboard}
+          >
+            Coming Soon
+          </Button>
+        </div>
+        
+        <div className="flex justify-between items-center mb-1 text-sm">
+          <div className="flex items-center">
+            <Coins className="mr-1 h-4 w-4 text-dream-accent2" />
+            <span>Stake Amount</span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-6 text-xs text-dream-accent1 hover:text-dream-accent1/80"
+            onClick={handleMaxClick}
+          >
+            MAX
+          </Button>
+        </div>
+        
+        <div className="relative">
+          <Input
+            type="text"
+            value={stakeAmount}
+            onChange={handleStakeAmountChange}
+            placeholder="0.00"
+            className="bg-black/20 border-dream-foreground/10 text-lg pr-20"
+          />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+            <img src="/lovable-uploads/c5a2b975-3b82-4cbf-94db-8cb2fe2be3a6.png" alt="Points" className="w-5 h-5 mr-1" />
+            <span className="text-sm font-medium text-dream-foreground/70">POINTS</span>
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center mb-1 mt-4 text-sm">
+          <div className="flex items-center">
+            <Timer className="mr-1 h-4 w-4 text-dream-accent2" />
+            <span>Stake Duration</span>
+          </div>
+          <span className="text-dream-foreground/70">{stakeDuration} days</span>
+        </div>
+        
+        <Slider
+          defaultValue={[30]}
+          min={7}
+          max={365}
+          step={1}
+          onValueChange={handleStakeDurationChange}
+          className="mt-2"
+        />
+        
+        <div className="grid grid-cols-3 gap-2 mt-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-dream-foreground/10 hover:bg-dream-foreground/5"
+            onClick={() => setStakeDuration(30)}
+          >
+            30 Days
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-dream-foreground/10 hover:bg-dream-foreground/5"
+            onClick={() => setStakeDuration(90)}
+          >
+            90 Days
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-dream-foreground/10 hover:bg-dream-foreground/5"
+            onClick={() => setStakeDuration(365)}
+          >
+            1 Year
+          </Button>
+        </div>
+        
+        <div className="bg-dream-foreground/5 rounded-md p-3 mt-4">
+          <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center text-sm">
+              <Gift className="mr-1 h-4 w-4 text-green-400" />
+              <span>Estimated Rewards</span>
+            </div>
+            <span className="text-green-400 font-medium">
+              {calculateEstimatedRewards()} PXB
+            </span>
+          </div>
+          
+          <div className="flex justify-between items-center text-xs text-dream-foreground/70">
+            <div className="flex items-center">
+              <TrendingUp className="mr-1 h-3 w-3" />
+              <span>Current APY</span>
+            </div>
+            <span className="text-dream-accent1">73.0%</span>
+          </div>
+        </div>
+        
+        <div className="bg-dream-foreground/5 rounded-md p-3 flex justify-between items-center">
+          <div className="flex items-center text-sm">
+            <AlertCircle className="mr-1 h-4 w-4 text-yellow-400" />
+            <span>Staking Fee</span>
+          </div>
+          <span className="text-dream-foreground/80">1%</span>
+        </div>
+        
+        <div className="bg-dream-foreground/5 rounded-md p-3 flex justify-between items-center">
+          <div className="flex items-center text-sm">
+            <ArrowDownUp className="mr-1 h-4 w-4 text-yellow-400" />
+            <span>Early Unstake Fee</span>
+          </div>
+          <span className="text-dream-foreground/80">5%</span>
+        </div>
+      </CardContent>
+      
+      <CardFooter className="flex flex-col space-y-4 px-6 pb-6">
+        <Button 
+          onClick={handleStakeSubmit}
+          className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:opacity-90 transition-opacity"
+        >
+          Stake $POINTS
+        </Button>
+        
+        <p className="text-xs text-center text-dream-foreground/60 mt-2">
+          $POINTS Token launches today! Get ready to stake and earn PXB rewards.
+        </p>
+      </CardFooter>
+    </Card>
+  );
+
   return (
     <div className={`flex justify-center items-center w-full my-4 md:my-8 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
       {fileInput}
@@ -553,7 +721,8 @@ const InteractiveTour = () => {
             duration: 0.3,
             ease: "easeInOut"
           }} className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-gradient-to-b from-[#06050b]/95 to-[#0c0a15]/95 backdrop-blur-lg">
-              {isMobile ? <ScrollArea className="h-full pr-2">
+              {isMobile ? (
+                <ScrollArea className="h-full pr-2">
                   <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
                       {renderVideo(currentStep, 'small')}
@@ -592,7 +761,9 @@ const InteractiveTour = () => {
                     </div>
                   </div>
                   {currentStep === 0 && renderSocialButtons()}
-                </ScrollArea> : <div className="flex flex-row items-center justify-center gap-6">
+                </ScrollArea>
+              ) : (
+                <div className="flex flex-row items-center justify-center gap-6">
                   <motion.div className="w-1/2 flex justify-center items-center mb-0 relative" style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(40px)'
@@ -643,7 +814,8 @@ const InteractiveTour = () => {
                     </motion.div>
                   </div>
                   {currentStep === 0 && renderSocialButtons()}
-                </div>}
+                </div>
+              )}
               
               <div className="mt-3 md:mt-5 flex justify-center space-x-2">
                 {steps.map((_, index) => <motion.button key={index} className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400/80 scale-125' : 'bg-gray-700/50 hover:bg-gray-600/70'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
