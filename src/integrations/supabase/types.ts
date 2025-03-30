@@ -494,6 +494,53 @@ export type Database = {
           },
         ]
       }
+      token_portfolios: {
+        Row: {
+          averagepurchaseprice: number
+          created_at: string
+          currentvalue: number
+          id: string
+          lastupdated: string
+          quantity: number
+          tokenid: string
+          tokenname: string
+          tokensymbol: string
+          userid: string
+        }
+        Insert: {
+          averagepurchaseprice: number
+          created_at?: string
+          currentvalue: number
+          id?: string
+          lastupdated?: string
+          quantity: number
+          tokenid: string
+          tokenname: string
+          tokensymbol: string
+          userid: string
+        }
+        Update: {
+          averagepurchaseprice?: number
+          created_at?: string
+          currentvalue?: number
+          id?: string
+          lastupdated?: string
+          quantity?: number
+          tokenid?: string
+          tokenname?: string
+          tokensymbol?: string
+          userid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_portfolios_userid_fkey"
+            columns: ["userid"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       token_searches: {
         Row: {
           first_searched_at: string
@@ -523,6 +570,56 @@ export type Database = {
           token_symbol?: string
         }
         Relationships: []
+      }
+      token_transactions: {
+        Row: {
+          created_at: string
+          id: string
+          price: number
+          pxbamount: number
+          quantity: number
+          timestamp: string
+          tokenid: string
+          tokenname: string
+          tokensymbol: string
+          type: string
+          userid: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          price: number
+          pxbamount: number
+          quantity: number
+          timestamp?: string
+          tokenid: string
+          tokenname: string
+          tokensymbol: string
+          type: string
+          userid: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          price?: number
+          pxbamount?: number
+          quantity?: number
+          timestamp?: string
+          tokenid?: string
+          tokenname?: string
+          tokensymbol?: string
+          type?: string
+          userid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_transactions_userid_fkey"
+            columns: ["userid"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       token_volume_history: {
         Row: {

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
 import PXBBetsList from '@/components/PXBBetsList';
 import PXBSupplyProgress from '@/components/PXBSupplyProgress';
+import PXBStakingPanel from '@/components/PXBStakingPanel';
 import PXBUserStats from '@/components/PXBUserStats';
 import BetReel from '@/components/BetReel';
 import { toast } from 'sonner';
@@ -90,6 +91,11 @@ const PXBSpace = () => {
           {/* Total Supply Progress Bar - Visible whether connected or not */}
           <div className="glass-panel p-6 mb-6 overflow-hidden relative">
             <PXBSupplyProgress />
+          </div>
+          
+          {/* Staking Panel - Just below the Supply Progress */}
+          <div className="glass-panel p-6 mb-6 overflow-hidden relative">
+            <PXBStakingPanel />
           </div>
           
           {/* User Stats Component */}
