@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, ArrowUp, ArrowDown, Zap, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
+
 interface FuturisticTokenCardProps {
   token: any;
   flipping: boolean;
 }
+
 const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
   token,
   flipping
@@ -15,30 +18,32 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
   const [isCopied, setIsCopied] = useState(false);
   const [marketCap, setMarketCap] = useState<number | null>(null);
   const isPositive = token.change24h >= 0;
-
+  
   // Use the PumpPortal hook to get token metrics
   const {
     tokenMetrics,
     subscribeToToken
   } = usePumpPortal(token.id);
-
+  
   // Subscribe to token when component mounts
   useEffect(() => {
     if (token && token.id) {
       subscribeToToken(token.id);
     }
   }, [token, subscribeToToken]);
-
+  
   // Update market cap when token metrics change
   useEffect(() => {
     if (tokenMetrics && tokenMetrics.market_cap) {
       setMarketCap(tokenMetrics.market_cap);
     }
   }, [tokenMetrics]);
+  
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
+  
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -49,13 +54,14 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       maximumFractionDigits: 2
     });
   };
-
+  
   // Fallback calculation in case market cap isn't available from PumpPortal
   const calculateMarketCap = (price: number) => {
-    // Assuming a standard supply of 1 billion for PumpFun tokens
+    // Assuming a standard supply of 1 billion for tokens
     const totalSupply = 1000000000;
     return price * totalSupply;
   };
+  
   const copyToClipboard = () => {
     if (token && token.id) {
       navigator.clipboard.writeText(token.id).then(() => {
@@ -68,9 +74,10 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       });
     }
   };
-
+  
   // Get the market cap to display - use tokenMetrics if available, otherwise calculate
   const displayMarketCap = marketCap !== null ? marketCap : calculateMarketCap(token.currentPrice);
+  
   return <Link to={`/token/${token.id}`} className="block">
       <div className={`glass-panel transform transition-all duration-500 w-[280px] p-5 h-[420px] flex flex-col justify-between ${flipping ? 'animate-flip' : ''} ${isHovering ? 'scale-105 z-50' : 'z-10'} cursor-pointer`} style={{
       transform: `perspective(1000px) rotateY(${isHovering ? '0' : '-15'}deg) rotateX(${isHovering ? '0' : '5'}deg)`,
@@ -88,17 +95,7 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         {/* Token Info */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
-            {token.imageUrl ? <img src={token.imageUrl} alt={token.name} className="w-10 h-10 rounded-full object-cover" onError={e => {
-            const imgElement = e.target as HTMLImageElement;
-            imgElement.style.display = 'none';
-            const nextElement = imgElement.nextElementSibling as HTMLElement;
-            if (nextElement) {
-              nextElement.style.display = 'flex';
-            }
-          }} /> : null}
-            <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-300/20 flex items-center justify-center border border-white/10 ${token.imageUrl ? 'hidden' : ''}`}>
-              <span className="font-display font-bold">{getTokenSymbol(token)}</span>
-            </div>
+            <img src="/lovable-uploads/c5a2b975-3b82-4cbf-94db-8cb2fe2be3a6.png" alt="POINTS" className="w-10 h-10 rounded-full object-cover" />
             <span className="ml-2 font-semibold text-lg">{token.name}</span>
           </div>
           <div className="flex items-center">
@@ -118,6 +115,16 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
         }} className="text-cyan-400 hover:text-cyan-300 transition-colors">
             {isCopied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
           </button>
+        </div>
+        
+        {/* Coming Soon Badge */}
+        <div className="relative bg-dream-accent1/10 border border-dream-accent1/30 rounded-md py-3 px-4 mb-4">
+          <div className="absolute -top-3 left-4 bg-dream-accent1 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded text-black">
+            Coming Soon
+          </div>
+          <p className="text-sm text-center mt-1">
+            $POINTS Token launches today! Get ready to stake and earn PXB rewards.
+          </p>
         </div>
         
         {/* Market Cap Display */}
@@ -173,43 +180,26 @@ const FuturisticTokenCard: React.FC<FuturisticTokenCardProps> = ({
       </div>
     </Link>;
 };
-const FuturisticTokenDisplay: React.FC<{
-  tokens: any[];
-}> = ({
-  tokens
-}) => {
-  const [currentTokenIndex, setCurrentTokenIndex] = useState(0);
-  const [isFlipping, setIsFlipping] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Function to rotate to the next token
-  const rotateToNextToken = () => {
-    if (tokens.length <= 1) return;
-    setIsFlipping(true);
-    setTimeout(() => {
-      setCurrentTokenIndex(prevIndex => (prevIndex + 1) % tokens.length);
-      setIsFlipping(false);
-    }, 500); // Half the duration of the flip animation
+const FuturisticTokenDisplay: React.FC = () => {
+  // Create a fixed token object for the POINTS token
+  const pointsToken = {
+    id: "FZLJm7M2vmHuuEqtRu96xLXP9NrHyhZYebbQBdqqpump",
+    name: "POINTS",
+    symbol: "POINTS",
+    logo: '🪙',
+    imageUrl: '/lovable-uploads/c5a2b975-3b82-4cbf-94db-8cb2fe2be3a6.png',
+    currentPrice: 0.00012,
+    change24h: 15.5 // Positive change for a new token
   };
 
-  // Set up interval to rotate tokens
-  useEffect(() => {
-    if (tokens.length > 1) {
-      intervalRef.current = setInterval(rotateToNextToken, 5000); // Rotate every 5 seconds
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [tokens.length]);
-
-  // Don't render anything if there are no tokens
-  if (!tokens.length) return null;
-  return <div className="flex items-center justify-center">
+  return (
+    <div className="flex items-center justify-center">
       <div className="relative">
-        <FuturisticTokenCard key={tokens[currentTokenIndex]?.id || `token-${currentTokenIndex}`} token={tokens[currentTokenIndex]} flipping={isFlipping} />
+        <FuturisticTokenCard token={pointsToken} flipping={false} />
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default FuturisticTokenDisplay;

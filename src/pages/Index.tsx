@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
@@ -21,75 +22,8 @@ import PXBSupplyProgress from "@/components/PXBSupplyProgress";
 import Footer from '@/components/Footer';
 
 const Index = () => {
-  const [latestTokens, setLatestTokens] = useState<any[]>([]);
-  const pumpPortal = usePumpPortalWebSocket();
-  const {
-    userProfile
-  } = usePXBPoints();
+  const { userProfile } = usePXBPoints();
   const isMobile = useIsMobile();
-
-  useEffect(() => {
-    if (pumpPortal.connected) {
-      pumpPortal.subscribeToNewTokens();
-    }
-  }, [pumpPortal.connected]);
-
-  useEffect(() => {
-    const tokens = [];
-    if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
-      for (let i = 0; i < Math.min(3, pumpPortal.recentTokens.length); i++) {
-        const formattedToken = formatWebSocketTokenData(pumpPortal.recentTokens[i]);
-        tokens.push(formattedToken);
-      }
-    }
-    if (tokens.length < 3 && pumpPortal.rawTokens && pumpPortal.rawTokens.length > 0) {
-      for (let i = 0; i < Math.min(3 - tokens.length, pumpPortal.rawTokens.length); i++) {
-        const rawToken = pumpPortal.rawTokens[i];
-        if (!tokens.some(t => t.id === rawToken.mint)) {
-          tokens.push({
-            id: rawToken.mint,
-            name: rawToken.name || 'Unknown Token',
-            symbol: rawToken.symbol || '',
-            logo: '🪙',
-            imageUrl: rawToken.uri || '',
-            currentPrice: rawToken.marketCapSol ? parseFloat((rawToken.marketCapSol / 1000000000).toFixed(6)) : 0,
-            change24h: Math.random() * 40 - 20
-          });
-        }
-      }
-    }
-    while (tokens.length < 3) {
-      const placeholderId = `placeholder-${tokens.length}`;
-      if (!tokens.some(t => t.id === placeholderId)) {
-        tokens.push({
-          id: placeholderId,
-          name: `Token ${tokens.length + 1}`,
-          symbol: `T${tokens.length + 1}`,
-          logo: '🪙',
-          imageUrl: '',
-          currentPrice: Math.random() * 0.1,
-          change24h: Math.random() * 40 - 20
-        });
-      }
-    }
-    setLatestTokens(tokens);
-  }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
-  const getTokenSymbol = (token: any) => {
-    if (!token) return 'T';
-    return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
-  };
-
-  const formatPrice = (price: number | string) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    if (isNaN(numPrice)) return "0.000000";
-    if (numPrice < 0.01) return numPrice.toFixed(6);
-    if (numPrice < 1) return numPrice.toFixed(4);
-    if (numPrice < 1000) return numPrice.toFixed(2);
-    return numPrice.toLocaleString('en-US', {
-      maximumFractionDigits: 2
-    });
-  };
 
   return <>
       <OrbitingParticles />
@@ -109,7 +43,7 @@ const Index = () => {
               </div>
               
               <div className="hidden md:flex md:w-1/2 justify-center">
-                <FuturisticTokenDisplay tokens={latestTokens} />
+                <FuturisticTokenDisplay />
               </div>
             </div>
           </div>
