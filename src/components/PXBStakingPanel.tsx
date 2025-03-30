@@ -63,9 +63,7 @@ const PXBStakingPanel = () => {
               <Lock className="mr-1 h-4 w-4 text-dream-accent1" />
               <span>$POINTS Contract</span>
             </div>
-            <Button variant="ghost" size="sm" className="text-xs text-dream-accent1 hover:text-dream-accent1/80" onClick={copyToClipboard}>
-              Coming Soon
-            </Button>
+            <Button variant="ghost" size="sm" onClick={copyToClipboard} className="text-xs text-[#34bf1f]">FZLJm7M2vmHuuEqtRu96xLXP9NrHyhZYebbQBdqqpump</Button>
           </div>
           
           <div className="flex justify-between items-center mb-1 text-sm">
