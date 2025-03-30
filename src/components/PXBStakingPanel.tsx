@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,15 +13,12 @@ const PXBStakingPanel = () => {
   const [stakeDuration, setStakeDuration] = useState<number>(30); // Default 30 days
   const [isStaking, setIsStaking] = useState<boolean>(false);
   
-  // Estimated rewards calculation (placeholder logic for UI)
   const calculateEstimatedRewards = () => {
     const amount = parseFloat(stakeAmount) || 0;
-    // Simple calculation for demonstration: 0.2% per day
     return ((amount * 0.002) * stakeDuration).toFixed(2);
   };
   
   const handleStakeAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow numbers and decimals
     const value = e.target.value.replace(/[^0-9.]/g, '');
     setStakeAmount(value);
   };
@@ -32,7 +28,6 @@ const PXBStakingPanel = () => {
   };
   
   const handleMaxClick = () => {
-    // This would be connected to actual wallet balance in production
     setStakeAmount('1000');
     toast.info("Connected wallet balance: 1,000 $POINTS");
   };
@@ -43,19 +38,13 @@ const PXBStakingPanel = () => {
       return;
     }
     
-    setIsStaking(true);
-    
-    // Simulate staking process
-    setTimeout(() => {
-      toast.success(`Successfully staked ${stakeAmount} $POINTS for ${stakeDuration} days!`);
-      setIsStaking(false);
-      setStakeAmount('');
-    }, 1500);
+    toast.info("$POINTS Staking feature coming soon!", {
+      description: "The staking feature will be available shortly after token launch."
+    });
   };
 
   return (
     <div className="relative">
-      {/* Coming Soon Banner */}
       <div className="absolute top-2 right-2 z-10">
         <Badge variant="outline" className="bg-dream-accent2/10 text-dream-accent2 border-dream-accent2/30 animate-pulse-slow">
           <Gift className="h-3 w-3 mr-1" />
