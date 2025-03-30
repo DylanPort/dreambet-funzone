@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +44,10 @@ const PXBStakingPanel = () => {
     });
   };
 
+  const copyToClipboard = () => {
+    toast.info("$POINTS Contract address will be available at launch!");
+  };
+
   return (
     <div className="relative">
       <div className="absolute top-2 right-2 z-10">
@@ -66,6 +71,22 @@ const PXBStakingPanel = () => {
         </CardHeader>
         
         <CardContent className="space-y-4">
+          {/* Contract Address Section */}
+          <div className="bg-dream-foreground/5 rounded-md p-3 flex justify-between items-center">
+            <div className="flex items-center text-sm">
+              <Lock className="mr-1 h-4 w-4 text-dream-accent1" />
+              <span>$POINTS Contract</span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs text-dream-accent1 hover:text-dream-accent1/80"
+              onClick={copyToClipboard}
+            >
+              Coming Soon
+            </Button>
+          </div>
+          
           <div className="flex justify-between items-center mb-1 text-sm">
             <div className="flex items-center">
               <Coins className="mr-1 h-4 w-4 text-dream-accent2" />
