@@ -69,7 +69,7 @@ const PXBStakingPanel = () => {
           <div className="flex justify-between items-center mb-1 text-sm">
             <div className="flex items-center">
               
-              <span>Stake Amount</span>
+              
             </div>
             <Button variant="ghost" size="sm" className="h-6 text-xs text-dream-accent1 hover:text-dream-accent1/80" onClick={handleMaxClick}>
               MAX
