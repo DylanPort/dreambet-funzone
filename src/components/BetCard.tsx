@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
@@ -214,9 +213,7 @@ const BetCard: React.FC<BetCardProps> = ({
         </div>
 
         {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && <div className="mt-4">
-            <Button onClick={handleAcceptBet} disabled={accepting} className="w-full">
-              {accepting ? 'Accepting Bet...' : 'Accept Bet'}
-            </Button>
+            
           </div>}
 
         {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && <div className="mt-4">
