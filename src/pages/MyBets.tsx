@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -12,7 +13,6 @@ import PXBSupplyProgress from '@/components/PXBSupplyProgress';
 import PXBStakingPanel from '@/components/PXBStakingPanel';
 import PXBUserStats from '@/components/PXBUserStats';
 import BetReel from '@/components/BetReel';
-import { toast } from 'sonner';
 
 const PXBSpace = () => {
   const {
@@ -43,7 +43,6 @@ const PXBSpace = () => {
       setReferralLink(link);
     } catch (error) {
       console.error('Error generating referral link:', error);
-      toast.error('Failed to generate referral link');
     } finally {
       setIsGeneratingLink(false);
     }
@@ -52,7 +51,6 @@ const PXBSpace = () => {
   // Copy to clipboard function
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
   };
 
   // Check for referral code in URL

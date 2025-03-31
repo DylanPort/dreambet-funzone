@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Button } from '@/components/ui/button';
 import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy, BarChart, Target } from 'lucide-react';
-import { toast } from 'sonner';
 import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
@@ -60,11 +60,11 @@ const BetCard: React.FC<BetCardProps> = ({
   }, [bet.tokenMint, bet.initialMarketCap, bet.prediction]);
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
-      toast.error('Connect your wallet to accept a bet');
+      console.error('Connect your wallet to accept a bet');
       return;
     }
     if (bet.initiator === publicKeyString) {
-      toast.error('You cannot accept your own bet');
+      console.error('You cannot accept your own bet');
       return;
     }
     try {
@@ -72,7 +72,6 @@ const BetCard: React.FC<BetCardProps> = ({
       await onAcceptBet(bet);
     } catch (error) {
       console.error('Error accepting bet:', error);
-      toast.error('Failed to accept bet: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setAccepting(false);
     }
@@ -105,11 +104,8 @@ const BetCard: React.FC<BetCardProps> = ({
     if (!bet.initialMarketCap || !currentMarketCap) return null;
     return (currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap * 100;
   };
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast.success(`${label} copied to clipboard`);
-    }).catch(err => {
-      toast.error('Failed to copy to clipboard');
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).catch(err => {
       console.error('Could not copy text: ', err);
     });
   };
@@ -180,7 +176,7 @@ const BetCard: React.FC<BetCardProps> = ({
               <span title={bet.initiator}>
                 {bet.initiator.substring(0, 4)}...{bet.initiator.substring(bet.initiator.length - 4)}
               </span>
-              <button onClick={() => copyToClipboard(bet.initiator, 'Wallet address')} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
+              <button onClick={() => copyToClipboard(bet.initiator)} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
                 <Copy className="w-3 h-3" />
               </button>
             </div>
@@ -205,7 +201,7 @@ const BetCard: React.FC<BetCardProps> = ({
             <div className="flex items-center">
               <span>Bet ID: </span>
               <span className="font-mono ml-1">{bet.id?.substring(0, 8) || 'Unknown'}</span>
-              <button onClick={() => copyToClipboard(bet.id || 'Unknown', 'Bet ID')} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
+              <button onClick={() => copyToClipboard(bet.id || 'Unknown')} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
                 <Copy className="w-3 h-3" />
               </button>
             </div>

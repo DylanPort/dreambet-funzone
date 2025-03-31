@@ -2,7 +2,6 @@
 import { useEffect, useCallback } from 'react';
 import { UserProfile, PXBBet, SupabaseBetsRow } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
 
 export const useBetProcessor = (
@@ -23,7 +22,7 @@ export const useBetProcessor = (
     );
     console.log(`Found ${pendingBets.length} pending bets to process`);
     
-    // Check for any high-value active bets (1000+ PXB) and notify
+    // Check for any high-value active bets (1000+ PXB) and log them
     const highValueActiveBets = bets.filter(bet => 
       bet.status === 'open' && 
       bet.betAmount >= 1000 && 
@@ -32,9 +31,7 @@ export const useBetProcessor = (
 
     if (highValueActiveBets.length > 0) {
       highValueActiveBets.forEach(bet => {
-        toast.bet(`💰 High Value Bet Active: ${bet.betAmount} PXB on ${bet.tokenSymbol}!`, {
-          description: `A ${bet.betAmount} PXB bet is currently active on ${bet.tokenName}.\nPrediction: ${bet.betType === 'up' ? 'MOON 🚀' : 'DIE 📉'}\nTarget: ${bet.percentageChange}% change`
-        });
+        console.log(`High Value Bet Active: ${bet.betAmount} PXB on ${bet.tokenSymbol}!`);
       });
     }
     
@@ -174,18 +171,14 @@ export const useBetProcessor = (
               pxbPoints: updatedPoints
             });
             
-            // Show win notification
-            toast.success(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points from the house.`);
+            // Log win
+            console.log(`🎉 Your bet on ${bet.tokenSymbol} won! You earned ${pointsWon} PXB Points from the house.`);
           } else if (finalStatus === 'expired') {
-            // Show expired notification
-            toast.error(`Your bet on ${bet.tokenSymbol} has expired.`, {
-              description: `The timeframe passed without reaching the target. Your ${bet.betAmount} PXB Points have been returned.`
-            });
+            // Log expired
+            console.log(`Your bet on ${bet.tokenSymbol} has expired.`);
           } else {
-            // Show loss notification
-            toast.error(`Your bet on ${bet.tokenSymbol} didn't win this time.`, {
-              description: `Your ${bet.betAmount} PXB Points have returned to the house supply.`
-            });
+            // Log loss
+            console.log(`Your bet on ${bet.tokenSymbol} didn't win this time.`);
           }
           
           // Update bet in state
@@ -252,7 +245,7 @@ export const useBetProcessor = (
                 .eq('bet_id', bet.id);
             }
           } catch (error) {
-            // Silent error handling - no notification for market cap updates
+            // Silent error handling for market cap updates
             console.error(`Error updating current market cap for bet ${bet.id}:`, error);
           }
         }

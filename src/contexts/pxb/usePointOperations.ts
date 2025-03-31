@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -6,7 +5,6 @@ import { UserProfile, PXBBet } from '@/types/pxb';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet, BetPrediction } from '@/types/bet';
 import { createSupabaseBet } from '@/services/supabaseService';
-import { toast } from '@/hooks/use-toast';
 
 // Constants for minting limits
 const MINT_LIMIT_PER_PERIOD = 20000; // Increased from 2000 for the promotion
@@ -262,7 +260,7 @@ export const usePointOperations = (
         // Update bets state
         setBets(prevBets => [...prevBets, pxbBet]);
 
-        toast.success(`Bet placed successfully!`);
+        console.log(`Bet placed successfully!`);
         return pxbBet;
       } catch (supabaseError: any) {
         console.error('Error with Supabase operations:', supabaseError);
@@ -283,17 +281,17 @@ export const usePointOperations = (
 
   const sendPoints = useCallback(async (recipientId: string, amount: number) => {
     if (!userProfile || !publicKey) {
-      toast.error('Connect your wallet to send points');
+      console.error('Connect your wallet to send points');
       return false;
     }
 
     if (amount <= 0) {
-      toast.error('Amount must be greater than zero');
+      console.error('Amount must be greater than zero');
       return false;
     }
 
     if (amount > userProfile.pxbPoints) {
-      toast.error('Insufficient PXB points');
+      console.error('Insufficient PXB points');
       return false;
     }
 
@@ -365,11 +363,11 @@ export const usePointOperations = (
       // Refresh sender's profile
       await fetchUserProfile();
 
-      toast.success(`Successfully sent ${amount} PXB points!`);
+      console.log(`Successfully sent ${amount} PXB points!`);
       return true;
     } catch (error) {
       console.error('Error sending points:', error);
-      toast.error('Failed to send points');
+      console.error('Failed to send points');
       return false;
     } finally {
       setIsLoading(false);

@@ -5,7 +5,6 @@ import { formatTimeRemaining, formatAddress } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTrendingTokens } from "@/services/supabaseService";
-import { toast } from 'sonner';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -66,7 +65,6 @@ const BetReel: React.FC = () => {
         });
       } catch (error) {
         console.error('Error fetching trending tokens for reel:', error);
-        toast.error('Error loading trending tokens');
       } finally {
         setLoading(false);
       }

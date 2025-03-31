@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Clock, Activity, Zap, Sparkles } from 'lucide-react';
 import { fetchUserBets } from '@/api/mockData';
@@ -8,7 +7,6 @@ import { Bet } from '@/types/bet';
 import { Link } from 'react-router-dom';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from '@/hooks/use-toast';
 
 interface BetsListProps {
   title: string;
@@ -150,10 +148,7 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
   }, []);
 
   const manualRefresh = () => {
-    toast({
-      title: "Refreshing bets",
-      description: "Fetching your latest bet data..."
-    });
+    console.log("Refreshing bets");
     setLastRefresh(new Date());
     loadBets();
   };

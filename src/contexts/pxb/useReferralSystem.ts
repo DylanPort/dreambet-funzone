@@ -2,7 +2,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile, ReferralStats, Referral } from '@/types/pxb';
-import { toast } from 'sonner';
 
 export const useReferralSystem = (
   userProfile: UserProfile | null,
@@ -51,7 +50,7 @@ export const useReferralSystem = (
   // Check if a referral code is valid and process the referral
   const checkAndProcessReferral = useCallback(async (referralCode: string) => {
     if (!userProfile) {
-      toast.error('Please connect your wallet to use referral links');
+      console.error('Please connect your wallet to use referral links');
       return;
     }
 
@@ -88,7 +87,7 @@ export const useReferralSystem = (
       
       // Don't allow self-referrals
       if (referrerData.id === userProfile.id) {
-        toast.error("You can't refer yourself");
+        console.error("You can't refer yourself");
         return;
       }
       
@@ -116,7 +115,7 @@ export const useReferralSystem = (
       }
       
       if (processResult) {
-        toast.success('Referral successfully processed! Your friend will receive 10,000 PXB points.');
+        console.log('Referral successfully processed! Your friend will receive 10,000 PXB points.');
         fetchUserProfile(); // Refresh user data
       } else {
         console.log('Referral was not processed, possibly already processed');
