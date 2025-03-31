@@ -1,19 +1,22 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy } from 'lucide-react';
+import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy, BarChart, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
+
 interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
   onAcceptBet: (bet: Bet) => void;
 }
+
 const BetCard: React.FC<BetCardProps> = ({
   bet,
   connected,
@@ -58,6 +61,7 @@ const BetCard: React.FC<BetCardProps> = ({
     };
     fetchMarketCap();
   }, [bet.tokenMint, bet.initialMarketCap, bet.prediction]);
+
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
       toast.error('Connect your wallet to accept a bet');
@@ -77,6 +81,36 @@ const BetCard: React.FC<BetCardProps> = ({
       setAccepting(false);
     }
   };
+
+  // Format market cap for display
+  const formatMarketCap = (value: number | null) => {
+    if (value === null) return "N/A";
+    if (value >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(2)}B`;
+    }
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(2)}M`;
+    }
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(2)}K`;
+    }
+    return `$${value.toFixed(2)}`;
+  };
+
+  // Calculate target market cap
+  const calculateTargetMarketCap = () => {
+    if (!bet.initialMarketCap) return null;
+    return bet.prediction === 'moon' || bet.prediction === 'migrate' 
+      ? bet.initialMarketCap * 1.3  // 30% increase
+      : bet.initialMarketCap * 0.7; // 30% decrease
+  };
+
+  // Calculate market cap change percentage
+  const calculateMarketCapChange = () => {
+    if (!bet.initialMarketCap || !currentMarketCap) return null;
+    return ((currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
+  };
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text).then(() => {
       toast.success(`${label} copied to clipboard`);
@@ -111,20 +145,6 @@ const BetCard: React.FC<BetCardProps> = ({
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
 
-  // Format market cap for display
-  const formatMarketCap = (value: number | null) => {
-    if (value === null) return "N/A";
-    if (value >= 1000000000) {
-      return `$${(value / 1000000000).toFixed(2)}B`;
-    }
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(2)}M`;
-    }
-    if (value >= 1000) {
-      return `$${(value / 1000).toFixed(2)}K`;
-    }
-    return `$${value.toFixed(2)}`;
-  };
   return <div className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${bet.status === 'open' ? 'bg-black/20 border-dream-accent1/30' : bet.status === 'matched' ? 'bg-black/30 border-purple-500/30' : bet.status === 'expired' ? 'bg-black/20 border-red-500/30' : bet.outcome === 'win' ? 'bg-black/20 border-green-500/30' : bet.outcome === 'loss' ? 'bg-black/20 border-red-500/30' : 'bg-black/20 border-yellow-500/30'}`}>
       <div className="px-6 py-4">
         <div className="flex justify-between items-center">
@@ -135,7 +155,9 @@ const BetCard: React.FC<BetCardProps> = ({
             </span>
           </Link>
 
-          
+          <div className={`px-2 py-1 rounded-full text-xs ${statusClass}`}>
+            {statusDisplay}
+          </div>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-4">
@@ -182,6 +204,51 @@ const BetCard: React.FC<BetCardProps> = ({
           </div>
         </div>
 
+        {/* Progress tracking section - always display for enhanced cards */}
+        <div className="mt-4 space-y-3 bg-black/20 backdrop-blur-sm p-3 rounded-lg">
+          {bet.initialMarketCap !== null && bet.initialMarketCap !== undefined ? (
+            <>
+              <div className="flex justify-between text-xs mb-1">
+                <div className="flex items-center">
+                  <BarChart className="w-3 h-3 mr-1 text-dream-accent2" />
+                  <span className="text-dream-accent2">Initial: {formatMarketCap(bet.initialMarketCap)}</span>
+                </div>
+                <div className="text-dream-foreground/70">Current: {formatMarketCap(currentMarketCap)}</div>
+                <div className="flex items-center">
+                  <Target className="w-3 h-3 mr-1" />
+                  <span className={bet.prediction === 'moon' || bet.prediction === 'migrate' ? "text-green-400" : "text-red-400"}>
+                    Target: {formatMarketCap(calculateTargetMarketCap())}
+                  </span>
+                </div>
+              </div>
+
+              <Progress value={progressValue} className="h-3" />
+
+              <div className="text-xs text-center text-dream-foreground/60">
+                {isLoading ? "Fetching market cap data..." : (
+                  <>
+                    {bet.prediction === 'moon' || bet.prediction === 'migrate' 
+                      ? `${progressValue.toFixed(1)}% toward 30% gain target` 
+                      : `${progressValue.toFixed(1)}% toward 30% loss target`}
+                  </>
+                )}
+              </div>
+
+              {calculateMarketCapChange() && (
+                <div className="text-xs flex justify-center">
+                  <span className={calculateMarketCapChange()! > 0 ? 'text-green-400' : 'text-red-400'}>
+                    Current change: {calculateMarketCapChange()?.toFixed(2)}%
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-xs text-center text-dream-foreground/60 py-2">
+              No market cap data available for this bet
+            </div>
+          )}
+        </div>
+
         <div className="mt-3 pt-2 border-t border-dream-foreground/10">
           <div className="flex justify-between items-center text-xs text-dream-foreground/60">
             <div className="flex items-center">
@@ -199,36 +266,27 @@ const BetCard: React.FC<BetCardProps> = ({
           </div>
         </div>
 
-        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && <div className="mt-4">
-            
-          </div>}
+        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && (
+          <div className="mt-4">
+            <Button 
+              onClick={handleAcceptBet} 
+              disabled={accepting}
+              className="w-full"
+            >
+              {accepting ? 'Accepting Bet...' : 'Accept Bet'}
+            </Button>
+          </div>
+        )}
 
-        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && <div className="mt-4">
+        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && (
+          <div className="mt-4">
             <Button disabled className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed">
               Connect wallet to accept
             </Button>
-          </div>}
-
-        {(bet.status !== 'open' || isExpired) && <div className="mt-4 space-y-3">
-            {bet.initialMarketCap !== null && bet.initialMarketCap !== undefined && <div className="space-y-2">
-                <div className="flex justify-between text-xs mb-1">
-                  <div className="text-green-400">Initial: {formatMarketCap(bet.initialMarketCap)}</div>
-                  <div className="text-dream-foreground/70">Current: {formatMarketCap(currentMarketCap)}</div>
-                  <div className={bet.prediction === 'moon' || bet.prediction === 'migrate' ? "text-green-400" : "text-red-400"}>
-                    Target: {formatMarketCap(bet.initialMarketCap * (bet.prediction === 'moon' || bet.prediction === 'migrate' ? 1.3 : 0.7))}
-                  </div>
-                </div>
-
-                <Progress value={progressValue} className="h-3" />
-
-                <div className="text-xs text-center text-dream-foreground/60">
-                  {isLoading ? "Fetching market cap data..." : bet.prediction === 'moon' || bet.prediction === 'migrate' ? `${progressValue.toFixed(1)}% toward 30% gain target` : `${progressValue.toFixed(1)}% toward 30% loss target`}
-                </div>
-              </div>}
-
-            
-          </div>}
+          </div>
+        )}
       </div>
     </div>;
 };
+
 export default BetCard;
