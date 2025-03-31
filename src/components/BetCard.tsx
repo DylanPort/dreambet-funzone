@@ -193,44 +193,8 @@ const BetCard: React.FC<BetCardProps> = ({
           </div>
         </div>
 
-        {/* Market cap tracking section - shown for expired or active bets with initialMarketCap */}
-        {(bet.initialMarketCap || isExpired) && (
-          <div className="mt-4 space-y-3 border-t border-dream-foreground/10 pt-3">
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center space-x-1">
-                <span className="text-dream-foreground/70">Initial:</span>
-                <span className="font-medium">{formatMarketCap(bet.initialMarketCap)}</span>
-              </div>
-              
-              {currentMarketCap && (
-                <div className="flex items-center space-x-1">
-                  <span className="text-dream-foreground/70">Current:</span>
-                  <span className="font-medium">{formatMarketCap(currentMarketCap)}</span>
-                </div>
-              )}
-              
-              <div className="flex items-center space-x-1">
-                <span className={`text-${bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'green' : 'red'}-400`}>Target:</span>
-                <span className={`font-medium text-${bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'green' : 'red'}-400`}>
-                  {formatMarketCap(calculateTargetMarketCap())}
-                </span>
-              </div>
-            </div>
-            
-            <Progress value={progressValue} className="h-2" />
-            
-            {calculateMarketCapChange() !== null && (
-              <div className="text-center text-sm">
-                <span className={calculateMarketCapChange()! >= 0 ? 'text-green-400' : 'text-red-400'}>
-                  Market cap {calculateMarketCapChange()! >= 0 ? 'up' : 'down'} {Math.abs(calculateMarketCapChange()!).toFixed(2)}%
-                </span>
-                {isExpired && !currentMarketCap && (
-                  <span className="ml-2 text-dream-foreground/70">Bet expired</span>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Progress tracking section - always display for enhanced cards */}
+        
 
         <div className="mt-3 pt-2 border-t border-dream-foreground/10">
           <div className="flex justify-between items-center text-xs text-dream-foreground/60">
