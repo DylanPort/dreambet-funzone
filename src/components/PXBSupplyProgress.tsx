@@ -1,16 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Sparkles } from 'lucide-react';
+
 const PXBSupplyProgress = () => {
   const [totalMinted, setTotalMinted] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
+  const reservedAmount = 10_000_000; // 10 million reserved/removed from circulation
 
   // Calculate progress percentage
-  const progressPercentage = totalMinted / maxSupply * 100;
+  const progressPercentage = totalMinted / (maxSupply - reservedAmount) * 100;
 
   // Format numbers with commas
   const formatNumber = (num: number): string => {
@@ -63,6 +66,7 @@ const PXBSupplyProgress = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
   return <div className="relative z-10">
       <div className={`absolute inset-0 bg-gradient-to-r from-dream-accent1/30 to-dream-accent3/30 rounded-lg blur-xl transition-opacity duration-700 ${isAnimating ? 'opacity-80' : 'opacity-20'}`}></div>
       
@@ -119,8 +123,12 @@ const PXBSupplyProgress = () => {
           </span>
         </div>
         <div>
+          <span className="text-dream-foreground/60">Reserved: </span>
+          <span className="font-medium text-yellow-400">{formatNumber(reservedAmount)} PXB</span>
+        </div>
+        <div>
           <span className="text-dream-foreground/60">Remaining: </span>
-          <span className="font-medium">{formatNumber(maxSupply - totalMinted)} PXB</span>
+          <span className="font-medium">{formatNumber(maxSupply - reservedAmount - totalMinted)} PXB</span>
         </div>
         <div>
           <span className="text-dream-foreground/60">Progress: </span>
@@ -138,4 +146,5 @@ const PXBSupplyProgress = () => {
       </div>
     </div>;
 };
+
 export default PXBSupplyProgress;

@@ -752,6 +752,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      subtract_from_house_supply: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       transfer_pxb_points: {
         Args: {
           sender_id: string
