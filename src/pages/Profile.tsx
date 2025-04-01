@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,8 +19,7 @@ const Profile = () => {
   
   useEffect(() => {
     if (!connected && publicKey === null) {
-      toast({
-        description: "Please connect your wallet to view your profile.",
+      toast("Please connect your wallet to view your profile.", {
         variant: "destructive"
       });
     }
@@ -40,16 +38,12 @@ const Profile = () => {
   
   const handleCopy = () => {
     navigator.clipboard.writeText(publicKey?.toString() || '');
-    toast({
-      description: "Your Solana wallet address has been copied to clipboard."
-    });
+    toast("Your Solana wallet address has been copied to clipboard.");
   };
   
   const handleCopyReferralLink = () => {
     navigator.clipboard.writeText(referralLink);
-    toast({
-      description: "Your referral link has been copied to clipboard."
-    });
+    toast("Your referral link has been copied to clipboard.");
   };
   
   const renderUserRank = () => {
