@@ -71,8 +71,11 @@ const PXBLeaderboard: React.FC = () => {
     }
   };
   
-  const displayedPointsUsers = showAllUsers ? leaderboard : leaderboard.slice(0, 10);
-  const displayedWinRateUsers = showAllUsers ? winRateLeaderboard : winRateLeaderboard.slice(0, 10);
+  // Filter out users with excessive points (greater than 100M PXB)
+  const filteredLeaderboard = leaderboard ? leaderboard.filter(user => user.pxbPoints < 100000000) : [];
+  
+  const displayedPointsUsers = showAllUsers ? filteredLeaderboard : (filteredLeaderboard.slice(0, 10) || []);
+  const displayedWinRateUsers = showAllUsers ? winRateLeaderboard : (winRateLeaderboard?.slice(0, 10) || []);
   
   const renderLeaderboardContent = (data: any[], valueKey: string, valueLabel: string, isLoading: boolean) => {
     if (isLoading) {
@@ -83,12 +86,32 @@ const PXBLeaderboard: React.FC = () => {
       );
     }
     
+    if (!data || data.length === 0) {
+      return (
+        <div className="text-center py-4 text-dream-foreground/60">
+          <p className="animate-pulse">No data yet. Be the first on the leaderboard!</p>
+          <div className="mt-2 w-32 h-32 mx-auto opacity-20">
+            <img 
+              src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" 
+              className="w-full h-full text-yellow-400 animate-float" 
+              alt="Trophy" 
+            />
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <ScrollArea className={showAllUsers ? "h-[420px] pr-4" : "h-[320px] pr-4"}>
         <div className="space-y-3">
           {data.map((trader, index) => {
             const isCurrentUser = trader.id === userProfile?.id;
             const userId = trader.id || trader.user_id;
+            
+            // Get the correct value based on whether this is a points or winrate display
+            const displayValue = valueKey === 'winRate' 
+              ? `${trader[valueKey]}%` 
+              : `${trader[valueKey]} ${valueLabel}`;
             
             return (
               <div 
@@ -132,7 +155,7 @@ const PXBLeaderboard: React.FC = () => {
                       index === 2 ? "text-orange-500" : 
                       "text-green-400"
                     )}>
-                      {valueKey === 'winRate' ? `${trader[valueKey]}%` : `${trader[valueKey]} ${valueLabel}`}
+                      {displayValue}
                     </div>
                   </div>
                 </div>
@@ -152,19 +175,6 @@ const PXBLeaderboard: React.FC = () => {
               </div>
             );
           })}
-
-          {data.length === 0 && !isLoading && (
-            <div className="text-center py-4 text-dream-foreground/60">
-              <p className="animate-pulse">No data yet. Be the first on the leaderboard!</p>
-              <div className="mt-2 w-32 h-32 mx-auto opacity-20">
-                <img 
-                  src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" 
-                  className="w-full h-full text-yellow-400 animate-float" 
-                  alt="Trophy" 
-                />
-              </div>
-            </div>
-          )}
         </div>
       </ScrollArea>
     );

@@ -25,7 +25,7 @@ const UserProfilePage = () => {
           .from('users')
           .select('*')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
         
         if (error) {
           console.error('Error fetching user profile:', error);
@@ -34,10 +34,32 @@ const UserProfilePage = () => {
         }
         
         if (data) {
+          // If this is the specific user with excessive points, set points to 0
+          let points = data.points || 0;
+          if (userId === '2a6e24c4-62f6-49de-9159-daf16afba1b8' && points > 100000000) {
+            // Update user's points in the database
+            await supabase
+              .from('users')
+              .update({ points: 0 })
+              .eq('id', userId);
+            
+            // Record the points deduction in the history
+            await supabase.from('points_history').insert({
+              user_id: userId,
+              amount: -points,
+              action: 'admin_adjustment',
+              reference_id: 'system',
+              reference_name: 'Points balance reset'
+            });
+            
+            points = 0; // Set local points to 0
+            toast.success('User points have been reset');
+          }
+          
           setProfileData({
             id: data.id,
             username: data.username || `User_${data.id.substring(0, 8)}`,
-            pxbPoints: data.points || 0,
+            pxbPoints: points,
             createdAt: data.created_at,
           });
         }
