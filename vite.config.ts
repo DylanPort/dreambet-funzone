@@ -9,15 +9,16 @@ import { componentTagger } from "lovable-tagger"
 export default defineConfig(({ mode }) => ({
   plugins: [
     react({
-      // Configure babel explicitly
+      // Avoid using .browserslistrc directly in babel config
       babel: {
         babelrc: false,
-        configFile: false,
+        configFile: true, // Use the babel.config.js file
         presets: [
           ['@babel/preset-env', {
-            targets: {
+            targets: { 
+              node: 'current',
               browsers: [
-                'last 2 version',
+                'last 2 versions',
                 '> 1%',
                 'not dead'
               ]

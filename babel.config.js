@@ -2,9 +2,10 @@
 module.exports = {
   presets: [
     ['@babel/preset-env', {
-      targets: {
+      targets: { 
+        node: 'current',
         browsers: [
-          'last 2 version',
+          'last 2 versions',
           '> 1%',
           'not dead'
         ]
