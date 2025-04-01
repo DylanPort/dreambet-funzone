@@ -8,7 +8,28 @@ import { componentTagger } from "lovable-tagger"
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [
-    react(),
+    react({
+      // Configure babel explicitly
+      babel: {
+        babelrc: false,
+        configFile: false,
+        presets: [
+          ['@babel/preset-env', {
+            targets: {
+              browsers: [
+                'last 2 version',
+                '> 1%',
+                'not dead'
+              ]
+            }
+          }],
+          ['@babel/preset-react', {
+            runtime: 'automatic'
+          }],
+          '@babel/preset-typescript'
+        ]
+      }
+    }),
     mode === 'development' && componentTagger(),
     nodePolyfills({
       // Whether to polyfill `node:` protocol imports.
