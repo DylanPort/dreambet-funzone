@@ -9,10 +9,10 @@ import { componentTagger } from "lovable-tagger"
 export default defineConfig(({ mode }) => ({
   plugins: [
     react({
-      // Avoid using .browserslistrc directly in babel config
+      // Define Babel configuration inline to avoid require cycles
       babel: {
         babelrc: false,
-        configFile: true, // Use the babel.config.js file
+        configFile: false, // Don't use external config file
         presets: [
           ['@babel/preset-env', {
             targets: { 
