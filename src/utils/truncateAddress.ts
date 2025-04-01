@@ -5,7 +5,7 @@
  * @param length The number of characters to show at each end
  * @returns The truncated address
  */
-export default function truncateAddress(address: string, length: number = 4): string {
+export default function truncateAddress(address: string | undefined | null, length: number = 4): string {
   if (!address) return '';
   if (address.length <= length * 2) return address;
   

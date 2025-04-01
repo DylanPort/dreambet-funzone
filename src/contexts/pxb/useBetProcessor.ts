@@ -96,7 +96,7 @@ export const useBetProcessor = () => {
       // Also deduct points from the user's account
       const { error: pointsError } = await supabase
         .from('users')
-        .update({ points: supabase.raw('points - ' + betAmount) })
+        .update({ points: supabase.sql`points - ${betAmount}` })
         .eq('id', userId);
       
       if (pointsError) {
