@@ -24,6 +24,8 @@ import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
+import TokenTrading from '@/components/TokenTrading';
+
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -91,6 +93,7 @@ const TokenChart = ({
       
     </div>;
 };
+
 const TokenDetail = () => {
   const {
     id
@@ -789,6 +792,13 @@ const TokenDetail = () => {
                     </div>
                   </div>
                   
+                  <TokenTrading 
+                    tokenId={token.id}
+                    tokenName={token.name}
+                    tokenSymbol={token.symbol}
+                    tokenPrice={token.currentPrice}
+                  />
+                  
                   {showCreateBet && <div className="glass-panel p-6">
                       <h3 className="text-xl font-display font-bold mb-4">Create Bet</h3>
                       <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol} onBetCreated={() => {
@@ -881,4 +891,5 @@ const TokenDetail = () => {
       </main>
     </>;
 };
+
 export default TokenDetail;
