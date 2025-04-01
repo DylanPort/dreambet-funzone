@@ -48,9 +48,20 @@ export const useTokenTrading = (tokenId: string, tokenName: string, tokenSymbol:
     
     try {
       // Get token market data
+      console.log(`Fetching data for token: ${tokenId}`);
       const tokenData = await fetchDexScreenerData(tokenId);
+      
+      if (!tokenData) {
+        console.error(`Failed to fetch data for token: ${tokenId}`);
+        setState(prevState => ({ ...prevState, isLoading: false }));
+        return;
+      }
+      
       const currentPrice = tokenData?.priceUsd || 0;
       const currentMarketCap = tokenData?.marketCap || null;
+      
+      console.log(`Current price for ${tokenSymbol}: ${currentPrice}`);
+      console.log(`Current market cap for ${tokenSymbol}: ${currentMarketCap}`);
       
       // Get user's token holding
       const portfolio = await getUserTokenHolding(userProfile.id, tokenId);
