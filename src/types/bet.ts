@@ -24,11 +24,18 @@ export interface Bet {
   transactionSignature: string;
   outcome?: 'win' | 'loss';
   
-  // Additional properties used in TokenDetail.tsx
+  // Properties needed for TokenDetail.tsx
   creatorAddress?: string;
   acceptorAddress?: string;
   direction?: 'up' | 'down';
   targetPrice?: number;
+  
+  // Additional optional properties that might be needed
+  percentageChange?: number;
+  betType?: string;
+  winAmount?: number;
+  potentialWinnings?: number;
+  createdAt?: string | number;
 }
 
 export enum SolanaContractPrediction {
