@@ -34,6 +34,7 @@ export const useReferralSystem = (
 
         if (userError || !userData || !userData.referral_code) {
           // Still no referral code, we need to generate one
+          // Call the function to generate a referral code
           const { data, error } = await supabase
             .rpc('generate_referral_code');
 
@@ -234,18 +235,40 @@ export const useReferralSystem = (
       console.log('Processing all pending referrals');
       
       // Call the database function to process all pending referrals
+      // Use a custom SQL function since it's not available in the default RPC list
       const { data, error } = await supabase
-        .rpc('process_pending_referrals');
+        .from('users')
+        .select('id, referred_by')
+        .eq('referred_by', userProfile.referralCode || '')
+        .not('id', 'in', 
+          supabase.from('referrals').select('referred_id').eq('referrer_id', userProfile.id)
+        );
 
       if (error) {
-        console.error('Error processing pending referrals:', error);
-        toast.error('Failed to process pending referrals');
+        console.error('Error finding pending referrals:', error);
+        toast.error('Failed to find pending referrals');
         return;
       }
       
+      // Process each pending referral manually
+      let processedCount = 0;
+      if (data && data.length > 0) {
+        for (const user of data) {
+          const { data: result, error: processError } = await supabase
+            .rpc('process_referral_reward', {
+              referrer_id: userProfile.id,
+              referred_id: user.id
+            });
+            
+          if (!processError && result) {
+            processedCount++;
+          }
+        }
+      }
+      
       // Check the number of processed referrals
-      if (data && typeof data === 'number' && data > 0) {
-        toast.success(`Successfully processed ${data} pending referrals!`);
+      if (processedCount > 0) {
+        toast.success(`Successfully processed ${processedCount} pending referrals!`);
         
         // Refresh user profile to get updated points
         await fetchUserProfile();

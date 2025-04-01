@@ -1,5 +1,5 @@
 
-import { UserProfile, PXBBet, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from "@/types/pxb";
+import { UserProfile, PXBBet, LeaderboardEntry, ReferralStats } from "@/types/pxb";
 
 export interface PXBPointsContextType {
   userProfile: UserProfile | null;
@@ -7,7 +7,7 @@ export interface PXBPointsContextType {
   bets: PXBBet[];
   userBets?: PXBBet[]; // Added this property to match the usage in BetDetails.tsx
   leaderboard: LeaderboardEntry[];
-  winRateLeaderboard: WinRateLeaderboardEntry[];
+  winRateLeaderboard: LeaderboardEntry[];
   isLeaderboardLoading: boolean;
   isLoadingWinRate: boolean;
   isLoadingBets?: boolean;
@@ -31,8 +31,10 @@ export interface PXBPointsContextType {
   mintingPoints: boolean;
   // Referral system
   generateReferralLink: () => Promise<string>;
-  checkAndProcessReferral: (referralCode: string) => Promise<void>;
+  checkAndProcessReferral: (referralCode: string) => Promise<boolean>;
   referralStats: ReferralStats;
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
+  isProcessingReferral: boolean;
+  processPendingReferrals: () => Promise<void>;
 }

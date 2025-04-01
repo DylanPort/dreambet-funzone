@@ -51,9 +51,35 @@ export interface SupabaseUserProfile {
 // Add leaderboard entry interface
 export interface LeaderboardEntry {
   id: string;
+  user_id?: string;
   rank: number;
   username: string;
   points: number;
+  pxbPoints?: number;
   winRate: number;
   walletAddress?: string;
+  wallet?: string;
+  betsWon?: number;
+  betsLost?: number;
+}
+
+// Add SupabaseBetsRow for database operation
+export interface SupabaseBetsRow {
+  bet_id: string;
+  creator: string;
+  token_mint: string;
+  token_name?: string;
+  token_symbol?: string;
+  prediction_bettor1: 'up' | 'down';
+  sol_amount: number;
+  duration: number;
+  status: 'pending' | 'won' | 'lost' | 'open' | 'expired';
+  points_won?: number;
+  created_at: string;
+  end_time?: string;
+  start_time?: string;
+  outcome?: string;
+  initial_market_cap?: number;
+  current_market_cap?: number;
+  percentage_change?: number;
 }

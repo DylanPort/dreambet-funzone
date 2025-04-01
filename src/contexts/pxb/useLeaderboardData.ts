@@ -1,11 +1,11 @@
 
 import { useState, useCallback } from 'react';
-import { LeaderboardEntry, WinRateLeaderboardEntry } from '@/types/pxb';
+import { LeaderboardEntry } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useLeaderboardData = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [winRateLeaderboard, setWinRateLeaderboard] = useState<WinRateLeaderboardEntry[]>([]);
+  const [winRateLeaderboard, setWinRateLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingWinRate, setIsLoadingWinRate] = useState(false);
 
@@ -29,9 +29,11 @@ export const useLeaderboardData = () => {
         id: user.id,
         user_id: user.id,
         wallet: user.wallet_address,
+        walletAddress: user.wallet_address,
         username: user.username || user.wallet_address.substring(0, 8),
         points: user.points,
         pxbPoints: user.points,
+        winRate: 0, // Default value since we're focusing on points leaderboard
         betsWon: 0, // Default values since we don't have this data
         betsLost: 0, // Default values since we don't have this data
         rank: index + 1
@@ -71,10 +73,11 @@ export const useLeaderboardData = () => {
         }
         
         // Add random win rates for demonstration if the actual data isn't available
-        const fallbackData = fallbackQuery.data.map((user, index) => ({
+        const fallbackData: LeaderboardEntry[] = fallbackQuery.data.map((user, index) => ({
           id: user.id,
           user_id: user.id,
           wallet: user.wallet_address,
+          walletAddress: user.wallet_address,
           username: user.username || user.wallet_address.substring(0, 8),
           pxbPoints: user.points,
           points: user.points,
@@ -128,10 +131,11 @@ export const useLeaderboardData = () => {
           .limit(50);
         
         if (fallbackQuery.data) {
-          const fallbackData = fallbackQuery.data.map((user, index) => ({
+          const fallbackData: LeaderboardEntry[] = fallbackQuery.data.map((user, index) => ({
             id: user.id,
             user_id: user.id,
             wallet: user.wallet_address,
+            walletAddress: user.wallet_address,
             username: user.username || user.wallet_address.substring(0, 8),
             pxbPoints: user.points,
             points: user.points,
@@ -159,7 +163,7 @@ export const useLeaderboardData = () => {
       }
       
       // Map user details to win rates
-      const formattedWinRateData: WinRateLeaderboardEntry[] = winRateArray.map((winRateItem, index) => {
+      const formattedWinRateData: LeaderboardEntry[] = winRateArray.map((winRateItem, index) => {
         const user = userData.find(u => u.id === winRateItem.userId);
         if (!user) return null;
         
@@ -167,6 +171,7 @@ export const useLeaderboardData = () => {
           id: user.id,
           user_id: user.id,
           wallet: user.wallet_address,
+          walletAddress: user.wallet_address,
           username: user.username || user.wallet_address.substring(0, 8) || `User_${user.id.substring(0, 6)}`,
           pxbPoints: user.points || 0,
           points: user.points || 0,
@@ -175,7 +180,7 @@ export const useLeaderboardData = () => {
           betsLost: Math.floor(Math.random() * 5), // Placeholder until we have actual data
           rank: index + 1
         };
-      }).filter(Boolean) as WinRateLeaderboardEntry[];
+      }).filter(Boolean) as LeaderboardEntry[];
       
       setWinRateLeaderboard(formattedWinRateData);
     } catch (error) {
@@ -188,10 +193,11 @@ export const useLeaderboardData = () => {
         .limit(50);
         
       if (data) {
-        const fallbackData = data.map((user, index) => ({
+        const fallbackData: LeaderboardEntry[] = data.map((user, index) => ({
           id: user.id,
           user_id: user.id,
           wallet: user.wallet_address,
+          walletAddress: user.wallet_address,
           username: user.username || user.wallet_address.substring(0, 8),
           pxbPoints: user.points,
           points: user.points,

@@ -1,228 +1,230 @@
-
 import React, { useState, useEffect } from 'react';
-import { UserProfile } from '@/types/pxb';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { 
+  User,
+  Trophy,
+  Users,
+  Gem, 
+  Link,
+  Copy,
+  Check,
+  Share2,
+  Tag,
+  Copy as CopyIcon
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Edit2, Copy, User, Trophy } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { PublicKey } from '@solana/web3.js';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Link } from 'react-router-dom';
+import { LeaderboardEntry } from '@/types/pxb';
 
 interface PXBProfilePanelProps {
-  userProfile: UserProfile | null;
-  publicKey: PublicKey;
-  localPxbPoints: number;
+  userId?: string;
 }
 
-const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
-  userProfile,
-  publicKey,
-  localPxbPoints
-}) => {
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [usernameInput, setUsernameInput] = useState(userProfile?.username || '');
-  const [isSavingUsername, setIsSavingUsername] = useState(false);
-  const {
-    generatePxbId,
-    fetchUserProfile,
+const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ userId }) => {
+  const { 
+    userProfile,
     leaderboard,
+    isLeaderboardLoading,
     fetchLeaderboard
   } = usePXBPoints();
-  const [myPxbId, setMyPxbId] = useState<string>('');
-  const [userRank, setUserRank] = useState<number | null>(null);
-
-  // Fetch leaderboard on component mount
+  
+  const [profileData, setProfileData] = useState<LeaderboardEntry | null>(null);
+  const [referralLink, setReferralLink] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [isCreatingLink, setIsCreatingLink] = useState(false);
+  
+  // Generate a profile data object from various sources
   useEffect(() => {
-    fetchLeaderboard();
+    if (isLeaderboardLoading || !leaderboard) return;
+    
+    // If userId is provided, look for that user in the leaderboard
+    if (userId) {
+      const profile = leaderboard.find(user => user.id === userId);
+      if (profile) {
+        setProfileData(profile);
+      }
+    } 
+    // Otherwise show current user profile
+    else if (userProfile) {
+      // Create a profile object from user profile data
+      const currentUserInLeaderboard = leaderboard.find(user => user.id === userProfile.id);
+      
+      if (currentUserInLeaderboard) {
+        setProfileData(currentUserInLeaderboard);
+      } else {
+        // Create a mock entry for the current user if not in leaderboard
+        setProfileData({
+          id: userProfile.id,
+          user_id: userProfile.id,
+          username: userProfile.username,
+          points: userProfile.pxbPoints,
+          pxbPoints: userProfile.pxbPoints,
+          rank: 0, // Not ranked
+          winRate: 0,
+          betsWon: 0,
+          betsLost: 0
+        });
+      }
+    }
+  }, [userProfile, leaderboard, userId, isLeaderboardLoading]);
+  
+  useEffect(() => {
+    if (fetchLeaderboard) {
+      fetchLeaderboard();
+    }
   }, [fetchLeaderboard]);
-
-  // Get user rank from leaderboard
-  useEffect(() => {
-    if (!userProfile || !leaderboard?.length) {
-      setUserRank(null);
-      return;
-    }
+  
+  const createReferralLink = async () => {
+    if (!userProfile?.referralCode) return;
     
-    console.log("Finding rank for user ID:", userProfile.id);
-    console.log("Leaderboard entries:", leaderboard);
-    
-    // Find the user in the leaderboard by matching ID
-    const userEntry = leaderboard.find(entry => {
-      const entryId = entry.id || entry.user_id;
-      const userId = userProfile.id;
-      
-      console.log(`Comparing entry ID: ${entryId} with user ID: ${userId}`);
-      return entryId === userId;
-    });
-    
-    console.log("Found user entry:", userEntry);
-    
-    if (userEntry) {
-      console.log("Setting user rank to:", userEntry.rank);
-      setUserRank(userEntry.rank);
-    } else {
-      // If user not found in leaderboard, try to calculate rank based on points
-      const userPoints = localPxbPoints || userProfile.pxbPoints || 0;
-      const higherRankedUsers = leaderboard.filter(entry => {
-        const entryPoints = entry.points || entry.pxbPoints || 0;
-        return entryPoints > userPoints;
-      });
-      
-      if (higherRankedUsers.length < leaderboard.length) {
-        const estimatedRank = higherRankedUsers.length + 1;
-        console.log("Estimated rank based on points:", estimatedRank);
-        setUserRank(estimatedRank);
-      } else {
-        setUserRank(null);
-      }
-    }
-  }, [userProfile, leaderboard, localPxbPoints]);
-
-  React.useEffect(() => {
-    if (userProfile && generatePxbId) {
-      setMyPxbId(generatePxbId());
-    }
-  }, [userProfile, generatePxbId]);
-
-  React.useEffect(() => {
-    if (userProfile) {
-      setUsernameInput(userProfile.username);
-    }
-  }, [userProfile]);
-
-  const handleUpdateUsername = async () => {
-    if (!usernameInput.trim() || !userProfile) {
-      toast.error("Username cannot be empty");
-      return;
-    }
-    setIsSavingUsername(true);
+    setIsCreatingLink(true);
     try {
-      const {
-        error
-      } = await supabase.from('users').update({
-        username: usernameInput
-      }).eq('id', userProfile.id);
-      if (error) {
-        console.error('Error updating username:', error);
-        toast.error('Failed to update username');
-      } else {
-        fetchUserProfile();
-        toast.success('Username updated successfully');
-        setIsEditingUsername(false);
-      }
-    } catch (err) {
-      console.error('Unexpected error updating username:', err);
-      toast.error('An error occurred while updating username');
+      // Create a referral link
+      const baseUrl = window.location.origin;
+      const link = `${baseUrl}?ref=${userProfile.referralCode}`;
+      setReferralLink(link);
+    } catch (error) {
+      console.error('Error creating referral link:', error);
+      toast.error('Failed to create referral link');
     } finally {
-      setIsSavingUsername(false);
+      setIsCreatingLink(false);
     }
   };
-
-  const copyToClipboard = (text: string, message: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(message);
+  
+  const copyReferralLink = () => {
+    if (!referralLink) return;
+    
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    toast.success('Referral link copied to clipboard');
+    
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
   };
-
-  return <div className="overflow-hidden rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
-      <div className="p-6 border-b border-indigo-900/30 bg-black/0">
-        <h2 className="text-2xl font-bold text-white">Profile</h2>
-        <p className="text-indigo-300/70">Manage your account information</p>
+  
+  if (!profileData) {
+    return (
+      <div className="glass-panel p-6">
+        <div className="text-center py-4">
+          <User className="w-12 h-12 mx-auto text-dream-foreground/20" />
+          <p className="mt-2 text-dream-foreground/60">User profile not found</p>
+        </div>
       </div>
-
-      <div className="p-6 space-y-6 bg-black">
-        {/* Username */}
+    );
+  }
+  
+  const isCurrentUser = userProfile && userProfile.id === profileData.id;
+  
+  return (
+    <div className="glass-panel">
+      <div className="p-6 border-b border-dream-foreground/10 flex justify-between items-center">
+        <div className="flex items-center">
+          <div className="w-12 h-12 rounded-full bg-dream-foreground/10 flex items-center justify-center mr-4">
+            <User className="w-6 h-6 text-dream-foreground/60" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold flex items-center">
+              {profileData.username || 'Anonymous User'}
+              {profileData.rank > 0 && profileData.rank <= 10 && (
+                <Badge className="ml-2 bg-amber-500/20 text-amber-400 border border-amber-500/20">
+                  <Trophy className="w-3 h-3 mr-1" />
+                  Top {profileData.rank}
+                </Badge>
+              )}
+            </h2>
+            <p className="text-sm text-dream-foreground/60">
+              PXB Points: <span className="text-dream-accent2">{(profileData.pxbPoints || profileData.points).toLocaleString()}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h3 className="text-sm text-indigo-300/70 mb-2 flex justify-between items-center">
-            Username
-            {!isEditingUsername && <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={() => setIsEditingUsername(true)}>
-                <Edit2 className="w-4 h-4" />
-              </Button>}
+          <h3 className="text-sm font-medium text-dream-foreground/70 mb-3 flex items-center">
+            <Tag className="w-4 h-4 mr-2 text-dream-foreground/40" />
+            User Information
           </h3>
-
-          {isEditingUsername ? <div className="space-y-2">
-              <Input value={usernameInput} onChange={e => setUsernameInput(e.target.value)} className="bg-indigo-900/10 border-indigo-900/30 text-white" />
-              <div className="flex gap-2">
-                <Button onClick={handleUpdateUsername} disabled={isSavingUsername} className="w-full bg-indigo-600 hover:bg-indigo-700">
-                  {isSavingUsername ? 'Saving...' : 'Save'}
-                </Button>
-                <Button variant="outline" onClick={() => {
-              setIsEditingUsername(false);
-              setUsernameInput(userProfile?.username || '');
-            }} className="w-full border-indigo-900/30 text-indigo-300/70 hover:text-white hover:bg-indigo-900/20">
-                  Cancel
-                </Button>
-              </div>
-            </div> : <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center border border-indigo-900/30">
-              <User className="text-indigo-300/70 w-4 h-4 mr-2" />
-              <Link 
-                to={userProfile ? `/profile/${userProfile.id}` : '#'} 
-                className="text-white hover:text-cyan-400 transition-colors"
-              >
-                {userProfile?.username || 'Anonymous'}
-              </Link>
-            </div>}
-        </div>
-
-        {/* Wallet Address */}
-        <div>
-          <h3 className="text-sm text-indigo-300/70 mb-2">Wallet Address</h3>
-          <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center justify-between border border-indigo-900/30">
-            <span className="text-white text-sm font-mono truncate">
-              {publicKey.toString()}
-            </span>
-            <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={() => copyToClipboard(publicKey.toString(), 'Wallet address copied to clipboard')}>
-              <Copy className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* PXB ID */}
-        <div>
-          <h3 className="text-sm text-indigo-300/70 mb-2">PXB ID</h3>
-          <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center justify-between border border-indigo-900/30">
-            <span className="text-white text-sm font-mono truncate">
-              {myPxbId || 'Generating...'}
-            </span>
-            <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={() => copyToClipboard(myPxbId, 'PXB ID copied to clipboard')} disabled={!myPxbId}>
-              <Copy className="w-4 h-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-indigo-300/50 mt-1">Your permanent ID for receiving PXB points</p>
-        </div>
-
-        {/* PXB Points Card */}
-        <div className="mt-6">
-          <div className="relative overflow-hidden rounded-lg p-6 bg-gradient-to-r from-[#131c36] to-[#1a2542] border border-indigo-500/20">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"></div>
-            
-            <div className="flex items-center justify-between mb-4 relative z-10">
-              <div className="flex items-center">
-                <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-4 border border-indigo-500/20">
-                  <img src="/lovable-uploads/b29e7031-78f0-44be-b383-e5d1dd184bb4.png" alt="PXB Logo" className="w-10 h-10 object-contain filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" />
-                </div>
-                <div>
-                  <h3 className="text-4xl font-bold text-white">{localPxbPoints.toLocaleString()}</h3>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-dream-foreground/5 p-3 rounded-lg">
+                <div className="text-xs text-dream-foreground/60 mb-1">Win Rate</div>
+                <div className="text-lg font-semibold">
+                  {profileData.winRate || 0}%
                 </div>
               </div>
               
-              {userRank !== null && (
-                <div className="flex items-center bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-500/30">
-                  <Trophy className="w-4 h-4 text-yellow-400 mr-1" />
-                  <span className="text-white font-medium">Rank #{userRank}</span>
+              <div className="bg-dream-foreground/5 p-3 rounded-lg">
+                <div className="text-xs text-dream-foreground/60 mb-1">Ranking</div>
+                <div className="text-lg font-semibold">
+                  {profileData.rank > 0 ? `#${profileData.rank}` : 'Unranked'}
                 </div>
-              )}
-            </div>
-            
-            <div className="flex items-center justify-between text-sm relative z-10">
-              <p className="text-indigo-300">{userProfile?.username || 'User'}</p>
-              <p className="text-indigo-300">#{userProfile?.id?.substring(0, 8) || ''}</p>
+              </div>
             </div>
           </div>
         </div>
+        
+        {isCurrentUser && (
+          <div>
+            <h3 className="text-sm font-medium text-dream-foreground/70 mb-3 flex items-center">
+              <Users className="w-4 h-4 mr-2 text-dream-foreground/40" />
+              Referrals
+            </h3>
+            
+            <div className="space-y-4">
+              {!referralLink ? (
+                <Button
+                  variant="outline"
+                  className="w-full justify-between"
+                  onClick={createReferralLink}
+                  disabled={isCreatingLink || !userProfile?.referralCode}
+                >
+                  <span>Generate Referral Link</span>
+                  <Share2 className="h-4 w-4 ml-2" />
+                </Button>
+              ) : (
+                <div className="flex items-center">
+                  <Input
+                    value={referralLink}
+                    readOnly
+                    className="text-xs bg-dream-foreground/5 border-dream-foreground/10"
+                  />
+                  <Button size="icon" variant="outline" className="ml-2" onClick={copyReferralLink}>
+                    {copied ? <Check className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+                  </Button>
+                </div>
+              )}
+              
+              <div className="bg-dream-foreground/5 p-3 rounded-lg">
+                <div className="text-xs text-dream-foreground/60 mb-1">Referral Code</div>
+                <div className="text-md font-mono font-semibold flex items-center">
+                  {userProfile?.referralCode || 'No referral code yet'}
+                  
+                  {userProfile?.referralCode && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-2 h-6 px-2"
+                      onClick={() => {
+                        navigator.clipboard.writeText(userProfile.referralCode || '');
+                        toast.success('Referral code copied');
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };
 
 export default PXBProfilePanel;

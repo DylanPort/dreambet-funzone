@@ -71,14 +71,30 @@ const PXBLeaderboard: React.FC = () => {
     }
   };
   
-  const displayedPointsUsers = showAllUsers ? leaderboard : leaderboard.slice(0, 10);
-  const displayedWinRateUsers = showAllUsers ? winRateLeaderboard : winRateLeaderboard.slice(0, 10);
+  // Add safeguards against null/undefined
+  const displayedPointsUsers = leaderboard ? (showAllUsers ? leaderboard : leaderboard.slice(0, 10)) : [];
+  const displayedWinRateUsers = winRateLeaderboard ? (showAllUsers ? winRateLeaderboard : winRateLeaderboard.slice(0, 10)) : [];
   
   const renderLeaderboardContent = (data: any[], valueKey: string, valueLabel: string, isLoading: boolean) => {
     if (isLoading) {
       return (
         <div className="flex justify-center items-center h-[320px]">
           <div className="animate-spin h-8 w-8 border-4 border-green-500 rounded-full border-t-transparent"></div>
+        </div>
+      );
+    }
+    
+    if (!data || data.length === 0) {
+      return (
+        <div className="text-center py-4 text-dream-foreground/60 h-[320px] flex flex-col justify-center">
+          <p className="animate-pulse">No data yet. Be the first on the leaderboard!</p>
+          <div className="mt-2 w-32 h-32 mx-auto opacity-20">
+            <img 
+              src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" 
+              className="w-full h-full text-yellow-400 animate-float" 
+              alt="Trophy" 
+            />
+          </div>
         </div>
       );
     }
@@ -132,7 +148,7 @@ const PXBLeaderboard: React.FC = () => {
                       index === 2 ? "text-orange-500" : 
                       "text-green-400"
                     )}>
-                      {valueKey === 'winRate' ? `${trader[valueKey]}%` : `${trader[valueKey]} ${valueLabel}`}
+                      {valueKey === 'winRate' ? `${trader[valueKey]}%` : `${trader[valueKey] || trader.points || 0} ${valueLabel}`}
                     </div>
                   </div>
                 </div>
@@ -152,19 +168,6 @@ const PXBLeaderboard: React.FC = () => {
               </div>
             );
           })}
-
-          {data.length === 0 && !isLoading && (
-            <div className="text-center py-4 text-dream-foreground/60">
-              <p className="animate-pulse">No data yet. Be the first on the leaderboard!</p>
-              <div className="mt-2 w-32 h-32 mx-auto opacity-20">
-                <img 
-                  src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" 
-                  className="w-full h-full text-yellow-400 animate-float" 
-                  alt="Trophy" 
-                />
-              </div>
-            </div>
-          )}
         </div>
       </ScrollArea>
     );
