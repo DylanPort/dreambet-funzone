@@ -754,3 +754,339 @@ const TokenDetail = () => {
                     <div className="flex items-center text-dream-foreground/70">
                       <span className="mr-2">{token.symbol}</span>
                       <button onClick={() => {
+                        navigator.clipboard.writeText(token.id);
+                        toast({
+                          title: "Copied to clipboard",
+                          description: "Token address has been copied to your clipboard"
+                        });
+                      }} className="text-xs text-dream-foreground/50 hover:text-dream-foreground/80 flex items-center">
+                        <Copy size={12} className="mr-1" />
+                        {token.id.substring(0, 4)}...{token.id.substring(token.id.length - 4)}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
+                  <div className="flex flex-col items-end">
+                    <div className="text-3xl font-bold flex items-center">
+                      ${formatPrice(token.currentPrice)}
+                      <span className={`ml-2 text-sm ${token.change24h > 0 ? 'text-green-400 flex' : token.change24h < 0 ? 'text-red-400 flex' : 'text-dream-foreground/50 hidden'} items-center`}>
+                        {token.change24h > 0 ? <ArrowUpRight size={16} className="mr-1" /> : <ArrowDownRight size={16} className="mr-1" />}
+                        {Math.abs(token.change24h).toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className="text-xs text-dream-foreground/50 mt-1">
+                      Last updated: {formatDistanceToNow(lastPriceUpdateRef.current || Date.now(), { addSuffix: true })}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => refreshData()}
+                      disabled={loading}
+                      className="flex items-center"
+                    >
+                      <RefreshCw size={14} className={`mr-1 ${loading ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`https://dexscreener.com/solana/${token.id}`, '_blank')}
+                      className="flex items-center"
+                    >
+                      <ExternalLink size={14} className="mr-1" />
+                      View on DexScreener
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Market Data Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <TokenMarketCap tokenId={token.id} />
+                <TokenVolume tokenId={token.id} />
+                <Card className="bg-dream-card/30 backdrop-blur-md border-dream-card-border p-4">
+                  <div className="flex items-center text-dream-foreground/80 mb-2">
+                    <Users size={18} className="mr-2 text-dream-accent3" />
+                    <span className="text-sm font-semibold">Holders</span>
+                  </div>
+                  <div className="text-2xl font-bold">
+                    {tokenMetrics.holders.toLocaleString() || 'N/A'}
+                  </div>
+                </Card>
+              </div>
+              
+              {/* Trading Section */}
+              {renderTokenTrading()}
+              
+              {/* Chart */}
+              <TokenChart 
+                tokenId={token.id} 
+                tokenName={token.name} 
+                refreshData={refreshData} 
+                loading={loading} 
+                onPriceUpdate={handleChartPriceUpdate}
+                setShowCreateBet={setShowCreateBet}
+              />
+              
+              {/* User Bets Section */}
+              {tokenPXBBets.length > 0 && (
+                <div className="glass-panel mb-8 p-6">
+                  <h2 className="text-xl font-bold mb-4">Your PXB Bets on {token.symbol}</h2>
+                  <div className="grid gap-6">
+                    {tokenPXBBets.map(bet => (
+                      <div key={bet.id} className="bg-black/30 border border-dream-accent2/20 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="flex items-center">
+                              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                bet.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                                bet.status === 'won' ? 'bg-green-500/20 text-green-400' : 
+                                'bg-red-500/20 text-red-400'
+                              }`}>
+                                {bet.status === 'pending' ? 'In Progress' : 
+                                 bet.status === 'won' ? 'Won' : 'Lost'}
+                              </span>
+                              <span className="ml-2 text-sm">
+                                {bet.betType === 'up' ? 
+                                  <span className="flex items-center text-green-400">
+                                    <ArrowUp size={14} className="mr-1" /> {bet.percentageChange}% Up
+                                  </span> : 
+                                  <span className="flex items-center text-red-400">
+                                    <ArrowDown size={14} className="mr-1" /> {bet.percentageChange}% Down
+                                  </span>
+                                }
+                              </span>
+                            </div>
+                            <div className="text-sm mt-1">
+                              <span className="text-dream-foreground/70">Bet amount:</span> <span className="text-dream-accent2 font-semibold">{bet.amount} PXB</span>
+                            </div>
+                            <div className="text-sm mt-1">
+                              <span className="text-dream-foreground/70">Created:</span> {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
+                            </div>
+                          </div>
+                          
+                          <div className="text-right">
+                            {bet.status === 'pending' ? (
+                              <div className="text-sm text-dream-foreground/70">
+                                <span className="font-semibold text-green-400">+{bet.potentialWinnings} PXB</span> if correct
+                              </div>
+                            ) : bet.status === 'won' ? (
+                              <div className="text-sm font-semibold text-green-400">
+                                +{bet.winAmount} PXB
+                              </div>
+                            ) : (
+                              <div className="text-sm font-semibold text-red-400">
+                                -{bet.amount} PXB
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {bet.status === 'pending' && (
+                          <>
+                            <div className="flex justify-between text-xs mb-1">
+                              <div className="flex items-center">
+                                <span className="mr-1">Initial:</span>
+                                <span className="font-semibold">{marketCapData[bet.id]?.initialMarketCap 
+                                  ? formatLargeNumber(marketCapData[bet.id].initialMarketCap) 
+                                  : 'Calculating...'}</span>
+                              </div>
+                              <div className="flex items-center">
+                                <span className="mr-1">Target:</span>
+                                <span className="font-semibold">
+                                  {calculateTargetMarketCap(bet) 
+                                    ? formatLargeNumber(calculateTargetMarketCap(bet)) 
+                                    : 'Calculating...'}
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                <span className="mr-1">Current:</span>
+                                <span className="font-semibold">
+                                  {marketCapData[bet.id]?.currentMarketCap 
+                                    ? formatLargeNumber(marketCapData[bet.id].currentMarketCap) 
+                                    : 'Calculating...'}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <Progress 
+                              value={calculateProgress(bet)} 
+                              className="h-2 mb-2" 
+                              indicatorClassName={bet.betType === 'up' ? 'bg-green-400' : 'bg-red-400'} 
+                            />
+                            
+                            <div className="text-xs text-center">
+                              {loadingMarketCaps[bet.id] ? (
+                                <span className="text-dream-foreground/50">Updating market cap data...</span>
+                              ) : (
+                                <span className={
+                                  calculateMarketCapChange(bet) === null ? 'text-dream-foreground/50' :
+                                  calculateMarketCapChange(bet) > 0 ? 'text-green-400' : 'text-red-400'
+                                }>
+                                  Market cap has changed{' '}
+                                  {calculateMarketCapChange(bet) === null ? '...' :
+                                   `${calculateMarketCapChange(bet) > 0 ? '+' : ''}${calculateMarketCapChange(bet).toFixed(2)}% since bet was placed`}
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Bets Section */}
+              <div className="glass-panel mb-8 p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-display font-bold">Open Bets</h2>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCreateBet(true)}
+                      className={`transition-all ${bets.filter(b => b.status === 'open').length > 0 ? 'opacity-100' : 'opacity-70'}`}
+                    >
+                      <ArrowUp size={14} className="mr-1 text-green-400" />
+                      Create UP bet
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCreateBet(true)}
+                      className={`transition-all ${bets.filter(b => b.status === 'open').length > 0 ? 'opacity-100' : 'opacity-70'}`}
+                    >
+                      <ArrowDown size={14} className="mr-1 text-red-400" />
+                      Create DOWN bet
+                    </Button>
+                  </div>
+                </div>
+                
+                {showCreateBet ? (
+                  <div className="mb-6">
+                    <CreateBetForm
+                      tokenId={token.id}
+                      tokenSymbol={token.symbol}
+                      tokenName={token.name}
+                      onClose={() => setShowCreateBet(false)}
+                      onSuccess={() => {
+                        setShowCreateBet(false);
+                        refreshData();
+                      }}
+                    />
+                  </div>
+                ) : null}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {bets.filter(bet => bet.status === 'open').map((bet) => (
+                    <BetCard
+                      key={bet.id}
+                      bet={bet}
+                      tokenPrice={token?.currentPrice || 0}
+                      onAcceptBet={handleAcceptBet}
+                    />
+                  ))}
+                  
+                  {bets.filter(bet => bet.status === 'open').length === 0 && (
+                    <div className="col-span-3 text-center py-8 text-dream-foreground/70">
+                      <HelpCircle className="mx-auto mb-2 text-dream-foreground/40" size={32} />
+                      <p>No open bets for this token yet.</p>
+                      <p className="mt-2">Be the first to create a bet!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Active Bets */}
+              {bets.filter(bet => bet.status === 'matched').length > 0 && (
+                <div className="glass-panel mb-8 p-6">
+                  <h2 className="text-xl font-display font-bold mb-4">Active Bets</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {bets.filter(bet => bet.status === 'matched').map((bet) => (
+                      <Card key={bet.id} className="overflow-hidden border-dream-accent2/20 bg-black/30">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center">
+                              <span className="bg-purple-500/20 text-purple-400 px-2 py-0.5 text-xs rounded-full">
+                                Active
+                              </span>
+                              <span className="ml-2 text-xs text-dream-foreground/50">
+                                Ends in 12h
+                              </span>
+                            </div>
+                            <div className="text-lg font-bold">{bet.amount} SOL</div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex justify-between mb-2">
+                            <div className="text-sm">
+                              <div className="text-dream-foreground/70">Created by</div>
+                              <div className="font-mono text-xs">{bet.creatorAddress.substring(0, 4)}...{bet.creatorAddress.substring(bet.creatorAddress.length - 4)}</div>
+                            </div>
+                            <div className="text-sm">
+                              <div className="text-dream-foreground/70">Challenger</div>
+                              <div className="font-mono text-xs">{bet.acceptorAddress?.substring(0, 4)}...{bet.acceptorAddress?.substring(bet.acceptorAddress.length - 4)}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-dream-accent1/10 p-3 rounded-md flex justify-between items-center mb-3">
+                            <div className="text-sm">
+                              <div className="text-dream-foreground/70">Direction</div>
+                              <div className="font-semibold flex items-center">
+                                {bet.direction === 'up' ? (
+                                  <span className="flex items-center text-green-400">
+                                    <ArrowUp size={14} className="mr-1" /> UP
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center text-red-400">
+                                    <ArrowDown size={14} className="mr-1" /> DOWN
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="text-sm">
+                              <div className="text-dream-foreground/70">Target</div>
+                              <div className="font-semibold">${formatPrice(bet.targetPrice)}</div>
+                            </div>
+                            
+                            <div className="text-sm">
+                              <div className="text-dream-foreground/70">Current</div>
+                              <div className="font-semibold">${formatPrice(token?.currentPrice || 0)}</div>
+                            </div>
+                          </div>
+                          
+                          <Progress 
+                            value={bet.direction === 'up' 
+                              ? Math.min(100, (token?.currentPrice || 0) / bet.targetPrice * 100) 
+                              : Math.min(100, bet.targetPrice / (token?.currentPrice || 1) * 100)} 
+                            className="h-2" 
+                            indicatorClassName={bet.direction === 'up' ? 'bg-green-400' : 'bg-red-400'}
+                          />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Comments */}
+              <TokenComments tokenId={token.id} tokenName={token.name} />
+            </>
+          )}
+        </div>
+      </main>
+    </>
+  );
+};
+
+export default TokenDetail;
