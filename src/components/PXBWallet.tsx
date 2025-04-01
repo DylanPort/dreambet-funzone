@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useSearchParams } from 'react-router-dom';
+
 interface Transaction {
   id: string;
   amount: number;
@@ -17,6 +19,7 @@ interface Transaction {
   reference_id: string;
   reference_name?: string;
 }
+
 export const PXBWallet: React.FC = () => {
   const {
     userProfile,
@@ -27,11 +30,16 @@ export const PXBWallet: React.FC = () => {
     generateReferralLink,
     referralStats,
     fetchReferralStats,
-    isLoadingReferrals
+    isLoadingReferrals,
+    checkAndProcessReferral,
+    processPendingReferrals,
+    isProcessingReferral
   } = usePXBPoints();
+  
   const {
     connected
   } = useWallet();
+  
   const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'activity' | 'claim' | 'referrals'>('send');
   const [recipientId, setRecipientId] = useState('');
   const [amount, setAmount] = useState('');
@@ -44,14 +52,18 @@ export const PXBWallet: React.FC = () => {
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [referralLink, setReferralLink] = useState<string>('');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
+  
   const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
   const [searchParams] = useSearchParams();
+  
   useEffect(() => {
     if (userProfile && generatePxbId) {
       const id = generatePxbId();
       setMyPxbId(id);
     }
   }, [userProfile, generatePxbId]);
+  
   useEffect(() => {
     const storedLastClaimTime = localStorage.getItem('lastPxbClaim');
     if (storedLastClaimTime) {
@@ -71,6 +83,7 @@ export const PXBWallet: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [lastClaimTime]);
+  
   useEffect(() => {
     if (activeTab === 'activity' && userProfile) {
       fetchTransactionHistory();
@@ -80,45 +93,57 @@ export const PXBWallet: React.FC = () => {
       handleGenerateReferralLink();
     }
   }, [activeTab, userProfile, fetchReferralStats]);
+  
   useEffect(() => {
     const refCode = searchParams.get('ref');
-    if (refCode && activeTab !== 'referrals') {
+    if (refCode && userProfile && connected) {
+      handleProcessReferral(refCode);
+      // Switch to referrals tab
       setActiveTab('referrals');
     }
-  }, [searchParams]);
+  }, [searchParams, userProfile, connected]);
+  
   const fetchTransactionHistory = async () => {
     if (!userProfile) return;
     setIsLoadingTransactions(true);
+    
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('points_history').select('*').eq('user_id', userProfile.id).order('created_at', {
-        ascending: false
-      }).limit(10);
+      const { data, error } = await supabase
+        .from('points_history')
+        .select('*')
+        .eq('user_id', userProfile.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+        
       if (error) {
         console.error('Error fetching transaction history:', error);
         toast.error('Failed to load transaction history');
         return;
       }
+      
       setTransactions(data || []);
     } catch (error) {
       console.error('Unexpected error fetching transactions:', error);
+      toast.error('An error occurred while loading your transaction history');
     } finally {
       setIsLoadingTransactions(false);
     }
   };
+  
   const handleSendPoints = async () => {
     if (!sendPoints) return;
+    
     if (!recipientId.trim()) {
       toast.error('Please enter a recipient PXB ID');
       return;
     }
+    
     const amountNumber = parseFloat(amount);
     if (isNaN(amountNumber) || amountNumber <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
+    
     setIsSending(true);
     try {
       let actualUserId = recipientId;
@@ -128,28 +153,44 @@ export const PXBWallet: React.FC = () => {
           actualUserId = parts[1];
         }
       }
+      
       console.log('Extracted user ID for sending:', actualUserId);
       const success = await sendPoints(actualUserId, amountNumber);
+      
       if (success) {
         setRecipientId('');
         setAmount('');
         toast.success(`Successfully sent ${amountNumber} PXB points!`);
+        await fetchUserProfile(); // Refresh user profile to show updated balance
+      } else {
+        toast.error('Failed to send points. Please check the recipient ID and try again.');
       }
+    } catch (error) {
+      console.error('Error sending points:', error);
+      toast.error('An unexpected error occurred while sending points');
     } finally {
       setIsSending(false);
     }
   };
+  
   const handleGenerateId = () => {
     if (!generatePxbId) return;
     const newId = generatePxbId();
     setMyPxbId(newId);
+    toast.success('Generated new PXB ID');
   };
+  
   const handleGenerateReferralLink = async () => {
     if (!generateReferralLink || !userProfile) return;
+    
     setIsGeneratingLink(true);
     try {
       const link = await generateReferralLink();
       setReferralLink(link);
+      
+      if (!link) {
+        toast.error('Failed to generate referral link. Please try again later.');
+      }
     } catch (error) {
       console.error('Error generating referral link:', error);
       toast.error('Failed to generate referral link');
@@ -157,10 +198,33 @@ export const PXBWallet: React.FC = () => {
       setIsGeneratingLink(false);
     }
   };
+  
+  const handleProcessReferral = async (code: string) => {
+    if (!checkAndProcessReferral) return;
+    
+    if (!code) {
+      toast.error('Please enter a referral code');
+      return;
+    }
+    
+    const success = await checkAndProcessReferral(code);
+    
+    if (success) {
+      setReferralCode('');
+      await fetchUserProfile(); // Refresh user data after processing referral
+    }
+  };
+  
+  const handleProcessPendingReferrals = async () => {
+    if (!processPendingReferrals) return;
+    await processPendingReferrals();
+  };
+  
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
   };
+  
   const formatCooldownTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
@@ -168,8 +232,10 @@ export const PXBWallet: React.FC = () => {
     const seconds = totalSeconds % 60;
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
+  
   const handleClaimPoints = async () => {
     if (!userProfile) return;
+    
     setIsClaiming(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -177,12 +243,39 @@ export const PXBWallet: React.FC = () => {
       localStorage.setItem('lastPxbClaim', now.toString());
       setLastClaimTime(now);
       setCooldownRemaining(COOLDOWN_TIME);
+      
+      // Update user's PXB points in the database
+      const { error } = await supabase
+        .from('users')
+        .update({ points: userProfile.pxbPoints + 100 })
+        .eq('id', userProfile.id);
+        
+      if (error) {
+        console.error('Error updating points:', error);
+        toast.error('Failed to claim points. Please try again.');
+        return;
+      }
+      
+      // Record the transaction in points_history
+      await supabase
+        .from('points_history')
+        .insert({
+          user_id: userProfile.id,
+          amount: 100,
+          action: 'mint',
+          reference_id: 'daily_claim'
+        });
+      
       toast.success('Successfully claimed 100 PXB points!');
-      fetchUserProfile();
+      await fetchUserProfile(); // Refresh user profile
+    } catch (error) {
+      console.error('Error claiming points:', error);
+      toast.error('An error occurred while claiming your points');
     } finally {
       setIsClaiming(false);
     }
   };
+  
   const getTransactionDescription = (transaction: Transaction) => {
     switch (transaction.action) {
       case 'bet_placed':
@@ -203,22 +296,26 @@ export const PXBWallet: React.FC = () => {
         return transaction.action.replace(/_/g, ' ');
     }
   };
+  
   const formatTransactionTime = (timestamp: string) => {
     return formatDistanceToNow(new Date(timestamp), {
       addSuffix: true
     });
   };
+  
   if (isLoading) {
     return <div className="glass-panel p-6 mb-6 animate-pulse bg-gray-900/50 rounded-lg border border-gray-800">
         <div className="w-full h-12 bg-gray-800 rounded-lg mb-4"></div>
         <div className="w-1/2 h-8 bg-gray-800 rounded-lg"></div>
       </div>;
   }
+  
   if (!connected) {
     return <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
         <p className="text-center text-gray-400">Connect your wallet to view your PXB balance</p>
       </div>;
   }
+  
   if (!userProfile) {
     return <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
         <div className="text-center space-y-4">
@@ -227,6 +324,7 @@ export const PXBWallet: React.FC = () => {
         </div>
       </div>;
   }
+  
   return <div className="mb-6 overflow-hidden relative rounded-lg bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
       <div className="p-6 flex justify-between items-center bg-gradient-to-r from-[#131c36] to-[#1a2542]">
         <div className="flex items-center">
@@ -245,19 +343,40 @@ export const PXBWallet: React.FC = () => {
       </div>
 
       <div className="flex border-b border-indigo-900/30 overflow-x-auto">
-        <button className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'send' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} onClick={() => setActiveTab('send')}>
+        <button 
+          className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'send' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} 
+          onClick={() => setActiveTab('send')}
+        >
           <Send className="w-4 h-4" />
           Send
         </button>
-        <button className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'receive' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} onClick={() => setActiveTab('receive')}>
+        <button 
+          className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'receive' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} 
+          onClick={() => setActiveTab('receive')}
+        >
           <QrCode className="w-4 h-4" />
           Receive
         </button>
-        
-        
-        <button className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'activity' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} onClick={() => setActiveTab('activity')}>
+        <button 
+          className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'claim' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} 
+          onClick={() => setActiveTab('claim')}
+        >
+          <Gift className="w-4 h-4" />
+          Claim
+        </button>
+        <button 
+          className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'activity' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} 
+          onClick={() => setActiveTab('activity')}
+        >
           <Clock className="w-4 h-4" />
           Activity
+        </button>
+        <button 
+          className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'referrals' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} 
+          onClick={() => setActiveTab('referrals')}
+        >
+          <Users className="w-4 h-4" />
+          Referrals
         </button>
       </div>
 
@@ -392,13 +511,51 @@ export const PXBWallet: React.FC = () => {
                 </p>
               </div>
               
+              {/* Manual referral code entry */}
+              <div className="glass-panel p-6 rounded-lg border border-indigo-900/30 mb-6 bg-indigo-900/10">
+                <h4 className="text-lg font-medium mb-4 text-white">Enter Referral Code</h4>
+                
+                <div className="flex space-x-2 mb-4">
+                  <Input 
+                    type="text" 
+                    value={referralCode} 
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    placeholder="Enter referral code" 
+                    className="bg-indigo-900/10 border-indigo-900/30 text-white"
+                  />
+                  <Button 
+                    onClick={() => handleProcessReferral(referralCode)}
+                    disabled={isProcessingReferral || !referralCode} 
+                    className="bg-indigo-500 hover:bg-indigo-600 text-white whitespace-nowrap"
+                  >
+                    {isProcessingReferral ? 
+                      <div className="flex items-center">
+                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        <span>Processing...</span>
+                      </div> : 
+                      <span>Apply Code</span>
+                    }
+                  </Button>
+                </div>
+                
+                <p className="text-xs text-indigo-300/70">
+                  Enter a referral code from a friend to get started. You can only use one referral code per account.
+                </p>
+              </div>
+              
               {/* Referral link section */}
               <div className="glass-panel p-6 rounded-lg border border-indigo-900/30 mb-6 bg-indigo-900/10">
                 <h4 className="text-lg font-medium mb-4 text-white">Your Referral Link</h4>
                 
                 <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center justify-between border border-indigo-900/30 mb-4">
                   <input type="text" value={referralLink} readOnly className="bg-transparent w-full text-indigo-100 text-sm overflow-ellipsis" />
-                  <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white" onClick={() => copyToClipboard(referralLink)} disabled={!referralLink}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-indigo-300/70 hover:text-white" 
+                    onClick={() => copyToClipboard(referralLink)} 
+                    disabled={!referralLink}
+                  >
                     <Copy className="w-4 h-4" />
                     <span className="sr-only">Copy Link</span>
                   </Button>
@@ -414,6 +571,25 @@ export const PXBWallet: React.FC = () => {
                     </div>}
                 </Button>
               </div>
+              
+              {/* Process pending referrals button */}
+              <Button 
+                variant="outline" 
+                className="w-full mb-6 border-indigo-900/30 text-indigo-300/70 hover:text-white hover:bg-indigo-900/20" 
+                onClick={handleProcessPendingReferrals} 
+                disabled={isProcessingReferral}
+              >
+                {isProcessingReferral ? 
+                  <div className="flex items-center">
+                    <div className="h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <span>Processing...</span>
+                  </div> : 
+                  <div className="flex items-center">
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Process Pending Referrals
+                  </div>
+                }
+              </Button>
               
               {/* Referral stats section */}
               <div className="glass-panel p-6 rounded-lg border border-indigo-900/30 mb-6 bg-indigo-900/10">

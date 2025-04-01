@@ -10,17 +10,31 @@ import PXBProfilePanel from '@/components/PXBProfilePanel';
 import PXBStatsPanel from '@/components/PXBStatsPanel';
 import PXBBetsHistory from '@/components/PXBBetsHistory';
 import { PXBWallet } from '@/components/PXBWallet';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const Profile = () => {
   const { connected, publicKey } = useWallet();
-  const { userProfile, isLoading, fetchUserProfile, fetchUserBets } = usePXBPoints();
+  const { userProfile, isLoading, fetchUserProfile, fetchUserBets, checkAndProcessReferral } = usePXBPoints();
   const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (connected && publicKey) {
       fetchUserProfile();
     }
   }, [connected, publicKey, fetchUserProfile]);
+
+  useEffect(() => {
+    // Check for referral code in URL
+    if (connected && publicKey && userProfile) {
+      const refCode = searchParams.get('ref');
+      if (refCode && checkAndProcessReferral) {
+        console.log('Processing referral from URL:', refCode);
+        checkAndProcessReferral(refCode);
+      }
+    }
+  }, [connected, publicKey, userProfile, searchParams, checkAndProcessReferral]);
 
   useEffect(() => {
     if (connected && publicKey) {
