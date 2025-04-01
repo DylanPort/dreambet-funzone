@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,9 +20,8 @@ const Profile = () => {
   
   useEffect(() => {
     if (!connected && publicKey === null) {
-      toast("Please connect your wallet to view your profile.", {
-        variant: "destructive"
-      });
+      // Fix: Using the correct format for Sonner toast without variant
+      toast.error("Please connect your wallet to view your profile.");
     }
   }, [connected, publicKey]);
   
