@@ -102,18 +102,16 @@ const Profile = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-8">
             <div className="lg:col-span-3">
-              {userProfile && (
-                <PXBProfilePanel 
-                  userProfile={userProfile} 
-                  publicKey={publicKey} 
-                  localPxbPoints={localPxbPoints || userProfile?.pxbPoints || 0} 
-                />
-              )}
+              <PXBProfilePanel 
+                userProfile={userProfile} 
+                publicKey={publicKey} 
+                localPxbPoints={localPxbPoints || userProfile?.pxbPoints || 0} 
+              />
             </div>
             
             <div className="lg:col-span-4">
               <div className="w-full">
-                {userProfile && <PXBStatsPanel userProfile={userProfile} />}
+                <PXBStatsPanel userProfile={userProfile} />
               </div>
             </div>
           </div>
@@ -124,12 +122,10 @@ const Profile = () => {
                 <h2 className="text-2xl font-bold text-white">Your Betting History</h2>
               </div>
               <div className="p-6">
-                {userProfile && (
-                  <PXBBetsHistory 
-                    userId={userProfile.id} 
-                    walletAddress={publicKey.toString()}
-                  />
-                )}
+                <PXBBetsHistory 
+                  userId={userProfile?.id} 
+                  walletAddress={publicKey.toString()}
+                />
               </div>
             </div>
           </div>
