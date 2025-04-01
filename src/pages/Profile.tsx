@@ -15,9 +15,17 @@ import { toast } from 'sonner';
 
 const Profile = () => {
   const { connected, publicKey } = useWallet();
-  const { userProfile, isLoading, fetchUserProfile, fetchUserBets, checkAndProcessReferral } = usePXBPoints();
+  const { 
+    userProfile, 
+    isLoading, 
+    fetchUserProfile, 
+    fetchUserBets, 
+    checkAndProcessReferral,
+    processPendingReferrals
+  } = usePXBPoints();
   const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
   const [searchParams] = useSearchParams();
+  const [processedReferral, setProcessedReferral] = useState<boolean>(false);
 
   useEffect(() => {
     if (connected && publicKey) {
@@ -27,14 +35,25 @@ const Profile = () => {
 
   useEffect(() => {
     // Check for referral code in URL
-    if (connected && publicKey && userProfile) {
+    if (connected && publicKey && userProfile && !processedReferral) {
       const refCode = searchParams.get('ref');
       if (refCode && checkAndProcessReferral) {
         console.log('Processing referral from URL:', refCode);
-        checkAndProcessReferral(refCode);
+        checkAndProcessReferral(refCode)
+          .then(success => {
+            setProcessedReferral(true);
+            if (success) {
+              // Check if there are any pending referrals to process
+              processPendingReferrals();
+            }
+          })
+          .catch(error => {
+            console.error('Error processing referral:', error);
+            setProcessedReferral(true);
+          });
       }
     }
-  }, [connected, publicKey, userProfile, searchParams, checkAndProcessReferral]);
+  }, [connected, publicKey, userProfile, searchParams, checkAndProcessReferral, processedReferral, processPendingReferrals]);
 
   useEffect(() => {
     if (connected && publicKey) {
