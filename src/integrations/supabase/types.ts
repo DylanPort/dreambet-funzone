@@ -745,10 +745,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      process_pending_referrals: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
       process_referral_reward: {
         Args: {
           referrer_id: string

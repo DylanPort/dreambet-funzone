@@ -32,8 +32,8 @@ const BetsListView: React.FC<BetsListViewProps> = ({
 
   console.log('Rendering BetsListView with bets:', validBets);
 
-  // Safely limit to top 10 bets
-  const topBets = validBets.slice(0, Math.min(10, validBets.length));
+  // Limit to top 10 bets
+  const topBets = validBets.slice(0, 10);
   
   return (
     <div className="space-y-5">

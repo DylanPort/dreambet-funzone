@@ -1,139 +1,15 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { supabase } from '@/integrations/supabase/client';
-import { UserProfile, PXBBet, ReferralStats, LeaderboardEntry } from '@/types/pxb';
-import { toast } from 'sonner';
-import { useReferralSystem } from './useReferralSystem';
+import React, { createContext, useContext, useEffect } from 'react';
+import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
+import { useBetsData } from './useBetsData';
+import { useLeaderboardData } from './useLeaderboardData';
 import { usePointOperations } from './usePointOperations';
-import { useBetOperations } from './useBetOperations';
-import { useLeaderboard } from './useLeaderboard';
-
-interface PXBPointsContextType {
-  userProfile: UserProfile | null;
-  isLoading: boolean;
-  fetchUserProfile: () => Promise<void>;
-  sendPoints: (recipientId: string, amount: number) => Promise<boolean>;
-  generatePxbId: () => string;
-  bets: PXBBet[];
-  isLoadingBets: boolean;
-  fetchUserBets: () => Promise<void>;
-  generateReferralLink: () => Promise<string>;
-  checkAndProcessReferral: (referralCode: string) => Promise<boolean>;
-  referralStats: ReferralStats;
-  fetchReferralStats: () => Promise<void>;
-  isLoadingReferrals: boolean;
-  isProcessingReferral: boolean;
-  processPendingReferrals: () => Promise<void>;
-  // Added properties to fix TypeScript errors
-  placeBet: (tokenMint: string, tokenName: string, tokenSymbol: string, betAmount: number, betType: 'up' | 'down', percentageChange: number, duration: number) => Promise<PXBBet | void>;
-  mintPoints: (amount: number) => Promise<void>;
-  mintingPoints: boolean;
-  addPointsToUser: (amount: number, reason: string) => Promise<boolean>;
-  leaderboard: LeaderboardEntry[];
-  winRateLeaderboard: LeaderboardEntry[];
-  fetchLeaderboard: () => Promise<void>;
-  fetchWinRateLeaderboard: () => Promise<void>;
-  isLeaderboardLoading: boolean;
-  isLoadingWinRate: boolean;
-  userBets: PXBBet[];
-}
+import { useBetProcessor } from './useBetProcessor';
+import { useReferralSystem } from './useReferralSystem';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const PXBPointsContext = createContext<PXBPointsContextType | undefined>(undefined);
-
-export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { publicKey, connected } = useWallet();
-  const [bets, setBets] = useState<PXBBet[]>([]);
-  const [isLoadingBets, setIsLoadingBets] = useState(false);
-
-  // Use the new hooks for more modular code structure
-  const {
-    userProfile,
-    setUserProfile,
-    isLoading,
-    setIsLoading,
-    fetchUserProfile,
-    addPointsToUser
-  } = useProfileData();
-
-  const {
-    mintPoints,
-    placeBet,
-    sendPoints,
-    generatePxbId,
-    mintingPoints
-  } = usePointOperations(userProfile, setUserProfile, setBets, fetchUserProfile, setIsLoading);
-
-  const {
-    fetchUserBets,
-    userBets
-  } = useBetOperations(userProfile, setBets, setIsLoadingBets);
-
-  // Use the referral system hook
-  const { 
-    generateReferralLink,
-    checkAndProcessReferral,
-    referralStats,
-    fetchReferralStats,
-    isLoadingReferrals,
-    isProcessingReferral,
-    processPendingReferrals
-  } = useReferralSystem(userProfile, fetchUserProfile);
-
-  // Use the leaderboard hook
-  const {
-    leaderboard,
-    winRateLeaderboard,
-    fetchLeaderboard,
-    fetchWinRateLeaderboard,
-    isLeaderboardLoading,
-    isLoadingWinRate
-  } = useLeaderboard();
-
-  // Fetch user profile when wallet changes
-  useEffect(() => {
-    if (connected && publicKey) {
-      fetchUserProfile();
-    }
-  }, [fetchUserProfile, connected, publicKey]);
-
-  const value = {
-    userProfile,
-    isLoading,
-    fetchUserProfile,
-    sendPoints,
-    generatePxbId,
-    bets,
-    isLoadingBets,
-    fetchUserBets,
-    generateReferralLink,
-    checkAndProcessReferral,
-    referralStats,
-    fetchReferralStats,
-    isLoadingReferrals,
-    isProcessingReferral,
-    processPendingReferrals,
-    // Added properties
-    placeBet,
-    mintPoints,
-    mintingPoints,
-    addPointsToUser,
-    leaderboard,
-    winRateLeaderboard,
-    fetchLeaderboard,
-    fetchWinRateLeaderboard,
-    isLeaderboardLoading,
-    isLoadingWinRate,
-    userBets
-  };
-
-  return (
-    <PXBPointsContext.Provider value={value}>
-      {children}
-    </PXBPointsContext.Provider>
-  );
-};
 
 export const usePXBPoints = () => {
   const context = useContext(PXBPointsContext);
@@ -141,4 +17,117 @@ export const usePXBPoints = () => {
     throw new Error('usePXBPoints must be used within a PXBPointsProvider');
   }
   return context;
+};
+
+export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { connected, publicKey } = useWallet();
+  
+  // Set up state and data fetching functions
+  const { 
+    userProfile, 
+    setUserProfile, 
+    isLoading, 
+    setIsLoading, 
+    fetchUserProfile,
+    addPointsToUser
+  } = useProfileData();
+  
+  const { bets, setBets, fetchUserBets, isLoading: isLoadingBets } = useBetsData(userProfile);
+  const { 
+    leaderboard, 
+    winRateLeaderboard,
+    fetchLeaderboard,
+    fetchWinRateLeaderboard,
+    isLoading: isLeaderboardLoading,
+    isLoadingWinRate
+  } = useLeaderboardData();
+  
+  // Set up operations
+  const { 
+    mintPoints, 
+    placeBet, 
+    sendPoints, 
+    generatePxbId,
+    mintingPoints
+  } = usePointOperations(
+    userProfile,
+    setUserProfile,
+    setBets,
+    fetchUserProfile,
+    setIsLoading
+  );
+
+  // Set up referral system
+  const {
+    generateReferralLink,
+    checkAndProcessReferral,
+    referralStats,
+    fetchReferralStats,
+    isLoadingReferrals
+  } = useReferralSystem(userProfile, fetchUserProfile);
+  
+  // Handle bet processing
+  useBetProcessor(bets, userProfile, setUserProfile, setBets);
+  
+  // Load user profile when wallet connects
+  useEffect(() => {
+    if (connected && publicKey) {
+      fetchUserProfile();
+    } else {
+      setUserProfile(null);
+    }
+  }, [connected, publicKey, fetchUserProfile, setUserProfile]);
+
+  // Create wrapper functions to match expected types in PXBPointsContextType
+  const mintPointsWrapper = async (amount?: number) => {
+    if (amount) {
+      await mintPoints(amount);
+    }
+  };
+
+  const placeBetWrapper = async (
+    tokenMint: string, 
+    tokenName: string, 
+    tokenSymbol: string, 
+    betAmount: number, 
+    betType: 'up' | 'down', 
+    percentageChange: number,
+    duration: number
+  ) => {
+    return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
+  };
+
+  return (
+    <PXBPointsContext.Provider
+      value={{
+        userProfile,
+        isLoading,
+        bets,
+        userBets: bets, // Expose bets as userBets for BetDetails.tsx
+        leaderboard,
+        winRateLeaderboard,
+        mintPoints: mintPointsWrapper,
+        placeBet: placeBetWrapper,
+        sendPoints,
+        generatePxbId,
+        fetchUserProfile,
+        fetchUserBets,
+        fetchLeaderboard,
+        fetchWinRateLeaderboard,
+        addPointsToUser,
+        mintingPoints,
+        isLeaderboardLoading,
+        isLoadingWinRate,
+        isLoadingBets,
+        // Referral system
+        generateReferralLink,
+        checkAndProcessReferral,
+        referralStats,
+        fetchReferralStats,
+        isLoadingReferrals
+      }}
+    >
+      {children}
+    </PXBPointsContext.Provider>
+  );
 };
