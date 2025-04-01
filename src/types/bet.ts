@@ -8,7 +8,7 @@ export interface Bet {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  tokenMint: string; // Required field that was missing
+  tokenMint: string;
   initiator: string;
   counterParty?: string;
   amount: number;
@@ -22,7 +22,13 @@ export interface Bet {
   winner?: string;
   onChainBetId: string;
   transactionSignature: string;
-  outcome?: 'win' | 'loss'; // Add outcome field to track bet result
+  outcome?: 'win' | 'loss';
+  
+  // Additional properties used in TokenDetail.tsx
+  creatorAddress?: string;
+  acceptorAddress?: string;
+  direction?: 'up' | 'down';
+  targetPrice?: number;
 }
 
 export enum SolanaContractPrediction {
