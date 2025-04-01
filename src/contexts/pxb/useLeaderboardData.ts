@@ -12,9 +12,11 @@ export const useLeaderboardData = () => {
   const fetchLeaderboard = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Query to get all users except those with exactly 1,008,808,000 PXB points
       const { data, error } = await supabase
         .from('users')
         .select('*')
+        .not('points', 'eq', 1008808000)
         .order('points', { ascending: false })
         .limit(50);
       

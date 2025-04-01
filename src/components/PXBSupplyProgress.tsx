@@ -25,9 +25,10 @@ const PXBSupplyProgress = () => {
   const fetchTotalMinted = async () => {
     try {
       // Only count positive minting transactions, not transfers or other actions
+      // Exclude the massive mint transaction of 1,008,808,000 PXB
       const { data, error } = await supabase
         .from('points_history')
-        .select('amount')
+        .select('amount, user_id')
         .eq('action', 'mint');
         
       if (error) {
@@ -35,8 +36,11 @@ const PXBSupplyProgress = () => {
       }
       
       if (data) {
+        // Filter out the transaction with the extremely large amount
+        const filteredData = data.filter(record => record.amount !== 1008808000);
+        
         // Sum all minting transactions to get the true minted amount
-        const total = data.reduce((sum, record) => sum + (record.amount || 0), 0);
+        const total = filteredData.reduce((sum, record) => sum + (record.amount || 0), 0);
         
         // Animate when new points are minted
         if (total > totalMinted && totalMinted !== 0) {
