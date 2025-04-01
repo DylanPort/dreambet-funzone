@@ -11,7 +11,7 @@ const PXBSupplyProgress = () => {
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
-  const reservedAmount = 10_000_000; // 10 million reserved/removed from circulation
+  const reservedAmount = 110_000_000; // 110 million reserved/removed from circulation (10M + 100M newly burned)
 
   // Calculate progress percentage
   const progressPercentage = totalMinted / (maxSupply - reservedAmount) * 100;
