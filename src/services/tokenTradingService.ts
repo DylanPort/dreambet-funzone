@@ -112,7 +112,7 @@ export const getUserTransactions = async (tokenId?: string, limit = 10): Promise
       tokenId: item.tokenid,
       tokenName: item.tokenname,
       tokenSymbol: item.tokensymbol,
-      type: item.type as 'buy' | 'sell', // Cast to ensure type is 'buy' | 'sell'
+      type: item.type as 'buy' | 'sell', // Ensure type is strictly 'buy' | 'sell'
       quantity: item.quantity,
       price: item.price,
       pxbAmount: item.pxbamount,
@@ -190,21 +190,21 @@ export const buyTokens = async (
     // Calculate token quantity
     const tokenQuantity = calculateTokenQuantity(pxbAmount, tokenPriceUSD);
     
+    // Get the user's ID
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) {
+      toast.error('User not authenticated');
+      return false;
+    }
+    
     // Start transaction
     const { error: userUpdateError } = await supabase
       .from('users')
       .update({ points: userData.points - pxbAmount })
-      .eq('id', (await supabase.auth.getUser()).data.user?.id);
+      .eq('id', user.id);
     
     if (userUpdateError) {
       toast.error('Failed to update your PXB balance');
-      return false;
-    }
-    
-    // Get the user's ID
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    if (!userId) {
-      toast.error('User not authenticated');
       return false;
     }
     
@@ -215,11 +215,11 @@ export const buyTokens = async (
         tokenid: tokenId,
         tokenname: tokenName,
         tokensymbol: tokenSymbol,
-        type: 'buy',
+        type: 'buy', // Ensure correct type
         quantity: tokenQuantity,
         price: tokenPriceUSD,
         pxbamount: pxbAmount,
-        userid: userId
+        userid: user.id
       });
     
     if (transactionError) {
@@ -228,7 +228,7 @@ export const buyTokens = async (
       await supabase
         .from('users')
         .update({ points: userData.points })
-        .eq('id', userId);
+        .eq('id', user.id);
       
       toast.error('Transaction failed');
       return false;
@@ -239,6 +239,7 @@ export const buyTokens = async (
       .from('token_portfolios')
       .select('*')
       .eq('tokenid', tokenId)
+      .eq('userid', user.id)
       .maybeSingle();
     
     if (positionError) {
@@ -280,7 +281,7 @@ export const buyTokens = async (
           quantity: tokenQuantity,
           averagepurchaseprice: tokenPriceUSD,
           currentvalue: tokenQuantity * tokenPriceUSD,
-          userid: userId
+          userid: user.id
         });
       
       if (createError) {
@@ -310,11 +311,19 @@ export const sellTokens = async (
   tokenPriceUSD: number
 ): Promise<boolean> => {
   try {
+    // Get the user's ID
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) {
+      toast.error('User not authenticated');
+      return false;
+    }
+    
     // Check if user has enough tokens
     const { data: positionData, error: positionError } = await supabase
       .from('token_portfolios')
       .select('*')
       .eq('tokenid', tokenId)
+      .eq('userid', user.id)
       .maybeSingle();
     
     if (positionError) {
@@ -335,6 +344,7 @@ export const sellTokens = async (
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('points')
+      .eq('id', user.id)
       .single();
     
     if (userError || !userData) {
@@ -342,18 +352,11 @@ export const sellTokens = async (
       return false;
     }
     
-    // Get the user's ID
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    if (!userId) {
-      toast.error('User not authenticated');
-      return false;
-    }
-    
     // Start transaction
     const { error: userUpdateError } = await supabase
       .from('users')
       .update({ points: userData.points + pxbAmount })
-      .eq('id', userId);
+      .eq('id', user.id);
     
     if (userUpdateError) {
       toast.error('Failed to update your PXB balance');
@@ -367,11 +370,11 @@ export const sellTokens = async (
         tokenid: tokenId,
         tokenname: tokenName,
         tokensymbol: tokenSymbol,
-        type: 'sell',
+        type: 'sell', // Ensure correct type
         quantity: tokenQuantity,
         price: tokenPriceUSD,
         pxbamount: pxbAmount,
-        userid: userId
+        userid: user.id
       });
     
     if (transactionError) {
@@ -380,7 +383,7 @@ export const sellTokens = async (
       await supabase
         .from('users')
         .update({ points: userData.points })
-        .eq('id', userId);
+        .eq('id', user.id);
       
       toast.error('Transaction failed');
       return false;
