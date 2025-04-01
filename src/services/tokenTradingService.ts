@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { fetchDexScreenerData } from './dexScreenerService';
 import { UserProfile } from '@/types/pxb';
@@ -445,7 +444,7 @@ export const getUserTokenTransactions = async (
       quantity: item.quantity,
       price: item.price,
       pxbAmount: item.pxbamount,
-      type: item.type,
+      type: item.type as 'buy' | 'sell',
       timestamp: item.timestamp
     }));
   } catch (error) {
