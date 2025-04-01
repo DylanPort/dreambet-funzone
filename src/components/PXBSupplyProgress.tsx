@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Sparkles } from 'lucide-react';
+
 const PXBSupplyProgress = () => {
   const [totalMinted, setTotalMinted] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
   const reservedAmount = 10_000_000; // 10 million reserved/removed from circulation
 
@@ -18,25 +21,29 @@ const PXBSupplyProgress = () => {
     return num.toLocaleString();
   };
 
-  // Fetch the initial total minted points
+  // Fetch the total minted points from points_history instead of users table
   const fetchTotalMinted = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('users').select('points').gt('points', 0);
+      // Only count positive minting transactions, not transfers or other actions
+      const { data, error } = await supabase
+        .from('points_history')
+        .select('amount')
+        .eq('action', 'mint');
+        
       if (error) {
         throw error;
       }
+      
       if (data) {
-        // Sum all user points
-        const total = data.reduce((sum, user) => sum + (user.points || 0), 0);
-
+        // Sum all minting transactions to get the true minted amount
+        const total = data.reduce((sum, record) => sum + (record.amount || 0), 0);
+        
         // Animate when new points are minted
         if (total > totalMinted && totalMinted !== 0) {
           setIsAnimating(true);
           setTimeout(() => setIsAnimating(false), 1500);
         }
+        
         setTotalMinted(total);
       }
     } catch (err) {
@@ -60,11 +67,14 @@ const PXBSupplyProgress = () => {
       // When there's any change to points_history, refresh the total
       fetchTotalMinted();
     }).subscribe();
+    
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
-  return <div className="relative z-10">
+
+  return (
+    <div className="relative z-10">
       <div className={`absolute inset-0 bg-gradient-to-r from-dream-accent1/30 to-dream-accent3/30 rounded-lg blur-xl transition-opacity duration-700 ${isAnimating ? 'opacity-80' : 'opacity-20'}`}></div>
       
       <div className="relative z-20">
@@ -141,6 +151,8 @@ const PXBSupplyProgress = () => {
           Live updates: Points are being minted in real-time
         </span>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default PXBSupplyProgress;
