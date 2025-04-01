@@ -11,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@babel/core": "^7.26.10",
+    "@babel/preset-react": "^7.26.3",
     "@hookform/resolvers": "^3.9.0",
     "@project-serum/anchor": "^0.26.0",
     "@radix-ui/react-accordion": "^1.2.0",
