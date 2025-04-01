@@ -40,9 +40,10 @@ const BetsListView: React.FC<BetsListViewProps> = ({
       <AnimatePresence>
         {topBets.map((bet, index) => {
           // Generate a unique key combining multiple identifiers
-          const uniqueKey = `${bet.id || 'unknown'}-${bet.onChainBetId || 'nochain'}-${
-            bet.transactionSignature ? bet.transactionSignature.substring(0, 8) : ''
-          }-${index}`;
+          const betId = bet.id || `unknown-${index}`;
+          const chainId = bet.onChainBetId || 'nochain';
+          const txSignature = bet.transactionSignature ? bet.transactionSignature.substring(0, 8) : '';
+          const uniqueKey = `${betId}-${chainId}-${txSignature}-${index}`;
           
           return (
             <motion.div
