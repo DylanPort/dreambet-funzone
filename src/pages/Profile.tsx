@@ -21,7 +21,6 @@ const Profile = () => {
   useEffect(() => {
     if (!connected && publicKey === null) {
       toast({
-        title: "Wallet not connected",
         description: "Please connect your wallet to view your profile.",
         variant: "destructive"
       });
@@ -33,16 +32,15 @@ const Profile = () => {
   }, [fetchLeaderboard]);
   
   useEffect(() => {
-    if (userProfile?.referralCode) {
+    if (userProfile?.referral_code) {
       const baseUrl = window.location.origin;
-      setReferralLink(`${baseUrl}/?ref=${userProfile.referralCode}`);
+      setReferralLink(`${baseUrl}/?ref=${userProfile.referral_code}`);
     }
   }, [userProfile]);
   
   const handleCopy = () => {
     navigator.clipboard.writeText(publicKey?.toString() || '');
     toast({
-      title: "Wallet address copied!",
       description: "Your Solana wallet address has been copied to clipboard."
     });
   };
@@ -50,7 +48,6 @@ const Profile = () => {
   const handleCopyReferralLink = () => {
     navigator.clipboard.writeText(referralLink);
     toast({
-      title: "Referral link copied!",
       description: "Your referral link has been copied to clipboard."
     });
   };
@@ -58,7 +55,7 @@ const Profile = () => {
   const renderUserRank = () => {
     if (!userProfile || !leaderboard || leaderboard.length === 0) return null;
     
-    const userInLeaderboard = leaderboard.find(entry => entry.userId === userProfile.id);
+    const userInLeaderboard = leaderboard.find(entry => entry.user_id === userProfile.id);
     if (!userInLeaderboard) return null;
     
     return (
@@ -153,7 +150,7 @@ const Profile = () => {
                     </Button>
                   </div>
                   
-                  {userProfile?.referralCode && (
+                  {userProfile?.referral_code && (
                     <div className="mt-4 p-3 bg-dream-accent2/10 rounded-md">
                       <div className="text-sm mb-1">Referral Link</div>
                       <div className="flex items-center">
@@ -161,7 +158,7 @@ const Profile = () => {
                           {referralLink}
                         </div>
                         <Button variant="ghost" size="sm" className="h-6 p-1 ml-1" onClick={handleCopyReferralLink}>
-                          <Copy size={12} />
+                          <Copy className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
