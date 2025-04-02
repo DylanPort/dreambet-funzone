@@ -120,20 +120,21 @@ const UserProfilePage = () => {
           </div>
 
           {/* User Profile */}
-          <div className="glass-panel p-6">
-            <h2 className="text-2xl font-bold text-white flex items-center mb-6">
-              <User className="mr-2 h-6 w-6" />
-              {profileData.username}'s Profile
-            </h2>
-            
-            <div className="space-y-6">
+          <div className="rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
+            <div className="p-6 border-b border-indigo-900/30">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                <User className="mr-2 h-6 w-6" />
+                {profileData.username}'s Profile
+              </h2>
+            </div>
+            <div className="p-6 space-y-6">
               {/* PXB Points Card */}
-              <div className="relative overflow-hidden rounded-lg p-6 bg-gradient-to-r from-[#131c36] to-[#1a2542] border border-dream-accent1/20">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-dream-accent2/10 via-transparent to-transparent"></div>
+              <div className="relative overflow-hidden rounded-lg p-6 bg-gradient-to-r from-[#131c36] to-[#1a2542] border border-indigo-500/20">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"></div>
                 
                 <div className="flex items-center justify-between mb-4 relative z-10">
                   <div className="flex items-center">
-                    <div className="w-12 h-12 rounded-full bg-dream-accent1/10 flex items-center justify-center mr-4 border border-dream-accent1/20">
+                    <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-4 border border-indigo-500/20">
                       <img src="/lovable-uploads/b29e7031-78f0-44be-b383-e5d1dd184bb4.png" alt="PXB Logo" className="w-10 h-10 object-contain filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" />
                     </div>
                     <div>
@@ -143,35 +144,41 @@ const UserProfilePage = () => {
                 </div>
                 
                 <div className="flex items-center justify-between text-sm relative z-10">
-                  <p className="text-dream-foreground/80">{profileData.username}</p>
-                  <p className="text-dream-foreground/80">Member since: {formatDate(profileData.createdAt)}</p>
+                  <p className="text-indigo-300">{profileData.username}</p>
+                  <p className="text-indigo-300">Member since: {formatDate(profileData.createdAt)}</p>
                 </div>
               </div>
 
               {/* User Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-dream-foreground/5 p-4 rounded-lg border border-dream-foreground/10 flex flex-col items-center justify-center">
+                <div className="bg-indigo-900/10 p-4 rounded-lg border border-indigo-900/30 flex flex-col items-center justify-center">
                   <Trophy className="h-8 w-8 text-yellow-400 mb-2" />
                   <h3 className="text-white font-semibold">PXB Holder</h3>
                 </div>
                 
-                <div className="bg-dream-foreground/5 p-4 rounded-lg border border-dream-foreground/10 flex flex-col items-center justify-center">
+                <div className="bg-indigo-900/10 p-4 rounded-lg border border-indigo-900/30 flex flex-col items-center justify-center">
                   <div className="text-2xl font-bold text-white">{formatDate(profileData.createdAt)}</div>
-                  <h3 className="text-dream-foreground/70">Joined</h3>
+                  <h3 className="text-indigo-300/70">Joined</h3>
                 </div>
                 
-                <div className="bg-dream-foreground/5 p-4 rounded-lg border border-dream-foreground/10 flex flex-col items-center justify-center">
+                <div className="bg-indigo-900/10 p-4 rounded-lg border border-indigo-900/30 flex flex-col items-center justify-center">
                   <div className="text-2xl font-bold text-white">{profileData.id.substring(0, 8)}</div>
-                  <h3 className="text-dream-foreground/70">User ID</h3>
+                  <h3 className="text-indigo-300/70">User ID</h3>
                 </div>
               </div>
             </div>
           </div>
           
-          {/* Bets History (with updated component) */}
-          <div className="glass-panel p-6">
-            <h2 className="text-2xl font-bold text-white mb-6">{profileData.username}'s Betting History</h2>
-            <PXBBetsHistory userId={userId} limit={10} />
+          {/* Bets History (reusing component) */}
+          <div className="w-full">
+            <div className="rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
+              <div className="p-6 border-b border-indigo-900/30">
+                <h2 className="text-2xl font-bold text-white">{profileData.username}'s Betting History</h2>
+              </div>
+              <div className="p-6">
+                <PXBBetsHistory userId={userId} />
+              </div>
+            </div>
           </div>
         </div>
       </main>

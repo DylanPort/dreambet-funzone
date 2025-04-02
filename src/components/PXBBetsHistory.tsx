@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -207,55 +206,42 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, walletAddress, 
     );
   }
 
-  // Updated rendering to match the Active Bets style
   return (
     <div className="space-y-4">
       {bets.slice(0, visibleCount).map((bet) => (
-        <Link key={bet.id} to={`/betting/bet/${bet.id}`} className="block">
-          <div className="futuristic-card bg-black/40 border border-gray-800/50 hover:border-dream-accent1/30 p-4 transition-all duration-300 rounded-lg group relative overflow-hidden">
-            {/* Glowing effects */}
-            <div className="absolute -right-8 -top-8 w-24 h-24 bg-dream-accent2/10 blur-2xl rounded-full"></div>
-            <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-dream-accent1/10 blur-2xl rounded-full"></div>
-            
-            {/* Top row with amount and status */}
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                {bet.betType === 'up' ? (
-                  <ArrowUpRight className="text-green-400 h-5 w-5" />
-                ) : (
-                  <ArrowDownRight className="text-red-400 h-5 w-5" />
-                )}
-                <span className="font-bold text-xl text-white">{bet.betAmount} PXB</span>
+        <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4 backdrop-blur-lg bg-black/20 hover:border-dream-accent1/30 transition-all duration-300">
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex items-center">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${bet.betType === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                {bet.betType === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
               </div>
-              <div className={`py-1 px-3 rounded-full text-xs font-medium ${getBetStatusClass(bet)}`}>
-                {getBetStatusText(bet)}
-              </div>
+              <span className="font-semibold">
+                {bet.betAmount} PXB
+              </span>
             </div>
-            
-            {/* Prediction info */}
-            <div className="mb-3">
-              <p className="text-dream-foreground/80 text-sm">
-                Prediction: Price will {bet.betType === 'up' ? 'increase' : 'decrease'} by {bet.percentageChange}%
-              </p>
-            </div>
-            
-            {/* Bottom row with time and creator */}
-            <div className="flex justify-between items-center text-xs text-dream-foreground/60">
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-3 w-3" />
-                <span>Created {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}</span>
-              </div>
-              <div>
-                Creator: Unknown
-              </div>
-            </div>
-            
-            {/* Scan line animation on hover */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none">
-              <div className="absolute h-[1px] w-full bg-gradient-to-r from-transparent via-dream-accent1/40 to-transparent top-[30%] -left-full group-hover:animate-scan-line"></div>
+            <div className={`text-xs px-2 py-0.5 rounded-full ${getBetStatusClass(bet)}`}>
+              {getBetStatusText(bet)}
             </div>
           </div>
-        </Link>
+          
+          <Link to={`/token/${bet.tokenMint}`} className="block mb-1 hover:underline">
+            <div className="text-sm flex items-center text-dream-accent2">
+              <LinkIcon className="w-3 h-3 mr-1" />
+              {bet.tokenName} ({bet.tokenSymbol})
+            </div>
+          </Link>
+          
+          <div className="text-sm text-dream-foreground/70 mb-1">
+            Prediction: {bet.betType === 'up' ? 'Price will increase' : 'Price will decrease'} by {bet.percentageChange}%
+          </div>
+          
+          <div className="text-xs text-dream-foreground/60 mb-2">
+            <div className="flex items-center">
+              <Clock className="w-3 h-3 mr-1" />
+              Created {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
+            </div>
+          </div>
+        </div>
       ))}
       
       {bets.length > visibleCount && (
