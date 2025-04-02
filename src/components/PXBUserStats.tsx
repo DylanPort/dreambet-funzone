@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, UserCheck, Activity, Sparkles, BarChart } from 'lucide-react';
@@ -13,6 +14,7 @@ const PXBUserStats = () => {
   const [usersGrowthData, setUsersGrowthData] = useState<{
     date: string;
     count: number;
+    newUsers: number;
   }[]>([]);
 
   useEffect(() => {
@@ -86,11 +88,13 @@ const PXBUserStats = () => {
       if (data && data.length > 0) {
         const usersByDate: Record<string, number> = {};
         
+        // Group users by date
         data.forEach(item => {
           const date = new Date(item.created_at).toISOString().split('T')[0];
           usersByDate[date] = (usersByDate[date] || 0) + 1;
         });
         
+        // Calculate cumulative count for each date
         let cumulativeCount = 0;
         const growthData = Object.entries(usersByDate).map(([date, newUsers]) => {
           cumulativeCount += newUsers;
@@ -101,18 +105,27 @@ const PXBUserStats = () => {
           };
         });
         
+        // Ensure we have enough data points for a good visualization
+        // If we don't have at least 7 data points, add projections
         if (growthData.length < 7) {
           const lastDate = growthData.length > 0 
             ? new Date(growthData[growthData.length - 1].date) 
             : new Date();
-          const lastCount = growthData.length > 0 
-            ? growthData[growthData.length - 1].count 
-            : totalUsers;
           
+          // Use the actual total users count as reference
+          const actualTotalUsers = totalUsers;
+          
+          // If we have growth data, ensure the last point matches the total users count
+          if (growthData.length > 0) {
+            growthData[growthData.length - 1].count = actualTotalUsers;
+          }
+          
+          // Calculate average growth rate from actual data
           const avgGrowthRate = growthData.length > 1 
-            ? (lastCount - growthData[0].count) / (growthData.length - 1) 
-            : Math.max(1, Math.floor(lastCount * 0.05));
+            ? (actualTotalUsers - growthData[0].count) / (growthData.length - 1) 
+            : Math.max(1, Math.floor(actualTotalUsers * 0.05));
           
+          // Project future growth based on actual total users
           for (let i = 1; i <= 7 - growthData.length; i++) {
             const projDate = new Date(lastDate);
             projDate.setDate(projDate.getDate() + i);
@@ -121,10 +134,19 @@ const PXBUserStats = () => {
             
             growthData.push({
               date: projDate.toISOString().split('T')[0],
-              count: lastCount + (avgGrowthRate * i) + Math.floor(Math.random() * 5),
+              // Project future growth based on actual total users
+              count: Math.min(
+                actualTotalUsers + (avgGrowthRate * i) + Math.floor(Math.random() * 5),
+                // Cap projections at a reasonable level
+                Math.floor(actualTotalUsers * 1.2)
+              ),
               newUsers: projectedNewUsers
             });
           }
+        } else {
+          // If we have enough data points, ensure the last point matches total users
+          const lastIndex = growthData.length - 1;
+          growthData[lastIndex].count = totalUsers;
         }
         
         setUsersGrowthData(growthData);
@@ -132,6 +154,8 @@ const PXBUserStats = () => {
     } catch (error) {
       console.error('Error fetching user growth data:', error);
       
+      // If error, create demo data based on actual total users
+      const actualUsers = totalUsers > 0 ? totalUsers : 25;
       const today = new Date();
       const demoData = [];
       for (let i = 14; i >= 0; i--) {
@@ -140,7 +164,7 @@ const PXBUserStats = () => {
         
         const newUsers = i === 0 ? 5 : Math.floor(Math.random() * 5) + 1;
         const count = i === 14 
-          ? Math.max(5, Math.floor(totalUsers * 0.1)) 
+          ? Math.max(5, Math.floor(actualUsers * 0.1)) 
           : demoData[13-i].count + newUsers;
           
         demoData.push({
@@ -149,6 +173,9 @@ const PXBUserStats = () => {
           newUsers: newUsers
         });
       }
+      
+      // Ensure the last point matches actual users
+      demoData[demoData.length - 1].count = actualUsers;
       
       setUsersGrowthData(demoData);
     }
@@ -364,6 +391,7 @@ const PXBUserStats = () => {
                         tickLine={{
                           stroke: '#2d3748'
                         }}
+                        minTickGap={15}
                       />
                       <YAxis 
                         tick={{
@@ -376,6 +404,7 @@ const PXBUserStats = () => {
                         tickLine={{
                           stroke: '#2d3748'
                         }}
+                        domain={[0, 'dataMax * 1.1']}
                       />
                       <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
                       <ChartTooltip 
