@@ -7,32 +7,26 @@ import { Slider } from '@/components/ui/slider';
 import { CalendarClock, Coins, Timer, Gift, AlertCircle, TrendingUp, Lock, ArrowDownUp, Clock } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-
 const PXBStakingPanel = () => {
   const [stakeAmount, setStakeAmount] = useState<string>('');
   const [stakeDuration, setStakeDuration] = useState<number>(30); // Default 30 days
   const [isStaking, setIsStaking] = useState<boolean>(false);
-
   const calculateEstimatedRewards = () => {
     const amount = parseFloat(stakeAmount) || 0;
     const dailyRate = 0.171;
     return (amount * dailyRate * stakeDuration).toFixed(2);
   };
-
   const handleStakeAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
     setStakeAmount(value);
   };
-
   const handleStakeDurationChange = (value: number[]) => {
     setStakeDuration(value[0]);
   };
-
   const handleMaxClick = () => {
     setStakeAmount('1000');
     toast.info("Connected wallet balance: 1,000 $POINTS");
   };
-
   const handleStakeSubmit = () => {
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
       toast.error("Please enter a valid stake amount");
@@ -42,11 +36,9 @@ const PXBStakingPanel = () => {
       description: "The staking feature will be available shortly after token launch."
     });
   };
-
   const copyToClipboard = () => {
     toast.info("$POINTS Contract address will be available at launch!");
   };
-
   return <div className="relative">
       <div className="absolute top-2 right-2 z-10">
         
@@ -130,7 +122,7 @@ const PXBStakingPanel = () => {
                 <TrendingUp className="mr-1 h-3 w-3" />
                 <span>Current APY</span>
               </div>
-              <span className="text-dream-accent1">7300000%</span>
+              <span className="text-dream-accent1">730000%</span>
             </div>
           </div>
           
@@ -172,5 +164,4 @@ const PXBStakingPanel = () => {
       </Card>
     </div>;
 };
-
 export default PXBStakingPanel;
