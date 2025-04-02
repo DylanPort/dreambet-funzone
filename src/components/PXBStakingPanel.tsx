@@ -121,7 +121,7 @@ const PXBStakingPanel = () => {
                 <TrendingUp className="mr-1 h-3 w-3" />
                 <span>Current APY</span>
               </div>
-              <span className="text-dream-accent1">730000%</span>
+              <span className="text-dream-accent1">7300000%</span>
             </div>
           </div>
           
