@@ -9,6 +9,7 @@ interface PriceChartProps {
   }[];
   color?: string;
   isLoading?: boolean;
+  tokenMint?: string;
 }
 
 // Generate sample data if none is provided - memoized to prevent regeneration
@@ -64,7 +65,8 @@ MemoizedTooltip.displayName = 'MemoizedTooltip';
 const PriceChart: React.FC<PriceChartProps> = React.memo(({ 
   data: propData, 
   color = "url(#colorGradient)", 
-  isLoading = false 
+  isLoading = false,
+  tokenMint 
 }) => {
   const sampleData = useSampleData();
   const [data, setData] = useState(propData || sampleData);
@@ -73,7 +75,13 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
     if (propData) {
       setData(propData);
     }
-  }, [propData]);
+    
+    // Here you could fetch price data using the tokenMint if provided
+    if (tokenMint) {
+      console.log(`Fetching price data for token: ${tokenMint}`);
+      // Implement token price data fetching logic here
+    }
+  }, [propData, tokenMint]);
   
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr);
