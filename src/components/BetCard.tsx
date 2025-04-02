@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
 import { toast } from 'sonner';
-import { fetchTokenPairData } from '@/services/dexScreenerService';
+import { fetchTokenPairData, fetchTokenLogo } from '@/services/dexScreenerService';
 
 interface BetCardProps {
   bet: Bet;
@@ -36,12 +36,19 @@ const BetCard: React.FC<BetCardProps> = ({
     const fetchTokenImage = async () => {
       if (bet.tokenMint) {
         try {
-          // First try to fetch token pair data which might contain image URL
-          const pairData = await fetchTokenPairData(bet.tokenMint);
-          if (pairData?.baseToken?.address) {
-            // Try GitHub token list image format first
-            const githubImageUrl = `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${pairData.baseToken.address}/logo.png`;
-            setTokenImage(githubImageUrl);
+          // First try to get the logo from DexScreener
+          const dexScreenerLogo = await fetchTokenLogo(bet.tokenMint);
+          
+          if (dexScreenerLogo) {
+            setTokenImage(dexScreenerLogo);
+          } else {
+            // Try to fetch token pair data which might contain image URL
+            const pairData = await fetchTokenPairData(bet.tokenMint);
+            if (pairData?.baseToken?.address) {
+              // Try GitHub token list image format
+              const githubImageUrl = `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${pairData.baseToken.address}/logo.png`;
+              setTokenImage(githubImageUrl);
+            }
           }
         } catch (error) {
           console.error('Error fetching token image:', error);

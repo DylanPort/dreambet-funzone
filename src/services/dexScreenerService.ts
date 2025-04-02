@@ -1,3 +1,4 @@
+
 interface DexScreenerPair {
   liquidity: number;
   volume: {
@@ -17,11 +18,15 @@ interface DexScreenerPair {
     address: string;
     name: string;
     symbol: string;
+    logoURI?: string;
+    logo?: string;
   };
   pairCreatedAt: string;
   pairAddress: string;
   dexId: string;
   url: string;
+  logoURI?: string;
+  logo?: string;
   txns: {
     h24: {
       buys: number;
@@ -107,8 +112,8 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
     };
 
     const possibleLogoSources = [
-      pair.baseToken.logoURI,
-      pair.baseToken.logo,
+      pair.baseToken?.logoURI,
+      pair.baseToken?.logo,
       pair.logoURI,
       pair.logo,
     ];
