@@ -7,14 +7,12 @@ import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
-
 interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
   onAcceptBet: (bet: Bet) => void;
 }
-
 const BetCard: React.FC<BetCardProps> = ({
   bet,
   connected,
@@ -135,8 +133,7 @@ const BetCard: React.FC<BetCardProps> = ({
     statusDisplay = 'Matched';
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
-  return (
-    <div className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${bet.status === 'open' ? 'bg-black/20 border-dream-accent1/30' : bet.status === 'matched' ? 'bg-black/30 border-purple-500/30' : bet.status === 'expired' ? 'bg-black/20 border-red-500/30' : bet.outcome === 'win' ? 'bg-black/20 border-green-500/30' : bet.outcome === 'loss' ? 'bg-black/20 border-red-500/30' : 'bg-black/20 border-yellow-500/30'}`}>
+  return <div className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${bet.status === 'open' ? 'bg-black/20 border-dream-accent1/30' : bet.status === 'matched' ? 'bg-black/30 border-purple-500/30' : bet.status === 'expired' ? 'bg-black/20 border-red-500/30' : bet.outcome === 'win' ? 'bg-black/20 border-green-500/30' : bet.outcome === 'loss' ? 'bg-black/20 border-red-500/30' : 'bg-black/20 border-yellow-500/30'}`}>
       <div className="p-4 hover:bg-dream-accent1/5 transition-colors">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center">
@@ -163,8 +160,7 @@ const BetCard: React.FC<BetCardProps> = ({
           Prediction: {bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'Price will increase' : 'Price will decrease'} by 30%
         </div>
         
-        {currentMarketCap && bet.initialMarketCap && (
-          <div className="my-2 space-y-1">
+        {currentMarketCap && bet.initialMarketCap && <div className="my-2 space-y-1">
             <div className="flex justify-between text-xs text-dream-foreground/70">
               <span>Initial: ${formatMarketCap(bet.initialMarketCap)}</span>
               <span>Current: ${formatMarketCap(currentMarketCap)}</span>
@@ -174,8 +170,7 @@ const BetCard: React.FC<BetCardProps> = ({
               <span>Progress: {progressValue.toFixed(1)}%</span>
               <span>Target: ${formatMarketCap(calculateTargetMarketCap())}</span>
             </div>
-          </div>
-        )}
+          </div>}
         
         <div className="text-xs text-dream-foreground/60 mb-2">
           <div className="flex items-center">
@@ -185,25 +180,12 @@ const BetCard: React.FC<BetCardProps> = ({
         </div>
 
         {/* Accept Bet Button (Only show for open bets that haven't expired and aren't from the current user) */}
-        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && (
-          <Button
-            onClick={handleAcceptBet}
-            disabled={accepting}
-            className="w-full bg-dream-accent2 hover:bg-dream-accent2/80 text-white"
-            size="sm"
-          >
-            {accepting ? 'Processing...' : 'Accept Bet'}
-          </Button>
-        )}
+        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator}
 
-        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && (
-          <Button disabled className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed" size="sm">
+        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && <Button disabled className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed" size="sm">
             Connect wallet to accept
-          </Button>
-        )}
+          </Button>}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default BetCard;
