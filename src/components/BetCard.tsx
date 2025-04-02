@@ -1,18 +1,22 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy, BarChart, Target } from 'lucide-react';
+import { ArrowUp, ArrowDown, ExternalLink, Clock, Copy, User, Target } from 'lucide-react';
 import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
+import { toast } from 'sonner';
+
 interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
   onAcceptBet: (bet: Bet) => void;
 }
+
 const BetCard: React.FC<BetCardProps> = ({
   bet,
   connected,
@@ -75,20 +79,23 @@ const BetCard: React.FC<BetCardProps> = ({
     };
     fetchMarketCap();
   }, [bet.tokenMint, bet.initialMarketCap, bet.prediction, bet.isPXB, bet.percentageChange]);
+  
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
-      console.error('Connect your wallet to accept a bet');
+      toast.error('Connect your wallet to accept a bet');
       return;
     }
     if (bet.initiator === publicKeyString) {
-      console.error('You cannot accept your own bet');
+      toast.error('You cannot accept your own bet');
       return;
     }
     try {
       setAccepting(true);
       await onAcceptBet(bet);
+      toast.success('Bet accepted successfully!');
     } catch (error) {
       console.error('Error accepting bet:', error);
+      toast.error('Failed to accept bet');
     } finally {
       setAccepting(false);
     }
@@ -113,10 +120,13 @@ const BetCard: React.FC<BetCardProps> = ({
   const calculateTargetMarketCap = () => {
     if (!bet.initialMarketCap) return null;
     if (bet.isPXB && bet.percentageChange) {
-      return bet.prediction === 'moon' || bet.prediction === 'up' ? bet.initialMarketCap * (1 + bet.percentageChange / 100) : bet.initialMarketCap * (1 - bet.percentageChange / 100);
+      return bet.prediction === 'moon' || bet.prediction === 'up' 
+        ? bet.initialMarketCap * (1 + bet.percentageChange / 100) 
+        : bet.initialMarketCap * (1 - bet.percentageChange / 100);
     }
-    return bet.prediction === 'moon' || bet.prediction === 'migrate' ? bet.initialMarketCap * 1.3 // 30% increase
-    : bet.initialMarketCap * 0.7; // 30% decrease
+    return bet.prediction === 'moon' || bet.prediction === 'migrate' 
+      ? bet.initialMarketCap * 1.3 // 30% increase
+      : bet.initialMarketCap * 0.7; // 30% decrease
   };
 
   // Calculate market cap change percentage
@@ -124,10 +134,12 @@ const BetCard: React.FC<BetCardProps> = ({
     if (!bet.initialMarketCap || !currentMarketCap) return null;
     return (currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap * 100;
   };
+  
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).catch(err => {
       console.error('Could not copy text: ', err);
     });
+    toast.success('Copied to clipboard');
   };
 
   // Check if bet is expired
@@ -155,14 +167,33 @@ const BetCard: React.FC<BetCardProps> = ({
     statusDisplay = 'Matched';
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
-  return <div className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${bet.status === 'open' ? 'bg-black/20 border-dream-accent1/30' : bet.status === 'matched' || bet.status === 'pending' ? 'bg-black/30 border-purple-500/30' : bet.status === 'expired' ? 'bg-black/20 border-red-500/30' : bet.status === 'won' || bet.outcome === 'win' ? 'bg-black/20 border-green-500/30' : bet.status === 'lost' || bet.outcome === 'loss' ? 'bg-black/20 border-red-500/30' : 'bg-black/20 border-yellow-500/30'}`}>
-      <div className="px-6 py-4">
+  
+  const truncatedAddress = `${bet.initiator.substring(0, 4)}...${bet.initiator.substring(bet.initiator.length - 4)}`;
+  const targetMarketCap = calculateTargetMarketCap();
+
+  return (
+    <div className={`bg-black/60 rounded-lg border overflow-hidden transition-all duration-300 ${
+      bet.status === 'open' ? 'border-dream-accent1/30' : 
+      bet.status === 'matched' || bet.status === 'pending' ? 'border-purple-500/30' : 
+      bet.status === 'expired' || isExpired ? 'border-red-500/30' : 
+      bet.status === 'won' || bet.outcome === 'win' ? 'border-green-500/30' : 
+      bet.status === 'lost' || bet.outcome === 'loss' ? 'border-red-500/30' : 
+      'border-yellow-500/30'
+    }`}>
+      <div className="px-4 py-3">
         <div className="flex justify-between items-center">
-          <Link to={`/betting/token/${bet.tokenId}`} className="text-xl font-display font-bold hover:underline transition-all duration-300">
-            {bet.tokenName}
-            <span className="text-dream-foreground/50 text-sm ml-2">
-              ({bet.tokenSymbol})
-            </span>
+          <Link to={`/betting/token/${bet.tokenId}`} className="flex items-center gap-2 hover:underline transition-all duration-300">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <span className="font-bold text-white">{bet.tokenSymbol.charAt(0)}</span>
+            </div>
+            <div>
+              <div className="text-lg font-display font-bold">
+                {bet.tokenName}
+              </div>
+              <div className="text-dream-foreground/60 text-sm">
+                {bet.tokenSymbol}
+              </div>
+            </div>
           </Link>
 
           <div className={`px-2 py-1 rounded-full text-xs ${statusClass}`}>
@@ -170,104 +201,143 @@ const BetCard: React.FC<BetCardProps> = ({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="text-sm text-dream-foreground/70">Prediction</div>
-            <div className={`text-lg font-medium flex items-center ${bet.prediction === 'moon' || bet.prediction === 'migrate' || bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-              {bet.prediction === 'moon' || bet.prediction === 'migrate' || bet.prediction === 'up' ? <>
-                  <ArrowUp className="w-5 h-5 mr-1" />
-                  {bet.isPXB && bet.percentageChange ? `+${bet.percentageChange}%` : 'MOON'}
-                </> : <>
-                  <ArrowDown className="w-5 h-5 mr-1" />
-                  {bet.isPXB && bet.percentageChange ? `-${bet.percentageChange}%` : 'DUST'}
-                </>}
-            </div>
-          </div>
+        <div className="flex items-center text-sm text-dream-foreground/70 mt-1">
+          <Clock className="w-4 h-4 mr-1 opacity-70" />
+          <span>{isExpired ? 'Expired' : formatTimeRemaining(bet.expiresAt)}</span>
+        </div>
 
-          <div className="space-y-2">
-            <div className="text-sm text-dream-foreground/70">Bet Amount</div>
-            <div className="text-lg font-medium text-dream-accent1">
-              {bet.amount} {bet.isPXB ? 'PXB' : 'SOL'}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-sm text-dream-foreground/70">Created By</div>
-            <div className="text-md font-medium overflow-hidden text-ellipsis flex items-center">
-              <span title={bet.initiator}>
-                {bet.initiator.substring(0, 4)}...{bet.initiator.substring(bet.initiator.length - 4)}
+        {/* Progress tracking section */}
+        {bet.initialMarketCap && (
+          <div className="mt-4">
+            <div className="flex justify-between items-center text-sm mb-1">
+              <span className="text-dream-foreground/70">Progress</span>
+              <span className="text-dream-foreground/50 text-xs">
+                Updated {isLoading ? "..." : "recently"}
               </span>
-              <button onClick={() => copyToClipboard(bet.initiator)} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
-                <Copy className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-sm text-dream-foreground/70">
-              {isExpired ? 'Expired' : 'Expires'}
             </div>
             
+            <div className="flex justify-between items-center text-sm mb-1">
+              <span>Initial: {formatMarketCap(bet.initialMarketCap)}</span>
+              <span className="text-dream-foreground/50">→</span>
+              <span>Target: {formatMarketCap(targetMarketCap)}</span>
+            </div>
+            
+            <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden mb-1 relative">
+              <div 
+                className={`h-full ${bet.outcome === 'win' ? 'bg-green-500' : bet.outcome === 'loss' ? 'bg-red-500' : 'bg-purple-500'}`}
+                style={{ width: `${progressValue}%` }}
+              >
+                <div className="absolute left-0 top-0 w-full h-full flex">
+                  <div className="h-full w-2 bg-purple-600 opacity-50"></div>
+                  <div className="h-full w-2 bg-purple-600 opacity-50 ml-auto"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center text-sm">
+              {isLoading ? (
+                <span className="text-dream-foreground/60">Loading market cap data...</span>
+              ) : (
+                <>
+                  <span className={
+                    bet.outcome === 'win' ? 'text-green-400' :
+                    bet.outcome === 'loss' ? 'text-red-400' :
+                    calculateMarketCapChange() === null ? 'text-dream-foreground/60' :
+                    calculateMarketCapChange()! > 0 ? 'text-dream-foreground/60' : 'text-dream-foreground/60'
+                  }>
+                    {bet.outcome === 'win' 
+                      ? 'You Won! 🎉' 
+                      : bet.outcome === 'loss' 
+                        ? 'You Lost 😢' 
+                        : calculateMarketCapChange() === null 
+                          ? 'No change yet' 
+                          : `${calculateMarketCapChange()! > 0 ? 'Up' : 'Down'} ${Math.abs(calculateMarketCapChange()!).toFixed(2)}%`
+                    }
+                  </span>
+                  <span>
+                    Current: {formatMarketCap(currentMarketCap)}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mt-4 text-sm">
+          <div className="flex items-center">
+            <User className="w-4 h-4 mr-1 text-dream-foreground/60" />
+            <span className="text-dream-foreground/60 mr-1">Bettor</span>
+            <span className="font-medium">{truncatedAddress}</span>
+            <button 
+              onClick={() => copyToClipboard(bet.initiator)} 
+              className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
+            >
+              <Copy className="w-3 h-3" />
+            </button>
+          </div>
+          
+          <div className={`flex items-center ${
+            bet.prediction === 'moon' || bet.prediction === 'migrate' || bet.prediction === 'up' 
+              ? 'text-green-400' 
+              : 'text-red-400'
+          } font-semibold`}>
+            <Target className="w-4 h-4 mr-1" />
+            <span>Prediction</span>
+            <span className="ml-2 font-bold">
+              {bet.prediction === 'moon' || bet.prediction === 'migrate' || bet.prediction === 'up' 
+                ? 'MOON 🚀' 
+                : 'DUST 💨'
+              }
+            </span>
           </div>
         </div>
 
-        {/* Progress tracking section - always display for enhanced cards */}
-        {bet.initialMarketCap && <div className="mt-4 space-y-2">
-            <div className="flex justify-between text-xs text-dream-foreground/60">
-              <div>
-                Initial: {formatMarketCap(bet.initialMarketCap)}
-              </div>
-              <div>
-                Current: {formatMarketCap(currentMarketCap)}
-              </div>
-              <div className={bet.prediction === 'moon' || bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'}>
-                Target: {formatMarketCap(calculateTargetMarketCap())}
-              </div>
-            </div>
-
-            <Progress value={progressValue} className="h-2" />
-
-            <div className="text-xs text-center">
-              {isLoading ? 'Loading market cap data...' : <>
-                  Market cap {calculateMarketCapChange() && calculateMarketCapChange()! > 0 ? 'up' : 'down'} {Math.abs(calculateMarketCapChange() || 0).toFixed(2)}%
-                  {bet.status === 'expired' ? <span className="text-yellow-400 ml-1">Bet expired</span> : bet.prediction === 'moon' || bet.prediction === 'up' ? calculateMarketCapChange() && calculateMarketCapChange()! > 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span> : calculateMarketCapChange() && calculateMarketCapChange()! < 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span>}
-                </>}
-            </div>
-          </div>}
-
-        <div className="mt-3 pt-2 border-t border-dream-foreground/10">
-          <div className="flex justify-between items-center text-xs text-dream-foreground/60">
-            <div className="flex items-center">
-              <span>Bet ID: </span>
-              <span className="font-mono ml-1">{bet.id?.substring(0, 8) || 'Unknown'}</span>
-              <button onClick={() => copyToClipboard(bet.id || 'Unknown')} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
-                <Copy className="w-3 h-3" />
-              </button>
-            </div>
-
-            {bet.transactionSignature && <a href={`https://solscan.io/tx/${bet.transactionSignature}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline inline-flex items-center">
-                <ExternalLink className="w-3 h-3 mr-1" />
-                View on Solscan
-              </a>}
-            
-            {bet.isPXB && bet.outcome === 'win' && <div className="text-green-400">
-                +{bet.pointsWon || bet.amount * 2} PXB
-              </div>}
+        <div className="mt-2 text-xs text-dream-foreground/40">
+          <div className="cursor-pointer hover:text-dream-foreground/60 transition-colors truncate" 
+            onClick={() => copyToClipboard(bet.tokenMint)}>
+            {bet.tokenMint}
           </div>
         </div>
 
-        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && !bet.isPXB && <div className="mt-4">
-            <Button onClick={handleAcceptBet} disabled={accepting} className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90">
+        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && !bet.isPXB && (
+          <div className="mt-4">
+            <Button 
+              onClick={handleAcceptBet} 
+              disabled={accepting} 
+              className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90"
+            >
               {accepting ? 'Accepting...' : 'Accept Bet'}
             </Button>
-          </div>}
+          </div>
+        )}
 
-        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && !bet.isPXB && <div className="mt-4">
-            <Button disabled className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed">
+        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && !bet.isPXB && (
+          <div className="mt-4">
+            <Button 
+              disabled 
+              className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed"
+            >
               Connect wallet to accept
             </Button>
-          </div>}
+          </div>
+        )}
+
+        {bet.transactionSignature && (
+          <div className="mt-2 text-center">
+            <a 
+              href={`https://solscan.io/tx/${bet.transactionSignature}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-xs text-dream-accent2 hover:underline inline-flex items-center"
+            >
+              <ExternalLink className="w-3 h-3 mr-1" />
+              View on Solscan
+            </a>
+          </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default BetCard;

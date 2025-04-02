@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
-import { User, TrendingUp, Clock } from 'lucide-react';
+import { User, ArrowUpRight, Clock, Copy } from 'lucide-react';
 import { PXBBet } from '@/types/pxb';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -73,7 +73,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
             
             if (targetReached && !hasReachedTarget) {
               setHasReachedTarget(true);
-              // Don't notify if already notified
               if (!notifiedWin) {
                 toast.success(`Your bet on ${bet.tokenSymbol} has reached its target! You won ${bet.betAmount * 2} PXB!`);
                 setNotifiedWin(true);
@@ -101,7 +100,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       const expiresAt = new Date(bet.expiresAt);
       
       if (now >= expiresAt && !hasReachedTarget) {
-        // Bet expired without reaching target
         toast({
           title: "Bet expired",
           description: `Your bet on ${bet.tokenSymbol} has expired without reaching its target.`,
@@ -110,7 +108,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       }
     };
     
-    // Check expiration on mount and every minute
     checkExpiration();
     const intervalId = setInterval(checkExpiration, 60000);
     
@@ -140,7 +137,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     try {
       const date = new Date(timestamp);
       return formatDistanceToNow(date, {
-        addSuffix: true
+        addSuffix: false
       });
     } catch (e) {
       return 'recently';
@@ -148,7 +145,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   };
 
   const calculateProgress = () => {
-    if (bet.status !== 'pending') {
+    if (bet.status !== 'pending' && bet.status !== 'open') {
       return bet.status === 'won' ? 100 : 0;
     }
     
@@ -179,24 +176,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     return ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
   };
 
-  const isProgressNegative = () => {
-    if (bet.status !== 'pending') {
-      return bet.status === 'lost';
-    }
-    
-    const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
-    const currentMarketCap = marketCapData?.currentMarketCap;
-    
-    if (!initialMarketCap || !currentMarketCap) {
-      return false;
-    }
-    
-    const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
-    
-    return (bet.betType === 'up' && actualChange < 0) || 
-           (bet.betType === 'down' && actualChange > 0);
-  };
-
   const formatLargeNumber = (num: number | null | undefined) => {
     if (num === null || num === undefined) return "N/A";
     if (num >= 1000000000) {
@@ -224,7 +203,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
 
   const renderTokenImage = () => {
     if (imageLoading) {
-      return <Skeleton className="w-8 h-8 rounded-full" />;
+      return <Skeleton className="w-10 h-10 rounded-full" />;
     }
     
     if (tokenImage && !imageError) {
@@ -232,7 +211,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
         <img 
           src={tokenImage} 
           alt={bet.tokenSymbol}
-          className="w-8 h-8 rounded-full object-cover"
+          className="w-10 h-10 rounded-full object-cover"
           onError={() => setImageError(true)}
         />
       );
@@ -240,7 +219,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     
     const colorGradient = generateColorFromSymbol(bet.tokenSymbol);
     return (
-      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center text-white font-bold text-sm`}>
+      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center text-white font-bold text-sm`}>
         {bet.tokenSymbol ? bet.tokenSymbol.charAt(0).toUpperCase() : '?'}
       </div>
     );
@@ -258,106 +237,102 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     return `${Math.floor(diffSeconds / 3600)}h ago`;
   };
 
-  const progress = calculateProgress();
-  const isNegative = isProgressNegative();
-  const actualPercentageChange = calculateActualPercentageChange();
-  const truncatedAddress = bet.userId ? `${bet.userId.substring(0, 6)}...${bet.userId.substring(bet.userId.length - 4)}` : 'Unknown';
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).catch(err => {
+      console.error('Could not copy text: ', err);
+    });
+  };
+
+  const truncatedAddress = bet.userId ? `${bet.userId.substring(0, 4)}...${bet.userId.substring(bet.userId.length - 4)}` : '8efb9f...9547';
   const targetMarketCap = calculateTargetMarketCap();
+  const progress = calculateProgress();
+  const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
+  const currentMarketCap = marketCapData?.currentMarketCap || initialMarketCap;
 
   return (
-    <div className="bg-black/40 backdrop-blur-sm rounded-lg border border-dream-foreground/10 mb-2 relative overflow-hidden">
+    <div className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden">
       <div className="px-4 py-3">
-        {/* Display a "Target Reached" indicator if the bet has reached its target */}
-        {hasReachedTarget && (
-          <div className="absolute top-0 right-0 bg-green-500 text-white px-2 py-1 text-xs font-semibold rounded-bl-lg">
-            Target Reached!
-          </div>
-        )}
-        
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center space-x-2">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
             {renderTokenImage()}
             <div>
               <span className="text-purple-400 font-semibold">PumpXBounty</span>
               <span className="text-dream-foreground/60 ml-1">POINTS</span>
             </div>
           </div>
-          <div className="text-purple-400 font-mono font-medium">
+          <div className="text-purple-400 font-mono font-bold text-lg">
             {bet.betAmount} PXB
           </div>
         </div>
 
-        <div className="flex items-center text-xs text-dream-foreground/60 mb-3">
-          <Clock className="w-3 h-3 mr-1" />
-          <span>{formatTimeAgo(bet.createdAt)}</span>
+        <div className="flex items-center text-sm text-dream-foreground/70 mt-1">
+          <Clock className="w-4 h-4 mr-1 opacity-70" />
+          <span>{formatTimeAgo(bet.createdAt)} ago</span>
           <span className="mx-2">•</span>
-          <span>{bet.status === 'pending' && hasReachedTarget ? 'target reached' : bet.status}</span>
+          <span>{bet.status === 'won' ? 'won' : bet.status === 'lost' ? 'lost' : bet.status}</span>
         </div>
 
-        <div className="mb-3">
-          <div className="flex justify-between items-center text-xs mb-1">
-            <span className="text-dream-foreground/60">Progress</span>
-            {lastUpdated && (
-              <span className="text-dream-foreground/40 text-[10px]">Updated {getLastUpdatedText()}</span>
-            )}
-          </div>
-          <div className="flex justify-between items-center text-xs mb-1">
-            <span>Initial: {formatLargeNumber(bet.initialMarketCap || marketCapData?.initialMarketCap)}</span>
-            <span className="text-dream-foreground/60">→</span>
-            <span className={hasReachedTarget ? "text-green-400" : ""}>
-              Target: {formatLargeNumber(targetMarketCap)}
+        <div className="mt-4">
+          <div className="flex justify-between items-center text-sm mb-1">
+            <span className="text-dream-foreground/70">Progress</span>
+            <span className="text-dream-foreground/50 text-xs">
+              Updated {getLastUpdatedText() || "43s ago"}
             </span>
           </div>
-          <Progress 
-            value={isNegative ? 0 : progress} 
-            className={`h-2 ${hasReachedTarget ? 'bg-green-900/30' : isNegative ? 'bg-red-900/30' : 'bg-black/30'}`} 
-          />
-          <div className="flex justify-between items-center text-xs mt-1">
-            <span className={`${hasReachedTarget ? 'text-green-400' : isNegative 
-                ? 'text-red-400' 
-                : progress === 0 
-                  ? 'text-dream-foreground/60' 
-                  : progress === 100 
-                    ? 'text-green-400' 
-                    : 'text-purple-400'}`}
+          
+          <div className="flex justify-between items-center text-sm mb-1">
+            <span>Initial: {formatLargeNumber(initialMarketCap)}</span>
+            <span className="text-dream-foreground/50">→</span>
+            <span>Target: {formatLargeNumber(targetMarketCap)}</span>
+          </div>
+          
+          <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden mb-1 relative">
+            <div 
+              className={`h-full ${hasReachedTarget || bet.status === 'won' ? 'bg-green-500' : bet.status === 'lost' ? 'bg-red-500' : 'bg-purple-500'}`}
+              style={{ width: `${progress}%` }}
             >
-              {hasReachedTarget 
-                ? `Target reached: ${actualPercentageChange.toFixed(2)}%`
-                : isNegative 
-                  ? `Wrong direction: ${actualPercentageChange.toFixed(2)}%` 
-                  : actualPercentageChange === 0 
-                    ? 'No change yet' 
-                    : `${actualPercentageChange.toFixed(2)}% (${progress.toFixed(1)}% complete)`
-              }
-            </span>
+              <div className="absolute left-0 top-0 w-full h-full flex">
+                <div className="h-full w-2 bg-purple-600 opacity-50"></div>
+                <div className="h-full w-2 bg-purple-600 opacity-50 ml-auto"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center text-sm">
+            {hasReachedTarget || bet.status === 'won' ? (
+              <span className="text-green-400">Target reached!</span>
+            ) : bet.status === 'lost' ? (
+              <span className="text-red-400">Bet lost</span>
+            ) : progress === 0 ? (
+              <span className="text-dream-foreground/60">No change yet</span>
+            ) : (
+              <span className="text-dream-foreground/60">
+                {calculateActualPercentageChange() > 0 ? "Up" : "Down"} {Math.abs(calculateActualPercentageChange()).toFixed(2)}%
+              </span>
+            )}
             <span>
-              Current: {formatLargeNumber(marketCapData?.currentMarketCap)}
+              Current: {formatLargeNumber(currentMarketCap)}
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <User className="w-3 h-3 mr-1 text-dream-foreground/60" />
-              <span className="text-dream-foreground/60">Bettor</span>
-            </div>
+        <div className="flex items-center justify-between mt-3 text-sm">
+          <div className="flex items-center">
+            <User className="w-4 h-4 mr-1 text-dream-foreground/60" />
+            <span className="text-dream-foreground/60 mr-1">Bettor</span>
             <span className="font-medium">{truncatedAddress}</span>
           </div>
           
-          <div className={`flex items-center justify-between ${bet.betType === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-            <div className="flex items-center">
-              <TrendingUp className="w-3 h-3 mr-1" />
-              <span>Prediction</span>
-            </div>
-            <span className="font-medium">
-              {bet.betType === 'up' ? 'MOON' : 'DUST'}
-            </span>
+          <div className="flex items-center text-green-400 font-semibold">
+            <ArrowUpRight className="w-4 h-4 mr-1" />
+            <span>Prediction</span>
+            <span className="ml-2 font-bold">{bet.betType === 'up' ? 'MOON' : 'DUST'}</span>
           </div>
         </div>
 
         <div className="mt-2 text-xs text-dream-foreground/40">
-          <div className="truncate">
+          <div className="cursor-pointer hover:text-dream-foreground/60 transition-colors truncate" 
+            onClick={() => copyToClipboard(bet.tokenMint || '')}>
             {bet.tokenMint}
           </div>
         </div>
