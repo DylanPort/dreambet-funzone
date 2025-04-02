@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -27,6 +26,16 @@ export interface UserStats {
   winRate: number;
   totalProfit: number;
   balance: number;
+}
+
+export interface UserMessage {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  content: string;
+  created_at: string;
+  read: boolean;
+  sender_username?: string | null;
 }
 
 // Fetch the user's profile data by wallet address
@@ -222,6 +231,195 @@ export const updateUsername = async (walletAddress: string, username: string): P
   } catch (error) {
     console.error("Unexpected error in updateUsername:", error);
     toast.error("An unexpected error occurred");
+    return false;
+  }
+};
+
+// Search users by wallet address or username
+export const searchUsers = async (searchQuery: string): Promise<UserProfile[]> => {
+  try {
+    if (!searchQuery || searchQuery.trim().length < 3) {
+      return [];
+    }
+    
+    const query = searchQuery.trim().toLowerCase();
+    
+    // First try exact match on wallet address
+    if (query.length >= 30) {
+      const { data: exactMatch, error: exactError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('wallet_address', query)
+        .limit(1);
+      
+      if (!exactError && exactMatch && exactMatch.length > 0) {
+        return exactMatch as UserProfile[];
+      }
+    }
+    
+    // Then try partial match on username and wallet_address
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .or(`username.ilike.%${query}%,wallet_address.ilike.%${query}%`)
+      .limit(20);
+    
+    if (error) {
+      console.error("Error searching users:", error);
+      toast.error("Failed to search users");
+      return [];
+    }
+    
+    return data as UserProfile[];
+  } catch (error) {
+    console.error("Unexpected error in searchUsers:", error);
+    toast.error("An unexpected error occurred while searching users");
+    return [];
+  }
+};
+
+// Send a message to another user
+export const sendMessage = async (
+  senderWalletAddress: string,
+  recipientId: string,
+  content: string
+): Promise<UserMessage | null> => {
+  try {
+    if (!senderWalletAddress || !recipientId || !content.trim()) {
+      toast.error("Sender, recipient, and message content are required");
+      return null;
+    }
+    
+    // Get the sender's user ID
+    const { data: senderData, error: senderError } = await supabase
+      .from('users')
+      .select('id, username')
+      .eq('wallet_address', senderWalletAddress)
+      .single();
+    
+    if (senderError) {
+      console.error("Error fetching sender ID:", senderError);
+      toast.error("Failed to send message: Sender profile not found");
+      return null;
+    }
+    
+    // Check if recipient exists
+    const { data: recipientData, error: recipientError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', recipientId)
+      .single();
+    
+    if (recipientError || !recipientData) {
+      console.error("Error fetching recipient:", recipientError);
+      toast.error("Failed to send message: Recipient not found");
+      return null;
+    }
+    
+    // Insert the message
+    const { data: messageData, error: messageError } = await supabase
+      .from('user_messages')
+      .insert({
+        sender_id: senderData.id,
+        recipient_id: recipientId,
+        content: content.trim(),
+        read: false
+      })
+      .select()
+      .single();
+    
+    if (messageError) {
+      console.error("Error sending message:", messageError);
+      toast.error("Failed to send message");
+      return null;
+    }
+    
+    toast.success("Message sent successfully");
+    
+    return {
+      ...messageData,
+      sender_username: senderData.username
+    } as UserMessage;
+    
+  } catch (error) {
+    console.error("Unexpected error in sendMessage:", error);
+    toast.error("An unexpected error occurred while sending message");
+    return null;
+  }
+};
+
+// Fetch messages for the current user (both sent and received)
+export const fetchUserMessages = async (walletAddress: string): Promise<UserMessage[]> => {
+  try {
+    if (!walletAddress) {
+      console.error("Wallet address is required to fetch messages");
+      return [];
+    }
+    
+    // Get the user's ID
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet_address', walletAddress)
+      .single();
+    
+    if (userError) {
+      console.error("Error fetching user ID:", userError);
+      return [];
+    }
+    
+    const userId = userData.id;
+    
+    // Fetch messages where user is either sender or recipient
+    const { data, error } = await supabase
+      .from('user_messages')
+      .select(`
+        *,
+        sender:sender_id(username),
+        recipient:recipient_id(username)
+      `)
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    
+    if (error) {
+      console.error("Error fetching user messages:", error);
+      return [];
+    }
+    
+    // Format the messages
+    return data.map(msg => ({
+      id: msg.id,
+      sender_id: msg.sender_id,
+      recipient_id: msg.recipient_id,
+      content: msg.content,
+      created_at: msg.created_at,
+      read: msg.read,
+      sender_username: msg.sender?.username
+    })) as UserMessage[];
+    
+  } catch (error) {
+    console.error("Unexpected error in fetchUserMessages:", error);
+    return [];
+  }
+};
+
+// Mark a message as read
+export const markMessageAsRead = async (messageId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('user_messages')
+      .update({ read: true })
+      .eq('id', messageId);
+    
+    if (error) {
+      console.error("Error marking message as read:", error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Unexpected error in markMessageAsRead:", error);
     return false;
   }
 };
