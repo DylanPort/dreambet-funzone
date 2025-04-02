@@ -4,28 +4,34 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { CalendarClock, Coins, Timer, Gift, AlertCircle, TrendingUp, Lock, ArrowDownUp } from 'lucide-react';
+import { CalendarClock, Coins, Timer, Gift, AlertCircle, TrendingUp, Lock, ArrowDownUp, Clock } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+
 const PXBStakingPanel = () => {
   const [stakeAmount, setStakeAmount] = useState<string>('');
   const [stakeDuration, setStakeDuration] = useState<number>(30); // Default 30 days
   const [isStaking, setIsStaking] = useState<boolean>(false);
+
   const calculateEstimatedRewards = () => {
     const amount = parseFloat(stakeAmount) || 0;
     return (amount * 0.002 * stakeDuration).toFixed(2);
   };
+
   const handleStakeAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
     setStakeAmount(value);
   };
+
   const handleStakeDurationChange = (value: number[]) => {
     setStakeDuration(value[0]);
   };
+
   const handleMaxClick = () => {
     setStakeAmount('1000');
     toast.info("Connected wallet balance: 1,000 $POINTS");
   };
+
   const handleStakeSubmit = () => {
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
       toast.error("Please enter a valid stake amount");
@@ -35,9 +41,11 @@ const PXBStakingPanel = () => {
       description: "The staking feature will be available shortly after token launch."
     });
   };
+
   const copyToClipboard = () => {
     toast.info("$POINTS Contract address will be available at launch!");
   };
+
   return <div className="relative">
       <div className="absolute top-2 right-2 z-10">
         
@@ -57,7 +65,6 @@ const PXBStakingPanel = () => {
         </CardHeader>
         
         <CardContent className="space-y-4">
-          {/* Contract Address Section */}
           <div className="bg-dream-foreground/5 rounded-md p-3 flex justify-between items-center">
             <div className="flex items-center text-sm">
               <Lock className="mr-1 h-4 w-4 text-dream-accent1" />
@@ -144,11 +151,25 @@ const PXBStakingPanel = () => {
         </CardContent>
         
         <CardFooter className="flex flex-col space-y-4 px-6 pb-6">
-          <Button onClick={handleStakeSubmit} disabled={isStaking || !stakeAmount || parseFloat(stakeAmount) <= 0} className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:opacity-90 transition-opacity">
-            {isStaking ? <>
+          <Button 
+            onClick={handleStakeSubmit} 
+            disabled={isStaking || !stakeAmount || parseFloat(stakeAmount) <= 0} 
+            className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:opacity-90 transition-opacity group relative"
+          >
+            {isStaking ? (
+              <>
                 <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
                 Staking...
-              </> : 'Stake $POINTS'}
+              </>
+            ) : (
+              <>
+                <Clock className="mr-2 h-4 w-4 animate-pulse" />
+                <span>Coming Soon</span>
+                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-dream-accent1/80 to-dream-accent2/80">
+                  Stake $POINTS
+                </span>
+              </>
+            )}
           </Button>
           
           <p className="text-xs text-center text-dream-foreground/60 mt-2">
@@ -158,4 +179,5 @@ const PXBStakingPanel = () => {
       </Card>
     </div>;
 };
+
 export default PXBStakingPanel;
