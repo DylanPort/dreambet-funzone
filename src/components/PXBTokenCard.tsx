@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
+import { fetchTokenLogo } from '@/services/dexScreenerService';
 
 interface PXBTokenCardProps {
   tokenMint: string;
@@ -32,8 +31,18 @@ const PXBTokenCard: React.FC<PXBTokenCardProps> = ({
       
       try {
         setLoading(true);
-        const imageUrl = await fetchTokenImage(tokenMint, tokenSymbol);
-        setTokenImage(imageUrl);
+        // First try to get the logo from DexScreener
+        const dexScreenerLogo = await fetchTokenLogo(tokenMint);
+        
+        if (dexScreenerLogo) {
+          setTokenImage(dexScreenerLogo);
+        } else {
+          // Fallback to the old method if DexScreener doesn't have the logo
+          const imageUrl = await import('@/services/moralisService').then(
+            module => module.fetchTokenImage(tokenMint, tokenSymbol)
+          );
+          setTokenImage(imageUrl);
+        }
       } catch (error) {
         console.error("Error loading token image:", error);
         setImageError(true);

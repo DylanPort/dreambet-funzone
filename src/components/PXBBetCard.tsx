@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { User, ArrowUpRight, Clock, Copy } from 'lucide-react';
 import { PXBBet } from '@/types/pxb';
-import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { fetchDexScreenerData, fetchTokenLogo } from '@/services/dexScreenerService';
 import { toast } from '@/hooks/use-toast';
 
 interface PXBBetCardProps {
@@ -33,8 +33,18 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       
       try {
         setImageLoading(true);
-        const imageUrl = await fetchTokenImage(bet.tokenMint, bet.tokenSymbol);
-        setTokenImage(imageUrl);
+        // First try to get the logo from DexScreener
+        const dexScreenerLogo = await fetchTokenLogo(bet.tokenMint);
+        
+        if (dexScreenerLogo) {
+          setTokenImage(dexScreenerLogo);
+        } else {
+          // Fallback to the old method if DexScreener doesn't have the logo
+          const imageUrl = await import('@/services/moralisService').then(
+            module => module.fetchTokenImage(bet.tokenMint, bet.tokenSymbol)
+          );
+          setTokenImage(imageUrl);
+        }
       } catch (error) {
         console.error("Error loading token image:", error);
         setImageError(true);
