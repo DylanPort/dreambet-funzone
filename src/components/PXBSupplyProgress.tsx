@@ -15,8 +15,11 @@ const PXBSupplyProgress = () => {
   const additionalBurned = 110_000_000; // 110 million reserved/removed from circulation (10M + 100M previously burned)
   const totalReserved = stakingRewards + additionalBurned;
 
-  // Calculate progress percentage
-  const progressPercentage = totalMinted / (maxSupply - totalReserved) * 100;
+  // Calculate percentages for display
+  const mintedPercentage = (totalMinted / maxSupply) * 100;
+  const stakingPercentage = (stakingRewards / maxSupply) * 100;
+  const burnedPercentage = (additionalBurned / maxSupply) * 100;
+  const totalPercentage = mintedPercentage + stakingPercentage + burnedPercentage;
 
   // Format numbers with commas
   const formatNumber = (num: number): string => {
@@ -99,30 +102,64 @@ const PXBSupplyProgress = () => {
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-dream-accent2" /> : error ? <span className="text-red-400 text-sm">{error}</span> : null}
         </div>
         
-        {/* 3D container for progress bar */}
+        {/* Stacked progress bar showing different allocations */}
         <div className="relative transform perspective-1000 rotate-x-1 hover:rotate-x-2 transition-transform duration-300">
-          {/* Animated background */}
+          {/* Background and effects */}
           <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/20 via-dream-accent2/20 to-dream-accent3/20 animate-gradient-move rounded-lg blur-sm"></div>
-          
-          {/* Reflective surface effect */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-50 rounded-lg"></div>
           
-          {/* Main progress bar with shadow for 3D effect */}
+          {/* Multi-segment progress bar */}
           <div className="relative z-10 mb-1 transform translate-y-px shadow-[0_2px_10px_rgba(0,0,0,0.2)]">
-            <Progress value={progressPercentage} className={`h-7 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'}`} />
-            
-            {/* Moving highlight effect */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none rounded-lg">
-              <div className="absolute top-0 left-0 w-20 h-full bg-white/20 animate-scan-line"></div>
+            <div className="h-7 w-full rounded-lg bg-black/20 backdrop-blur-sm border border-white/10 overflow-hidden relative">
+              {/* Minted segment - green */}
+              <div 
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 via-emerald-400 to-teal-500 transition-all duration-300"
+                style={{ width: `${mintedPercentage}%` }}
+              >
+                {/* Shimmer effect for minted */}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-transparent to-white/20 animate-shine"></div>
+              </div>
               
-              {/* Pulse dots for "minting in progress" effect */}
-              {Array.from({
-              length: 5
-            }).map((_, i) => <div key={i} className="absolute top-1/2 h-1 w-1 rounded-full bg-white/80 animate-pulse" style={{
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${i * 0.3}s`,
-              transform: 'translateY(-50%)'
-            }} />)}
+              {/* Staking segment - purple */}
+              <div 
+                className="absolute top-0 h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-300"
+                style={{ left: `${mintedPercentage}%`, width: `${stakingPercentage}%` }}
+              >
+                {/* Shimmer effect for staking */}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10 animate-shine" style={{ animationDelay: '0.5s' }}></div>
+              </div>
+              
+              {/* Burned segment - yellow/orange */}
+              <div 
+                className="absolute top-0 h-full bg-gradient-to-r from-yellow-500 to-amber-500 transition-all duration-300"
+                style={{ left: `${mintedPercentage + stakingPercentage}%`, width: `${burnedPercentage}%` }}
+              >
+                {/* Shimmer effect for burned */}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10 animate-shine" style={{ animationDelay: '1s' }}></div>
+              </div>
+              
+              {/* Moving highlight effect */}
+              <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none rounded-lg">
+                <div className="absolute top-0 left-0 w-20 h-full bg-white/20 animate-scan-line"></div>
+                
+                {/* Pulse dots for "minting in progress" effect */}
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="absolute top-1/2 h-1 w-1 rounded-full bg-white/80 animate-pulse" 
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      animationDelay: `${i * 0.3}s`,
+                      transform: 'translateY(-50%)'
+                    }} 
+                  />
+                ))}
+              </div>
+              
+              {/* Progress percentage label */}
+              {totalPercentage > 5 && (
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white drop-shadow-md pointer-events-none">
+                  {totalPercentage.toFixed(2)}% of 1B
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -134,24 +171,35 @@ const PXBSupplyProgress = () => {
           <span className="text-[#00ff00]">
             {formatNumber(totalMinted)} PXB
           </span>
+          <span className="text-dream-foreground/40 text-xs ml-1">
+            ({(mintedPercentage).toFixed(5)}%)
+          </span>
         </div>
         <div className="mb-1">
           <span className="text-dream-foreground/60">Staking Rewards: </span>
           <span className="font-medium text-purple-400">{formatNumber(stakingRewards)} PXB</span>
+          <span className="text-dream-foreground/40 text-xs ml-1">
+            ({stakingPercentage.toFixed(1)}%)
+          </span>
         </div>
         <div className="mb-1">
           <span className="text-dream-foreground/60">Burned: </span>
           <span className="font-medium text-yellow-400">{formatNumber(additionalBurned)} PXB</span>
+          <span className="text-dream-foreground/40 text-xs ml-1">
+            ({burnedPercentage.toFixed(1)}%)
+          </span>
         </div>
         <div className="mb-1">
           <span className="text-dream-foreground/60">Remaining: </span>
           <span className="font-medium">{formatNumber(maxSupply - totalReserved - totalMinted)} PXB</span>
+          <span className="text-dream-foreground/40 text-xs ml-1">
+            ({(100 - totalPercentage).toFixed(1)}%)
+          </span>
         </div>
         <div className="mb-1">
-          <span className="text-dream-foreground/60">Progress: </span>
-          <span className={`font-medium transition-all duration-500 ${isAnimating ? 'text-yellow-300' : ''}`}>
-            {progressPercentage.toFixed(5)}%
-          </span>
+          <span className="text-dream-foreground/60">Total Supply: </span>
+          <span className="font-medium">{formatNumber(maxSupply)} PXB</span>
+          <span className="text-dream-foreground/40 text-xs ml-1">(100%)</span>
         </div>
       </div>
       
