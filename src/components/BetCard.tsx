@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
-import { formatTimeRemaining } from '@/utils/betUtils';
+import { formatTimeRemaining, formatAddress } from '@/utils/betUtils';
 import { Button } from '@/components/ui/button';
 import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy, BarChart, Target } from 'lucide-react';
 import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
+import { fetchDexScreenerData } from '@/services/dexScreenerService';
+
 interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
   onAcceptBet: (bet: Bet) => void;
 }
+
 const BetCard: React.FC<BetCardProps> = ({
   bet,
   connected,
@@ -23,8 +26,9 @@ const BetCard: React.FC<BetCardProps> = ({
   const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(bet.currentMarketCap || null);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [tokenImage, setTokenImage] = useState<string | null>(null);
 
-  // Fetch the latest market cap data when component mounts
+  // Fetch the latest market cap data and token image when component mounts
   useEffect(() => {
     const fetchMarketCap = async () => {
       if (bet.tokenMint) {
@@ -55,8 +59,31 @@ const BetCard: React.FC<BetCardProps> = ({
         }
       }
     };
+
+    // Fetch token image from DexScreener
+    const fetchTokenImage = async () => {
+      if (bet.tokenMint) {
+        try {
+          const data = await fetchDexScreenerData(bet.tokenMint);
+          if (data && data.baseToken) {
+            const imageUrl = `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${bet.tokenMint}/logo.png`;
+            setTokenImage(imageUrl);
+          }
+        } catch (error) {
+          console.error('Error fetching token image:', error);
+        }
+      }
+    };
+
     fetchMarketCap();
+    fetchTokenImage();
+
+    // Set up an interval to update market cap every 2 seconds
+    const intervalId = setInterval(fetchMarketCap, 2000);
+    
+    return () => clearInterval(intervalId);
   }, [bet.tokenMint, bet.initialMarketCap, bet.prediction]);
+
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
       console.error('Connect your wallet to accept a bet');
@@ -103,6 +130,7 @@ const BetCard: React.FC<BetCardProps> = ({
     if (!bet.initialMarketCap || !currentMarketCap) return null;
     return (currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap * 100;
   };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).catch(err => {
       console.error('Could not copy text: ', err);
@@ -133,6 +161,7 @@ const BetCard: React.FC<BetCardProps> = ({
     statusDisplay = 'Matched';
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
+
   return <div className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${bet.status === 'open' ? 'bg-black/20 border-dream-accent1/30' : bet.status === 'matched' ? 'bg-black/30 border-purple-500/30' : bet.status === 'expired' ? 'bg-black/20 border-red-500/30' : bet.outcome === 'win' ? 'bg-black/20 border-green-500/30' : bet.outcome === 'loss' ? 'bg-black/20 border-red-500/30' : 'bg-black/20 border-yellow-500/30'}`}>
       <div className="p-4 hover:bg-dream-accent1/5 transition-colors">
         <div className="flex justify-between items-start mb-2">
@@ -149,28 +178,45 @@ const BetCard: React.FC<BetCardProps> = ({
           </div>
         </div>
         
-        <Link to={`/betting/token/${bet.tokenId}`} className="mb-1 hover:underline text-dream-accent2">
-          <div className="text-sm flex items-center">
-            <ExternalLink className="w-3 h-3 mr-1" />
-            {bet.tokenName} ({bet.tokenSymbol})
-          </div>
-        </Link>
+        <div className="flex items-center gap-2 mb-1">
+          {tokenImage && (
+            <img src={tokenImage} alt={bet.tokenSymbol} className="w-5 h-5 rounded-full" onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }} />
+          )}
+          <Link to={`/betting/token/${bet.tokenId}`} className="hover:underline text-dream-accent2">
+            <div className="text-sm flex items-center">
+              <ExternalLink className="w-3 h-3 mr-1" />
+              {bet.tokenName} ({bet.tokenSymbol})
+            </div>
+          </Link>
+        </div>
         
-        <div className="text-sm text-dream-foreground/70 mb-1">
+        <div className="text-sm text-dream-foreground/70 mb-1 flex items-center">
+          <Target className="w-3 h-3 mr-1" />
           Prediction: {bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'Price will increase' : 'Price will decrease'} by 30%
         </div>
         
-        {currentMarketCap && bet.initialMarketCap && <div className="my-2 space-y-1">
+        <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
+          <div className="flex items-center cursor-pointer hover:text-dream-accent2" onClick={() => copyToClipboard(bet.tokenMint)}>
+            <Copy className="w-3 h-3 mr-1" />
+            Token: {formatAddress(bet.tokenMint, 6, 4)}
+          </div>
+        </div>
+        
+        {currentMarketCap && bet.initialMarketCap && (
+          <div className="my-2 space-y-1">
             <div className="flex justify-between text-xs text-dream-foreground/70">
-              <span>Initial: ${formatMarketCap(bet.initialMarketCap)}</span>
-              <span>Current: ${formatMarketCap(currentMarketCap)}</span>
+              <span>Initial: {formatMarketCap(bet.initialMarketCap)}</span>
+              <span>Current: {formatMarketCap(currentMarketCap)}</span>
             </div>
             <Progress value={progressValue} className="h-1" />
             <div className="flex justify-between text-xs text-dream-foreground/60">
               <span>Progress: {progressValue.toFixed(1)}%</span>
-              <span>Target: ${formatMarketCap(calculateTargetMarketCap())}</span>
+              <span>Target: {formatMarketCap(calculateTargetMarketCap())}</span>
             </div>
-          </div>}
+          </div>
+        )}
         
         <div className="text-xs text-dream-foreground/60 mb-2">
           <div className="flex items-center">
@@ -180,12 +226,24 @@ const BetCard: React.FC<BetCardProps> = ({
         </div>
 
         {/* Accept Bet Button (Only show for open bets that haven't expired and aren't from the current user) */}
-        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator}
+        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && (
+          <Button 
+            onClick={handleAcceptBet}
+            disabled={accepting}
+            variant="outline"
+            size="sm" 
+            className="w-full bg-dream-accent2/20 hover:bg-dream-accent2/30 text-dream-accent2 border-dream-accent2/30">
+            {accepting ? 'Accepting...' : 'Accept Bet'}
+          </Button>
+        )}
 
-        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && <Button disabled className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed" size="sm">
+        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && (
+          <Button disabled className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed" size="sm">
             Connect wallet to accept
-          </Button>}
+          </Button>
+        )}
       </div>
     </div>;
 };
+
 export default BetCard;
