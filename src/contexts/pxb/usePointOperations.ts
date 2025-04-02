@@ -28,6 +28,7 @@ export const usePointOperations = (
 ) => {
   const { publicKey } = useWallet();
   const [mintingPoints, setMintingPoints] = useState(false);
+  const [transferFeature, setTransferFeature] = useState<'enabled' | 'coming-soon'>('coming-soon');
 
   const mintPoints = useCallback(async (amount: number): Promise<void> => {
     if (!publicKey || !userProfile) {
@@ -280,6 +281,11 @@ export const usePointOperations = (
   }, [userProfile, publicKey, setUserProfile, setBets, setIsLoading]);
 
   const sendPoints = useCallback(async (recipientId: string, amount: number) => {
+    if (transferFeature === 'coming-soon') {
+      console.log('Send/receive feature is coming soon');
+      return false;
+    }
+
     if (!userProfile || !publicKey) {
       console.error('Connect your wallet to send points');
       return false;
@@ -372,13 +378,14 @@ export const usePointOperations = (
     } finally {
       setIsLoading(false);
     }
-  }, [userProfile, publicKey, setUserProfile, fetchUserProfile, setIsLoading]);
+  }, [userProfile, publicKey, setUserProfile, fetchUserProfile, setIsLoading, transferFeature]);
 
   return {
     mintPoints,
     placeBet,
     sendPoints,
     generatePxbId: useCallback(() => generatePxbId(userProfile), [userProfile]),
-    mintingPoints // Expose the mintingPoints state
+    mintingPoints, // Expose the mintingPoints state
+    transferFeature // Expose the transferFeature state
   };
 };

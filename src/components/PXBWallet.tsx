@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useSearchParams } from 'react-router-dom';
+
 interface Transaction {
   id: string;
   amount: number;
@@ -17,6 +18,7 @@ interface Transaction {
   reference_id: string;
   reference_name?: string;
 }
+
 export const PXBWallet: React.FC = () => {
   const {
     userProfile,
@@ -27,7 +29,8 @@ export const PXBWallet: React.FC = () => {
     generateReferralLink,
     referralStats,
     fetchReferralStats,
-    isLoadingReferrals
+    isLoadingReferrals,
+    transferFeature
   } = usePXBPoints();
   const {
     connected
@@ -46,12 +49,14 @@ export const PXBWallet: React.FC = () => {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
   const [searchParams] = useSearchParams();
+
   useEffect(() => {
     if (userProfile && generatePxbId) {
       const id = generatePxbId();
       setMyPxbId(id);
     }
   }, [userProfile, generatePxbId]);
+
   useEffect(() => {
     const storedLastClaimTime = localStorage.getItem('lastPxbClaim');
     if (storedLastClaimTime) {
@@ -71,6 +76,7 @@ export const PXBWallet: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [lastClaimTime]);
+
   useEffect(() => {
     if (activeTab === 'activity' && userProfile) {
       fetchTransactionHistory();
@@ -80,12 +86,14 @@ export const PXBWallet: React.FC = () => {
       handleGenerateReferralLink();
     }
   }, [activeTab, userProfile, fetchReferralStats]);
+
   useEffect(() => {
     const refCode = searchParams.get('ref');
     if (refCode && activeTab !== 'referrals') {
       setActiveTab('referrals');
     }
   }, [searchParams]);
+
   const fetchTransactionHistory = async () => {
     if (!userProfile) return;
     setIsLoadingTransactions(true);
@@ -108,6 +116,7 @@ export const PXBWallet: React.FC = () => {
       setIsLoadingTransactions(false);
     }
   };
+
   const handleSendPoints = async () => {
     if (!sendPoints) return;
     if (!recipientId.trim()) {
@@ -139,11 +148,13 @@ export const PXBWallet: React.FC = () => {
       setIsSending(false);
     }
   };
+
   const handleGenerateId = () => {
     if (!generatePxbId) return;
     const newId = generatePxbId();
     setMyPxbId(newId);
   };
+
   const handleGenerateReferralLink = async () => {
     if (!generateReferralLink || !userProfile) return;
     setIsGeneratingLink(true);
@@ -157,10 +168,12 @@ export const PXBWallet: React.FC = () => {
       setIsGeneratingLink(false);
     }
   };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
   };
+
   const formatCooldownTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
@@ -168,6 +181,7 @@ export const PXBWallet: React.FC = () => {
     const seconds = totalSeconds % 60;
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
+
   const handleClaimPoints = async () => {
     if (!userProfile) return;
     setIsClaiming(true);
@@ -183,6 +197,7 @@ export const PXBWallet: React.FC = () => {
       setIsClaiming(false);
     }
   };
+
   const getTransactionDescription = (transaction: Transaction) => {
     switch (transaction.action) {
       case 'bet_placed':
@@ -203,22 +218,26 @@ export const PXBWallet: React.FC = () => {
         return transaction.action.replace(/_/g, ' ');
     }
   };
+
   const formatTransactionTime = (timestamp: string) => {
     return formatDistanceToNow(new Date(timestamp), {
       addSuffix: true
     });
   };
+
   if (isLoading) {
     return <div className="glass-panel p-6 mb-6 animate-pulse bg-gray-900/50 rounded-lg border border-gray-800">
         <div className="w-full h-12 bg-gray-800 rounded-lg mb-4"></div>
         <div className="w-1/2 h-8 bg-gray-800 rounded-lg"></div>
       </div>;
   }
+
   if (!connected) {
     return <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
         <p className="text-center text-gray-400">Connect your wallet to view your PXB balance</p>
       </div>;
   }
+
   if (!userProfile) {
     return <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
         <div className="text-center space-y-4">
@@ -227,6 +246,7 @@ export const PXBWallet: React.FC = () => {
         </div>
       </div>;
   }
+
   return <div className="mb-6 overflow-hidden relative rounded-lg bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
       <div className="p-6 flex justify-between items-center bg-gradient-to-r from-[#131c36] to-[#1a2542]">
         <div className="flex items-center">
@@ -290,13 +310,13 @@ export const PXBWallet: React.FC = () => {
                 <span className="font-medium text-white">{userProfile.pxbPoints.toLocaleString()} PXB</span>
               </div>
               
-              <Button onClick={handleSendPoints} disabled={isSending || !recipientId || !amount} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white">
+              <Button onClick={transferFeature === 'coming-soon' ? () => toast.info('Send/receive feature coming soon!') : handleSendPoints} disabled={isSending || !recipientId || !amount} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white">
                 {isSending ? <div className="flex items-center">
                     <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                     <span>Sending...</span>
                   </div> : <div className="flex items-center">
                     <Send className="w-4 h-4 mr-2" />
-                    Send PXB Points
+                    {transferFeature === 'coming-soon' ? 'Coming Soon!' : 'Send PXB Points'}
                   </div>}
               </Button>
             </div>
@@ -324,13 +344,16 @@ export const PXBWallet: React.FC = () => {
             
             <div className="text-center mb-6">
               <p className="text-sm text-indigo-300/70">
-                Share your PXB ID with others to receive PXB points
+                {transferFeature === 'coming-soon' 
+                  ? 'Send/receive feature coming soon! Your PXB ID will be available for sharing once this feature is activated.' 
+                  : 'Share your PXB ID with others to receive PXB points'}
               </p>
             </div>
             
-            <Button onClick={handleGenerateId} className="bg-indigo-500 hover:bg-indigo-600 text-white">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Generate New ID
+            <Button onClick={handleGenerateId} disabled={transferFeature === 'coming-soon'} className="bg-indigo-500 hover:bg-indigo-600 text-white">
+              {transferFeature === 'coming-soon' 
+                ? 'Coming Soon!' 
+                : <><RefreshCw className="w-4 h-4 mr-2" />Generate New ID</>}
             </Button>
           </motion.div>}
 
