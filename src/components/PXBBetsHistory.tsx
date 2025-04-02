@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -209,39 +210,41 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, walletAddress, 
   return (
     <div className="space-y-4">
       {bets.slice(0, visibleCount).map((bet) => (
-        <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4 backdrop-blur-lg bg-black/20 hover:border-dream-accent1/30 transition-all duration-300">
-          <div className="flex justify-between items-start mb-2">
-            <div className="flex items-center">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${bet.betType === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                {bet.betType === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+        <Link key={bet.id} to={`/token/${bet.tokenMint}`} className="block">
+          <div className="p-4 hover:bg-dream-accent1/5 transition-colors border border-dream-foreground/10 rounded-md backdrop-blur-lg bg-black/20 hover:border-dream-accent1/30">
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex items-center">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${bet.betType === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {bet.betType === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                </div>
+                <span className="font-semibold">
+                  {bet.betAmount} PXB
+                </span>
               </div>
-              <span className="font-semibold">
-                {bet.betAmount} PXB
-              </span>
+              <div className={`text-xs px-2 py-0.5 rounded-full ${getBetStatusClass(bet)}`}>
+                {getBetStatusText(bet)}
+              </div>
             </div>
-            <div className={`text-xs px-2 py-0.5 rounded-full ${getBetStatusClass(bet)}`}>
-              {getBetStatusText(bet)}
+            
+            <div className="mb-1 hover:underline text-dream-accent2">
+              <div className="text-sm flex items-center">
+                <LinkIcon className="w-3 h-3 mr-1" />
+                {bet.tokenName} ({bet.tokenSymbol})
+              </div>
             </div>
-          </div>
-          
-          <Link to={`/token/${bet.tokenMint}`} className="block mb-1 hover:underline">
-            <div className="text-sm flex items-center text-dream-accent2">
-              <LinkIcon className="w-3 h-3 mr-1" />
-              {bet.tokenName} ({bet.tokenSymbol})
+            
+            <div className="text-sm text-dream-foreground/70 mb-1">
+              Prediction: {bet.betType === 'up' ? 'Price will increase' : 'Price will decrease'} by {bet.percentageChange}%
             </div>
-          </Link>
-          
-          <div className="text-sm text-dream-foreground/70 mb-1">
-            Prediction: {bet.betType === 'up' ? 'Price will increase' : 'Price will decrease'} by {bet.percentageChange}%
-          </div>
-          
-          <div className="text-xs text-dream-foreground/60 mb-2">
-            <div className="flex items-center">
-              <Clock className="w-3 h-3 mr-1" />
-              Created {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
+            
+            <div className="text-xs text-dream-foreground/60 mb-2">
+              <div className="flex items-center">
+                <Clock className="w-3 h-3 mr-1" />
+                Created {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
+              </div>
             </div>
           </div>
-        </div>
+        </Link>
       ))}
       
       {bets.length > visibleCount && (
