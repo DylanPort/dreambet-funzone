@@ -195,8 +195,15 @@ const BetCard: React.FC<BetCardProps> = ({
         
         <div className="text-sm text-dream-foreground/70 mb-1 flex items-center">
           <Target className="w-3 h-3 mr-1" />
-          Prediction: {bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'Moon 🚀' : 'Dust 💨'} (30% {bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'increase' : 'decrease'})
+          Prediction: {bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'Moon 🚀' : 'Dust 💨'}
         </div>
+        
+        {/* Show outcome badge if bet is completed */}
+        {bet.outcome && (
+          <div className={`text-xs inline-flex items-center px-2 py-1 rounded-full mb-2 ${bet.outcome === 'win' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+            {bet.outcome === 'win' ? 'You Won! 🎉' : 'You Lost 😢'}
+          </div>
+        )}
         
         <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
           <div className="flex items-center cursor-pointer hover:text-dream-accent2" onClick={() => copyToClipboard(bet.tokenMint)}>
