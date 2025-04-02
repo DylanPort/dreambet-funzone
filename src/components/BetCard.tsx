@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining, formatAddress } from '@/utils/betUtils';
@@ -65,7 +66,7 @@ const BetCard: React.FC<BetCardProps> = ({
       if (bet.tokenMint) {
         try {
           const data = await fetchDexScreenerData(bet.tokenMint);
-          if (data && data.baseToken) {
+          if (data) {
             const imageUrl = `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${bet.tokenMint}/logo.png`;
             setTokenImage(imageUrl);
           }
@@ -194,7 +195,7 @@ const BetCard: React.FC<BetCardProps> = ({
         
         <div className="text-sm text-dream-foreground/70 mb-1 flex items-center">
           <Target className="w-3 h-3 mr-1" />
-          Prediction: {bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'Price will increase' : 'Price will decrease'} by 30%
+          Prediction: {bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'Moon 🚀' : 'Dust 💨'} (30% {bet.prediction === 'moon' || bet.prediction === 'migrate' ? 'increase' : 'decrease'})
         </div>
         
         <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
