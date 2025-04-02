@@ -821,7 +821,12 @@ const TokenDetail = () => {
                       <p>You don't have any PXB bets on this token.</p>
                       <p className="text-sm mt-2">Place a bet to see it here!</p>
                     </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {tokenPXBBets.map(bet => <PXBBetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey?.toString() || null} onAcceptBet={handleAcceptBet} />)}
+                      {tokenPXBBets.map(bet => <PXBBetCard 
+                        key={bet.id} 
+                        bet={bet} 
+                        marketCapData={marketCapData[bet.id]}
+                        isLoading={loadingMarketCaps[bet.id] || false}
+                      />)}
                     </div>}
                 </div>
               </div>

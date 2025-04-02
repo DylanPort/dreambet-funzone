@@ -42,12 +42,32 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
     const targetChange = bet.percentageChange;
     
     if (bet.betType === 'up') {
-      if (actualChange < 0) return 0;
-      return Math.min(100, actualChange / targetChange * 100);
+      // For moon bets, target is 80% increase
+      return Math.min(100, (actualChange / 80) * 100);
     } else {
-      if (actualChange > 0) return 0;
-      return Math.min(100, Math.abs(actualChange) / targetChange * 100);
+      // For dust bets, target is 50% decrease
+      return Math.min(100, (Math.abs(actualChange) / 50) * 100);
     }
+  };
+
+  const isProgressNegative = () => {
+    if (bet.status !== 'pending') {
+      return bet.status === 'lost';
+    }
+    
+    const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
+    const currentMarketCap = marketCapData?.currentMarketCap;
+    
+    if (!initialMarketCap || !currentMarketCap) {
+      return false;
+    }
+    
+    const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
+    
+    // For moon bets, negative progress when price goes down
+    // For dust bets, negative progress when price goes up
+    return (bet.betType === 'up' && actualChange < 0) || 
+           (bet.betType === 'down' && actualChange > 0);
   };
 
   const formatLargeNumber = (num: number | null | undefined) => {
@@ -64,8 +84,23 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
     return `$${num.toFixed(2)}`;
   };
 
+  const calculateTargetMarketCap = () => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
+    if (!initialMarketCap) return null;
+    
+    if (bet.betType === 'up') {
+      // Target for moon bets is 80% increase
+      return initialMarketCap * 1.8;
+    } else {
+      // Target for dust bets is 50% decrease
+      return initialMarketCap * 0.5;
+    }
+  };
+
   const progress = calculateProgress();
-  const truncatedAddress = `${bet.creator?.substring(0, 6)}...${bet.creator?.substring(bet.creator.length - 4)}`;
+  const isNegative = isProgressNegative();
+  const truncatedAddress = bet.userId ? `${bet.userId.substring(0, 6)}...${bet.userId.substring(bet.userId.length - 4)}` : 'Unknown';
+  const targetMarketCap = calculateTargetMarketCap();
 
   return (
     <div className="bg-black/40 backdrop-blur-sm rounded-lg border border-dream-foreground/10 mb-2 relative overflow-hidden">
@@ -92,14 +127,18 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
           <div className="flex justify-between items-center text-xs mb-1">
             <span>Initial: {formatLargeNumber(bet.initialMarketCap || marketCapData?.initialMarketCap)}</span>
             <span className="text-dream-foreground/60">→</span>
+            <span>Target: {formatLargeNumber(targetMarketCap)}</span>
           </div>
-          <Progress value={progress} className="h-2 bg-black/30" />
+          <Progress 
+            value={isNegative ? 0 : progress} 
+            className={`h-2 ${isNegative ? 'bg-red-900/30' : 'bg-black/30'}`} 
+          />
           <div className="flex justify-between items-center text-xs mt-1">
-            <span className={`${progress === 0 ? 'text-dream-foreground/60' : progress === 100 ? 'text-green-400' : 'text-purple-400'}`}>
-              {progress.toFixed(1)}% complete
+            <span className={`${isNegative ? 'text-red-400' : progress === 0 ? 'text-dream-foreground/60' : progress === 100 ? 'text-green-400' : 'text-purple-400'}`}>
+              {isNegative ? 'Moving opposite direction' : `${progress.toFixed(1)}% complete`}
             </span>
             <span>
-              Initial: {formatLargeNumber(bet.initialMarketCap || marketCapData?.initialMarketCap)}
+              Current: {formatLargeNumber(marketCapData?.currentMarketCap)}
             </span>
           </div>
         </div>

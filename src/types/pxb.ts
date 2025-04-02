@@ -10,6 +10,7 @@ export interface UserProfile {
 export interface PXBBet {
   id: string;
   userId: string;
+  creator?: string;
   tokenMint: string;
   tokenName: string;
   tokenSymbol: string;
