@@ -11,10 +11,12 @@ const PXBSupplyProgress = () => {
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
-  const reservedAmount = 110_000_000; // 110 million reserved/removed from circulation (10M + 100M newly burned)
+  const stakingRewards = 400_000_000; // 400 million reserved for staking rewards
+  const additionalBurned = 110_000_000; // 110 million reserved/removed from circulation (10M + 100M previously burned)
+  const totalReserved = stakingRewards + additionalBurned;
 
   // Calculate progress percentage
-  const progressPercentage = totalMinted / (maxSupply - reservedAmount) * 100;
+  const progressPercentage = totalMinted / (maxSupply - totalReserved) * 100;
 
   // Format numbers with commas
   const formatNumber = (num: number): string => {
@@ -126,22 +128,26 @@ const PXBSupplyProgress = () => {
         </div>
       </div>
       
-      <div className="flex justify-between text-sm mt-3 relative z-20">
-        <div>
+      <div className="flex flex-wrap justify-between text-sm mt-3 relative z-20">
+        <div className="mb-1">
           <span className="text-dream-foreground/60">Minted: </span>
           <span className="text-[#00ff00]">
             {formatNumber(totalMinted)} PXB
           </span>
         </div>
-        <div>
+        <div className="mb-1">
+          <span className="text-dream-foreground/60">Staking Rewards: </span>
+          <span className="font-medium text-purple-400">{formatNumber(stakingRewards)} PXB</span>
+        </div>
+        <div className="mb-1">
           <span className="text-dream-foreground/60">Burned: </span>
-          <span className="font-medium text-yellow-400">{formatNumber(reservedAmount)} PXB</span>
+          <span className="font-medium text-yellow-400">{formatNumber(additionalBurned)} PXB</span>
         </div>
-        <div>
+        <div className="mb-1">
           <span className="text-dream-foreground/60">Remaining: </span>
-          <span className="font-medium">{formatNumber(maxSupply - reservedAmount - totalMinted)} PXB</span>
+          <span className="font-medium">{formatNumber(maxSupply - totalReserved - totalMinted)} PXB</span>
         </div>
-        <div>
+        <div className="mb-1">
           <span className="text-dream-foreground/60">Progress: </span>
           <span className={`font-medium transition-all duration-500 ${isAnimating ? 'text-yellow-300' : ''}`}>
             {progressPercentage.toFixed(5)}%
