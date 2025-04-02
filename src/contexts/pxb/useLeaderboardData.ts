@@ -25,6 +25,7 @@ export const useLeaderboardData = () => {
         return;
       }
       
+      // Format user data for the leaderboard
       const formattedLeaderboard: LeaderboardEntry[] = data.map((user, index) => ({
         id: user.id,
         user_id: user.id,
@@ -37,7 +38,22 @@ export const useLeaderboardData = () => {
         rank: index + 1
       }));
       
-      setLeaderboard(formattedLeaderboard);
+      // Add the staking rewards entry at the top of the leaderboard with special properties
+      const stakingRewardsEntry: LeaderboardEntry = {
+        id: 'staking-rewards',
+        user_id: 'staking-rewards',
+        wallet: 'staking-rewards',
+        username: 'PXB Staking Rewards',
+        points: 400000000, // 400 million PXB points
+        pxbPoints: 400000000,
+        betsWon: 0,
+        betsLost: 0,
+        rank: 0, // Make it rank 0 to always be at the top
+        isSpecial: true // Special flag to identify this entry for custom styling
+      };
+      
+      // Add the staking rewards entry at the beginning of the array
+      setLeaderboard([stakingRewardsEntry, ...formattedLeaderboard]);
     } catch (error) {
       console.error('Error in fetchLeaderboard:', error);
     } finally {

@@ -39,6 +39,7 @@ export interface LeaderboardEntry {
   betsWon: number;
   betsLost: number;
   rank: number;
+  isSpecial?: boolean;  // Flag to mark special entries like staking rewards
 }
 
 // Add WinRateLeaderboardEntry interface with all required fields
@@ -52,6 +53,7 @@ export interface WinRateLeaderboardEntry {
   betsWon: number;
   betsLost: number;
   rank: number;
+  isSpecial?: boolean;  // Flag to mark special entries like staking rewards
 }
 
 // Update ReferralStats interface with all required fields

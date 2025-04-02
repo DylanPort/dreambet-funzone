@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Medal, User, Flame, Star, BarChart, ChevronDown, Coins } from 'lucide-react';
+import { Medal, User, Flame, Star, BarChart, ChevronDown, Coins, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,7 +36,11 @@ const PXBLeaderboard: React.FC = () => {
     }
   };
   
-  const getLeaderIcon = (position: number) => {
+  const getLeaderIcon = (position: number, isSpecial?: boolean) => {
+    if (isSpecial) {
+      return <Trophy className="w-5 h-5 text-yellow-400 animate-pulse" />;
+    }
+    
     switch (position) {
       case 0:
         return <img src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" className="w-7 h-7 animate-pulse-glow" alt="Trophy" />;
@@ -57,7 +61,11 @@ const PXBLeaderboard: React.FC = () => {
   };
 
   // Get background class based on position
-  const getPositionStyle = (position: number, isCurrentUser: boolean) => {
+  const getPositionStyle = (position: number, isCurrentUser: boolean, isSpecial?: boolean) => {
+    if (isSpecial) {
+      return 'bg-gradient-to-r from-purple-600/30 to-pink-500/20 border-l-2 border-purple-500 shadow-lg';
+    }
+    
     if (isCurrentUser) return 'bg-dream-accent2/20 border border-dream-accent2/30';
     switch (position) {
       case 0:
@@ -69,6 +77,15 @@ const PXBLeaderboard: React.FC = () => {
       default:
         return position % 2 === 0 ? 'bg-dream-foreground/5 hover:bg-dream-foreground/10' : 'bg-black/30 hover:bg-black/40';
     }
+  };
+  
+  const formatPoints = (points: number) => {
+    if (points >= 1000000) {
+      return `${(points / 1000000).toFixed(1)}M`;
+    } else if (points >= 1000) {
+      return `${(points / 1000).toFixed(1)}K`;
+    }
+    return points;
   };
   
   const displayedPointsUsers = showAllUsers ? leaderboard : leaderboard.slice(0, 10);
@@ -89,58 +106,74 @@ const PXBLeaderboard: React.FC = () => {
           {data.map((trader, index) => {
             const isCurrentUser = trader.id === userProfile?.id;
             const userId = trader.id || trader.user_id;
+            const isSpecial = trader.isSpecial === true;
             
             return (
               <div 
                 key={userId} 
                 className={cn(
                   `flex items-center p-2 rounded-lg transition-all duration-500 transform ${animate ? 'translate-x-0 opacity-100' : 'translate-x-[-20px] opacity-0'}`, 
-                  getPositionStyle(index, isCurrentUser)
+                  getPositionStyle(index, isCurrentUser, isSpecial)
                 )} 
                 style={getAnimationDelay(index)}
               >
                 <div className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center mr-3", 
+                  isSpecial ? "bg-purple-500/30" :
                   index === 0 ? "bg-yellow-500/20" : 
                   index === 1 ? "bg-gray-300/20" : 
                   index === 2 ? "bg-orange-600/20" : 
                   "bg-dream-foreground/10"
                 )}>
-                  {getLeaderIcon(index)}
+                  {getLeaderIcon(index, isSpecial)}
                 </div>
                 
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <Link 
-                      to={`/profile/${userId}`}
-                      className="font-medium truncate max-w-[120px] flex items-center gap-1 hover:text-cyan-400 transition-colors" 
-                      title={trader.username}
-                    >
-                      {trader.username}
-                      {index < 3 && (
+                    {isSpecial ? (
+                      <div 
+                        className="font-medium truncate max-w-[180px] flex items-center gap-1 text-purple-300"
+                        title={trader.username}
+                      >
+                        {trader.username}
                         <span className="ml-1">
-                          {index === 0 && <Flame className="h-3 w-3 text-yellow-400 animate-pulse" />}
-                          {index === 1 && <Star className="h-3 w-3 text-gray-300" />}
-                          {index === 2 && <Star className="h-3 w-3 text-orange-500" />}
+                          <Star className="h-3 w-3 text-pink-400 animate-pulse" />
                         </span>
-                      )}
-                    </Link>
+                      </div>
+                    ) : (
+                      <Link 
+                        to={`/profile/${userId}`}
+                        className="font-medium truncate max-w-[120px] flex items-center gap-1 hover:text-cyan-400 transition-colors" 
+                        title={trader.username}
+                      >
+                        {trader.username}
+                        {index < 3 && !isSpecial && (
+                          <span className="ml-1">
+                            {index === 0 && <Flame className="h-3 w-3 text-yellow-400 animate-pulse" />}
+                            {index === 1 && <Star className="h-3 w-3 text-gray-300" />}
+                            {index === 2 && <Star className="h-3 w-3 text-orange-500" />}
+                          </span>
+                        )}
+                      </Link>
+                    )}
                     <div className={cn(
                       "font-medium", 
+                      isSpecial ? "text-purple-300 animate-pulse" :
                       index === 0 ? "text-yellow-400" : 
                       index === 1 ? "text-gray-300" : 
                       index === 2 ? "text-orange-500" : 
                       "text-green-400"
                     )}>
-                      {valueKey === 'winRate' ? `${trader[valueKey]}%` : `${trader[valueKey]} ${valueLabel}`}
+                      {valueKey === 'winRate' ? `${trader[valueKey]}%` : `${formatPoints(trader[valueKey])} ${valueLabel}`}
                     </div>
                   </div>
                 </div>
                 
-                {index < 3 && (
+                {(index < 3 || isSpecial) && (
                   <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
                     <div className={cn(
                       "absolute top-0 left-0 w-full h-full opacity-10", 
+                      isSpecial ? "bg-purple-400" :
                       index === 0 ? "bg-yellow-400" : 
                       index === 1 ? "bg-gray-300" : 
                       "bg-orange-500"
