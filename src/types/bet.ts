@@ -1,4 +1,3 @@
-
 export type BetPrediction = 'migrate' | 'die' | 'moon' | 'up' | 'down';
 
 export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed' | 'pending';
@@ -36,6 +35,15 @@ export interface Bet {
   winAmount?: number;
   potentialWinnings?: number;
   createdAt?: string | number;
+}
+
+export interface CreateBetFormProps {
+  tokenId: string;
+  tokenName: string;
+  tokenSymbol: string;
+  onSuccess: () => void;
+  onClose?: () => void;
+  onCancel?: () => void;
 }
 
 export enum SolanaContractPrediction {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy, BarChart, Target } from 'lucide-react';
+import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy, BarChart, Target, Trophy, Zap, Coins, TrendingUp, BarChart2, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';

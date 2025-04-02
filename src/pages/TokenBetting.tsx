@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -27,6 +26,9 @@ const TokenBetting = () => {
     liquidity: 0,
     holders: 0
   });
+  const [showCreateBetForm, setShowCreateBetForm] = useState(false);
+  const params = useParams();
+  const tokenData = params.tokenId ? { token_name: 'Unknown Token', token_symbol: '???', migrationTime: 0 } : null;
 
   useEffect(() => {
     const loadData = async () => {
@@ -326,6 +328,23 @@ const TokenBetting = () => {
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
+            {showCreateBetForm && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/70">
+                <div className="max-w-md w-full mx-auto">
+                  <CreateBetForm
+                    tokenId={params.tokenId || ''}
+                    tokenName={tokenData?.token_name || 'Unknown Token'}
+                    tokenSymbol={tokenData?.token_symbol || '???'}
+                    onSuccess={async () => {
+                      await refetchBets();
+                      setShowCreateBetForm(false);
+                    }}
+                    onClose={() => setShowCreateBetForm(false)}
+                  />
+                </div>
+              </div>
+            )}
+            
             {isBettingOpen() ? (
               <CreateBetForm 
                 tokenId={token.id}
