@@ -3,7 +3,6 @@ import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Button } from '@/components/ui/button';
 import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy, BarChart, Target } from 'lucide-react';
-import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';

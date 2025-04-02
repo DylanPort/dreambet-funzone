@@ -15,13 +15,7 @@ export default defineConfig(({ mode }) => ({
         configFile: false, // Don't use external config file
         presets: [
           ['@babel/preset-env', {
-            targets: { 
-              browsers: [
-                'last 2 versions',
-                '> 1%',
-                'not dead'
-              ]
-            }
+            targets: 'defaults',
           }],
           ['@babel/preset-react', {
             runtime: 'automatic'
