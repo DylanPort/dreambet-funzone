@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -111,14 +110,12 @@ const TrendingBetsList = () => {
         const sortedTokens = Array.from(tokenMap.values()).sort((a, b) => b.bet_count - a.bet_count);
         setTrendingTokens(sortedTokens);
         
-        // Initialize loading state for all tokens
         const newImagesLoading: Record<string, boolean> = {};
         sortedTokens.forEach(token => {
           newImagesLoading[token.token_mint] = true;
         });
         setImagesLoading(newImagesLoading);
         
-        // Fetch token images
         sortedTokens.forEach(token => {
           fetchTokenImage(token.token_mint, token.token_symbol)
             .then(imageUrl => {
@@ -222,7 +219,7 @@ const TrendingBetsList = () => {
           </div>
           
           <div className="overflow-hidden flex-1">
-            <div className="flex animate-scroll items-center gap-2">
+            <div className="flex animate-scroll-slow items-center gap-2">
               {trendingTokens.map((token, index) => <div key={`${token.token_mint}-${index}`} className="flex-shrink-0 py-1 px-2 bg-dream-background/40 rounded-lg border border-dream-accent1/20 flex items-center gap-1 hover:bg-dream-background/60 transition-all duration-300">
                   {renderTokenAvatar(token)}
                   <div className="flex flex-col">
