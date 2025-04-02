@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -209,38 +210,75 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, walletAddress, 
   return (
     <div className="space-y-4">
       {bets.slice(0, visibleCount).map((bet) => (
-        <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4 backdrop-blur-lg bg-black/20 hover:border-dream-accent1/30 transition-all duration-300">
-          <div className="flex justify-between items-start mb-2">
-            <div className="flex items-center">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${bet.betType === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                {bet.betType === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+        <div key={bet.id} className="glass-panel p-6 group hover:border-dream-accent1/30 transition-all duration-300 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-dream-accent1/5 to-dream-accent3/5 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+          <div className="absolute -right-6 -top-6 w-16 h-16 bg-dream-accent2/10 blur-lg rounded-full"></div>
+          <div className="absolute -left-6 -bottom-6 w-16 h-16 bg-dream-accent1/10 blur-lg rounded-full"></div>
+          
+          <div className="flex justify-between items-start mb-4 relative z-10">
+            {/* Token Info */}
+            <Link to={`/token/${bet.tokenMint}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="w-10 h-10 rounded-full bg-dream-accent1/10 flex items-center justify-center text-xl font-bold">
+                {bet.tokenSymbol?.charAt(0) || '?'}
               </div>
-              <span className="font-semibold">
-                {bet.betAmount} PXB
-              </span>
-            </div>
-            <div className={`text-xs px-2 py-0.5 rounded-full ${getBetStatusClass(bet)}`}>
+              <div>
+                <h3 className="font-bold">{bet.tokenName}</h3>
+                <p className="text-dream-foreground/60 text-sm">{bet.tokenSymbol}</p>
+              </div>
+            </Link>
+            
+            {/* Bet Status */}
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${getBetStatusClass(bet)}`}>
               {getBetStatusText(bet)}
             </div>
           </div>
           
-          <Link to={`/token/${bet.tokenMint}`} className="block mb-1 hover:underline">
-            <div className="text-sm flex items-center text-dream-accent2">
-              <LinkIcon className="w-3 h-3 mr-1" />
-              {bet.tokenName} ({bet.tokenSymbol})
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4 relative z-10">
+            {/* Bet Amount */}
+            <div className="bg-dream-foreground/5 p-3 rounded-md">
+              <p className="text-dream-foreground/50 text-xs mb-1">Amount</p>
+              <p className="font-bold">{bet.betAmount} PXB</p>
             </div>
+            
+            {/* Prediction */}
+            <div className="bg-dream-foreground/5 p-3 rounded-md">
+              <p className="text-dream-foreground/50 text-xs mb-1">Prediction</p>
+              <div className="flex items-center gap-1 font-medium">
+                {bet.betType === 'up' ? (
+                  <>
+                    <ArrowUpRight className="w-4 h-4 text-green-400" />
+                    <span className="text-green-400">Up {bet.percentageChange}%</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownRight className="w-4 h-4 text-red-400" />
+                    <span className="text-red-400">Down {bet.percentageChange}%</span>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Time */}
+            <div className="bg-dream-foreground/5 p-3 rounded-md sm:col-span-1 col-span-2">
+              <p className="text-dream-foreground/50 text-xs mb-1">Created</p>
+              <div className="flex items-center gap-1 text-dream-foreground/80">
+                <Clock className="w-4 h-4" />
+                <span>{formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}</span>
+              </div>
+            </div>
+          </div>
+          
+          {bet.pointsWon > 0 && (
+            <div className="relative z-10 p-3 bg-green-500/10 rounded-md border border-green-500/20 text-green-400 flex justify-between items-center mb-4">
+              <span className="font-medium">Points Won</span>
+              <span className="font-bold">{bet.pointsWon} PXB</span>
+            </div>
+          )}
+          
+          <Link to={`/betting/bet/${bet.id}`} className="text-dream-accent2 text-sm hover:text-dream-accent2/80 transition-colors flex items-center justify-end relative z-10">
+            <span>View Details</span>
+            <ArrowUpRight className="w-4 h-4 ml-1" />
           </Link>
-          
-          <div className="text-sm text-dream-foreground/70 mb-1">
-            Prediction: {bet.betType === 'up' ? 'Price will increase' : 'Price will decrease'} by {bet.percentageChange}%
-          </div>
-          
-          <div className="text-xs text-dream-foreground/60 mb-2">
-            <div className="flex items-center">
-              <Clock className="w-3 h-3 mr-1" />
-              Created {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
-            </div>
-          </div>
         </div>
       ))}
       
