@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
@@ -9,14 +8,12 @@ import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
 import { toast } from 'sonner';
-
 interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
   onAcceptBet: (bet: Bet) => void;
 }
-
 const BetCard: React.FC<BetCardProps> = ({
   bet,
   connected,
@@ -79,7 +76,6 @@ const BetCard: React.FC<BetCardProps> = ({
     };
     fetchMarketCap();
   }, [bet.tokenMint, bet.initialMarketCap, bet.prediction, bet.isPXB, bet.percentageChange]);
-  
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
       toast.error('Connect your wallet to accept a bet');
@@ -120,13 +116,10 @@ const BetCard: React.FC<BetCardProps> = ({
   const calculateTargetMarketCap = () => {
     if (!bet.initialMarketCap) return null;
     if (bet.isPXB && bet.percentageChange) {
-      return bet.prediction === 'moon' || bet.prediction === 'up' 
-        ? bet.initialMarketCap * (1 + bet.percentageChange / 100) 
-        : bet.initialMarketCap * (1 - bet.percentageChange / 100);
+      return bet.prediction === 'moon' || bet.prediction === 'up' ? bet.initialMarketCap * (1 + bet.percentageChange / 100) : bet.initialMarketCap * (1 - bet.percentageChange / 100);
     }
-    return bet.prediction === 'moon' || bet.prediction === 'migrate' 
-      ? bet.initialMarketCap * 1.3 // 30% increase
-      : bet.initialMarketCap * 0.7; // 30% decrease
+    return bet.prediction === 'moon' || bet.prediction === 'migrate' ? bet.initialMarketCap * 1.3 // 30% increase
+    : bet.initialMarketCap * 0.7; // 30% decrease
   };
 
   // Calculate market cap change percentage
@@ -134,7 +127,6 @@ const BetCard: React.FC<BetCardProps> = ({
     if (!bet.initialMarketCap || !currentMarketCap) return null;
     return (currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap * 100;
   };
-  
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).catch(err => {
       console.error('Could not copy text: ', err);
@@ -167,19 +159,9 @@ const BetCard: React.FC<BetCardProps> = ({
     statusDisplay = 'Matched';
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
-  
   const truncatedAddress = `${bet.initiator.substring(0, 4)}...${bet.initiator.substring(bet.initiator.length - 4)}`;
   const targetMarketCap = calculateTargetMarketCap();
-
-  return (
-    <div className={`bg-black/60 rounded-lg border overflow-hidden transition-all duration-300 ${
-      bet.status === 'open' ? 'border-dream-accent1/30' : 
-      bet.status === 'matched' || bet.status === 'pending' ? 'border-purple-500/30' : 
-      bet.status === 'expired' || isExpired ? 'border-red-500/30' : 
-      bet.status === 'won' || bet.outcome === 'win' ? 'border-green-500/30' : 
-      bet.status === 'lost' || bet.outcome === 'loss' ? 'border-red-500/30' : 
-      'border-yellow-500/30'
-    }`}>
+  return <div className={`bg-black/60 rounded-lg border overflow-hidden transition-all duration-300 ${bet.status === 'open' ? 'border-dream-accent1/30' : bet.status === 'matched' || bet.status === 'pending' ? 'border-purple-500/30' : bet.status === 'expired' || isExpired ? 'border-red-500/30' : bet.status === 'won' || bet.outcome === 'win' ? 'border-green-500/30' : bet.status === 'lost' || bet.outcome === 'loss' ? 'border-red-500/30' : 'border-yellow-500/30'}`}>
       <div className="px-4 py-3">
         <div className="flex justify-between items-center">
           <Link to={`/betting/token/${bet.tokenId}`} className="flex items-center gap-2 hover:underline transition-all duration-300">
@@ -207,8 +189,7 @@ const BetCard: React.FC<BetCardProps> = ({
         </div>
 
         {/* Progress tracking section */}
-        {bet.initialMarketCap && (
-          <div className="mt-4">
+        {bet.initialMarketCap && <div className="mt-4">
             <div className="flex justify-between items-center text-sm mb-1">
               <span className="text-dream-foreground/70">Progress</span>
               <span className="text-dream-foreground/50 text-xs">
@@ -223,10 +204,9 @@ const BetCard: React.FC<BetCardProps> = ({
             </div>
             
             <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden mb-1 relative">
-              <div 
-                className={`h-full ${bet.outcome === 'win' ? 'bg-green-500' : bet.outcome === 'loss' ? 'bg-red-500' : 'bg-purple-500'}`}
-                style={{ width: `${progressValue}%` }}
-              >
+              <div className={`h-full ${bet.outcome === 'win' ? 'bg-green-500' : bet.outcome === 'loss' ? 'bg-red-500' : 'bg-purple-500'}`} style={{
+            width: `${progressValue}%`
+          }}>
                 <div className="absolute left-0 top-0 w-full h-full flex">
                   <div className="h-full w-2 bg-purple-600 opacity-50"></div>
                   <div className="h-full w-2 bg-purple-600 opacity-50 ml-auto"></div>
@@ -235,109 +215,59 @@ const BetCard: React.FC<BetCardProps> = ({
             </div>
             
             <div className="flex justify-between items-center text-sm">
-              {isLoading ? (
-                <span className="text-dream-foreground/60">Loading market cap data...</span>
-              ) : (
-                <>
-                  <span className={
-                    bet.outcome === 'win' ? 'text-green-400' :
-                    bet.outcome === 'loss' ? 'text-red-400' :
-                    calculateMarketCapChange() === null ? 'text-dream-foreground/60' :
-                    calculateMarketCapChange()! > 0 ? 'text-dream-foreground/60' : 'text-dream-foreground/60'
-                  }>
-                    {bet.outcome === 'win' 
-                      ? 'You Won! 🎉' 
-                      : bet.outcome === 'loss' 
-                        ? 'You Lost 😢' 
-                        : calculateMarketCapChange() === null 
-                          ? 'No change yet' 
-                          : `${calculateMarketCapChange()! > 0 ? 'Up' : 'Down'} ${Math.abs(calculateMarketCapChange()!).toFixed(2)}%`
-                    }
+              {isLoading ? <span className="text-dream-foreground/60">Loading market cap data...</span> : <>
+                  <span className={bet.outcome === 'win' ? 'text-green-400' : bet.outcome === 'loss' ? 'text-red-400' : calculateMarketCapChange() === null ? 'text-dream-foreground/60' : calculateMarketCapChange()! > 0 ? 'text-dream-foreground/60' : 'text-dream-foreground/60'}>
+                    {bet.outcome === 'win' ? 'You Won! 🎉' : bet.outcome === 'loss' ? 'You Lost 😢' : calculateMarketCapChange() === null ? 'No change yet' : `${calculateMarketCapChange()! > 0 ? 'Up' : 'Down'} ${Math.abs(calculateMarketCapChange()!).toFixed(2)}%`}
                   </span>
                   <span>
                     Current: {formatMarketCap(currentMarketCap)}
                   </span>
-                </>
-              )}
+                </>}
             </div>
-          </div>
-        )}
+          </div>}
 
         <div className="flex items-center justify-between mt-4 text-sm">
           <div className="flex items-center">
             <User className="w-4 h-4 mr-1 text-dream-foreground/60" />
             <span className="text-dream-foreground/60 mr-1">Bettor</span>
             <span className="font-medium">{truncatedAddress}</span>
-            <button 
-              onClick={() => copyToClipboard(bet.initiator)} 
-              className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors"
-            >
+            <button onClick={() => copyToClipboard(bet.initiator)} className="ml-1 text-dream-accent2 hover:text-dream-accent1 transition-colors">
               <Copy className="w-3 h-3" />
             </button>
           </div>
           
-          <div className={`flex items-center ${
-            bet.prediction === 'moon' || bet.prediction === 'migrate' || bet.prediction === 'up' 
-              ? 'text-green-400' 
-              : 'text-red-400'
-          } font-semibold`}>
+          <div className={`flex items-center ${bet.prediction === 'moon' || bet.prediction === 'migrate' || bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'} font-semibold`}>
             <Target className="w-4 h-4 mr-1" />
             <span>Prediction</span>
             <span className="ml-2 font-bold">
-              {bet.prediction === 'moon' || bet.prediction === 'migrate' || bet.prediction === 'up' 
-                ? 'MOON 🚀' 
-                : 'DUST 💨'
-              }
+              {bet.prediction === 'moon' || bet.prediction === 'migrate' || bet.prediction === 'up' ? 'MOON 🚀' : 'DUST 💨'}
             </span>
           </div>
         </div>
 
         <div className="mt-2 text-xs text-dream-foreground/40">
-          <div className="cursor-pointer hover:text-dream-foreground/60 transition-colors truncate" 
-            onClick={() => copyToClipboard(bet.tokenMint)}>
+          <div className="cursor-pointer hover:text-dream-foreground/60 transition-colors truncate" onClick={() => copyToClipboard(bet.tokenMint)}>
             {bet.tokenMint}
           </div>
         </div>
 
-        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && !bet.isPXB && (
-          <div className="mt-4">
-            <Button 
-              onClick={handleAcceptBet} 
-              disabled={accepting} 
-              className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90"
-            >
-              {accepting ? 'Accepting...' : 'Accept Bet'}
-            </Button>
-          </div>
-        )}
+        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && !bet.isPXB && <div className="mt-4">
+            
+          </div>}
 
-        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && !bet.isPXB && (
-          <div className="mt-4">
-            <Button 
-              disabled 
-              className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed"
-            >
+        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && !bet.isPXB && <div className="mt-4">
+            <Button disabled className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed">
               Connect wallet to accept
             </Button>
-          </div>
-        )}
+          </div>}
 
-        {bet.transactionSignature && (
-          <div className="mt-2 text-center">
-            <a 
-              href={`https://solscan.io/tx/${bet.transactionSignature}`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-xs text-dream-accent2 hover:underline inline-flex items-center"
-            >
+        {bet.transactionSignature && <div className="mt-2 text-center">
+            <a href={`https://solscan.io/tx/${bet.transactionSignature}`} target="_blank" rel="noopener noreferrer" className="text-xs text-dream-accent2 hover:underline inline-flex items-center">
               <ExternalLink className="w-3 h-3 mr-1" />
               View on Solscan
             </a>
-          </div>
-        )}
+          </div>}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default BetCard;
