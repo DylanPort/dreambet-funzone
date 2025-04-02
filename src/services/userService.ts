@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -337,7 +338,12 @@ export const sendMessage = async (
     toast.success("Message sent successfully");
     
     return {
-      ...messageData,
+      id: messageData.id,
+      sender_id: messageData.sender_id,
+      recipient_id: messageData.recipient_id,
+      content: messageData.content,
+      created_at: messageData.created_at,
+      read: messageData.read,
       sender_username: senderData.username
     } as UserMessage;
     
@@ -379,8 +385,7 @@ export const fetchUserMessages = async (walletAddress: string): Promise<UserMess
         recipient:recipient_id(username)
       `)
       .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error("Error fetching user messages:", error);

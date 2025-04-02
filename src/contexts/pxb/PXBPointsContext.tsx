@@ -1,134 +1,182 @@
-import React, { createContext, useContext, useEffect } from 'react';
-import { PXBPointsContextType } from './types';
-import { useProfileData } from './useProfileData';
-import { useBetsData } from './useBetsData';
-import { useLeaderboardData } from './useLeaderboardData';
-import { usePointOperations } from './usePointOperations';
-import { useBetProcessor } from './useBetProcessor';
-import { useReferralSystem } from './useReferralSystem';
-import { useWallet } from '@solana/wallet-adapter-react';
 
+import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { fetchUserProfile, UserProfile } from '@/services/userService';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useBetsData } from './useBetsData';
+import { usePointOperations } from './usePointOperations';
+import { useProfileData } from './useProfileData';
+import { useLeaderboardData } from './useLeaderboardData';
+import { PXBPointsContextType } from './types';
+
+// Create the context
 const PXBPointsContext = createContext<PXBPointsContextType | undefined>(undefined);
 
+export const PXBPointsProvider = ({ children }: { children: ReactNode }) => {
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const walletAddress = publicKey?.toBase58();
+
+  // User profile state
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [pxbPoints, setPxbPoints] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize sub-contexts
+  const { 
+    createBet, 
+    placeBet,
+    bets,
+    activeBets,
+    recentBets,
+    fetchBets,
+    fetchBet,
+    currentBet
+  } = useBetsData(walletAddress, pxbPoints);
+  
+  const {
+    awardPoints,
+    deductPoints,
+    transferPoints
+  } = usePointOperations(walletAddress, pxbPoints, setPxbPoints);
+  
+  const {
+    updateUsername,
+    claimDailyBonus,
+    hasClaimedDailyBonus,
+    earnedPXB
+  } = useProfileData(walletAddress, userProfile, pxbPoints, setPxbPoints);
+  
+  const {
+    leaderboard,
+    userRank,
+    fetchLeaderboard
+  } = useLeaderboardData(walletAddress);
+
+  // Fetch user profile when wallet is connected
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setIsLoading(true);
+      if (walletAddress) {
+        try {
+          const profile = await fetchUserProfile(walletAddress);
+          if (profile) {
+            setUserProfile(profile);
+            
+            // Fetch points from users table
+            const { data, error } = await supabase
+              .from('users')
+              .select('points')
+              .eq('wallet_address', walletAddress)
+              .single();
+            
+            if (data && !error) {
+              setPxbPoints(data.points || 0);
+            }
+          } else {
+            setPxbPoints(0);
+          }
+        } catch (err) {
+          console.error("Error fetching user profile:", err);
+          toast.error("Failed to load your profile");
+        }
+      } else {
+        setUserProfile(null);
+        setPxbPoints(0);
+      }
+      setIsLoading(false);
+    };
+
+    fetchProfile();
+  }, [walletAddress]);
+
+  // Subscribe to point changes
+  useEffect(() => {
+    if (!userProfile?.id) return;
+    
+    const userPointsChannel = supabase.channel('user_points_changes')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: `id=eq.${userProfile.id}`
+      }, (payload) => {
+        console.log('User points updated:', payload);
+        if (payload.new && typeof payload.new.points === 'number') {
+          setPxbPoints(payload.new.points);
+        }
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(userPointsChannel);
+    };
+  }, [userProfile]);
+
+  const refreshUserProfile = async () => {
+    if (!walletAddress) return;
+    
+    try {
+      const profile = await fetchUserProfile(walletAddress);
+      if (profile) {
+        setUserProfile(profile);
+        
+        // Fetch points from users table
+        const { data, error } = await supabase
+          .from('users')
+          .select('points')
+          .eq('wallet_address', walletAddress)
+          .single();
+        
+        if (data && !error) {
+          setPxbPoints(data.points || 0);
+        }
+      }
+    } catch (err) {
+      console.error("Error refreshing user profile:", err);
+    }
+  };
+
+  // Context value
+  const contextValue: PXBPointsContextType = {
+    userProfile,
+    walletAddress,
+    pxbPoints,
+    isLoading,
+    createBet,
+    placeBet,
+    bets,
+    activeBets,
+    recentBets,
+    fetchBets,
+    fetchBet,
+    currentBet,
+    awardPoints,
+    deductPoints,
+    transferPoints,
+    updateUsername,
+    claimDailyBonus,
+    hasClaimedDailyBonus,
+    earnedPXB,
+    leaderboard,
+    userRank,
+    fetchLeaderboard,
+    refreshUserProfile
+  };
+
+  return (
+    <PXBPointsContext.Provider value={contextValue}>
+      {children}
+    </PXBPointsContext.Provider>
+  );
+};
+
+// Custom hook to use the PXB Points context
 export const usePXBPoints = () => {
   const context = useContext(PXBPointsContext);
   if (context === undefined) {
     throw new Error('usePXBPoints must be used within a PXBPointsProvider');
   }
   return context;
-};
-
-export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { connected, publicKey } = useWallet();
-  
-  // Set up state and data fetching functions
-  const { 
-    userProfile, 
-    setUserProfile, 
-    isLoading, 
-    setIsLoading, 
-    fetchUserProfile,
-    addPointsToUser
-  } = useProfileData();
-  
-  const { bets, setBets, fetchUserBets, isLoading: isLoadingBets } = useBetsData(userProfile);
-  const { 
-    leaderboard, 
-    winRateLeaderboard,
-    fetchLeaderboard,
-    fetchWinRateLeaderboard,
-    isLoading: isLeaderboardLoading,
-    isLoadingWinRate
-  } = useLeaderboardData();
-  
-  // Set up operations
-  const { 
-    mintPoints, 
-    placeBet, 
-    sendPoints, 
-    generatePxbId,
-    mintingPoints,
-    transferFeature
-  } = usePointOperations(
-    userProfile,
-    setUserProfile,
-    setBets,
-    fetchUserProfile,
-    setIsLoading
-  );
-
-  // Set up referral system
-  const {
-    generateReferralLink,
-    checkAndProcessReferral,
-    referralStats,
-    fetchReferralStats,
-    isLoadingReferrals
-  } = useReferralSystem(userProfile, fetchUserProfile);
-  
-  // Handle bet processing
-  useBetProcessor(bets, userProfile, setUserProfile, setBets);
-  
-  // Load user profile when wallet connects
-  useEffect(() => {
-    if (connected && publicKey) {
-      fetchUserProfile();
-    } else {
-      setUserProfile(null);
-    }
-  }, [connected, publicKey, fetchUserProfile, setUserProfile]);
-
-  // Create wrapper functions to match expected types in PXBPointsContextType
-  const mintPointsWrapper = async (amount?: number) => {
-    if (amount) {
-      await mintPoints(amount);
-    }
-  };
-
-  const placeBetWrapper = async (
-    tokenMint: string, 
-    tokenName: string, 
-    tokenSymbol: string, 
-    betAmount: number, 
-    betType: 'up' | 'down', 
-    percentageChange: number,
-    duration: number
-  ) => {
-    return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
-  };
-
-  return (
-    <PXBPointsContext.Provider
-      value={{
-        userProfile,
-        isLoading,
-        bets,
-        userBets: bets, // Expose bets as userBets for BetDetails.tsx
-        leaderboard,
-        winRateLeaderboard,
-        mintPoints: mintPointsWrapper,
-        placeBet: placeBetWrapper,
-        sendPoints,
-        generatePxbId,
-        fetchUserProfile,
-        fetchUserBets,
-        fetchLeaderboard,
-        fetchWinRateLeaderboard,
-        addPointsToUser,
-        mintingPoints,
-        transferFeature,
-        isLeaderboardLoading,
-        isLoadingWinRate,
-        isLoadingBets,
-        // Referral system
-        generateReferralLink,
-        checkAndProcessReferral,
-        referralStats,
-        fetchReferralStats,
-        isLoadingReferrals
-      }}
-    >
-      {children}
-    </PXBPointsContext.Provider>
-  );
 };
