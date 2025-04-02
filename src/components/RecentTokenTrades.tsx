@@ -11,6 +11,7 @@ import { BetPrediction, BetStatus } from '@/types/bet';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
+
 const RecentTokenTrades: React.FC = () => {
   const {
     isConnected
@@ -29,6 +30,7 @@ const RecentTokenTrades: React.FC = () => {
     currentMarketCap: number | null;
   }>>({});
   const [loadingProgress, setLoadingProgress] = useState<Record<string, boolean>>({});
+
   const formatTimeAgo = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
@@ -39,6 +41,7 @@ const RecentTokenTrades: React.FC = () => {
       return 'recently';
     }
   };
+
   const fetchRecentBets = async (pageNum = 0, append = false) => {
     const loadingState = append ? setIsLoadingMore : setIsLoading;
     loadingState(true);
@@ -72,7 +75,7 @@ const RecentTokenTrades: React.FC = () => {
         if (bet.prediction_bettor1 === 'up') {
           predictionDisplay = 'MOON';
         } else if (bet.prediction_bettor1 === 'down') {
-          predictionDisplay = 'DIE';
+          predictionDisplay = 'DUST';
         } else {
           predictionDisplay = bet.prediction_bettor1.toUpperCase();
         }
@@ -105,6 +108,7 @@ const RecentTokenTrades: React.FC = () => {
       loadingState(false);
     }
   };
+
   const fetchBetMarketCapData = async (bet: any) => {
     if (!bet.tokenMint || marketCapData[bet.id]?.currentMarketCap) return;
     setLoadingProgress(prev => ({
@@ -131,6 +135,7 @@ const RecentTokenTrades: React.FC = () => {
       }));
     }
   };
+
   const calculateProgress = (bet: any) => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     const currentMarketCap = marketCapData[bet.id]?.currentMarketCap;
@@ -151,6 +156,7 @@ const RecentTokenTrades: React.FC = () => {
       return Math.min(100, Math.abs(percentageChange) / targetChange * 100);
     }
   };
+
   useEffect(() => {
     if (isConnected) {
       fetchRecentBets();
@@ -158,12 +164,14 @@ const RecentTokenTrades: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isConnected]);
+
   const handleShowMore = async () => {
     if (isLoadingMore || !hasMore) return;
     const nextPage = page + 1;
     setPage(nextPage);
     await fetchRecentBets(nextPage, true);
   };
+
   const formatNumber = (num: number) => {
     if (num >= 1000000000) {
       return `${(num / 1000000000).toFixed(2)}B`;
@@ -176,9 +184,11 @@ const RecentTokenTrades: React.FC = () => {
     }
     return num.toFixed(2);
   };
+
   const handleNavigateToBetting = () => {
     navigate('/betting');
   };
+
   const formatMarketCap = (value: number | null | undefined) => {
     if (value === null || value === undefined) return "N/A";
     if (value >= 1000000000) {
@@ -192,6 +202,7 @@ const RecentTokenTrades: React.FC = () => {
     }
     return `$${value.toFixed(2)}`;
   };
+
   const calculateTargetMarketCap = (bet: any) => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     if (!initialMarketCap) return null;
@@ -203,6 +214,7 @@ const RecentTokenTrades: React.FC = () => {
       return initialMarketCap * (1 - percentageChange / 100);
     }
   };
+
   if (isLoading) {
     return <div className="bg-dream-foreground/5 backdrop-blur-sm p-4 rounded-lg border border-dream-accent1/20">
         <div className="text-center py-4">
@@ -210,6 +222,7 @@ const RecentTokenTrades: React.FC = () => {
         </div>
       </div>;
   }
+
   if (!isConnected) {
     return <div className="bg-dream-foreground/5 backdrop-blur-sm p-4 rounded-lg border border-dream-accent1/20">
         <div className="text-center py-4">
@@ -217,6 +230,7 @@ const RecentTokenTrades: React.FC = () => {
         </div>
       </div>;
   }
+
   if (recentBets.length === 0) {
     return <div className="bg-dream-foreground/5 backdrop-blur-sm rounded-lg border border-dream-accent1/20 overflow-hidden">
         <div className="p-4 border-b border-dream-accent1/20 flex justify-between items-center">
@@ -229,6 +243,7 @@ const RecentTokenTrades: React.FC = () => {
         </div>
       </div>;
   }
+
   return <div className="bg-dream-foreground/5 backdrop-blur-sm rounded-lg border border-dream-accent1/20 overflow-hidden">
       <div className="p-4 border-b border-dream-accent1/20 flex justify-between items-center">
         <h3 className="font-display font-semibold text-lg">
@@ -304,7 +319,7 @@ const RecentTokenTrades: React.FC = () => {
                       Prediction
                     </span>
                     <span className={`font-medium ${bet.prediction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                      {bet.predictionDisplay}
+                      {bet.prediction === 'up' ? 'MOON' : 'DUST'}
                     </span>
                   </div>
                   
@@ -337,4 +352,5 @@ const RecentTokenTrades: React.FC = () => {
       </div>
     </div>;
 };
+
 export default RecentTokenTrades;
