@@ -36,19 +36,34 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenMint }) => {
     const fetchComments = async () => {
       setLoading(true);
       try {
+        // Create a custom entry in the comments table that relates to a token
+        // and use appropriate metadata to store token-related information
         const { data, error } = await supabase
-          .from('token_comments')
+          .from('comments')
           .select(`
             id,
             content,
             created_at,
-            author:users(wallet_address, username, avatar_url)
+            author_id(id, wallet_address, username, avatar_url)
           `)
-          .eq('token_mint', tokenMint)
+          .eq('bounty_id', tokenMint) // Using bounty_id field to store tokenMint
           .order('created_at', { ascending: false });
           
         if (error) throw error;
-        setComments(data || []);
+        
+        // Transform the data to match our Comment interface
+        const formattedComments = data.map(comment => ({
+          id: comment.id,
+          content: comment.content,
+          created_at: comment.created_at,
+          author: {
+            wallet_address: comment.author_id?.wallet_address || '',
+            username: comment.author_id?.username || '',
+            avatar_url: comment.author_id?.avatar_url || '',
+          }
+        }));
+        
+        setComments(formattedComments);
       } catch (error) {
         console.error('Error fetching comments:', error);
         toast.error('Failed to load comments');
@@ -61,28 +76,38 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenMint }) => {
     
     // Set up real-time subscription for new comments
     const subscription = supabase
-      .channel('token_comments')
+      .channel('comments-channel')
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
-        table: 'token_comments',
-        filter: `token_mint=eq.${tokenMint}`
+        table: 'comments',
+        filter: `bounty_id=eq.${tokenMint}`
       }, (payload) => {
         // Fetch the user data for the new comment
         const fetchNewComment = async () => {
           const { data, error } = await supabase
-            .from('token_comments')
+            .from('comments')
             .select(`
               id,
               content,
               created_at,
-              author:users(wallet_address, username, avatar_url)
+              author_id(id, wallet_address, username, avatar_url)
             `)
             .eq('id', payload.new.id)
             .single();
             
           if (!error && data) {
-            setComments(prev => [data, ...prev]);
+            const formattedComment = {
+              id: data.id,
+              content: data.content,
+              created_at: data.created_at,
+              author: {
+                wallet_address: data.author_id?.wallet_address || '',
+                username: data.author_id?.username || '',
+                avatar_url: data.author_id?.avatar_url || '',
+              }
+            };
+            setComments(prev => [formattedComment, ...prev]);
           }
         };
         
@@ -116,21 +141,23 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenMint }) => {
     try {
       // Get user id from wallet address
       const { data: userData, error: userError } = await supabase
-        .from('users')
+        .from('profiles')
         .select('id')
         .eq('wallet_address', publicKey.toString())
         .maybeSingle();
         
       if (userError) throw userError;
       
-      // If no user found, create a new user
+      // If no user found, create a new user profile
       let userId = userData?.id;
       
       if (!userId) {
+        // Insert into profiles table
         const { data: newUser, error: createError } = await supabase
-          .from('users')
+          .from('profiles')
           .insert({
-            wallet_address: publicKey.toString()
+            wallet_address: publicKey.toString(),
+            username: `user_${publicKey.toString().slice(0, 8)}`
           })
           .select('id')
           .single();
@@ -139,11 +166,11 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenMint }) => {
         userId = newUser.id;
       }
       
-      // Insert comment
+      // Insert comment in comments table using bounty_id for tokenMint
       const { error: commentError } = await supabase
-        .from('token_comments')
+        .from('comments')
         .insert({
-          token_mint: tokenMint,
+          bounty_id: tokenMint,  // Use bounty_id to store tokenMint
           author_id: userId,
           content: newComment.trim()
         });

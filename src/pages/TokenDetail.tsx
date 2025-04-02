@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -32,8 +31,7 @@ import { useSolanaBalance } from '@/hooks/useSolanaBalance';
 
 // Services
 import { fetchTokenMetrics, TokenMetrics } from '@/services/tokenDataCache';
-import { useEffect as useEffectOriginal } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { createSupabaseBet, trackTokenSearch } from '@/services/supabaseService';
 
 // Types
 import { Bet, BetPrediction } from '@/types/bet';
@@ -43,7 +41,7 @@ const TokenDetail = () => {
   const { tokenId } = useParams();
   const navigate = useNavigate();
   const { publicKey, connected } = useWallet();
-  const { balance, isLoading, error } = useSolanaBalance();
+  const { balance, isLoading, error, refreshBalance } = useSolanaBalance();
   const { userProfile, mintPoints, placeBet, userBets, fetchUserBets, addPointsToUser } = usePXBPoints();
 
   // State variables
@@ -80,6 +78,15 @@ const TokenDetail = () => {
           
         if (tokenError) throw tokenError;
         setToken(tokenData);
+        
+        // Track this token search
+        if (tokenData) {
+          trackTokenSearch(
+            tokenData.token_mint,
+            tokenData.token_name,
+            tokenData.token_symbol
+          ).catch(console.error);
+        }
         
         // Fetch token bets from Supabase
         const { data: bets, error: betsError } = await supabase
@@ -200,77 +207,55 @@ const TokenDetail = () => {
     try {
       setCreatingBet(true);
       
-      // Create bet in Supabase
-      const { data, error } = await supabase
-        .from('bets')
-        .insert({
-          token_mint: token.token_mint,
-          token_name: token.token_name,
-          token_symbol: token.token_symbol,
-          creator: publicKey.toString(),
-          prediction_bettor1: betPrediction,
-          sol_amount: betAmount,
-          duration: betDuration,
-          status: 'open'
-        })
-        .select()
-        .single();
+      // Use the createSupabaseBet function from supabaseService
+      const newBet = await createSupabaseBet(
+        token.token_mint,
+        token.token_name,
+        token.token_symbol,
+        betPrediction,
+        betDuration / 60, // Convert seconds to minutes
+        betAmount,
+        publicKey.toString() // Creator's wallet address
+      );
       
-      if (error) throw error;
-      
-      // Transform the new bet to match our frontend Bet type
-      const newBet: Bet = {
-        id: data.bet_id,
-        tokenId: data.token_mint,
-        tokenName: data.token_name || 'Unknown Token',
-        tokenSymbol: data.token_symbol || 'UNKNOWN',
-        tokenMint: data.token_mint,
-        initiator: data.creator || 'Unknown',
-        amount: data.sol_amount,
-        prediction: data.prediction_bettor1 as BetPrediction,
-        timestamp: new Date(data.created_at).getTime(),
-        expiresAt: new Date(data.created_at).getTime() + (data.duration * 1000),
-        status: data.status as any,
-        duration: data.duration,
-        isPXB: false
-      };
-      
-      setTokenBets(prev => [newBet, ...prev]);
-      toast.success('Bet created successfully!');
-      
-      // Refresh token bets
-      const { data: updatedBets, error: betsError } = await supabase
-        .from('bets')
-        .select('*')
-        .eq('token_mint', token.token_mint)
-        .order('created_at', { ascending: false });
+      if (newBet) {
+        // The bet was successfully created
+        toast.success('Bet created successfully!');
         
-      if (!betsError && updatedBets) {
-        // Transform the bets to match our frontend Bet type
-        const transformedBets = updatedBets.map(bet => ({
-          id: bet.bet_id,
-          tokenId: bet.token_mint,
-          tokenName: bet.token_name || 'Unknown Token',
-          tokenSymbol: bet.token_symbol || 'UNKNOWN',
-          tokenMint: bet.token_mint,
-          initiator: bet.creator || 'Unknown',
-          counterParty: bet.bettor2_id || undefined,
-          amount: bet.sol_amount,
-          prediction: bet.prediction_bettor1 as BetPrediction,
-          timestamp: new Date(bet.created_at).getTime(),
-          expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-          status: bet.status as any,
-          initialMarketCap: bet.initial_market_cap || undefined,
-          currentMarketCap: bet.current_market_cap || undefined,
-          duration: bet.duration,
-          winner: bet.winner || undefined,
-          onChainBetId: bet.on_chain_id || undefined,
-          transactionSignature: bet.transaction_signature || undefined,
-          outcome: bet.outcome as any || undefined,
-          isPXB: false
-        }));
-        
-        setTokenBets(transformedBets);
+        // Either add the new bet to the existing list, or refresh all bets
+        const { data: updatedBets, error: betsError } = await supabase
+          .from('bets')
+          .select('*')
+          .eq('token_mint', token.token_mint)
+          .order('created_at', { ascending: false });
+          
+        if (!betsError && updatedBets) {
+          // Transform the bets to match our frontend Bet type
+          const transformedBets = updatedBets.map(bet => ({
+            id: bet.bet_id,
+            tokenId: bet.token_mint,
+            tokenName: bet.token_name || 'Unknown Token',
+            tokenSymbol: bet.token_symbol || 'UNKNOWN',
+            tokenMint: bet.token_mint,
+            initiator: bet.creator || 'Unknown',
+            counterParty: bet.bettor2_id || undefined,
+            amount: bet.sol_amount,
+            prediction: bet.prediction_bettor1 as BetPrediction,
+            timestamp: new Date(bet.created_at).getTime(),
+            expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
+            status: bet.status as any,
+            initialMarketCap: bet.initial_market_cap || undefined,
+            currentMarketCap: bet.current_market_cap || undefined,
+            duration: bet.duration,
+            winner: bet.winner || undefined,
+            onChainBetId: bet.on_chain_id || undefined,
+            transactionSignature: bet.transaction_signature || undefined,
+            outcome: bet.outcome as any || undefined,
+            isPXB: false
+          }));
+          
+          setTokenBets(transformedBets);
+        }
       }
     } catch (error) {
       console.error('Error creating bet:', error);
@@ -377,19 +362,19 @@ const TokenDetail = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
-              {token.token_name}
-              <span className="text-dream-foreground/50">({token.token_symbol})</span>
+              {token?.token_name}
+              <span className="text-dream-foreground/50">({token?.token_symbol})</span>
               
-              {token.verified && (
+              {token?.verified && (
                 <ShieldCheck className="h-5 w-5 text-green-500" />
               )}
             </h1>
             
             <div className="flex items-center gap-2 mt-1 text-dream-foreground/70">
-              <span className="font-mono text-sm">{token.token_mint}</span>
+              <span className="font-mono text-sm">{token?.token_mint}</span>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(token.token_mint);
+                  navigator.clipboard.writeText(token?.token_mint);
                   toast.success('Address copied to clipboard');
                 }}
                 className="hover:text-dream-accent1 transition-colors"
@@ -398,7 +383,7 @@ const TokenDetail = () => {
               </button>
               
               <a
-                href={`https://solscan.io/token/${token.token_mint}`}
+                href={`https://solscan.io/token/${token?.token_mint}`}
                 target="_blank"
                 rel="noreferrer"
                 className="hover:text-dream-accent1 transition-colors"
@@ -459,7 +444,7 @@ const TokenDetail = () => {
             <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
               <div className="p-6">
                 <h3 className="text-lg font-medium mb-4">Price Chart</h3>
-                <PriceChart />
+                <PriceChart tokenMint={token?.token_mint} />
               </div>
             </div>
             
@@ -467,14 +452,14 @@ const TokenDetail = () => {
               <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
                 <div className="p-6">
                   <h3 className="text-lg font-medium mb-4">Market Cap</h3>
-                  <TokenMarketCap />
+                  <TokenMarketCap tokenMint={token?.token_mint} />
                 </div>
               </div>
               
               <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
                 <div className="p-6">
                   <h3 className="text-lg font-medium mb-4">Volume</h3>
-                  <TokenVolume />
+                  <TokenVolume tokenMint={token?.token_mint} />
                 </div>
               </div>
             </div>
@@ -843,7 +828,7 @@ const TokenDetail = () => {
           <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
             <div className="p-6">
               <h3 className="text-lg font-medium mb-4">Community Comments</h3>
-              <TokenComments />
+              <TokenComments tokenMint={token?.token_mint} />
             </div>
           </div>
         </TabsContent>
