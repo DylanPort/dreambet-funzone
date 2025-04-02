@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
@@ -62,7 +61,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           }));
           setLastUpdated(new Date());
           
-          // Check if target is reached
           const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
           const targetMarketCap = calculateTargetMarketCap();
           
@@ -91,7 +89,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     return () => clearInterval(intervalId);
   }, [bet.tokenMint, bet.initialMarketCap, bet.status, bet.betType, bet.tokenSymbol, bet.betAmount, initialMarketCapData, marketCapData, hasReachedTarget, notifiedWin]);
 
-  // Check for bet expiration
   useEffect(() => {
     if (bet.status !== 'pending') return;
     
@@ -249,6 +246,18 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
   const currentMarketCap = marketCapData?.currentMarketCap || initialMarketCap;
 
+  const isLosing = () => {
+    if (bet.status === 'lost') return true;
+    if (bet.status === 'won') return false;
+    
+    if (!initialMarketCap || !currentMarketCap) return false;
+    
+    const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
+    
+    return (bet.betType === 'up' && actualChange < 0) || 
+           (bet.betType === 'down' && actualChange > 0);
+  };
+
   return (
     <div className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden">
       <div className="px-4 py-3">
@@ -288,12 +297,12 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           
           <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden mb-1 relative">
             <div 
-              className={`h-full ${hasReachedTarget || bet.status === 'won' ? 'bg-green-500' : bet.status === 'lost' ? 'bg-red-500' : 'bg-purple-500'}`}
+              className={`h-full ${hasReachedTarget || bet.status === 'won' ? 'bg-green-500' : bet.status === 'lost' ? 'bg-red-500' : isLosing() ? 'bg-red-500' : 'bg-purple-500'}`}
               style={{ width: `${progress}%` }}
             >
               <div className="absolute left-0 top-0 w-full h-full flex">
-                <div className="h-full w-2 bg-purple-600 opacity-50"></div>
-                <div className="h-full w-2 bg-purple-600 opacity-50 ml-auto"></div>
+                <div className={`h-full w-2 ${isLosing() ? 'bg-red-600' : 'bg-purple-600'} opacity-50`}></div>
+                <div className={`h-full w-2 ${isLosing() ? 'bg-red-600' : 'bg-purple-600'} opacity-50 ml-auto`}></div>
               </div>
             </div>
           </div>
