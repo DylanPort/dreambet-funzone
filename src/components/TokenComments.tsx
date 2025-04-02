@@ -1,278 +1,223 @@
-
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar } from '@/components/ui/avatar';
-import { toast } from 'sonner';
-import { MessageCircle, Send } from 'lucide-react';
-
-interface TokenCommentsProps {
-  tokenMint?: string;
-}
+import { MessageSquare, Send, User, RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Comment {
   id: string;
+  author: string;
   content: string;
-  created_at: string;
-  author: {
-    wallet_address: string;
-    username: string;
-    avatar_url: string;
-  };
+  timestamp: string;
+  votes: number;
 }
 
-const TokenComments: React.FC<TokenCommentsProps> = ({ tokenMint }) => {
-  const { publicKey, connected } = useWallet();
+interface TokenCommentsProps {
+  tokenId: string;
+  tokenName: string;
+}
+
+const TokenComments: React.FC<TokenCommentsProps> = ({ tokenId, tokenName }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
-
+  const [loading, setLoading] = useState(false);
+  const { connected, publicKey } = useWallet();
+  const { toast } = useToast();
+  
   useEffect(() => {
-    if (!tokenMint) return;
+    loadComments();
+  }, [tokenId]);
+  
+  const loadComments = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setComments([]);
+      setLoading(false);
+    }, 500);
+  };
+  
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const fetchComments = async () => {
-      setLoading(true);
-      try {
-        // Use the comments table with bounty_id field to store token-related comments
-        const { data, error } = await supabase
-          .from('comments')
-          .select(`
-            id,
-            content,
-            created_at,
-            author_id(id, wallet_address, username, avatar_url)
-          `)
-          .eq('bounty_id', tokenMint)
-          .order('created_at', { ascending: false });
-          
-        if (error) throw error;
-        
-        // Transform the data to match our Comment interface
-        const formattedComments = data.map(comment => ({
-          id: comment.id,
-          content: comment.content,
-          created_at: comment.created_at,
-          author: {
-            wallet_address: comment.author_id?.wallet_address || '',
-            username: comment.author_id?.username || '',
-            avatar_url: comment.author_id?.avatar_url || '',
-          }
-        }));
-        
-        setComments(formattedComments);
-      } catch (error) {
-        console.error('Error fetching comments:', error);
-        toast.error('Failed to load comments');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchComments();
-    
-    // Set up real-time subscription for new comments
-    const subscription = supabase
-      .channel('comments-channel')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'comments',
-        filter: `bounty_id=eq.${tokenMint}`
-      }, (payload) => {
-        // Fetch the user data for the new comment
-        const fetchNewComment = async () => {
-          const { data, error } = await supabase
-            .from('comments')
-            .select(`
-              id,
-              content,
-              created_at,
-              author_id(id, wallet_address, username, avatar_url)
-            `)
-            .eq('id', payload.new.id)
-            .single();
-            
-          if (!error && data) {
-            const formattedComment = {
-              id: data.id,
-              content: data.content,
-              created_at: data.created_at,
-              author: {
-                wallet_address: data.author_id?.wallet_address || '',
-                username: data.author_id?.username || '',
-                avatar_url: data.author_id?.avatar_url || '',
-              }
-            };
-            setComments(prev => [formattedComment, ...prev]);
-          }
-        };
-        
-        fetchNewComment();
-      })
-      .subscribe();
-      
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [tokenMint]);
-
-  const handleSubmitComment = async () => {
-    if (!connected || !publicKey) {
-      toast.error('Please connect your wallet to comment');
+    if (!connected) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to add a comment",
+        variant: "destructive",
+      });
       return;
     }
     
     if (!newComment.trim()) {
-      toast.error('Comment cannot be empty');
+      toast({
+        title: "Empty comment",
+        description: "Please enter a comment before submitting",
+        variant: "destructive",
+      });
       return;
     }
     
-    if (!tokenMint) {
-      toast.error('Token information not available');
-      return;
-    }
+    const userAddress = publicKey ? publicKey.toString() : 'Anonymous';
+    const shortenedAddress = userAddress.slice(0, 4) + '...' + userAddress.slice(-4);
     
-    setIsSubmitting(true);
+    const newCommentObj = {
+      id: Date.now().toString(),
+      author: shortenedAddress,
+      content: newComment,
+      timestamp: new Date().toISOString(),
+      votes: 0
+    };
     
-    try {
-      // First check if the user has a profile already
-      const walletAddress = publicKey.toString();
-      const { data: existingProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('wallet_address', walletAddress)
-        .maybeSingle();
-        
-      if (profileError) throw profileError;
-      
-      // If no profile found, create a new one
-      let profileId = existingProfile?.id;
-      
-      if (!profileId) {
-        // Generate a new UUID for the profile
-        const newId = crypto.randomUUID();
-        
-        // Need to create a new profile with the generated UUID
-        const { data: newProfile, error: createProfileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: newId, // Include the id field which is required
-            wallet_address: walletAddress,
-            username: `user_${walletAddress.slice(0, 8)}`,
-            first_sign_in: true
-          })
-          .select('id')
-          .single();
-          
-        if (createProfileError) throw createProfileError;
-        profileId = newProfile.id;
-      }
-      
-      // Now create the comment
-      const { error: commentError } = await supabase
-        .from('comments')
-        .insert({
-          bounty_id: tokenMint,
-          author_id: profileId,
-          content: newComment.trim()
-        });
-        
-      if (commentError) throw commentError;
-      
-      setNewComment('');
-      toast.success('Comment posted successfully');
-      
-    } catch (error) {
-      console.error('Error posting comment:', error);
-      toast.error('Failed to post comment');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    setComments([newCommentObj, ...comments]);
+    setNewComment('');
+    
+    toast({
+      title: "Comment added",
+      description: "Your comment has been added to the discussion",
     });
   };
-
-  if (loading && comments.length === 0) {
-    return (
-      <div className="flex justify-center items-center py-10">
-        <div className="w-8 h-8 border-4 border-dream-accent1 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
+  
+  const handleVote = (id: string, direction: 'up' | 'down') => {
+    if (!connected) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to vote",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setComments(comments.map(comment => {
+      if (comment.id === id) {
+        return {
+          ...comment,
+          votes: comment.votes + (direction === 'up' ? 1 : -1)
+        };
+      }
+      return comment;
+    }));
+  };
+  
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const commentDate = new Date(timestamp);
+    const diffMs = now.getTime() - commentDate.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return `${Math.floor(diffMins / 1440)}d ago`;
+  };
+  
   return (
     <div className="space-y-6">
-      {/* Comment input */}
-      <div className="space-y-2">
-        <Textarea
-          placeholder="Share your thoughts..."
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          disabled={!connected || isSubmitting}
-          className="bg-black/30 border-dream-foreground/20 focus:border-dream-accent1 min-h-[100px]"
-        />
-        <div className="flex justify-between items-center">
-          {!connected && (
-            <p className="text-dream-foreground/60 text-sm">
-              Connect your wallet to comment
-            </p>
-          )}
-          <Button
-            onClick={handleSubmitComment}
-            disabled={!connected || isSubmitting || !newComment.trim()}
-            className="ml-auto"
-          >
-            {isSubmitting ? 'Posting...' : 'Post Comment'} <Send className="ml-2 h-4 w-4" />
-          </Button>
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center">
+          <MessageSquare className="w-5 h-5 mr-2 text-dream-accent2" />
+          <h2 className="text-xl font-display font-bold">Community Discussion</h2>
         </div>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={loadComments}
+          disabled={loading}
+          className="text-dream-foreground/70 hover:text-dream-foreground"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
       
-      {/* Comments list */}
+      <form onSubmit={handleSubmitComment} className="space-y-2">
+        <div className="relative">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder={connected ? `Share your thoughts on ${tokenName}...` : "Connect wallet to comment"}
+            disabled={!connected}
+            className="w-full bg-dream-background/30 border border-dream-foreground/10 focus:border-dream-accent2/50 rounded-lg px-4 py-3 pr-12 min-h-24 placeholder:text-dream-foreground/30 focus:outline-none focus:ring-1 focus:ring-dream-accent2/50 transition-all"
+          />
+          <Button 
+            type="submit" 
+            disabled={!connected || !newComment.trim()}
+            className="absolute bottom-3 right-3 p-2 rounded-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 text-white"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
+      </form>
+      
       <div className="space-y-4">
         {comments.length === 0 ? (
-          <div className="text-center py-6 text-dream-foreground/60">
-            <MessageCircle className="mx-auto h-8 w-8 mb-2 opacity-50" />
-            <p>No comments yet</p>
-            <p className="text-sm mt-1">Be the first to share your thoughts!</p>
+          <div className="text-center py-8 text-dream-foreground/50">
+            <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-20" />
+            <p>No comments yet. Be the first to share your thoughts!</p>
           </div>
         ) : (
-          comments.map((comment) => (
-            <div key={comment.id} className="border border-dream-foreground/10 rounded-lg p-4 bg-black/30">
+          comments.map(comment => (
+            <div 
+              key={comment.id} 
+              className="bg-dream-background/30 border border-dream-foreground/10 rounded-lg p-4 animate-fade-in transform transition-all hover:scale-[1.01] hover:border-dream-foreground/20"
+            >
               <div className="flex justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <div className="bg-gradient-to-br from-dream-accent1 to-dream-accent2 h-full w-full flex items-center justify-center text-white font-bold">
-                      {comment.author.username ? 
-                        comment.author.username[0].toUpperCase() :
-                        comment.author.wallet_address.slice(0, 2)
-                      }
-                    </div>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">
-                      {comment.author.username || 
-                       `${comment.author.wallet_address.slice(0, 4)}...${comment.author.wallet_address.slice(-4)}`}
-                    </div>
+                <div className="flex items-center">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2">
+                    <User className="w-4 h-4 text-dream-foreground/70" />
                   </div>
+                  <span className="font-medium">{comment.author}</span>
                 </div>
-                <div className="text-dream-foreground/50 text-xs">
-                  {formatDate(comment.created_at)}
+                <span className="text-dream-foreground/50 text-sm">{formatTimeAgo(comment.timestamp)}</span>
+              </div>
+              
+              <p className="mb-3 text-dream-foreground/90">{comment.content}</p>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={() => handleVote(comment.id, 'up')}
+                    className="p-1 rounded-full hover:bg-dream-accent2/10 text-dream-foreground/50 hover:text-dream-accent2 transition-colors"
+                    disabled={!connected}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m12 19-7-7 7-7"></path>
+                      <path d="M5 12h14"></path>
+                    </svg>
+                  </button>
+                  
+                  <span className={`font-medium ${
+                    comment.votes > 0 ? 'text-green-400' : 
+                    comment.votes < 0 ? 'text-red-400' : 
+                    'text-dream-foreground/50'
+                  }`}>
+                    {comment.votes}
+                  </span>
+                  
+                  <button 
+                    onClick={() => handleVote(comment.id, 'down')}
+                    className="p-1 rounded-full hover:bg-dream-accent3/10 text-dream-foreground/50 hover:text-dream-accent3 transition-colors"
+                    disabled={!connected}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'rotate(180deg)' }}>
+                      <path d="m12 19-7-7 7-7"></path>
+                      <path d="M5 12h14"></path>
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="relative group">
+                  <button className="text-dream-foreground/30 hover:text-dream-foreground/70 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="1"></circle>
+                      <circle cx="19" cy="12" r="1"></circle>
+                      <circle cx="5" cy="12" r="1"></circle>
+                    </svg>
+                  </button>
                 </div>
               </div>
-              <div className="mt-2 text-dream-foreground/90 pl-10">
-                {comment.content}
-              </div>
+              
+              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-dream-accent2/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
           ))
         )}

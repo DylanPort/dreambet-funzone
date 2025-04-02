@@ -1,93 +1,174 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown } from 'lucide-react';
-import { fetchTokenMetrics } from '@/services/tokenDataCache';
+import React, { useState, useEffect, useRef } from 'react';
+import { BarChart3, ExternalLink, RefreshCcw } from 'lucide-react';
+import { subscribeToMarketCap } from '@/services/dexScreenerService';
+import { useToast } from '@/hooks/use-toast';
+import { usePumpPortal } from '@/hooks/usePumpPortal';
 
 interface TokenMarketCapProps {
-  tokenMint?: string;
+  tokenId: string;
 }
 
-const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenMint }) => {
+const LOCAL_STORAGE_KEY = "marketcap_";
+
+const TokenMarketCap: React.FC<TokenMarketCapProps> = ({ tokenId }) => {
   const [marketCap, setMarketCap] = useState<number | null>(null);
-  const [previousMarketCap, setPreviousMarketCap] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [pulseEffect, setPulseEffect] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const { toast } = useToast();
+  
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!tokenMint) return;
-      
-      setIsLoading(true);
-      try {
-        const tokenData = await fetchTokenMetrics(tokenMint);
-        if (tokenData && tokenData.marketCap !== null) {
-          setPreviousMarketCap(marketCap);
-          setMarketCap(tokenData.marketCap);
-        }
-      } catch (error) {
-        console.error('Error fetching market cap:', error);
-      } finally {
-        setIsLoading(false);
+    if (!tokenId) return;
+    
+    const intervalId = setInterval(() => {
+      if (isMounted.current) {
+        setRefreshing(true);
+        setTimeout(() => {
+          if (isMounted.current) {
+            setRefreshing(false);
+          }
+        }, 300);
       }
+    }, 10000);
+    
+    return () => {
+      clearInterval(intervalId);
     };
-
-    fetchData();
+  }, [tokenId]);
+  
+  useEffect(() => {
+    isMounted.current = true;
     
-    // Poll for updates
-    const intervalId = setInterval(fetchData, 30000);
-    return () => clearInterval(intervalId);
-  }, [tokenMint]);
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
-  const formatMarketCap = (value: number | null) => {
-    if (value === null) return 'N/A';
+  useEffect(() => {
+    if (!tokenId) return;
     
-    if (value >= 1000000000) {
-      return `$${(value / 1000000000).toFixed(2)}B`;
-    } else if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(2)}M`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(2)}K`;
-    } else {
-      return `$${value.toFixed(2)}`;
+    try {
+      const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY + tokenId);
+      if (cachedData) {
+        const { value, timestamp } = JSON.parse(cachedData);
+        if (Date.now() - timestamp < 2 * 60 * 1000) {
+          setMarketCap(value);
+          setLastUpdated(new Date(timestamp));
+          setLoading(false);
+        }
+      }
+    } catch (e) {
+      console.error("Error loading cached market cap:", e);
     }
+    
+    const cleanupDexScreener = subscribeToMarketCap(tokenId, (newMarketCap) => {
+      if (isMounted.current) {
+        setMarketCap(newMarketCap);
+        setLastUpdated(new Date());
+        setLoading(false);
+        
+        setPulseEffect(true);
+        setTimeout(() => {
+          if (isMounted.current) {
+            setPulseEffect(false);
+          }
+        }, 1000);
+        
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY + tokenId, JSON.stringify({
+            value: newMarketCap,
+            timestamp: Date.now()
+          }));
+        } catch (e) {
+          console.error("Error caching market cap:", e);
+        }
+      }
+    }, 10000);
+    
+    return () => {
+      cleanupDexScreener();
+    };
+  }, [tokenId]);
+
+  const formatLargeNumber = (num: number | null) => {
+    if (num === null) return "Loading...";
+    
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    }
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    }
+    if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    }
+    return `$${num.toFixed(2)}`;
   };
 
-  const isIncreasing = marketCap !== null && 
-                      previousMarketCap !== null && 
-                      marketCap > previousMarketCap;
-
-  if (isLoading && marketCap === null) {
-    return (
-      <div className="flex justify-center items-center h-40">
-        <div className="w-8 h-8 border-4 border-dream-accent1 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  const getLastUpdatedText = () => {
+    if (!lastUpdated) return "";
+    
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - lastUpdated.getTime()) / 1000);
+    
+    if (diffSeconds < 10) return "just now";
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+    return `${Math.floor(diffSeconds / 3600)}h ago`;
+  };
 
   return (
-    <div className="h-40 flex flex-col justify-center">
-      <div className="text-center">
-        <div className="text-dream-foreground/70 text-sm mb-1">Market Cap</div>
-        <motion.div 
-          className="flex justify-center items-center gap-2"
-          initial={{ scale: 0.95, opacity: 0.8 }}
-          animate={{ 
-            scale: isIncreasing ? [1, 1.05, 1] : 1,
-            opacity: 1
-          }}
-          transition={{ duration: 0.5 }}
-        >
-          <span className="text-3xl font-bold">
-            {formatMarketCap(marketCap)}
+    <div className="glass-panel p-4 relative overflow-hidden transition-all duration-300 hover:scale-105 animate-fade-in min-w-[150px] flex-1">
+      <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/30 to-dream-accent2/30 animate-gradient-move"></div>
+      <div className="flex items-center text-white mb-2 relative z-10">
+        <BarChart3 size={18} className="mr-2 text-dream-accent1 animate-pulse-glow" />
+        <span className="text-sm font-semibold">Market Cap</span>
+      </div>
+      <div className={`text-2xl font-extrabold relative z-10 flex items-center ${pulseEffect ? 'text-dream-accent1 transition-colors duration-500' : 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]'}`}>
+        {loading ? (
+          <span className="animate-pulse">Loading...</span>
+        ) : (
+          <>
+            <span className="mr-2">{formatLargeNumber(marketCap)}</span>
+            <div className="flex items-center h-2">
+              <div className="w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></div>
+              <span className="text-xs text-green-400 font-bold animate-pulse-slow">LIVE</span>
+            </div>
+          </>
+        )}
+      </div>
+      <div className="absolute top-2 right-2 flex items-center gap-2">
+        <div className="relative group">
+          <RefreshCcw 
+            className={`w-4 h-4 text-white/80 ${refreshing ? 'animate-spin' : ''}`} 
+            aria-label="Updates every 10 seconds"
+          />
+          <span className="absolute -top-8 right-0 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+            Updates every 10 seconds
           </span>
-          {isIncreasing !== undefined && (
-            <span className={isIncreasing ? "text-green-500" : "text-red-500"}>
-              {isIncreasing ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-            </span>
-          )}
-        </motion.div>
+        </div>
+        <a 
+          href={`https://dexscreener.com/solana/${tokenId}`} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-white/80 hover:text-white transition-colors"
+          aria-label="View on DexScreener"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </a>
+      </div>
+      
+      <div className="absolute bottom-0 left-0 right-0 overflow-hidden h-1">
+        <div 
+          className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent1 animate-pulse-glow" 
+        ></div>
+        <div className="absolute bottom-0 left-0 h-1 w-1/3 bg-white/30 backdrop-blur-sm transform -skew-x-45 animate-shine"></div>
       </div>
     </div>
   );
 };
 
-export default TokenMarketCap;
+export default React.memo(TokenMarketCap);

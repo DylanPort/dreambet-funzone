@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   id: string;
   username: string;
@@ -26,7 +25,6 @@ export interface PXBBet {
   userRole?: 'creator' | 'participant';
   timeframe?: number; // In minutes
   resolvedAt?: string; // Timestamp when the bet was resolved
-  creator?: string; // Added for compatibility with bet display
 }
 
 // Add LeaderboardEntry interface with all required fields

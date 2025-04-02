@@ -1,842 +1,884 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
-
-// UI Components
+import Navbar from '@/components/Navbar';
+import { fetchTokenById, trackTokenSearch } from '@/services/supabaseService';
+import { fetchBetsByToken, acceptBet } from '@/api/mockData';
+import { Bet, BetStatus } from '@/types/bet';
+import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, ArrowUpRight, ArrowDownRight, HelpCircle, CheckCircle, XCircle, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
-
-// Icons
-import { ArrowLeft, ArrowUp, ArrowDown, Copy, Zap, ExternalLink, AlertTriangle, Clock, Hourglass, ChevronDown, ChevronUp, Ban, ShieldCheck, Globe, Search, BarChart4, Sparkles, ListFilter } from 'lucide-react';
-
-// Custom components
-import TokenComments from '@/components/TokenComments';
-import PriceChart from '@/components/PriceChart';
-import WalletConnectButton from '@/components/WalletConnectButton';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import CreateBetForm from '@/components/CreateBetForm';
 import BetCard from '@/components/BetCard';
-import CountdownTimer from '@/components/CountdownTimer';
+import { useToast } from '@/hooks/use-toast';
+import { usePumpPortalWebSocket, getLatestPriceFromTrades, formatRawTrade, RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
+import OrbitingParticles from '@/components/OrbitingParticles';
+import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
 import TokenMarketCap from '@/components/TokenMarketCap';
 import TokenVolume from '@/components/TokenVolume';
-
-// Contexts and hooks
+import TokenComments from '@/components/TokenComments';
+import PriceChart from '@/components/PriceChart';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
-import { useSolanaBalance } from '@/hooks/useSolanaBalance';
-
-// Services
-import { fetchTokenMetrics, TokenMetrics } from '@/services/tokenDataCache';
-import { createSupabaseBet, trackTokenSearch } from '@/services/supabaseService';
-
-// Types
-import { Bet, BetPrediction } from '@/types/bet';
-import { PXBBet } from '@/types/pxb';
-
-const TokenDetail = () => {
-  const { tokenId } = useParams();
-  const navigate = useNavigate();
-  const { publicKey, connected } = useWallet();
-  const { balance, isLoading, error, refreshBalance } = useSolanaBalance();
-  const { userProfile, mintPoints, placeBet, userBets, fetchUserBets, addPointsToUser } = usePXBPoints();
-
-  // State variables
-  const [token, setToken] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tokenBets, setTokenBets] = useState<Bet[]>([]);
-  const [tokenMetrics, setTokenMetrics] = useState<TokenMetrics | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [betAmount, setBetAmount] = useState(0.1);
-  const [betPrediction, setBetPrediction] = useState<BetPrediction>('up');
-  const [betDuration, setBetDuration] = useState(3600 * 24); // 24 hours in seconds
-  const [creatingBet, setCreatingBet] = useState(false);
-  const [pxbBetAmount, setPxbBetAmount] = useState(100);
-  const [pxbPrediction, setPxbPrediction] = useState<'up' | 'down'>('up');
-  const [pxbPercentageChange, setPxbPercentageChange] = useState(10);
-  const [pxbDuration, setPxbDuration] = useState(60); // 60 minutes
-  const [placingPxbBet, setPlacingPxbBet] = useState(false);
-  const [betTabView, setBetTabView] = useState('all');
-
-  // Fetch token data on component mount
+import { usePumpPortal } from '@/hooks/usePumpPortal';
+import { Progress } from '@/components/ui/progress';
+import { formatDistanceToNow } from 'date-fns';
+import { fetchTokenImage } from '@/services/moralisService';
+import { Skeleton } from '@/components/ui/skeleton';
+const TokenChart = ({
+  tokenId,
+  tokenName,
+  refreshData,
+  loading,
+  onPriceUpdate,
+  setShowCreateBet
+}) => {
+  const [timeInterval, setTimeInterval] = useState('15');
+  const [chartTheme, setChartTheme] = useState('dark');
+  const handleRefreshChart = () => {
+    refreshData();
+  };
   useEffect(() => {
-    const loadTokenData = async () => {
-      if (!tokenId) return;
+    const handleMessage = event => {
+      try {
+        if (event.data && typeof event.data === 'string') {
+          const data = JSON.parse(event.data);
+          if (data.type === 'price_update' && data.price) {
+            onPriceUpdate(data.price, data.change || 0);
+          }
+        }
+      } catch (error) {
+        console.error("Error handling chart message:", error);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onPriceUpdate]);
+  const chartUrl = `https://www.gmgn.cc/kline/sol/${tokenId}?theme=${chartTheme}&interval=${timeInterval}&send_price=true`;
+  return <div className="glass-panel p-6 mb-8">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-display font-bold">Price Chart</h2>
+        <div className="flex gap-4">
+          <div className="flex items-center gap-2">
+            <label htmlFor="interval" className="text-sm text-dream-foreground/70">Interval:</label>
+            <select id="interval" value={timeInterval} onChange={e => setTimeInterval(e.target.value)} className="bg-black/20 border border-dream-accent2/20 rounded px-2 py-1 text-sm">
+              <option value="1S">1 Second</option>
+              <option value="1">1 Minute</option>
+              <option value="5">5 Minutes</option>
+              <option value="15">15 Minutes</option>
+              <option value="60">1 Hour</option>
+              <option value="240">4 Hours</option>
+              <option value="720">12 Hours</option>
+              <option value="1D">1 Day</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <a href={`https://dexscreener.com/solana/${tokenId}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm">
+              <ExternalLink className="w-3 h-3 mr-1" />
+              DexScreener
+            </a>
+            <button onClick={handleRefreshChart} className="text-dream-foreground/70 hover:text-dream-foreground flex items-center text-sm" disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
       
+      <div className="w-full h-[400px] bg-black/10 rounded-lg overflow-hidden relative">
+        <iframe src={chartUrl} className="w-full h-full border-0" title="GMGN Price Chart" loading="lazy"></iframe>
+      </div>
+      
+      
+    </div>;
+};
+const TokenDetail = () => {
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
+  const [token, setToken] = useState<any>(null);
+  const [bets, setBets] = useState<Bet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [priceData, setPriceData] = useState<{
+    time: string;
+    price: number;
+  }[]>([]);
+  const [showCreateBet, setShowCreateBet] = useState(false);
+  const [newActiveBet, setNewActiveBet] = useState<Bet | null>(null);
+  const [activeBetsCount, setActiveBetsCount] = useState(0);
+  const {
+    toast
+  } = useToast();
+  const pumpPortal = usePumpPortalWebSocket();
+  const {
+    connected,
+    publicKey,
+    wallet
+  } = useWallet();
+  const [tokenMetrics, setTokenMetrics] = useState({
+    marketCap: null,
+    volume24h: null,
+    liquidity: null,
+    holders: 0
+  });
+  const [tokenImage, setTokenImage] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const lastPriceUpdateRef = useRef<number>(0);
+  const lastMetricsUpdateRef = useRef<number>(0);
+  const dexScreenerCleanupRef = useRef<Function | null>(null);
+  useEffect(() => {
+    const loadToken = async () => {
+      if (!id) return;
       try {
         setLoading(true);
-        
-        // Fetch token details from Supabase
-        const { data: tokenData, error: tokenError } = await supabase
-          .from('tokens')
-          .select('*')
-          .eq('token_mint', tokenId)
-          .maybeSingle();
-          
-        if (tokenError) throw tokenError;
-        setToken(tokenData);
-        
-        // Track this token search
+        console.log("Loading token with ID:", id);
+        try {
+          const cachedPrice = localStorage.getItem(`token_price_${id}`);
+          if (cachedPrice) {
+            const {
+              price,
+              change24h,
+              timestamp
+            } = JSON.parse(cachedPrice);
+            if (Date.now() - timestamp < 5 * 60 * 1000) {
+              setToken(current => {
+                if (!current) return null;
+                return {
+                  ...current,
+                  currentPrice: price,
+                  change24h: change24h
+                };
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Error loading cached price:", e);
+        }
+        let tokenData = null;
+        let isWebSocketToken = false;
+        const recentTokens = pumpPortal.recentTokens || [];
+        const webSocketToken = recentTokens.find(t => t.token_mint === id);
+        if (webSocketToken) {
+          console.log("Found token in WebSocket data:", webSocketToken);
+          isWebSocketToken = true;
+          tokenData = {
+            token_mint: webSocketToken.token_mint,
+            token_name: webSocketToken.token_name,
+            token_symbol: webSocketToken.token_symbol || '',
+            last_trade_price: 0,
+            last_updated_time: webSocketToken.created_time
+          };
+        }
+        if (!tokenData) {
+          console.log("Checking Supabase for token");
+          const supabaseTokenData = await fetchTokenById(id);
+          if (supabaseTokenData) {
+            console.log("Found token in Supabase:", supabaseTokenData);
+            tokenData = supabaseTokenData;
+          }
+        }
         if (tokenData) {
-          trackTokenSearch(
-            tokenData.token_mint,
-            tokenData.token_name,
-            tokenData.token_symbol
-          ).catch(console.error);
+          console.log("Setting token data:", tokenData);
+          setToken({
+            id: tokenData.token_mint,
+            name: tokenData.token_name,
+            symbol: tokenData.token_symbol || '',
+            logo: '🪙',
+            currentPrice: tokenData.last_trade_price || 0,
+            change24h: 0,
+            migrationTime: new Date(tokenData.last_updated_time).getTime()
+          });
+          setTokenMetrics({
+            marketCap: null,
+            volume24h: null,
+            liquidity: null,
+            holders: 0
+          });
+          const dexScreenerData = await fetchDexScreenerData(tokenData.token_mint);
+          if (dexScreenerData) {
+            console.log("Got DexScreener data:", dexScreenerData);
+            setTokenMetrics({
+              marketCap: dexScreenerData.marketCap,
+              volume24h: dexScreenerData.volume24h,
+              liquidity: dexScreenerData.liquidity,
+              holders: tokenMetrics.holders
+            });
+          }
+          if (pumpPortal.connected) {
+            pumpPortal.subscribeToToken(id);
+          }
+          const now = new Date();
+          const initialData = [];
+          for (let i = -30; i <= 0; i++) {
+            const time = new Date(now);
+            time.setMinutes(time.getMinutes() + i);
+            initialData.push({
+              time: time.toISOString(),
+              price: tokenData.last_trade_price || 0
+            });
+          }
+          setPriceData(initialData);
+          const tokenBets = await fetchBetsByToken(id);
+          setBets(tokenBets);
+        } else if (id) {
+          console.log("Creating placeholder for new token with ID:", id);
+          let tokenName = "New Token";
+          let tokenSymbol = "";
+          const dexScreenerData = await fetchDexScreenerData(id);
+          if (dexScreenerData) {
+            console.log("Got DexScreener data for new token:", dexScreenerData);
+            const baseTokenInfo = (dexScreenerData as any).baseToken;
+            if (baseTokenInfo) {
+              tokenName = baseTokenInfo.name || tokenName;
+              tokenSymbol = baseTokenInfo.symbol || tokenSymbol;
+            }
+            setTokenMetrics({
+              marketCap: dexScreenerData.marketCap,
+              volume24h: dexScreenerData.volume24h,
+              liquidity: dexScreenerData.liquidity,
+              holders: 0
+            });
+          }
+          setToken({
+            id: id,
+            name: tokenName,
+            symbol: tokenSymbol,
+            logo: '🪙',
+            currentPrice: dexScreenerData?.priceUsd || 0,
+            change24h: dexScreenerData?.priceChange24h || 0,
+            migrationTime: new Date().getTime()
+          });
+          if (pumpPortal.connected) {
+            pumpPortal.subscribeToToken(id);
+          }
+          const now = new Date();
+          const initialData = [];
+          for (let i = -30; i <= 0; i++) {
+            const time = new Date(now);
+            time.setMinutes(time.getMinutes() + i);
+            initialData.push({
+              time: time.toISOString(),
+              price: dexScreenerData?.priceUsd || 0
+            });
+          }
+          setPriceData(initialData);
+          const tokenBets = await fetchBetsByToken(id);
+          setBets(tokenBets);
+          toast({
+            title: "New token detected",
+            description: "This appears to be a very new token. Limited information is available.",
+            variant: "default"
+          });
+          trackTokenSearch(id, tokenName, tokenSymbol);
+        } else {
+          toast({
+            title: "Token not found",
+            description: "We couldn't find details for this token.",
+            variant: "destructive"
+          });
         }
-        
-        // Fetch token bets from Supabase
-        const { data: bets, error: betsError } = await supabase
-          .from('bets')
-          .select('*')
-          .eq('token_mint', tokenId)
-          .order('created_at', { ascending: false });
-          
-        if (betsError) throw betsError;
-        
-        // Transform the bets to match our frontend Bet type
-        const transformedBets = bets.map(bet => ({
-          id: bet.bet_id,
-          tokenId: bet.token_mint,
-          tokenName: bet.token_name || 'Unknown Token',
-          tokenSymbol: bet.token_symbol || 'UNKNOWN',
-          tokenMint: bet.token_mint,
-          initiator: bet.creator || 'Unknown',
-          counterParty: bet.bettor2_id || undefined,
-          amount: bet.sol_amount,
-          prediction: bet.prediction_bettor1 as BetPrediction,
-          timestamp: new Date(bet.created_at).getTime(),
-          expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-          status: bet.status as any,
-          initialMarketCap: bet.initial_market_cap || undefined,
-          currentMarketCap: bet.current_market_cap || undefined,
-          duration: bet.duration,
-          winner: bet.winner || undefined,
-          onChainBetId: bet.on_chain_id || undefined,
-          transactionSignature: bet.transaction_signature || undefined,
-          outcome: bet.outcome as any || undefined,
-          isPXB: false
-        }));
-        
-        setTokenBets(transformedBets);
-        
-        // Fetch token metrics
-        const metrics = await fetchTokenMetrics(tokenId);
-        setTokenMetrics(metrics);
-        
-        setLoading(false);
       } catch (error) {
-        console.error('Error loading token data:', error);
+        console.error("Error loading token:", error);
+        toast({
+          title: "Failed to load token",
+          description: "There was an error loading the token details.",
+          variant: "destructive"
+        });
+      } finally {
         setLoading(false);
       }
     };
-    
-    loadTokenData();
-  }, [tokenId]);
-
-  // Convert PXB bets to the Bet format for uniform display
-  const convertPXBToBet = useCallback((pxbBet: PXBBet): Bet => {
-    return {
-      id: pxbBet.id,
-      tokenId: tokenId || '',
-      tokenName: pxbBet.tokenName,
-      tokenSymbol: pxbBet.tokenSymbol,
-      tokenMint: pxbBet.tokenMint,
-      initiator: pxbBet.creator || pxbBet.userId || '',
-      amount: pxbBet.betAmount,
-      prediction: pxbBet.betType as BetPrediction,
-      timestamp: Date.parse(pxbBet.createdAt),
-      expiresAt: Date.parse(pxbBet.expiresAt),
-      status: pxbBet.status,
-      initialMarketCap: pxbBet.initialMarketCap || 0,
-      currentMarketCap: pxbBet.currentMarketCap || 0,
-      duration: pxbBet.timeframe ? pxbBet.timeframe * 60 : 3600, // Convert minutes to seconds
-      isPXB: true,
-      percentageChange: pxbBet.percentageChange,
-      pointsWon: pxbBet.pointsWon
+    loadToken();
+  }, [id, toast, pumpPortal.connected, pumpPortal.recentTokens]);
+  useEffect(() => {
+    const loadTokenImage = async () => {
+      if (!id || !token) return;
+      try {
+        setImageLoading(true);
+        setImageError(false);
+        const imageUrl = await fetchTokenImage(id, token.symbol);
+        setTokenImage(imageUrl);
+      } catch (error) {
+        console.error("Error loading token image:", error);
+        setImageError(true);
+      } finally {
+        setImageLoading(false);
+      }
     };
-  }, [tokenId]);
-
-  // Combine Solana bets and PXB bets into a unified array
-  const allBets = useCallback(() => {
-    const pxbBets = userBets 
-      ? userBets
-          .filter(bet => bet.tokenMint === token?.token_mint)
-          .map(convertPXBToBet)
-      : [];
-    
-    const combinedBets = [...tokenBets, ...pxbBets];
-    
-    // Sort by most recent first
-    return combinedBets.sort((a, b) => b.timestamp - a.timestamp);
-  }, [tokenBets, userBets, token, convertPXBToBet]);
-
-  // Filter bets based on tab selection
-  const filteredBets = useCallback(() => {
-    const bets = allBets();
-    
-    if (betTabView === 'pxb') {
-      return bets.filter(bet => bet.isPXB);
-    } else if (betTabView === 'solana') {
-      return bets.filter(bet => !bet.isPXB);
+    loadTokenImage();
+  }, [id, token]);
+  const updateTokenPrice = useCallback((price: number, change24h: number) => {
+    const now = Date.now();
+    if (now - lastPriceUpdateRef.current > 2000) {
+      lastPriceUpdateRef.current = now;
+      setToken(current => {
+        if (!current) return null;
+        return {
+          ...current,
+          currentPrice: price,
+          change24h: change24h
+        };
+      });
+      setPriceData(current => {
+        const newPoint = {
+          time: new Date().toISOString(),
+          price: price
+        };
+        return [...current, newPoint].slice(-60);
+      });
     }
-    
-    return bets;
-  }, [allBets, betTabView]);
-
-  // Handle bet creation
-  const handleCreateBet = async () => {
-    if (!connected || !publicKey) {
-      toast.error('Please connect your wallet to create a bet');
-      return;
-    }
-    
-    if (!token) {
-      toast.error('Token data not available');
-      return;
-    }
-    
-    if (betAmount <= 0) {
-      toast.error('Bet amount must be greater than 0');
-      return;
-    }
-    
+  }, []);
+  const handleChartPriceUpdate = useCallback((price: number, change24h: number = 0) => {
+    console.log("Received price update from chart:", price, change24h);
+    updateTokenPrice(price, change24h);
     try {
-      setCreatingBet(true);
-      
-      // Use the createSupabaseBet function from supabaseService
-      const newBet = await createSupabaseBet(
-        token.token_mint,
-        token.token_name,
-        token.token_symbol,
-        betPrediction,
-        betDuration / 60, // Convert seconds to minutes
-        betAmount,
-        publicKey.toString() // Creator's wallet address
-      );
-      
-      if (newBet) {
-        // The bet was successfully created
-        toast.success('Bet created successfully!');
-        
-        // Either add the new bet to the existing list, or refresh all bets
-        const { data: updatedBets, error: betsError } = await supabase
-          .from('bets')
-          .select('*')
-          .eq('token_mint', token.token_mint)
-          .order('created_at', { ascending: false });
-          
-        if (!betsError && updatedBets) {
-          // Transform the bets to match our frontend Bet type
-          const transformedBets = updatedBets.map(bet => ({
-            id: bet.bet_id,
-            tokenId: bet.token_mint,
-            tokenName: bet.token_name || 'Unknown Token',
-            tokenSymbol: bet.token_symbol || 'UNKNOWN',
-            tokenMint: bet.token_mint,
-            initiator: bet.creator || 'Unknown',
-            counterParty: bet.bettor2_id || undefined,
-            amount: bet.sol_amount,
-            prediction: bet.prediction_bettor1 as BetPrediction,
-            timestamp: new Date(bet.created_at).getTime(),
-            expiresAt: new Date(bet.created_at).getTime() + (bet.duration * 1000),
-            status: bet.status as any,
-            initialMarketCap: bet.initial_market_cap || undefined,
-            currentMarketCap: bet.current_market_cap || undefined,
-            duration: bet.duration,
-            winner: bet.winner || undefined,
-            onChainBetId: bet.on_chain_id || undefined,
-            transactionSignature: bet.transaction_signature || undefined,
-            outcome: bet.outcome as any || undefined,
-            isPXB: false
-          }));
-          
-          setTokenBets(transformedBets);
+      localStorage.setItem(`token_price_${id}`, JSON.stringify({
+        price,
+        change24h,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.error("Error caching price:", error);
+    }
+  }, [id, updateTokenPrice]);
+  const updateTokenMetrics = useCallback((newMetrics: any) => {
+    const now = Date.now();
+    if (now - lastMetricsUpdateRef.current > 2000) {
+      lastMetricsUpdateRef.current = now;
+      setTokenMetrics(current => ({
+        ...current,
+        ...newMetrics
+      }));
+    }
+  }, []);
+  useEffect(() => {
+    if (id && pumpPortal.recentTrades[id]) {
+      const trades = pumpPortal.recentTrades[id];
+      if (trades.length > 0) {
+        const latestPrice = getLatestPriceFromTrades(trades);
+        const currentPrice = token?.currentPrice || 0;
+        if (Math.abs(latestPrice - currentPrice) / (currentPrice || 1) > 0.001) {
+          const priceChange = currentPrice > 0 ? (latestPrice - currentPrice) / currentPrice * 100 : 0;
+          updateTokenPrice(latestPrice, priceChange);
+          setPriceData(current => {
+            const newPoint = {
+              time: new Date().toISOString(),
+              price: latestPrice
+            };
+            return [...current, newPoint].slice(-60);
+          });
+        }
+        if (Date.now() - lastMetricsUpdateRef.current > 5000) {
+          if (pumpPortal.tokenMetrics[id]) {
+            const metrics = pumpPortal.tokenMetrics[id];
+            updateTokenMetrics({
+              marketCap: metrics.market_cap,
+              volume24h: metrics.volume_24h,
+              liquidity: metrics.liquidity,
+              holders: metrics.holders
+            });
+          }
+        }
+        const lastPrice = priceData[priceData.length - 1]?.price || 0;
+        if (lastPrice > 0) {
+          const percentChange = (latestPrice - lastPrice) / lastPrice * 100;
+          if (Math.abs(percentChange) > 5) {
+            toast({
+              title: `Price ${percentChange > 0 ? 'up' : 'down'} ${Math.abs(percentChange).toFixed(1)}%`,
+              description: `${token?.symbol || 'Token'} is now $${formatPrice(latestPrice)}`,
+              variant: percentChange > 0 ? "default" : "destructive"
+            });
+          }
         }
       }
-    } catch (error) {
-      console.error('Error creating bet:', error);
-      toast.error('Failed to create bet');
-    } finally {
-      setCreatingBet(false);
     }
-  };
-
-  // Handle PXB bet placement
-  const handlePXBBetAction = async () => {
-    if (!connected || !publicKey || !userProfile) {
-      toast.error('Please connect your wallet to place a PXB bet');
-      return;
+  }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
+  useEffect(() => {
+    if (id && pumpPortal.tokenMetrics[id]) {
+      const metrics = pumpPortal.tokenMetrics[id];
+      updateTokenMetrics({
+        marketCap: metrics.market_cap,
+        volume24h: metrics.volume_24h,
+        liquidity: metrics.liquidity,
+        holders: metrics.holders
+      });
+      console.log("Updated token metrics from WebSocket:", metrics);
     }
-    
-    if (!token) {
-      toast.error('Token data not available');
-      return;
+  }, [id, pumpPortal.tokenMetrics, updateTokenMetrics]);
+  useEffect(() => {
+    if (id) {
+      const stopPolling = startDexScreenerPolling(id, data => {
+        if (data) {
+          updateTokenPrice(data.priceUsd, data.priceChange24h);
+          updateTokenMetrics({
+            marketCap: data.marketCap,
+            volume24h: data.volume24h,
+            liquidity: data.liquidity
+          });
+        }
+      }, 30000);
+      dexScreenerCleanupRef.current = stopPolling;
+      return () => {
+        if (dexScreenerCleanupRef.current) {
+          dexScreenerCleanupRef.current();
+          dexScreenerCleanupRef.current = null;
+        }
+      };
     }
-    
-    if (pxbBetAmount <= 0) {
-      toast.error('Bet amount must be greater than 0');
-      return;
+  }, [id, updateTokenPrice, updateTokenMetrics]);
+  useEffect(() => {
+    if (bets.length > 0) {
+      const activeBets = bets.filter(bet => bet.status === 'open' || bet.status === 'matched');
+      if (activeBets.length > activeBetsCount) {
+        const latestBet = [...activeBets].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+        setNewActiveBet(latestBet);
+        toast({
+          title: "New Active Bet!",
+          description: `A ${latestBet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`,
+          variant: "default"
+        });
+      }
+      setActiveBetsCount(activeBets.length);
     }
-    
-    if (pxbBetAmount > (userProfile?.pxbPoints || 0)) {
-      toast.error('Insufficient PXB points');
-      return;
-    }
-    
+  }, [bets, activeBetsCount, toast, token]);
+  const refreshData = useCallback(async (betType = null) => {
+    if (!id) return;
     try {
-      setPlacingPxbBet(true);
-      
-      // Use the placeBet function from the PXB context
-      const pxbBet = await placeBet(
-        token.token_mint,
-        token.token_name,
-        token.token_symbol,
-        pxbBetAmount,
-        pxbPrediction,
-        pxbPercentageChange,
-        pxbDuration * 60 // Convert to seconds
-      );
-      
-      if (pxbBet) {
-        toast.success('PXB bet placed successfully!');
-        // Fetch user bets to update the UI
-        await fetchUserBets();
+      setLoading(true);
+      const recentTokens = pumpPortal.recentTokens || [];
+      const webSocketToken = recentTokens.find(t => t.token_mint === id);
+      if (webSocketToken) {
+        setToken(current => ({
+          ...current,
+          name: webSocketToken.token_name || current?.name || "New Token",
+          symbol: webSocketToken.token_symbol || current?.symbol || ""
+        }));
+      } else {
+        const tokenData = await fetchTokenById(id);
+        if (tokenData) {
+          setToken({
+            id: tokenData.token_mint,
+            name: tokenData.token_name,
+            symbol: tokenData.token_symbol || '',
+            logo: '🪙',
+            currentPrice: tokenData.last_trade_price || 0,
+            change24h: 0,
+            migrationTime: new Date(tokenData.last_updated_time).getTime()
+          });
+        }
+      }
+      const dexScreenerData = await fetchDexScreenerData(id);
+      if (dexScreenerData) {
+        console.log("Refreshed DexScreener data:", dexScreenerData);
+        if (token && (!token.name || token.name === "New Token")) {
+          setToken(current => ({
+            ...current,
+            currentPrice: dexScreenerData.priceUsd || current?.currentPrice || 0,
+            change24h: dexScreenerData.priceChange24h || current?.change24h || 0
+          }));
+        }
+        updateTokenMetrics({
+          marketCap: dexScreenerData.marketCap,
+          volume24h: dexScreenerData.volume24h,
+          liquidity: dexScreenerData.liquidity
+        });
+      } else if (pumpPortal.connected) {
+        pumpPortal.fetchTokenMetrics(id);
+      }
+      const tokenBets = await fetchBetsByToken(id);
+      setBets(tokenBets);
+      if (betType) {
+        setShowCreateBet(true);
       }
     } catch (error) {
-      console.error('Error placing PXB bet:', error);
-      toast.error('Failed to place PXB bet');
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh failed",
+        description: "Could not refresh token data",
+        variant: "destructive"
+      });
     } finally {
-      setPlacingPxbBet(false);
+      setLoading(false);
+    }
+  }, [id, pumpPortal, toast, updateTokenMetrics, token]);
+  const handleAcceptBet = async (bet: Bet) => {
+    if (!connected || !publicKey) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to accept a bet",
+        variant: "destructive"
+      });
+      return;
+    }
+    try {
+      await acceptBet(bet, publicKey.toString(), wallet);
+      toast({
+        title: "Bet accepted!",
+        description: `You've successfully accepted the bet on ${bet.tokenSymbol}`
+      });
+      setNewActiveBet(bet);
+      toast({
+        title: "New Active Bet!",
+        description: `A ${bet.amount} SOL bet is now active on ${token?.symbol || 'this token'}`
+      });
+      await refreshData();
+    } catch (error) {
+      console.error("Error accepting bet:", error);
+      toast({
+        title: "Failed to accept bet",
+        description: "There was an error processing the blockchain transaction",
+        variant: "destructive"
+      });
     }
   };
-
-  // Handle accepting Solana bets
-  const handleAcceptBet = async (bet: Bet) => {
-    // Handle accepting the bet logic here
-    console.log('Accepting bet:', bet);
-    // Implement the logic to accept a bet
+  const formatPrice = (price: number | string) => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(numPrice)) return "0.000000";
+    if (numPrice < 0.01) return numPrice.toFixed(6);
+    if (numPrice < 1) return numPrice.toFixed(4);
+    if (numPrice < 1000) return numPrice.toFixed(2);
+    return numPrice.toLocaleString('en-US', {
+      maximumFractionDigits: 2
+    });
   };
-
-  if (loading) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-1/3" />
-          <Skeleton className="h-[200px] w-full" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Skeleton className="h-[150px]" />
-            <Skeleton className="h-[150px]" />
+  const formatLargeNumber = (num: number | null) => {
+    if (num === null || num === undefined) return "N/A";
+    if (num >= 1000000000) {
+      return `$${(num / 1000000000).toFixed(2)}B`;
+    } else if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    } else if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`;
+    } else {
+      return `$${num.toFixed(2)}`;
+    }
+  };
+  const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
+  const renderActiveBetBanner = () => {
+    if (!newActiveBet) return null;
+    return <div className="bg-gradient-to-r from-dream-accent1/20 to-dream-accent3/20 border border-dream-accent2/30 rounded-md p-3 mb-4 animate-pulse-slow">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="w-2 h-2 bg-dream-accent2 rounded-full mr-2 animate-pulse"></div>
+            <span className="font-semibold text-[#28f900]">New Active Bet!</span>
           </div>
+          <Button variant="ghost" size="sm" onClick={() => setNewActiveBet(null)} className="h-6 w-6 p-0">
+            ×
+          </Button>
         </div>
-      </div>
-    );
-  }
-
-  if (!token) {
-    return (
-      <div className="container mx-auto p-4 text-center">
-        <h2 className="text-2xl font-bold mb-4">Token not found</h2>
-        <Button onClick={() => navigate('/betting')} variant="outline">
-          <ArrowLeft className="mr-2" /> Back to Tokens
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      {/* Back button and token info */}
-      <div className="mb-6">
-        <Button
-          onClick={() => navigate('/betting')}
-          variant="ghost"
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2" /> Back to Tokens
-        </Button>
         
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              {token?.token_name}
-              <span className="text-dream-foreground/50">({token?.token_symbol})</span>
-              
-              {token?.verified && (
-                <ShieldCheck className="h-5 w-5 text-green-500" />
-              )}
-            </h1>
-            
-            <div className="flex items-center gap-2 mt-1 text-dream-foreground/70">
-              <span className="font-mono text-sm">{token?.token_mint}</span>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(token?.token_mint);
-                  toast.success('Address copied to clipboard');
-                }}
-                className="hover:text-dream-accent1 transition-colors"
-              >
-                <Copy className="h-3 w-3" />
-              </button>
-              
-              <a
-                href={`https://solscan.io/token/${token?.token_mint}`}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-dream-accent1 transition-colors"
-              >
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {tokenMetrics?.marketCap && tokenMetrics.marketCap > 0 && (
-              <Badge variant="outline" className="text-xs py-1 px-3">
-                MCap: ${(tokenMetrics.marketCap / 1000000).toFixed(2)}M
-              </Badge>
-            )}
-            
-            {tokenMetrics?.volume24h && tokenMetrics.volume24h > 0 && (
-              <Badge variant="outline" className="text-xs py-1 px-3">
-                Vol 24h: ${(tokenMetrics.volume24h / 1000).toFixed(2)}K
-              </Badge>
-            )}
-          </div>
-        </div>
-      </div>
+      </div>;
+  };
+  const {
+    userProfile,
+    bets: userPXBBets,
+    fetchUserBets,
+    isLoading: pxbLoading
+  } = usePXBPoints();
+  const [tokenPXBBets, setTokenPXBBets] = useState<any[]>([]);
+  const [loadingMarketCaps, setLoadingMarketCaps] = useState<Record<string, boolean>>({});
+  const [marketCapData, setMarketCapData] = useState<Record<string, {
+    initialMarketCap: number | null;
+    currentMarketCap: number | null;
+  }>>({});
+  useEffect(() => {
+    if (userProfile && userPXBBets && userPXBBets.length > 0 && id) {
+      const filteredBets = userPXBBets.filter(bet => bet.tokenMint === id);
+      setTokenPXBBets(filteredBets);
+    } else {
+      setTokenPXBBets([]);
+    }
+  }, [userProfile, userPXBBets, id]);
+  useEffect(() => {
+    const fetchMarketCapData = async () => {
+      if (!tokenPXBBets || tokenPXBBets.length === 0) return;
+      for (const bet of tokenPXBBets) {
+        if (!bet.tokenMint) continue;
+        if (marketCapData[bet.id]?.currentMarketCap) continue;
+        setLoadingMarketCaps(prev => ({
+          ...prev,
+          [bet.id]: true
+        }));
+        try {
+          const data = await fetchDexScreenerData(bet.tokenMint);
+          if (data) {
+            setMarketCapData(prev => ({
+              ...prev,
+              [bet.id]: {
+                initialMarketCap: bet.initialMarketCap || data.marketCap,
+                currentMarketCap: data.marketCap
+              }
+            }));
+          }
+        } catch (error) {
+          console.error(`Error fetching data for token ${bet.tokenSymbol}:`, error);
+        } finally {
+          setLoadingMarketCaps(prev => ({
+            ...prev,
+            [bet.id]: false
+          }));
+        }
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    };
+    fetchMarketCapData();
+    const interval = setInterval(() => {
+      const pendingBets = tokenPXBBets.filter(bet => bet.status === 'pending');
+      if (pendingBets.length > 0) {
+        fetchMarketCapData();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [tokenPXBBets, marketCapData]);
+  const calculateProgress = bet => {
+    if (bet.status !== 'pending') {
+      return bet.status === 'won' ? 100 : 0;
+    }
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
+    if (currentMarketCap && initialMarketCap) {
+      const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
+      const targetChange = bet.percentageChange;
+      if (bet.betType === 'up') {
+        if (actualChange < 0) return 0;
+        return Math.min(100, actualChange / targetChange * 100);
+      } else {
+        if (actualChange > 0) return 0;
+        return Math.min(100, Math.abs(actualChange) / targetChange * 100);
+      }
+    }
+    return 0;
+  };
+  const calculateTargetMarketCap = bet => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    if (!initialMarketCap) return null;
+    if (bet.betType === 'up') {
+      return initialMarketCap * (1 + bet.percentageChange / 100);
+    } else {
+      return initialMarketCap * (1 - bet.percentageChange / 100);
+    }
+  };
+  const calculateMarketCapChange = bet => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
+    const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
+    if (currentMarketCap && initialMarketCap) {
+      return (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
+    }
+    return null;
+  };
+  useEffect(() => {
+    if (userProfile && id) {
+      fetchUserBets();
+    }
+  }, [userProfile, id, fetchUserBets]);
+  const renderTokenImage = () => {
+    if (imageLoading) {
+      return <Skeleton className="w-16 h-16 rounded-full" />;
+    }
+    if (tokenImage && !imageError) {
+      return <img src={tokenImage} alt={token?.symbol || 'Token'} className="w-16 h-16 rounded-full object-cover border border-white/10" onError={() => setImageError(true)} />;
+    }
+    const colorGradient = token?.symbol ? generateColorFromSymbol(token.symbol) : 'from-dream-accent1/20 to-dream-accent3/20';
+    return <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center text-3xl border border-white/10`}>
+        {token?.symbol ? token.symbol.charAt(0) : '🪙'}
+      </div>;
+  };
+  const generateColorFromSymbol = (symbol: string) => {
+    const colors = ['from-pink-500 to-purple-500', 'from-blue-500 to-cyan-500', 'from-green-500 to-emerald-500', 'from-yellow-500 to-orange-500', 'from-red-500 to-pink-500', 'from-indigo-500 to-blue-500'];
+    let hash = 0;
+    for (let i = 0; i < symbol.length; i++) {
+      hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+  return <>
+      <OrbitingParticles />
+      <Navbar />
       
-      {/* Main tabs */}
-      <Tabs
-        defaultValue="overview"
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-4"
-      >
-        <TabsList className="bg-transparent border-b border-dream-foreground/10 w-full justify-start rounded-none gap-2 pb-0">
-          <TabsTrigger
-            value="overview"
-            className="data-[state=active]:border-b-2 data-[state=active]:border-dream-accent1 rounded-none px-4 py-2"
-          >
-            Overview
-          </TabsTrigger>
-          <TabsTrigger
-            value="bets"
-            className="data-[state=active]:border-b-2 data-[state=active]:border-dream-accent1 rounded-none px-4 py-2"
-          >
-            Bets
-          </TabsTrigger>
-          <TabsTrigger
-            value="comments"
-            className="data-[state=active]:border-b-2 data-[state=active]:border-dream-accent1 rounded-none px-4 py-2"
-          >
-            Comments
-          </TabsTrigger>
-        </TabsList>
-        
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4 mt-6">
-          {/* Token metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
-              <div className="p-6">
-                <h3 className="text-lg font-medium mb-4">Price Chart</h3>
-                <PriceChart tokenMint={token?.token_mint} />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-6">
-              <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
-                <div className="p-6">
-                  <h3 className="text-lg font-medium mb-4">Market Cap</h3>
-                  <TokenMarketCap tokenMint={token?.token_mint} />
-                </div>
-              </div>
+      <main className="pt-24 min-h-screen px-4 pb-16">
+        <div className="max-w-7xl mx-auto">
+          {loading && !token ? <div className="flex justify-center py-16">
+              <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
+            </div> : !token ? <div className="glass-panel p-8 text-center">
+              <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
+              <p className="text-dream-foreground/70 mb-4">
+                The token you're looking for could not be found or has been removed.
+              </p>
+              <Button onClick={() => window.history.back()}>Go Back</Button>
+            </div> : <>
+              <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
+                <ChevronLeft size={20} />
+                <span>Back to Tokens</span>
+              </Link>
               
-              <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
-                <div className="p-6">
-                  <h3 className="text-lg font-medium mb-4">Volume</h3>
-                  <TokenVolume tokenMint={token?.token_mint} />
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Recent Bets Section */}
-          <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Recent Bets</h3>
-                <Button
-                  variant="ghost"
-                  onClick={() => setActiveTab('bets')}
-                  className="text-dream-accent1 hover:text-dream-accent2"
-                >
-                  View All
-                </Button>
-              </div>
+              {renderActiveBetBanner()}
               
-              <div className="space-y-4">
-                {filteredBets().slice(0, 3).map((bet) => (
-                  <BetCard
-                    key={bet.id}
-                    bet={bet}
-                    connected={connected}
-                    publicKeyString={publicKey?.toString() || null}
-                    onAcceptBet={handleAcceptBet}
-                  />
-                ))}
-                
-                {filteredBets().length === 0 && (
-                  <div className="text-center py-6 text-dream-foreground/60">
-                    <p>No bets yet</p>
-                    <p className="text-sm mt-2">Be the first to bet on this token!</p>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div className="flex items-center">
+                  {renderTokenImage()}
+                  
+                  <div className="ml-4">
+                    <h1 className="text-2xl font-display font-bold flex items-center">
+                      {token.name}
+                      {isLive && <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full flex items-center">
+                          <span className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1 animate-pulse"></span>
+                          LIVE
+                        </span>}
+                    </h1>
+                    <div className="flex items-center text-dream-foreground/70">
+                      <span className="mr-2">{token.symbol}</span>
+                      <button onClick={() => {
+                    navigator.clipboard.writeText(token.id);
+                    toast({
+                      title: "Copied!",
+                      description: "Token address copied to clipboard"
+                    });
+                  }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
+                        {token.id.substring(0, 4)}...{token.id.substring(token.id.length - 4)}
+                        <Copy className="w-3 h-3 ml-1" />
+                      </button>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          </div>
-        </TabsContent>
-        
-        {/* Bets Tab */}
-        <TabsContent value="bets" className="space-y-6 mt-6">
-          {/* Bet creation forms */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Solana Bet Form */}
-            <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
-              <div className="p-6">
-                <h3 className="text-lg font-medium mb-4">Create Solana Bet</h3>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div className="lg:col-span-2">
+                  <TokenChart tokenId={id} tokenName={token.name} refreshData={refreshData} loading={loading} onPriceUpdate={handleChartPriceUpdate} setShowCreateBet={setShowCreateBet} />
+                </div>
                 
-                {connected ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-dream-foreground/70 mb-1">
-                        Bet Amount (SOL)
-                      </label>
-                      <div className="flex">
-                        <input
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          value={betAmount}
-                          onChange={(e) => setBetAmount(Number(e.target.value))}
-                          className="flex-1 bg-black/30 border border-dream-foreground/20 rounded-l-md p-2 focus:outline-none focus:border-dream-accent1"
-                        />
-                        <div className="bg-dream-foreground/10 border border-dream-foreground/20 rounded-r-md p-2 text-dream-foreground/70">
-                          SOL
+                <div className="space-y-8">
+                  <div className="glass-panel p-6">
+                    <h3 className="text-xl font-display font-bold mb-4">Token Metrics</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex flex-row gap-4 overflow-x-auto pb-2">
+                        <TokenMarketCap tokenId={id || ''} />
+                        <TokenVolume tokenId={id || ''} />
+                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1 min-w-[150px]">
+                          <div className="text-dream-foreground/70 text-xs flex items-center">
+                            <Users className="w-3 h-3 mr-1" />
+                            Holders
+                          </div>
+                          <div className="font-bold">{tokenMetrics.holders || 'N/A'}</div>
                         </div>
                       </div>
-                      <div className="text-xs mt-1 text-dream-foreground/50">
-                        Balance: {balance ?? 0} SOL
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-dream-foreground/70 mb-1">
-                        Your Prediction
-                      </label>
-                      <div className="flex gap-2">
-                        <Button
-                          variant={betPrediction === 'up' ? 'default' : 'outline'}
-                          className={`flex-1 ${
-                            betPrediction === 'up'
-                              ? 'bg-green-600 hover:bg-green-700'
-                              : ''
-                          }`}
-                          onClick={() => setBetPrediction('up')}
-                        >
-                          <ArrowUp className="mr-1" /> MOON
-                        </Button>
-                        <Button
-                          variant={betPrediction === 'down' ? 'default' : 'outline'}
-                          className={`flex-1 ${
-                            betPrediction === 'down'
-                              ? 'bg-red-600 hover:bg-red-700'
-                              : ''
-                          }`}
-                          onClick={() => setBetPrediction('down')}
-                        >
-                          <ArrowDown className="mr-1" /> DUST
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-dream-foreground/70 mb-1">
-                        Bet Duration
-                      </label>
-                      <div className="flex gap-2">
-                        <Button
-                          variant={betDuration === 3600 ? 'default' : 'outline'}
-                          className="flex-1"
-                          onClick={() => setBetDuration(3600)}
-                        >
-                          1 Hour
-                        </Button>
-                        <Button
-                          variant={betDuration === 3600 * 24 ? 'default' : 'outline'}
-                          className="flex-1"
-                          onClick={() => setBetDuration(3600 * 24)}
-                        >
-                          1 Day
-                        </Button>
-                        <Button
-                          variant={betDuration === 3600 * 24 * 7 ? 'default' : 'outline'}
-                          className="flex-1"
-                          onClick={() => setBetDuration(3600 * 24 * 7)}
-                        >
-                          1 Week
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      className="w-full mt-4 bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90"
-                      onClick={handleCreateBet}
-                      disabled={creatingBet || betAmount <= 0}
-                    >
-                      {creatingBet ? 'Creating Bet...' : 'Create Bet'}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-dream-foreground/70 mb-4">
-                      Connect your wallet to create a bet
-                    </p>
-                    <WalletConnectButton />
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* PXB Bet Form */}
-            <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
-              <div className="p-6">
-                <h3 className="text-lg font-medium mb-4">Place PXB Bet</h3>
-                
-                {connected && userProfile ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-dream-foreground/70 mb-1">
-                        Bet Amount (PXB)
-                      </label>
-                      <div className="flex">
-                        <input
-                          type="number"
-                          min="10"
-                          step="10"
-                          value={pxbBetAmount}
-                          onChange={(e) => setPxbBetAmount(Number(e.target.value))}
-                          className="flex-1 bg-black/30 border border-dream-foreground/20 rounded-l-md p-2 focus:outline-none focus:border-dream-accent1"
-                        />
-                        <div className="bg-dream-foreground/10 border border-dream-foreground/20 rounded-r-md p-2 text-dream-foreground/70">
-                          PXB
+                      
+                      <div className="glass-panel border border-dream-accent1/20 p-4">
+                        <div className="flex justify-between items-center mb-1">
+                          <div className="text-dream-foreground/70 text-xs">Create a bet</div>
+                          <div className="text-dream-foreground/70 text-xs">
+                            {connected ? 'Wallet connected' : 'Connect wallet'}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-xs mt-1 text-dream-foreground/50">
-                        Balance: {userProfile?.pxbPoints || 0} PXB
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-dream-foreground/70 mb-1">
-                        Your Prediction
-                      </label>
-                      <div className="flex gap-2">
-                        <Button
-                          variant={pxbPrediction === 'up' ? 'default' : 'outline'}
-                          className={`flex-1 ${
-                            pxbPrediction === 'up'
-                              ? 'bg-green-600 hover:bg-green-700'
-                              : ''
-                          }`}
-                          onClick={() => setPxbPrediction('up')}
-                        >
-                          <ArrowUp className="mr-1" /> UP
+                        
+                        <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
+                          Place a Bet
                         </Button>
-                        <Button
-                          variant={pxbPrediction === 'down' ? 'default' : 'outline'}
-                          className={`flex-1 ${
-                            pxbPrediction === 'down'
-                              ? 'bg-red-600 hover:bg-red-700'
-                              : ''
-                          }`}
-                          onClick={() => setPxbPrediction('down')}
-                        >
-                          <ArrowDown className="mr-1" /> DOWN
-                        </Button>
+                      </div>
+                      
+                      <div>
+                        <a href={`https://dexscreener.com/solana/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm justify-end">
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          View on DexScreener
+                        </a>
                       </div>
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-dream-foreground/70 mb-1">
-                        Percentage Change
-                      </label>
-                      <div className="flex gap-2">
-                        <Button
-                          variant={pxbPercentageChange === 5 ? 'default' : 'outline'}
-                          className="flex-1"
-                          onClick={() => setPxbPercentageChange(5)}
-                        >
-                          5%
-                        </Button>
-                        <Button
-                          variant={pxbPercentageChange === 10 ? 'default' : 'outline'}
-                          className="flex-1"
-                          onClick={() => setPxbPercentageChange(10)}
-                        >
-                          10%
-                        </Button>
-                        <Button
-                          variant={pxbPercentageChange === 20 ? 'default' : 'outline'}
-                          className="flex-1"
-                          onClick={() => setPxbPercentageChange(20)}
-                        >
-                          20%
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-dream-foreground/70 mb-1">
-                        Bet Duration
-                      </label>
-                      <div className="flex gap-2">
-                        <Button
-                          variant={pxbDuration === 60 ? 'default' : 'outline'}
-                          className="flex-1"
-                          onClick={() => setPxbDuration(60)}
-                        >
-                          1 Hour
-                        </Button>
-                        <Button
-                          variant={pxbDuration === 60 * 24 ? 'default' : 'outline'}
-                          className="flex-1"
-                          onClick={() => setPxbDuration(60 * 24)}
-                        >
-                          1 Day
-                        </Button>
-                        <Button
-                          variant={pxbDuration === 60 * 24 * 7 ? 'default' : 'outline'}
-                          className="flex-1"
-                          onClick={() => setPxbDuration(60 * 24 * 7)}
-                        >
-                          1 Week
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                      onClick={handlePXBBetAction}
-                      disabled={placingPxbBet || pxbBetAmount <= 0 || pxbBetAmount > (userProfile?.pxbPoints || 0)}
-                    >
-                      {placingPxbBet ? 'Placing Bet...' : 'Place PXB Bet'}
-                    </Button>
-                    
-                    {/* Mint PXB button */}
-                    {userProfile?.pxbPoints === 0 && (
-                      <div className="mt-4">
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => mintPoints(1000)}
-                        >
-                          <Sparkles className="mr-2 h-4 w-4" /> Mint 1000 PXB
-                        </Button>
-                      </div>
-                    )}
                   </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-dream-foreground/70 mb-4">
-                      Connect your wallet to place PXB bets
-                    </p>
-                    <WalletConnectButton />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {/* All Bets Section */}
-          <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-medium">All Bets</h3>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={betTabView === 'all' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setBetTabView('all')}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    variant={betTabView === 'solana' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setBetTabView('solana')}
-                  >
-                    Solana
-                  </Button>
-                  <Button
-                    variant={betTabView === 'pxb' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setBetTabView('pxb')}
-                  >
-                    PXB
-                  </Button>
+                  
+                  {showCreateBet && <div className="glass-panel p-6">
+                      <h3 className="text-xl font-display font-bold mb-4">Create Bet</h3>
+                      <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol} onBetCreated={() => {
+                  refreshData();
+                  setShowCreateBet(false);
+                }} onCancel={() => setShowCreateBet(false)} />
+                    </div>}
                 </div>
               </div>
               
-              <div className="space-y-5">
-                <AnimatePresence>
-                  {filteredBets().map((bet, index) => (
-                    <motion.div
-                      key={bet.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.4, delay: index * 0.05 }}
-                    >
-                      <BetCard
-                        bet={bet}
-                        connected={connected}
-                        publicKeyString={publicKey?.toString() || null}
-                        onAcceptBet={handleAcceptBet}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div className="glass-panel p-6">
+                  <h3 className="text-xl font-display font-bold mb-4">Token Bets</h3>
+                  
+                  {bets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                      <p>No bets available for this token yet.</p>
+                      <p className="text-sm mt-2">Be the first to create a bet!</p>
+                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey?.toString() || null} onAcceptBet={handleAcceptBet} />)}
+                    </div>}
+                </div>
                 
-                {filteredBets().length === 0 && (
-                  <div className="text-center py-8 text-dream-foreground/60">
-                    <p>No bets found</p>
-                    <p className="text-sm mt-2">Be the first to bet on this token!</p>
-                  </div>
-                )}
+                <div className="glass-panel p-6">
+                  <h3 className="text-xl font-display font-bold mb-4">Your PXB Bets</h3>
+                  
+                  {tokenPXBBets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                      <p>You don't have any PXB bets on this token.</p>
+                      <p className="text-sm mt-2">Place a bet to see it here!</p>
+                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {tokenPXBBets.map(bet => <div key={bet.id} className="border border-dream-foreground/10 rounded-md p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${bet.betType === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                {bet.betType === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                              </div>
+                              <span className="font-semibold">
+                                {bet.betAmount} PXB
+                              </span>
+                            </div>
+                            <div className={`text-xs px-2 py-0.5 rounded-full ${bet.status === 'pending' ? 'bg-blue-500/20 text-blue-400' : bet.status === 'won' ? 'bg-green-500/20 text-green-400' : bet.status === 'lost' ? 'bg-red-500/20 text-red-400' : bet.status === 'expired' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                              {bet.status === 'pending' ? 'Active' : bet.status === 'won' ? 'Won' : bet.status === 'lost' ? 'Lost' : bet.status === 'expired' ? 'Expired' : 'Unknown'}
+                            </div>
+                          </div>
+                          
+                          <div className="text-sm text-dream-foreground/70 mb-1">
+                            Prediction: {bet.betType === 'up' ? 'Price will increase' : 'Price will decrease'} by {bet.percentageChange}%
+                          </div>
+                          
+                          <div className="text-xs text-dream-foreground/60 mb-2">
+                            <div className="flex justify-between">
+                              <span>Created {formatDistanceToNow(new Date(bet.createdAt), {
+                          addSuffix: true
+                        })}</span>
+                              <span>Creator: {bet.creator ? `${bet.creator.slice(0, 4)}...${bet.creator.slice(-4)}` : 'Unknown'}</span>
+                            </div>
+                          </div>
+                          
+                          {(bet.status === 'pending' || bet.status === 'expired') && marketCapData[bet.id] && <div className="mt-3 space-y-2">
+                              <div className="flex justify-between text-xs">
+                                <div className="text-dream-foreground/70">
+                                  Initial: {formatLargeNumber(marketCapData[bet.id]?.initialMarketCap || bet.initialMarketCap)}
+                                </div>
+                                <div className="text-dream-foreground/70">
+                                  Current: {formatLargeNumber(marketCapData[bet.id]?.currentMarketCap)}
+                                </div>
+                                <div className={bet.betType === 'up' ? 'text-green-400' : 'text-red-400'}>
+                                  Target: {formatLargeNumber(calculateTargetMarketCap(bet))}
+                                </div>
+                              </div>
+                              
+                              <Progress value={calculateProgress(bet)} className="h-2" />
+                              
+                              {marketCapData[bet.id]?.currentMarketCap && <div className="text-xs text-center">
+                                  {loadingMarketCaps[bet.id] ? 'Updating market cap data...' : <>
+                                      Market cap {calculateMarketCapChange(bet) > 0 ? 'up' : 'down'} {Math.abs(calculateMarketCapChange(bet) || 0).toFixed(2)}%
+                                      {bet.status === 'expired' ? <span className="text-yellow-400 ml-1">Bet expired</span> : bet.betType === 'up' ? calculateMarketCapChange(bet) > 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span> : calculateMarketCapChange(bet) < 0 ? <span className="text-green-400 ml-1">Moving toward target</span> : <span className="text-red-400 ml-1">Moving away from target</span>}
+                                    </>}
+                                </div>}
+                            </div>}
+                        </div>)}
+                    </div>}
+                </div>
               </div>
-            </div>
-          </div>
-        </TabsContent>
-        
-        {/* Comments Tab */}
-        <TabsContent value="comments" className="space-y-4 mt-6">
-          <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl overflow-hidden">
-            <div className="p-6">
-              <h3 className="text-lg font-medium mb-4">Community Comments</h3>
-              <TokenComments tokenMint={token?.token_mint} />
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+              
+              <div className="mb-8">
+                <TokenComments tokenId={id} tokenName={token.name} />
+              </div>
+            </>}
+        </div>
+      </main>
+    </>;
 };
-
 export default TokenDetail;

@@ -1,14 +1,14 @@
 
 export type BetPrediction = 'migrate' | 'die' | 'moon' | 'up' | 'down';
 
-export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed' | 'pending' | 'won' | 'lost';
+export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed' | 'pending';
 
 export interface Bet {
   id: string;
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  tokenMint: string;
+  tokenMint: string; // Required field that was missing
   initiator: string;
   counterParty?: string;
   amount: number;
@@ -20,12 +20,9 @@ export interface Bet {
   currentMarketCap?: number;
   duration: number;
   winner?: string;
-  onChainBetId?: string;
-  transactionSignature?: string;
-  outcome?: 'win' | 'loss';
-  isPXB?: boolean; // Flag to identify PXB bets
-  percentageChange?: number; // For PXB bets
-  pointsWon?: number; // For PXB bets
+  onChainBetId: string;
+  transactionSignature: string;
+  outcome?: 'win' | 'loss'; // Add outcome field to track bet result
 }
 
 export enum SolanaContractPrediction {
