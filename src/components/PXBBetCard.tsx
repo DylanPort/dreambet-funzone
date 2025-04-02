@@ -1,9 +1,10 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { User, TrendingUp, Clock } from 'lucide-react';
 import { PXBBet } from '@/types/pxb';
+import { fetchTokenImage } from '@/services/moralisService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PXBBetCardProps {
   bet: PXBBet;
@@ -15,6 +16,48 @@ interface PXBBetCardProps {
 }
 
 const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }) => {
+  const [tokenImage, setTokenImage] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    const loadTokenImage = async () => {
+      if (!bet.tokenMint) return;
+      
+      try {
+        setImageLoading(true);
+        const imageUrl = await fetchTokenImage(bet.tokenMint, bet.tokenSymbol);
+        setTokenImage(imageUrl);
+      } catch (error) {
+        console.error("Error loading token image:", error);
+        setImageError(true);
+      } finally {
+        setImageLoading(false);
+      }
+    };
+
+    loadTokenImage();
+  }, [bet.tokenMint, bet.tokenSymbol]);
+
+  const generateColorFromSymbol = (symbol: string) => {
+    const colors = [
+      'from-pink-500 to-purple-500',
+      'from-blue-500 to-cyan-500',
+      'from-green-500 to-emerald-500',
+      'from-yellow-500 to-orange-500',
+      'from-red-500 to-pink-500',
+      'from-indigo-500 to-blue-500',
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < symbol.length; i++) {
+      hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
   const formatTimeAgo = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
@@ -97,6 +140,31 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
     }
   };
 
+  const renderTokenImage = () => {
+    if (imageLoading) {
+      return <Skeleton className="w-8 h-8 rounded-full" />;
+    }
+    
+    if (tokenImage && !imageError) {
+      return (
+        <img 
+          src={tokenImage} 
+          alt={bet.tokenSymbol}
+          className="w-8 h-8 rounded-full object-cover"
+          onError={() => setImageError(true)}
+        />
+      );
+    }
+    
+    // Fallback to first letter of symbol with gradient background
+    const colorGradient = generateColorFromSymbol(bet.tokenSymbol);
+    return (
+      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center text-white font-bold text-sm`}>
+        {bet.tokenSymbol ? bet.tokenSymbol.charAt(0).toUpperCase() : '?'}
+      </div>
+    );
+  };
+
   const progress = calculateProgress();
   const isNegative = isProgressNegative();
   const truncatedAddress = bet.userId ? `${bet.userId.substring(0, 6)}...${bet.userId.substring(bet.userId.length - 4)}` : 'Unknown';
@@ -106,9 +174,12 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
     <div className="bg-black/40 backdrop-blur-sm rounded-lg border border-dream-foreground/10 mb-2 relative overflow-hidden">
       <div className="px-4 py-3">
         <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center">
-            <span className="text-purple-400 font-semibold">PumpXBounty</span>
-            <span className="text-dream-foreground/60 ml-1">POINTS</span>
+          <div className="flex items-center space-x-2">
+            {renderTokenImage()}
+            <div>
+              <span className="text-purple-400 font-semibold">PumpXBounty</span>
+              <span className="text-dream-foreground/60 ml-1">POINTS</span>
+            </div>
           </div>
           <div className="text-purple-400 font-mono font-medium">
             {bet.betAmount} PXB
