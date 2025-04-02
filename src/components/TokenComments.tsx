@@ -152,10 +152,14 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenMint }) => {
       let profileId = existingProfile?.id;
       
       if (!profileId) {
-        // Need to create a new profile with a generated UUID
+        // Generate a new UUID for the profile
+        const newId = crypto.randomUUID();
+        
+        // Need to create a new profile with the generated UUID
         const { data: newProfile, error: createProfileError } = await supabase
           .from('profiles')
           .insert({
+            id: newId, // Include the id field which is required
             wallet_address: walletAddress,
             username: `user_${walletAddress.slice(0, 8)}`,
             first_sign_in: true
