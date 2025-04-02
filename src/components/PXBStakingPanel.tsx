@@ -17,7 +17,8 @@ const PXBStakingPanel = () => {
   // Define supply constants
   const MAX_TOTAL_SUPPLY = 400000000; // 400 million maximum supply
   const DAILY_REWARDS_LIMIT = MAX_TOTAL_SUPPLY / 365; // Maximum daily rewards across all staking
-
+  const MAX_INDIVIDUAL_REWARDS = 20000000; // 20 million maximum per individual staker
+  
   const calculateEstimatedRewards = () => {
     const amount = parseFloat(stakeAmount) || 0;
     const dailyRate = 0.0133;
@@ -25,11 +26,16 @@ const PXBStakingPanel = () => {
     // Calculate raw rewards
     const rawRewards = amount * dailyRate * stakeDuration;
     
-    // Cap rewards at a reasonable percentage of max supply
-    const maxRewardsPerStake = MAX_TOTAL_SUPPLY * 0.01; // 1% of total supply per stake
+    // Apply individual staker cap
+    // Ensure no single staker can earn more than MAX_INDIVIDUAL_REWARDS
+    // This ensures 10M staked points can't earn more than 20M PXB
+    const cappedRewards = Math.min(rawRewards, MAX_INDIVIDUAL_REWARDS);
     
-    // Return the lower value between raw rewards and the cap
-    return Math.min(rawRewards, maxRewardsPerStake).toFixed(2);
+    // Also apply the global cap (1% of max supply per stake)
+    const globalCap = MAX_TOTAL_SUPPLY * 0.01;
+    
+    // Return the lowest value between raw rewards and both caps
+    return Math.min(cappedRewards, globalCap).toFixed(2);
   };
 
   const handleStakeAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +69,27 @@ const PXBStakingPanel = () => {
   // Check if the estimated rewards might be too high
   const isRewardsExcessive = () => {
     const rewards = parseFloat(calculateEstimatedRewards());
-    return rewards > MAX_TOTAL_SUPPLY * 0.005; // Warning if over 0.5% of total supply
+    const inputAmount = parseFloat(stakeAmount) || 0;
+    
+    // Show warning if rewards approach individual cap
+    if (inputAmount > 1000000 && rewards > MAX_INDIVIDUAL_REWARDS * 0.5) {
+      return true;
+    }
+    
+    // Also warn if rewards exceed 0.5% of total supply
+    return rewards > MAX_TOTAL_SUPPLY * 0.005;
+  };
+  
+  // Function to get the appropriate warning message
+  const getRewardsWarningMessage = () => {
+    const rewards = parseFloat(calculateEstimatedRewards());
+    const inputAmount = parseFloat(stakeAmount) || 0;
+    
+    if (inputAmount > 1000000 && rewards >= MAX_INDIVIDUAL_REWARDS) {
+      return "Rewards capped at 20M PXB per staker";
+    }
+    
+    return "Rewards capped at 1% of total supply per stake";
   };
 
   return <div className="relative">
@@ -147,7 +173,7 @@ const PXBStakingPanel = () => {
             {isRewardsExcessive() && (
               <div className="flex items-center text-xs text-yellow-400 mt-1 mb-2">
                 <Info className="h-3 w-3 mr-1" />
-                <span>Rewards capped at 1% of total supply per stake</span>
+                <span>{getRewardsWarningMessage()}</span>
               </div>
             )}
             
