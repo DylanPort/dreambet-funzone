@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 
 // UI Components
 import { Button } from '@/components/ui/button';

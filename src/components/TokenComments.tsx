@@ -36,8 +36,7 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenMint }) => {
     const fetchComments = async () => {
       setLoading(true);
       try {
-        // Create a custom entry in the comments table that relates to a token
-        // and use appropriate metadata to store token-related information
+        // Use the comments table with bounty_id field to store token-related comments
         const { data, error } = await supabase
           .from('comments')
           .select(`
@@ -46,7 +45,7 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenMint }) => {
             created_at,
             author_id(id, wallet_address, username, avatar_url)
           `)
-          .eq('bounty_id', tokenMint) // Using bounty_id field to store tokenMint
+          .eq('bounty_id', tokenMint)
           .order('created_at', { ascending: false });
           
         if (error) throw error;
@@ -139,39 +138,41 @@ const TokenComments: React.FC<TokenCommentsProps> = ({ tokenMint }) => {
     setIsSubmitting(true);
     
     try {
-      // Get user id from wallet address
-      const { data: userData, error: userError } = await supabase
+      // First check if the user has a profile already
+      const walletAddress = publicKey.toString();
+      const { data: existingProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('wallet_address', publicKey.toString())
+        .eq('wallet_address', walletAddress)
         .maybeSingle();
         
-      if (userError) throw userError;
+      if (profileError) throw profileError;
       
-      // If no user found, create a new user profile
-      let userId = userData?.id;
+      // If no profile found, create a new one
+      let profileId = existingProfile?.id;
       
-      if (!userId) {
-        // Insert into profiles table
-        const { data: newUser, error: createError } = await supabase
+      if (!profileId) {
+        // Need to create a new profile with a generated UUID
+        const { data: newProfile, error: createProfileError } = await supabase
           .from('profiles')
           .insert({
-            wallet_address: publicKey.toString(),
-            username: `user_${publicKey.toString().slice(0, 8)}`
+            wallet_address: walletAddress,
+            username: `user_${walletAddress.slice(0, 8)}`,
+            first_sign_in: true
           })
           .select('id')
           .single();
           
-        if (createError) throw createError;
-        userId = newUser.id;
+        if (createProfileError) throw createProfileError;
+        profileId = newProfile.id;
       }
       
-      // Insert comment in comments table using bounty_id for tokenMint
+      // Now create the comment
       const { error: commentError } = await supabase
         .from('comments')
         .insert({
-          bounty_id: tokenMint,  // Use bounty_id to store tokenMint
-          author_id: userId,
+          bounty_id: tokenMint,
+          author_id: profileId,
           content: newComment.trim()
         });
         
