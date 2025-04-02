@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,50 +7,45 @@ import { Slider } from '@/components/ui/slider';
 import { CalendarClock, Coins, Timer, Gift, AlertCircle, TrendingUp, Lock, ArrowDownUp, Clock, Info } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-
 const PXBStakingPanel = () => {
   const [stakeAmount, setStakeAmount] = useState<string>('');
   const [stakeDuration, setStakeDuration] = useState<number>(30); // Default 30 days
   const [isStaking, setIsStaking] = useState<boolean>(false);
-  
+
   // Define supply constants
   const MAX_TOTAL_SUPPLY = 400000000; // 400 million maximum supply
   const DAILY_REWARDS_LIMIT = MAX_TOTAL_SUPPLY / 365; // Maximum daily rewards across all staking
   const MAX_INDIVIDUAL_REWARDS = 20000000; // 20 million maximum per individual staker
-  
+
   const calculateEstimatedRewards = () => {
     const amount = parseFloat(stakeAmount) || 0;
     const dailyRate = 0.0133;
-    
+
     // Calculate raw rewards
     const rawRewards = amount * dailyRate * stakeDuration;
-    
+
     // Apply individual staker cap
     // Ensure no single staker can earn more than MAX_INDIVIDUAL_REWARDS
     // This ensures 10M staked points can't earn more than 20M PXB
     const cappedRewards = Math.min(rawRewards, MAX_INDIVIDUAL_REWARDS);
-    
+
     // Also apply the global cap (1% of max supply per stake)
     const globalCap = MAX_TOTAL_SUPPLY * 0.01;
-    
+
     // Return the lowest value between raw rewards and both caps
     return Math.min(cappedRewards, globalCap).toFixed(2);
   };
-
   const handleStakeAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
     setStakeAmount(value);
   };
-
   const handleStakeDurationChange = (value: number[]) => {
     setStakeDuration(value[0]);
   };
-
   const handleMaxClick = () => {
     setStakeAmount('1000');
     toast.info("Connected wallet balance: 1,000 $POINTS");
   };
-
   const handleStakeSubmit = () => {
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
       toast.error("Please enter a valid stake amount");
@@ -61,7 +55,6 @@ const PXBStakingPanel = () => {
       description: "The staking feature will be available shortly after token launch."
     });
   };
-
   const copyToClipboard = () => {
     toast.info("$POINTS Contract address will be available at launch!");
   };
@@ -70,28 +63,25 @@ const PXBStakingPanel = () => {
   const isRewardsExcessive = () => {
     const rewards = parseFloat(calculateEstimatedRewards());
     const inputAmount = parseFloat(stakeAmount) || 0;
-    
+
     // Show warning if rewards approach individual cap
     if (inputAmount > 1000000 && rewards > MAX_INDIVIDUAL_REWARDS * 0.5) {
       return true;
     }
-    
+
     // Also warn if rewards exceed 0.5% of total supply
     return rewards > MAX_TOTAL_SUPPLY * 0.005;
   };
-  
+
   // Function to get the appropriate warning message
   const getRewardsWarningMessage = () => {
     const rewards = parseFloat(calculateEstimatedRewards());
     const inputAmount = parseFloat(stakeAmount) || 0;
-    
     if (inputAmount > 1000000 && rewards >= MAX_INDIVIDUAL_REWARDS) {
       return "Rewards capped at 20M PXB per staker";
     }
-    
     return "Rewards capped at 1% of total supply per stake";
   };
-
   return <div className="relative">
       <div className="absolute top-2 right-2 z-10">
         
@@ -124,9 +114,7 @@ const PXBStakingPanel = () => {
               
               
             </div>
-            <Button variant="ghost" size="sm" className="h-6 text-xs text-dream-accent1 hover:text-dream-accent1/80" onClick={handleMaxClick}>
-              MAX
-            </Button>
+            
           </div>
           
           <div className="relative">
@@ -170,12 +158,10 @@ const PXBStakingPanel = () => {
               </span>
             </div>
             
-            {isRewardsExcessive() && (
-              <div className="flex items-center text-xs text-yellow-400 mt-1 mb-2">
+            {isRewardsExcessive() && <div className="flex items-center text-xs text-yellow-400 mt-1 mb-2">
                 <Info className="h-3 w-3 mr-1" />
                 <span>{getRewardsWarningMessage()}</span>
-              </div>
-            )}
+              </div>}
             
             <div className="flex justify-between items-center text-xs text-dream-foreground/70">
               <div className="flex items-center">
@@ -232,5 +218,4 @@ const PXBStakingPanel = () => {
       </Card>
     </div>;
 };
-
 export default PXBStakingPanel;
