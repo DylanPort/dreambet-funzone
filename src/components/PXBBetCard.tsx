@@ -5,6 +5,7 @@ import { User, TrendingUp, Clock } from 'lucide-react';
 import { PXBBet } from '@/types/pxb';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetchDexScreenerData } from '@/services/dexScreenerService';
 
 interface PXBBetCardProps {
   bet: PXBBet;
@@ -15,10 +16,12 @@ interface PXBBetCardProps {
   isLoading: boolean;
 }
 
-const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }) => {
+const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMarketCapData, isLoading }) => {
   const [tokenImage, setTokenImage] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [marketCapData, setMarketCapData] = useState(initialMarketCapData);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     const loadTokenImage = async () => {
@@ -38,6 +41,32 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
 
     loadTokenImage();
   }, [bet.tokenMint, bet.tokenSymbol]);
+
+  useEffect(() => {
+    if (bet.status !== 'pending') return;
+
+    const updateMarketCap = async () => {
+      try {
+        if (!bet.tokenMint) return;
+        
+        const tokenData = await fetchDexScreenerData(bet.tokenMint);
+        if (tokenData && tokenData.marketCap) {
+          setMarketCapData(prev => ({
+            initialMarketCap: prev?.initialMarketCap || bet.initialMarketCap,
+            currentMarketCap: tokenData.marketCap
+          }));
+          setLastUpdated(new Date());
+        }
+      } catch (error) {
+        console.error("Error updating market cap:", error);
+      }
+    };
+
+    updateMarketCap();
+    const intervalId = setInterval(updateMarketCap, 2000);
+    
+    return () => clearInterval(intervalId);
+  }, [bet.tokenMint, bet.initialMarketCap, bet.status, initialMarketCapData]);
 
   const generateColorFromSymbol = (symbol: string) => {
     const colors = [
@@ -82,15 +111,23 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
     }
     
     const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
-    const targetChange = bet.percentageChange;
     
     if (bet.betType === 'up') {
-      // For moon bets, target is 80% increase
       return Math.min(100, (actualChange / 80) * 100);
     } else {
-      // For dust bets, target is 50% decrease
       return Math.min(100, (Math.abs(actualChange) / 50) * 100);
     }
+  };
+
+  const calculateActualPercentageChange = () => {
+    const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
+    const currentMarketCap = marketCapData?.currentMarketCap;
+    
+    if (!initialMarketCap || !currentMarketCap) {
+      return 0;
+    }
+    
+    return ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
   };
 
   const isProgressNegative = () => {
@@ -107,8 +144,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
     
     const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
     
-    // For moon bets, negative progress when price goes down
-    // For dust bets, negative progress when price goes up
     return (bet.betType === 'up' && actualChange < 0) || 
            (bet.betType === 'down' && actualChange > 0);
   };
@@ -132,10 +167,8 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
     if (!initialMarketCap) return null;
     
     if (bet.betType === 'up') {
-      // Target for moon bets is 80% increase
       return initialMarketCap * 1.8;
     } else {
-      // Target for dust bets is 50% decrease
       return initialMarketCap * 0.5;
     }
   };
@@ -156,7 +189,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
       );
     }
     
-    // Fallback to first letter of symbol with gradient background
     const colorGradient = generateColorFromSymbol(bet.tokenSymbol);
     return (
       <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center text-white font-bold text-sm`}>
@@ -165,8 +197,21 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
     );
   };
 
+  const getLastUpdatedText = () => {
+    if (!lastUpdated) return "";
+    
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - lastUpdated.getTime()) / 1000);
+    
+    if (diffSeconds < 3) return "just now";
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+    return `${Math.floor(diffSeconds / 3600)}h ago`;
+  };
+
   const progress = calculateProgress();
   const isNegative = isProgressNegative();
+  const actualPercentageChange = calculateActualPercentageChange();
   const truncatedAddress = bet.userId ? `${bet.userId.substring(0, 6)}...${bet.userId.substring(bet.userId.length - 4)}` : 'Unknown';
   const targetMarketCap = calculateTargetMarketCap();
 
@@ -194,7 +239,12 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
         </div>
 
         <div className="mb-3">
-          <div className="text-xs text-dream-foreground/60 mb-1">Progress</div>
+          <div className="flex justify-between items-center text-xs mb-1">
+            <span className="text-dream-foreground/60">Progress</span>
+            {lastUpdated && (
+              <span className="text-dream-foreground/40 text-[10px]">Updated {getLastUpdatedText()}</span>
+            )}
+          </div>
           <div className="flex justify-between items-center text-xs mb-1">
             <span>Initial: {formatLargeNumber(bet.initialMarketCap || marketCapData?.initialMarketCap)}</span>
             <span className="text-dream-foreground/60">→</span>
@@ -206,7 +256,12 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData, isLoading }
           />
           <div className="flex justify-between items-center text-xs mt-1">
             <span className={`${isNegative ? 'text-red-400' : progress === 0 ? 'text-dream-foreground/60' : progress === 100 ? 'text-green-400' : 'text-purple-400'}`}>
-              {isNegative ? 'Moving opposite direction' : `${progress.toFixed(1)}% complete`}
+              {isNegative 
+                ? `Wrong direction: ${actualPercentageChange.toFixed(2)}%` 
+                : actualPercentageChange === 0 
+                  ? 'No change yet' 
+                  : `${actualPercentageChange.toFixed(2)}% (${progress.toFixed(1)}% complete)`
+              }
             </span>
             <span>
               Current: {formatLargeNumber(marketCapData?.currentMarketCap)}
