@@ -65,6 +65,7 @@ export const useBetsData = (userProfile: any) => {
         return {
           id: bet.bet_id,
           userId: isCreator ? bet.bettor1_id : bet.bettor2_id,
+          creator: bet.creator,  // Make sure we include the creator field
           tokenMint: bet.token_mint,
           tokenName: tokenName,
           tokenSymbol: tokenSymbol,
