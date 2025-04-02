@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { CalendarClock, Coins, Timer, Gift, AlertCircle, TrendingUp, Lock, ArrowDownUp, Clock } from 'lucide-react';
+import { CalendarClock, Coins, Timer, Gift, AlertCircle, TrendingUp, Lock, ArrowDownUp, Clock, Info } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 
@@ -12,11 +13,23 @@ const PXBStakingPanel = () => {
   const [stakeAmount, setStakeAmount] = useState<string>('');
   const [stakeDuration, setStakeDuration] = useState<number>(30); // Default 30 days
   const [isStaking, setIsStaking] = useState<boolean>(false);
+  
+  // Define supply constants
+  const MAX_TOTAL_SUPPLY = 400000000; // 400 million maximum supply
+  const DAILY_REWARDS_LIMIT = MAX_TOTAL_SUPPLY / 365; // Maximum daily rewards across all staking
 
   const calculateEstimatedRewards = () => {
     const amount = parseFloat(stakeAmount) || 0;
     const dailyRate = 0.0133;
-    return (amount * dailyRate * stakeDuration).toFixed(2);
+    
+    // Calculate raw rewards
+    const rawRewards = amount * dailyRate * stakeDuration;
+    
+    // Cap rewards at a reasonable percentage of max supply
+    const maxRewardsPerStake = MAX_TOTAL_SUPPLY * 0.01; // 1% of total supply per stake
+    
+    // Return the lower value between raw rewards and the cap
+    return Math.min(rawRewards, maxRewardsPerStake).toFixed(2);
   };
 
   const handleStakeAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,6 +58,12 @@ const PXBStakingPanel = () => {
 
   const copyToClipboard = () => {
     toast.info("$POINTS Contract address will be available at launch!");
+  };
+
+  // Check if the estimated rewards might be too high
+  const isRewardsExcessive = () => {
+    const rewards = parseFloat(calculateEstimatedRewards());
+    return rewards > MAX_TOTAL_SUPPLY * 0.005; // Warning if over 0.5% of total supply
   };
 
   return <div className="relative">
@@ -125,12 +144,19 @@ const PXBStakingPanel = () => {
               </span>
             </div>
             
+            {isRewardsExcessive() && (
+              <div className="flex items-center text-xs text-yellow-400 mt-1 mb-2">
+                <Info className="h-3 w-3 mr-1" />
+                <span>Rewards capped at 1% of total supply per stake</span>
+              </div>
+            )}
+            
             <div className="flex justify-between items-center text-xs text-dream-foreground/70">
               <div className="flex items-center">
                 <TrendingUp className="mr-1 h-3 w-3" />
                 <span>Current APY</span>
               </div>
-              <span className="text-dream-accent1">730000%</span>
+              <span className="text-dream-accent1">485%</span>
             </div>
           </div>
           
@@ -148,6 +174,14 @@ const PXBStakingPanel = () => {
               <span>Early Unstake Fee</span>
             </div>
             <span className="text-dream-foreground/80">5%</span>
+          </div>
+          
+          <div className="bg-dream-foreground/5 rounded-md p-3 flex justify-between items-center">
+            <div className="flex items-center text-sm">
+              <Info className="mr-1 h-4 w-4 text-blue-400" />
+              <span>Max Supply</span>
+            </div>
+            <span className="text-dream-foreground/80">400,000,000 PXB</span>
           </div>
         </CardContent>
         
