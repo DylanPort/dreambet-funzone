@@ -41,7 +41,7 @@ const Dashboard = () => {
       // Filter out bets that already exist in supabaseBets
       const filteredLocalBets = fallbackBets.filter(localBet => {
         return !supabaseBets.some(
-          (bet: Bet) => bet.id === localBet.id || 
+          bet => bet.id === localBet.id || 
           (bet.onChainBetId && localBet.onChainBetId && bet.onChainBetId === localBet.onChainBetId)
         );
       });

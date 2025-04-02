@@ -1,3 +1,4 @@
+
 import { Bet, BetPrediction } from '@/types/bet';
 import { 
   fetchTokens as fetchSupabaseTokens, 
@@ -336,8 +337,7 @@ export const acceptBet = async (
       throw new Error("Missing on-chain bet ID");
     }
     
-    // Fix the incorrect call - pass the bet ID as parameter
-    const updatedBet = await acceptSupabaseBet(bet.id, wallet.publicKey);
+    const updatedBet = await acceptSupabaseBet(bet.id);
     console.log(`Supabase bet updated: ${updatedBet.id}`);
     
     return {

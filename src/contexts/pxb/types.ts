@@ -1,6 +1,5 @@
 
 import { UserProfile, PXBBet, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from "@/types/pxb";
-import { TokenPortfolio, TokenTransaction } from "@/services/tokenTradingService";
 
 export interface PXBPointsContextType {
   userProfile: UserProfile | null;
@@ -30,13 +29,6 @@ export interface PXBPointsContextType {
   fetchWinRateLeaderboard: () => Promise<void>;
   addPointsToUser: (amount: number, reason: string) => Promise<boolean | undefined>;
   mintingPoints: boolean;
-  // Portfolio data
-  portfolio?: TokenPortfolio[];
-  transactions?: TokenTransaction[];
-  isLoadingPortfolio?: boolean;
-  isLoadingTransactions?: boolean;
-  fetchUserPortfolio?: () => Promise<void>;
-  fetchUserTransactions?: (tokenId?: string) => Promise<void>;
   // Referral system
   generateReferralLink: () => Promise<string>;
   checkAndProcessReferral: (referralCode: string) => Promise<void>;

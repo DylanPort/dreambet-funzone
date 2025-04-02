@@ -52,7 +52,6 @@ const TokenCard: React.FC<TokenCardProps> = ({
   const isPositive6h = priceChange6h ? priceChange6h >= 0 : true;
   const [selectedPrediction, setSelectedPrediction] = useState<'moon' | 'die' | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [showBetForm, setShowBetForm] = useState(false);
 
   // Format price with appropriate decimals
   const formatPrice = (price: number) => {
@@ -254,11 +253,8 @@ const TokenCard: React.FC<TokenCardProps> = ({
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
-                    onClose={() => setShowBetForm(false)}
-                    onSuccess={() => {
-                      setShowBetForm(false);
-                      // Other success logic...
-                    }}
+                    onCancel={handleDialogClose}
+                    onSuccess={handleDialogClose}
                   />
                 </div>
               </div>
@@ -308,11 +304,8 @@ const TokenCard: React.FC<TokenCardProps> = ({
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
-                    onClose={() => setShowBetForm(false)}
-                    onSuccess={() => {
-                      setShowBetForm(false);
-                      // Other success logic...
-                    }}
+                    onCancel={handleDialogClose}
+                    onSuccess={handleDialogClose}
                   />
                 </div>
               </div>

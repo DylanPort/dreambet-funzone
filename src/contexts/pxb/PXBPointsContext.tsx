@@ -7,7 +7,6 @@ import { useLeaderboardData } from './useLeaderboardData';
 import { usePointOperations } from './usePointOperations';
 import { useBetProcessor } from './useBetProcessor';
 import { useReferralSystem } from './useReferralSystem';
-import { usePortfolioData } from './usePortfolioData';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 const PXBPointsContext = createContext<PXBPointsContextType | undefined>(undefined);
@@ -57,16 +56,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     fetchUserProfile,
     setIsLoading
   );
-
-  // Set up portfolio data
-  const {
-    portfolio,
-    transactions,
-    isLoadingPortfolio,
-    isLoadingTransactions,
-    fetchUserPortfolio,
-    fetchUserTransactions
-  } = usePortfolioData(userProfile);
 
   // Set up referral system
   const {
@@ -130,13 +119,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isLeaderboardLoading,
         isLoadingWinRate,
         isLoadingBets,
-        // Portfolio data
-        portfolio,
-        transactions,
-        isLoadingPortfolio,
-        isLoadingTransactions,
-        fetchUserPortfolio,
-        fetchUserTransactions,
         // Referral system
         generateReferralLink,
         checkAndProcessReferral,

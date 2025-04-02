@@ -2,31 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy, BarChart, Target, Trophy, Zap, Coins, TrendingUp, BarChart2, Users } from 'lucide-react';
+import { ArrowUp, ArrowDown, ExternalLink, AlertTriangle, Clock, Copy, BarChart, Target } from 'lucide-react';
+import { acceptBet } from '@/services/supabaseService';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
-
 interface BetCardProps {
   bet: Bet;
-  connected?: boolean;
-  publicKeyString?: string | null;
-  onAcceptBet?: (bet: Bet) => void;
-  tokenPrice?: number;
+  connected: boolean;
+  publicKeyString: string | null;
+  onAcceptBet: (bet: Bet) => void;
 }
-
 const BetCard: React.FC<BetCardProps> = ({
   bet,
   connected,
   publicKeyString,
-  onAcceptBet,
-  tokenPrice
+  onAcceptBet
 }) => {
   const [accepting, setAccepting] = React.useState(false);
   const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(bet.currentMarketCap || null);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch the latest market cap data when component mounts
   useEffect(() => {
     const fetchMarketCap = async () => {
       if (bet.tokenMint) {
@@ -36,13 +34,16 @@ const BetCard: React.FC<BetCardProps> = ({
             setCurrentMarketCap(metrics.marketCap);
             setIsLoading(false);
 
+            // Calculate progress based on prediction type and target
             if (bet.initialMarketCap && bet.prediction === 'moon') {
-              const targetIncrease = bet.initialMarketCap * 0.3;
+              // For moon bets, progress is % of growth toward target (capped at 100%)
+              const targetIncrease = bet.initialMarketCap * 0.3; // Assuming 30% increase target
               const currentIncrease = Math.max(0, metrics.marketCap - bet.initialMarketCap);
               const progress = Math.min(100, currentIncrease / targetIncrease * 100);
               setProgressValue(progress);
             } else if (bet.initialMarketCap && bet.prediction === 'die') {
-              const targetDecrease = bet.initialMarketCap * 0.3;
+              // For dust bets, progress is % of decline toward target (capped at 100%)
+              const targetDecrease = bet.initialMarketCap * 0.3; // Assuming 30% decrease target
               const currentDecrease = Math.max(0, bet.initialMarketCap - metrics.marketCap);
               const progress = Math.min(100, currentDecrease / targetDecrease * 100);
               setProgressValue(progress);
@@ -56,7 +57,6 @@ const BetCard: React.FC<BetCardProps> = ({
     };
     fetchMarketCap();
   }, [bet.tokenMint, bet.initialMarketCap, bet.prediction]);
-
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
       console.error('Connect your wallet to accept a bet');
@@ -68,9 +68,7 @@ const BetCard: React.FC<BetCardProps> = ({
     }
     try {
       setAccepting(true);
-      if (onAcceptBet) {
-        await onAcceptBet(bet);
-      }
+      await onAcceptBet(bet);
     } catch (error) {
       console.error('Error accepting bet:', error);
     } finally {
@@ -78,6 +76,7 @@ const BetCard: React.FC<BetCardProps> = ({
     }
   };
 
+  // Format market cap for display
   const formatMarketCap = (value: number | null) => {
     if (value === null) return "N/A";
     if (value >= 1000000000) {
@@ -92,25 +91,28 @@ const BetCard: React.FC<BetCardProps> = ({
     return `$${value.toFixed(2)}`;
   };
 
+  // Calculate target market cap
   const calculateTargetMarketCap = () => {
     if (!bet.initialMarketCap) return null;
-    return bet.prediction === 'moon' || bet.prediction === 'migrate' ? bet.initialMarketCap * 1.3
-    : bet.initialMarketCap * 0.7;
+    return bet.prediction === 'moon' || bet.prediction === 'migrate' ? bet.initialMarketCap * 1.3 // 30% increase
+    : bet.initialMarketCap * 0.7; // 30% decrease
   };
 
+  // Calculate market cap change percentage
   const calculateMarketCapChange = () => {
     if (!bet.initialMarketCap || !currentMarketCap) return null;
     return (currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap * 100;
   };
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).catch(err => {
       console.error('Could not copy text: ', err);
     });
   };
 
+  // Check if bet is expired
   const isExpired = Date.now() > bet.expiresAt;
 
+  // Determine bet status display
   let statusDisplay = 'Open';
   let statusClass = 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30';
   if (bet.status === 'pending') {
@@ -131,7 +133,6 @@ const BetCard: React.FC<BetCardProps> = ({
     statusDisplay = 'Matched';
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
-
   return <div className={`backdrop-blur-lg border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${bet.status === 'open' ? 'bg-black/20 border-dream-accent1/30' : bet.status === 'matched' ? 'bg-black/30 border-purple-500/30' : bet.status === 'expired' ? 'bg-black/20 border-red-500/30' : bet.outcome === 'win' ? 'bg-black/20 border-green-500/30' : bet.outcome === 'loss' ? 'bg-black/20 border-red-500/30' : 'bg-black/20 border-yellow-500/30'}`}>
       <div className="px-6 py-4">
         <div className="flex justify-between items-center">
@@ -191,6 +192,9 @@ const BetCard: React.FC<BetCardProps> = ({
           </div>
         </div>
 
+        {/* Progress tracking section - always display for enhanced cards */}
+        
+
         <div className="mt-3 pt-2 border-t border-dream-foreground/10">
           <div className="flex justify-between items-center text-xs text-dream-foreground/60">
             <div className="flex items-center">
@@ -220,5 +224,4 @@ const BetCard: React.FC<BetCardProps> = ({
       </div>
     </div>;
 };
-
 export default BetCard;

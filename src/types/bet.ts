@@ -1,3 +1,4 @@
+
 export type BetPrediction = 'migrate' | 'die' | 'moon' | 'up' | 'down';
 
 export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed' | 'pending';
@@ -7,7 +8,7 @@ export interface Bet {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  tokenMint: string;
+  tokenMint: string; // Required field that was missing
   initiator: string;
   counterParty?: string;
   amount: number;
@@ -21,29 +22,7 @@ export interface Bet {
   winner?: string;
   onChainBetId: string;
   transactionSignature: string;
-  outcome?: 'win' | 'loss';
-  
-  // Properties needed for TokenDetail.tsx
-  creatorAddress?: string;
-  acceptorAddress?: string;
-  direction?: 'up' | 'down';
-  targetPrice?: number;
-  
-  // Additional optional properties that might be needed
-  percentageChange?: number;
-  betType?: string;
-  winAmount?: number;
-  potentialWinnings?: number;
-  createdAt?: string | number;
-}
-
-export interface CreateBetFormProps {
-  tokenId: string;
-  tokenName: string;
-  tokenSymbol: string;
-  onSuccess: () => void;
-  onClose?: () => void;
-  onCancel?: () => void;
+  outcome?: 'win' | 'loss'; // Add outcome field to track bet result
 }
 
 export enum SolanaContractPrediction {
