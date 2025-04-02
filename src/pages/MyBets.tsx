@@ -13,6 +13,7 @@ import PXBSupplyProgress from '@/components/PXBSupplyProgress';
 import PXBStakingPanel from '@/components/PXBStakingPanel';
 import PXBUserStats from '@/components/PXBUserStats';
 import BetReel from '@/components/BetReel';
+import PXBBetsHistory from '@/components/PXBBetsHistory';
 
 const PXBSpace = () => {
   const {
@@ -96,14 +97,8 @@ const PXBSpace = () => {
             <PXBStakingPanel />
           </div>
           
-          {/* User Stats Component */}
-          
-          
-          {/* Notice: BetReel actually renders itself as a fixed position bar at the top of the page */}
+          {/* BetReel - renders itself as a fixed position bar at the top of the page */}
           <BetReel />
-          
-          {/* Active Bets Section (Placeholder) */}
-          
           
           {!connected ? <div className="glass-panel p-8 text-center">
               <p className="text-xl text-dream-foreground/70 mb-4">Connect your wallet to access PXB Space</p>
@@ -157,7 +152,14 @@ const PXBSpace = () => {
               
               {/* Right column - Bets & Referrals */}
               <div className="md:col-span-8 space-y-6">
-                <PXBBetsList />
+                {/* Your PXB Bets section with the new design */}
+                <div className="glass-panel p-6">
+                  <h2 className="font-semibold text-lg mb-4 flex items-center">
+                    <Trophy className="mr-2 h-5 w-5 text-yellow-400" />
+                    Your PXB Bets
+                  </h2>
+                  <PXBBetsHistory walletAddress={publicKey?.toString()} limit={5} />
+                </div>
                 
                 {/* Referral Section */}
                 <div className="glass-panel p-6">
