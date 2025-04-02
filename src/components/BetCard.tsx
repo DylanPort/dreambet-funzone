@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bet } from '@/types/bet';
 import { formatTimeRemaining } from '@/utils/betUtils';
@@ -8,12 +9,15 @@ import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
 import { toast } from 'sonner';
+import { fetchTokenPairData } from '@/services/dexScreenerService';
+
 interface BetCardProps {
   bet: Bet;
   connected: boolean;
   publicKeyString: string | null;
   onAcceptBet: (bet: Bet) => void;
 }
+
 const BetCard: React.FC<BetCardProps> = ({
   bet,
   connected,
@@ -24,6 +28,30 @@ const BetCard: React.FC<BetCardProps> = ({
   const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(bet.currentMarketCap || null);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [tokenImage, setTokenImage] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  // Fetch token image when component mounts
+  useEffect(() => {
+    const fetchTokenImage = async () => {
+      if (bet.tokenMint) {
+        try {
+          // First try to fetch token pair data which might contain image URL
+          const pairData = await fetchTokenPairData(bet.tokenMint);
+          if (pairData?.baseToken?.address) {
+            // Try GitHub token list image format first
+            const githubImageUrl = `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${pairData.baseToken.address}/logo.png`;
+            setTokenImage(githubImageUrl);
+          }
+        } catch (error) {
+          console.error('Error fetching token image:', error);
+          setImageError(true);
+        }
+      }
+    };
+    
+    fetchTokenImage();
+  }, [bet.tokenMint]);
 
   // Fetch the latest market cap data when component mounts
   useEffect(() => {
@@ -36,36 +64,18 @@ const BetCard: React.FC<BetCardProps> = ({
             setIsLoading(false);
 
             // Calculate progress based on prediction type and target
-            if (bet.isPXB && bet.percentageChange) {
-              // For PXB bets, use percentage change as the target
-              if (bet.initialMarketCap && bet.prediction === 'moon') {
-                // For moon bets, progress is % of growth toward target (capped at 100%)
-                const targetIncrease = bet.initialMarketCap * (bet.percentageChange / 100);
-                const currentIncrease = Math.max(0, metrics.marketCap - bet.initialMarketCap);
-                const progress = Math.min(100, currentIncrease / targetIncrease * 100);
-                setProgressValue(progress);
-              } else if (bet.initialMarketCap && bet.prediction === 'die') {
-                // For dust bets, progress is % of decline toward target (capped at 100%)
-                const targetDecrease = bet.initialMarketCap * (bet.percentageChange / 100);
-                const currentDecrease = Math.max(0, bet.initialMarketCap - metrics.marketCap);
-                const progress = Math.min(100, currentDecrease / targetDecrease * 100);
-                setProgressValue(progress);
-              }
-            } else {
-              // For regular bets
-              if (bet.initialMarketCap && bet.prediction === 'moon') {
-                // For moon bets, progress is % of growth toward target (capped at 100%)
-                const targetIncrease = bet.initialMarketCap * 0.3; // Assuming 30% increase target
-                const currentIncrease = Math.max(0, metrics.marketCap - bet.initialMarketCap);
-                const progress = Math.min(100, currentIncrease / targetIncrease * 100);
-                setProgressValue(progress);
-              } else if (bet.initialMarketCap && bet.prediction === 'die') {
-                // For dust bets, progress is % of decline toward target (capped at 100%)
-                const targetDecrease = bet.initialMarketCap * 0.3; // Assuming 30% decrease target
-                const currentDecrease = Math.max(0, bet.initialMarketCap - metrics.marketCap);
-                const progress = Math.min(100, currentDecrease / targetDecrease * 100);
-                setProgressValue(progress);
-              }
+            if (bet.prediction === 'moon') {
+              // For moon bets, progress is % of growth toward target (capped at 100%)
+              const targetIncrease = bet.initialMarketCap * 0.3; // Assuming 30% increase target
+              const currentIncrease = Math.max(0, metrics.marketCap - bet.initialMarketCap);
+              const progress = Math.min(100, currentIncrease / targetIncrease * 100);
+              setProgressValue(progress);
+            } else if (bet.prediction === 'die') {
+              // For dust bets, progress is % of decline toward target (capped at 100%)
+              const targetDecrease = bet.initialMarketCap * 0.3; // Assuming 30% decrease target
+              const currentDecrease = Math.max(0, bet.initialMarketCap - metrics.marketCap);
+              const progress = Math.min(100, currentDecrease / targetDecrease * 100);
+              setProgressValue(progress);
             }
           }
         } catch (error) {
@@ -75,7 +85,8 @@ const BetCard: React.FC<BetCardProps> = ({
       }
     };
     fetchMarketCap();
-  }, [bet.tokenMint, bet.initialMarketCap, bet.prediction, bet.isPXB, bet.percentageChange]);
+  }, [bet.tokenMint, bet.initialMarketCap, bet.prediction]);
+
   const handleAcceptBet = async () => {
     if (!connected || !publicKeyString) {
       toast.error('Connect your wallet to accept a bet');
@@ -115,9 +126,6 @@ const BetCard: React.FC<BetCardProps> = ({
   // Calculate target market cap
   const calculateTargetMarketCap = () => {
     if (!bet.initialMarketCap) return null;
-    if (bet.isPXB && bet.percentageChange) {
-      return bet.prediction === 'moon' || bet.prediction === 'up' ? bet.initialMarketCap * (1 + bet.percentageChange / 100) : bet.initialMarketCap * (1 - bet.percentageChange / 100);
-    }
     return bet.prediction === 'moon' || bet.prediction === 'migrate' ? bet.initialMarketCap * 1.3 // 30% increase
     : bet.initialMarketCap * 0.7; // 30% decrease
   };
@@ -127,6 +135,7 @@ const BetCard: React.FC<BetCardProps> = ({
     if (!bet.initialMarketCap || !currentMarketCap) return null;
     return (currentMarketCap - bet.initialMarketCap) / bet.initialMarketCap * 100;
   };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).catch(err => {
       console.error('Could not copy text: ', err);
@@ -143,10 +152,10 @@ const BetCard: React.FC<BetCardProps> = ({
   if (bet.status === 'pending') {
     statusDisplay = 'Pending';
     statusClass = 'bg-blue-500/20 text-blue-400 border-blue-400/30';
-  } else if (bet.status === 'won' || bet.status === 'completed' && bet.outcome === 'win') {
+  } else if (bet.status === 'completed' && bet.outcome === 'win') {
     statusDisplay = 'Won';
     statusClass = 'bg-green-500/20 text-green-400 border-green-400/30';
-  } else if (bet.status === 'lost' || bet.status === 'completed' && bet.outcome === 'loss') {
+  } else if (bet.status === 'completed' && bet.outcome === 'loss') {
     statusDisplay = 'Lost';
     statusClass = 'bg-red-500/20 text-red-400 border-red-400/30';
   } else if (bet.status === 'completed' || bet.status === 'closed') {
@@ -159,14 +168,59 @@ const BetCard: React.FC<BetCardProps> = ({
     statusDisplay = 'Matched';
     statusClass = 'bg-purple-500/20 text-purple-400 border-purple-400/30';
   }
+
   const truncatedAddress = `${bet.initiator.substring(0, 4)}...${bet.initiator.substring(bet.initiator.length - 4)}`;
   const targetMarketCap = calculateTargetMarketCap();
-  return <div className={`bg-black/60 rounded-lg border overflow-hidden transition-all duration-300 ${bet.status === 'open' ? 'border-dream-accent1/30' : bet.status === 'matched' || bet.status === 'pending' ? 'border-purple-500/30' : bet.status === 'expired' || isExpired ? 'border-red-500/30' : bet.status === 'won' || bet.outcome === 'win' ? 'border-green-500/30' : bet.status === 'lost' || bet.outcome === 'loss' ? 'border-red-500/30' : 'border-yellow-500/30'}`}>
+
+  // Generate a color based on token symbol for fallback background
+  const generateColorFromSymbol = (symbol: string) => {
+    const colors = [
+      'from-pink-500 to-purple-500',
+      'from-blue-500 to-cyan-500',
+      'from-green-500 to-emerald-500',
+      'from-yellow-500 to-orange-500',
+      'from-red-500 to-pink-500',
+      'from-indigo-500 to-blue-500',
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < symbol.length; i++) {
+      hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
+  const colorGradient = generateColorFromSymbol(bet.tokenSymbol);
+
+  // Render token image or fallback
+  const renderTokenImage = () => {
+    if (tokenImage && !imageError) {
+      return (
+        <img
+          src={tokenImage}
+          alt={bet.tokenSymbol}
+          className="w-10 h-10 rounded-full object-cover"
+          onError={() => setImageError(true)}
+        />
+      );
+    }
+    
+    // Fallback to first letter of symbol with gradient background
+    return (
+      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${colorGradient} flex items-center justify-center`}>
+        <span className="font-bold text-white">{bet.tokenSymbol.charAt(0)}</span>
+      </div>
+    );
+  };
+
+  return <div className={`bg-black/60 rounded-lg border overflow-hidden transition-all duration-300 ${bet.status === 'open' ? 'border-dream-accent1/30' : bet.status === 'matched' || bet.status === 'pending' ? 'border-purple-500/30' : bet.status === 'expired' || isExpired ? 'border-red-500/30' : bet.status === 'completed' && bet.outcome === 'win' ? 'border-green-500/30' : bet.status === 'completed' && bet.outcome === 'loss' ? 'border-red-500/30' : 'border-yellow-500/30'}`}>
       <div className="px-4 py-3">
         <div className="flex justify-between items-center">
           <Link to={`/betting/token/${bet.tokenId}`} className="flex items-center gap-2 hover:underline transition-all duration-300">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <span className="font-bold text-white">{bet.tokenSymbol.charAt(0)}</span>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center">
+              {renderTokenImage()}
             </div>
             <div>
               <div className="text-lg font-display font-bold">
@@ -179,7 +233,7 @@ const BetCard: React.FC<BetCardProps> = ({
           </Link>
 
           <div className={`px-2 py-1 rounded-full text-xs ${statusClass}`}>
-            {statusDisplay} {bet.isPXB && "PXB"}
+            {statusDisplay}
           </div>
         </div>
 
@@ -251,11 +305,11 @@ const BetCard: React.FC<BetCardProps> = ({
           </div>
         </div>
 
-        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && !bet.isPXB && <div className="mt-4">
+        {bet.status === 'open' && !isExpired && connected && publicKeyString && publicKeyString !== bet.initiator && <div className="mt-4">
             
           </div>}
 
-        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && !bet.isPXB && <div className="mt-4">
+        {(!connected || !publicKeyString) && bet.status === 'open' && !isExpired && <div className="mt-4">
             <Button disabled className="w-full bg-dream-foreground/20 text-dream-foreground/50 cursor-not-allowed">
               Connect wallet to accept
             </Button>
