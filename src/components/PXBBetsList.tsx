@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -9,76 +8,70 @@ import PXBBetCard from '@/components/PXBBetCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-
 const PXBBetsList = () => {
-  const { publicKey } = useWallet();
-  const { userProfile } = usePXBPoints();
+  const {
+    publicKey
+  } = useWallet();
+  const {
+    userProfile
+  } = usePXBPoints();
   const [bets, setBets] = useState<PXBBet[]>([]);
   const [loading, setLoading] = useState(true);
   const [marketCapData, setMarketCapData] = useState<Record<string, {
     initialMarketCap: number | null;
     currentMarketCap: number | null;
   }>>({});
-
   useEffect(() => {
     const fetchUserBets = async () => {
       if (!publicKey && !userProfile) {
         setLoading(false);
         return;
       }
-
       try {
         setLoading(true);
-        
+
         // If we have a user profile, use that ID
         const userId = userProfile?.id;
-        
         if (!userId) {
           setLoading(false);
           return;
         }
-        
         console.log("Fetching PXB bets for user:", userId);
-        
-        const { data, error } = await supabase
-          .from('bets')
-          .select(`
+        const {
+          data,
+          error
+        } = await supabase.from('bets').select(`
             *,
             tokens:token_mint (
               token_name,
               token_symbol
             )
-          `)
-          .eq('creator', userId)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        
+          `).eq('creator', userId).order('created_at', {
+          ascending: false
+        }).limit(10);
         if (error) {
           console.error('Error fetching PXB bets:', error);
           setLoading(false);
           return;
         }
-        
         if (data) {
           console.log("Raw PXB bets data:", data);
-          
+
           // Transform to PXBBet format
           const transformedBets: PXBBet[] = data.map(bet => {
             // Calculate expiration time
             const createdTime = new Date(bet.created_at).getTime();
-            const expiryTime = new Date(createdTime + (bet.duration * 1000)).toISOString();
-            
+            const expiryTime = new Date(createdTime + bet.duration * 1000).toISOString();
+
             // Get token info from tokens relation
             const tokenName = bet.tokens?.token_name || bet.token_name || 'Unknown Token';
             const tokenSymbol = bet.tokens?.token_symbol || bet.token_symbol || 'UNK';
-            
+
             // Determine bet status
             let status: 'open' | 'pending' | 'won' | 'lost' | 'expired' = 'open';
-            
             if (bet.status === 'open') {
               const now = new Date().getTime();
               const expiry = new Date(expiryTime).getTime();
-              
               if (now > expiry) {
                 status = 'expired';
               } else {
@@ -91,7 +84,6 @@ const PXBBetsList = () => {
             } else if (bet.outcome === 'loss') {
               status = 'lost';
             }
-            
             return {
               id: bet.bet_id,
               userId: bet.bettor1_id,
@@ -110,12 +102,11 @@ const PXBBetsList = () => {
               currentMarketCap: bet.current_market_cap
             };
           });
-          
           console.log("Transformed PXB bets:", transformedBets);
           setBets(transformedBets);
-          
+
           // Fetch current market cap data for each token
-          transformedBets.forEach(async (bet) => {
+          transformedBets.forEach(async bet => {
             if (bet.tokenMint) {
               try {
                 const metrics = await fetchTokenMetrics(bet.tokenMint);
@@ -140,17 +131,13 @@ const PXBBetsList = () => {
         setLoading(false);
       }
     };
-
     fetchUserBets();
   }, [publicKey, userProfile]);
-
   if (loading) {
-    return (
-      <div className="glass-panel p-6">
+    return <div className="glass-panel p-6">
         <h2 className="font-semibold text-xl mb-4">Your PXB Bets</h2>
         <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="bg-black/40 rounded-lg border border-white/10 p-4">
+          {[1, 2].map(i => <div key={i} className="bg-black/40 rounded-lg border border-white/10 p-4">
               <div className="flex justify-between items-center mb-3">
                 <Skeleton className="h-10 w-40" />
                 <Skeleton className="h-6 w-24" />
@@ -166,44 +153,10 @@ const PXBBetsList = () => {
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-4 w-24" />
               </div>
-            </div>
-          ))}
+            </div>)}
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="glass-panel p-6">
-      <h2 className="font-semibold text-xl mb-4">Your PXB Bets</h2>
-      
-      {bets.length === 0 ? (
-        <div className="text-center py-6 bg-black/30 rounded-lg border border-white/10">
-          <p className="text-dream-foreground/70 mb-3">You haven't placed any PXB bets yet.</p>
-          <Button asChild variant="outline">
-            <Link to="/betting">Place your first bet</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-0">
-          {bets.map((bet) => (
-            <PXBBetCard 
-              key={bet.id} 
-              bet={bet}
-              marketCapData={marketCapData[bet.tokenMint]}
-              isLoading={false}
-            />
-          ))}
-          
-          <div className="text-center mt-4">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/profile">View all bets</Link>
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return;
 };
-
 export default PXBBetsList;
