@@ -1,4 +1,3 @@
-
 interface DexScreenerPair {
   liquidity: number;
   volume: {
@@ -18,15 +17,11 @@ interface DexScreenerPair {
     address: string;
     name: string;
     symbol: string;
-    logoURI?: string;
-    logo?: string;
   };
   pairCreatedAt: string;
   pairAddress: string;
   dexId: string;
   url: string;
-  logoURI?: string;
-  logo?: string;
   txns: {
     h24: {
       buys: number;
@@ -74,12 +69,6 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
   liquidity: number;
   priceUsd: number;
   priceChange24h: number;
-  baseToken?: {
-    address: string;
-    name: string;
-    symbol: string;
-    logoURI?: string;
-  };
 } | null> => {
   try {
     const cachedData = tokenDataCache.get(tokenAddress);
@@ -106,31 +95,13 @@ export const fetchDexScreenerData = async (tokenAddress: string): Promise<{
     const sortedPairs = [...data.pairs].sort((a, b) => (b.liquidity || 0) - (a.liquidity || 0));
     const pair = sortedPairs[0];
     
-    const baseToken = {
-      ...pair.baseToken,
-      logoURI: undefined
-    };
-
-    const possibleLogoSources = [
-      pair.baseToken?.logoURI,
-      pair.baseToken?.logo,
-      pair.logoURI,
-      pair.logo,
-    ];
-
-    const logoURI = possibleLogoSources.find(src => src !== undefined);
-    
-    if (logoURI) {
-      baseToken.logoURI = logoURI;
-    }
-    
     const result = {
       marketCap: pair.fdv || 0,
       volume24h: pair.volume?.h24 || 0,
       liquidity: pair.liquidity || 0,
       priceUsd: parseFloat(pair.priceUsd || '0'),
       priceChange24h: pair.priceChange?.h24 || 0,
-      baseToken: baseToken
+      baseToken: pair.baseToken
     };
     
     tokenDataCache.set(tokenAddress, {
@@ -388,25 +359,6 @@ export const fetchTokenPairData = async (pairAddress: string) => {
     return data.pairs[0];
   } catch (error) {
     console.error("Error fetching token pair data:", error);
-    return null;
-  }
-};
-
-/**
- * Get token logo URL from DexScreener
- */
-export const fetchTokenLogo = async (tokenAddress: string): Promise<string | null> => {
-  try {
-    const tokenData = await fetchDexScreenerData(tokenAddress);
-    
-    if (tokenData?.baseToken?.logoURI) {
-      return tokenData.baseToken.logoURI;
-    }
-    
-    // Fallback for some tokens (like Jupiter swap URLs)
-    return `https://cdn.jsdelivr.net/gh/solana-labs/token-list@main/assets/mainnet/${tokenAddress}/logo.png`;
-  } catch (error) {
-    console.error("Error fetching token logo:", error);
     return null;
   }
 };
