@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
@@ -6,6 +7,7 @@ import { PXBBet } from '@/types/pxb';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { toast } from '@/hooks/use-toast';
 
 interface PXBBetCardProps {
   bet: PXBBet;
@@ -22,6 +24,8 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   const [imageError, setImageError] = useState(false);
   const [marketCapData, setMarketCapData] = useState(initialMarketCapData);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [hasReachedTarget, setHasReachedTarget] = useState(false);
+  const [notifiedWin, setNotifiedWin] = useState(false);
 
   useEffect(() => {
     const loadTokenImage = async () => {
@@ -51,11 +55,31 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
         
         const tokenData = await fetchDexScreenerData(bet.tokenMint);
         if (tokenData && tokenData.marketCap) {
+          const newMarketCap = tokenData.marketCap;
           setMarketCapData(prev => ({
             initialMarketCap: prev?.initialMarketCap || bet.initialMarketCap,
-            currentMarketCap: tokenData.marketCap
+            currentMarketCap: newMarketCap
           }));
           setLastUpdated(new Date());
+          
+          // Check if target is reached
+          const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
+          const targetMarketCap = calculateTargetMarketCap();
+          
+          if (initialMarketCap && targetMarketCap) {
+            const targetReached = bet.betType === 'up' 
+              ? newMarketCap >= targetMarketCap 
+              : newMarketCap <= targetMarketCap;
+            
+            if (targetReached && !hasReachedTarget) {
+              setHasReachedTarget(true);
+              // Don't notify if already notified
+              if (!notifiedWin) {
+                toast.success(`Your bet on ${bet.tokenSymbol} has reached its target! You won ${bet.betAmount * 2} PXB!`);
+                setNotifiedWin(true);
+              }
+            }
+          }
         }
       } catch (error) {
         console.error("Error updating market cap:", error);
@@ -66,7 +90,32 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     const intervalId = setInterval(updateMarketCap, 2000);
     
     return () => clearInterval(intervalId);
-  }, [bet.tokenMint, bet.initialMarketCap, bet.status, initialMarketCapData]);
+  }, [bet.tokenMint, bet.initialMarketCap, bet.status, bet.betType, bet.tokenSymbol, bet.betAmount, initialMarketCapData, marketCapData, hasReachedTarget, notifiedWin]);
+
+  // Check for bet expiration
+  useEffect(() => {
+    if (bet.status !== 'pending') return;
+    
+    const checkExpiration = () => {
+      const now = new Date();
+      const expiresAt = new Date(bet.expiresAt);
+      
+      if (now >= expiresAt && !hasReachedTarget) {
+        // Bet expired without reaching target
+        toast({
+          title: "Bet expired",
+          description: `Your bet on ${bet.tokenSymbol} has expired without reaching its target.`,
+          variant: "destructive",
+        });
+      }
+    };
+    
+    // Check expiration on mount and every minute
+    checkExpiration();
+    const intervalId = setInterval(checkExpiration, 60000);
+    
+    return () => clearInterval(intervalId);
+  }, [bet.expiresAt, bet.status, bet.tokenSymbol, hasReachedTarget]);
 
   const generateColorFromSymbol = (symbol: string) => {
     const colors = [
@@ -218,6 +267,13 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   return (
     <div className="bg-black/40 backdrop-blur-sm rounded-lg border border-dream-foreground/10 mb-2 relative overflow-hidden">
       <div className="px-4 py-3">
+        {/* Display a "Target Reached" indicator if the bet has reached its target */}
+        {hasReachedTarget && (
+          <div className="absolute top-0 right-0 bg-green-500 text-white px-2 py-1 text-xs font-semibold rounded-bl-lg">
+            Target Reached!
+          </div>
+        )}
+        
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center space-x-2">
             {renderTokenImage()}
@@ -235,7 +291,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           <Clock className="w-3 h-3 mr-1" />
           <span>{formatTimeAgo(bet.createdAt)}</span>
           <span className="mx-2">•</span>
-          <span>{bet.status}</span>
+          <span>{bet.status === 'pending' && hasReachedTarget ? 'target reached' : bet.status}</span>
         </div>
 
         <div className="mb-3">
@@ -248,19 +304,30 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           <div className="flex justify-between items-center text-xs mb-1">
             <span>Initial: {formatLargeNumber(bet.initialMarketCap || marketCapData?.initialMarketCap)}</span>
             <span className="text-dream-foreground/60">→</span>
-            <span>Target: {formatLargeNumber(targetMarketCap)}</span>
+            <span className={hasReachedTarget ? "text-green-400" : ""}>
+              Target: {formatLargeNumber(targetMarketCap)}
+            </span>
           </div>
           <Progress 
             value={isNegative ? 0 : progress} 
-            className={`h-2 ${isNegative ? 'bg-red-900/30' : 'bg-black/30'}`} 
+            className={`h-2 ${hasReachedTarget ? 'bg-green-900/30' : isNegative ? 'bg-red-900/30' : 'bg-black/30'}`} 
           />
           <div className="flex justify-between items-center text-xs mt-1">
-            <span className={`${isNegative ? 'text-red-400' : progress === 0 ? 'text-dream-foreground/60' : progress === 100 ? 'text-green-400' : 'text-purple-400'}`}>
-              {isNegative 
-                ? `Wrong direction: ${actualPercentageChange.toFixed(2)}%` 
-                : actualPercentageChange === 0 
-                  ? 'No change yet' 
-                  : `${actualPercentageChange.toFixed(2)}% (${progress.toFixed(1)}% complete)`
+            <span className={`${hasReachedTarget ? 'text-green-400' : isNegative 
+                ? 'text-red-400' 
+                : progress === 0 
+                  ? 'text-dream-foreground/60' 
+                  : progress === 100 
+                    ? 'text-green-400' 
+                    : 'text-purple-400'}`}
+            >
+              {hasReachedTarget 
+                ? `Target reached: ${actualPercentageChange.toFixed(2)}%`
+                : isNegative 
+                  ? `Wrong direction: ${actualPercentageChange.toFixed(2)}%` 
+                  : actualPercentageChange === 0 
+                    ? 'No change yet' 
+                    : `${actualPercentageChange.toFixed(2)}% (${progress.toFixed(1)}% complete)`
               }
             </span>
             <span>
