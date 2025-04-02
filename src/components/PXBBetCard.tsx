@@ -25,6 +25,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [hasReachedTarget, setHasReachedTarget] = useState(false);
   const [notifiedWin, setNotifiedWin] = useState(false);
+  const [timeProgress, setTimeProgress] = useState(0);
 
   useEffect(() => {
     const loadTokenImage = async () => {
@@ -110,6 +111,31 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     
     return () => clearInterval(intervalId);
   }, [bet.expiresAt, bet.status, bet.tokenSymbol, hasReachedTarget]);
+
+  useEffect(() => {
+    if (bet.status === 'won' || bet.status === 'lost') {
+      setTimeProgress(bet.status === 'won' ? 100 : 0);
+      return;
+    }
+
+    const updateTimeProgress = () => {
+      const now = new Date();
+      const createdAt = new Date(bet.createdAt);
+      const expiresAt = new Date(bet.expiresAt);
+      
+      const totalDuration = expiresAt.getTime() - createdAt.getTime();
+      const elapsedTime = now.getTime() - createdAt.getTime();
+      
+      const progress = Math.min(100, Math.max(0, (elapsedTime / totalDuration) * 100));
+      setTimeProgress(progress);
+    };
+    
+    updateTimeProgress();
+    
+    const intervalId = setInterval(updateTimeProgress, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [bet.createdAt, bet.expiresAt, bet.status]);
 
   const generateColorFromSymbol = (symbol: string) => {
     const colors = [
@@ -258,6 +284,23 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
            (bet.betType === 'down' && actualChange > 0);
   };
 
+  const getTimeRemaining = () => {
+    if (bet.status === 'won') return 'Bet won';
+    if (bet.status === 'lost') return 'Bet lost';
+    
+    const now = new Date();
+    const expiresAt = new Date(bet.expiresAt);
+    
+    if (now >= expiresAt) return 'Expired';
+    
+    const timeRemainingMs = expiresAt.getTime() - now.getTime();
+    const hours = Math.floor(timeRemainingMs / (1000 * 60 * 60));
+    const minutes = Math.floor((timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeRemainingMs % (1000 * 60)) / 1000);
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden">
       <div className="px-4 py-3">
@@ -283,26 +326,20 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
 
         <div className="mt-4">
           <div className="flex justify-between items-center text-sm mb-1">
-            <span className="text-dream-foreground/70">Progress</span>
-            <span className="text-dream-foreground/50 text-xs">
-              Updated {getLastUpdatedText() || "43s ago"}
+            <span className="text-dream-foreground/70">Time remaining</span>
+            <span className="text-dream-foreground/50 text-xs font-mono">
+              {getTimeRemaining()}
             </span>
-          </div>
-          
-          <div className="flex justify-between items-center text-sm mb-1">
-            <span>Initial: {formatLargeNumber(initialMarketCap)}</span>
-            <span className="text-dream-foreground/50">→</span>
-            <span>Target: {formatLargeNumber(targetMarketCap)}</span>
           </div>
           
           <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden mb-1 relative">
             <div 
-              className={`h-full ${hasReachedTarget || bet.status === 'won' ? 'bg-green-500' : bet.status === 'lost' ? 'bg-red-500' : isLosing() ? 'bg-red-500' : 'bg-purple-500'}`}
-              style={{ width: `${progress}%` }}
+              className={`h-full ${hasReachedTarget || bet.status === 'won' ? 'bg-green-500' : bet.status === 'lost' ? 'bg-red-500' : timeProgress > 80 ? 'bg-red-500' : 'bg-purple-500'}`}
+              style={{ width: `${timeProgress}%` }}
             >
               <div className="absolute left-0 top-0 w-full h-full flex">
-                <div className={`h-full w-2 ${isLosing() ? 'bg-red-600' : 'bg-purple-600'} opacity-50`}></div>
-                <div className={`h-full w-2 ${isLosing() ? 'bg-red-600' : 'bg-purple-600'} opacity-50 ml-auto`}></div>
+                <div className={`h-full w-2 ${timeProgress > 80 ? 'bg-red-600' : 'bg-purple-600'} opacity-50`}></div>
+                <div className={`h-full w-2 ${timeProgress > 80 ? 'bg-red-600' : 'bg-purple-600'} opacity-50 ml-auto`}></div>
               </div>
             </div>
           </div>
@@ -312,16 +349,37 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
               <span className="text-green-400">Target reached!</span>
             ) : bet.status === 'lost' ? (
               <span className="text-red-400">Bet lost</span>
-            ) : progress === 0 ? (
-              <span className="text-dream-foreground/60">No change yet</span>
+            ) : timeProgress > 80 ? (
+              <span className="text-red-400">Running out of time!</span>
             ) : (
               <span className="text-dream-foreground/60">
-                {calculateActualPercentageChange() > 0 ? "Up" : "Down"} {Math.abs(calculateActualPercentageChange()).toFixed(2)}%
+                {timeProgress.toFixed(0)}% of time elapsed
               </span>
             )}
-            <span>
-              Current: {formatLargeNumber(currentMarketCap)}
-            </span>
+            
+            <div className="flex items-center gap-1">
+              <span className="text-dream-foreground/60">Market:</span>
+              <span className={`${isLosing() ? 'text-red-400' : 'text-green-400'}`}>
+                {calculateActualPercentageChange() > 0 ? "+" : ""}{Math.abs(calculateActualPercentageChange()).toFixed(2)}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 flex justify-between items-center text-xs">
+          <div>
+            <span className="text-dream-foreground/60">Initial: </span>
+            <span>{formatLargeNumber(initialMarketCap)}</span>
+          </div>
+          <div className="text-dream-foreground/50">→</div>
+          <div>
+            <span className="text-dream-foreground/60">Target: </span>
+            <span>{formatLargeNumber(targetMarketCap)}</span>
+          </div>
+          <div className="text-dream-foreground/50">→</div>
+          <div>
+            <span className="text-dream-foreground/60">Current: </span>
+            <span>{formatLargeNumber(currentMarketCap)}</span>
           </div>
         </div>
 
