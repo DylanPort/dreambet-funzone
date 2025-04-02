@@ -102,23 +102,18 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }
   }, [tokenId, tokenName, tokenSymbol]);
 
-  // Fetch the token's market cap from DexScreener
   useEffect(() => {
     setIsLoadingMarketCap(true);
     
-    // Setup subscription to market cap updates
     const unsubscribe = subscribeToTokenMetric(
       tokenId,
       'marketCap',
       (value) => {
         setCurrentMarketCap(value);
-        // Keep loading state for a short time even after data is fetched
-        // to ensure user sees the loading state
         setTimeout(() => {
           setIsLoadingMarketCap(false);
         }, 500);
         
-        // Check if token meets requirements for the current prediction
         if (prediction && value) {
           const meets = meetsMarketCapRequirements(
             { marketCap: value, volume24h: null, priceUsd: null, priceChange24h: null, liquidity: null, timestamp: Date.now() },
@@ -129,11 +124,9 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       }
     );
     
-    // Initial fetch to get immediate data
     fetchTokenMetrics(tokenId).then(metrics => {
       if (metrics) {
         setCurrentMarketCap(metrics.marketCap);
-        // Still keep loading state for a short time
         setTimeout(() => {
           setIsLoadingMarketCap(false);
         }, 500);
@@ -145,7 +138,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     };
   }, [tokenId]);
   
-  // Update requirements check when prediction changes
   useEffect(() => {
     if (prediction && currentMarketCap) {
       const meets = meetsMarketCapRequirements(
@@ -158,7 +150,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
     }
   }, [prediction, currentMarketCap]);
 
-  // Calculate target market cap for bet
   useEffect(() => {
     if (prediction && currentMarketCap && percentageChange) {
       const percent = parseInt(percentageChange, 10);
@@ -434,7 +425,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
       return;
     }
     
-    // Check if token meets minimum market cap requirements
     if (!meetsRequirements) {
       const minRequirement = prediction === 'moon' ? MIN_MARKET_CAP_MOON : MIN_MARKET_CAP_DUST;
       toast.error(`Token must have minimum market cap of $${minRequirement.toLocaleString()} for ${prediction === 'moon' ? 'MOON' : 'DUST'} bets`);
@@ -549,7 +539,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
 
   const showExtraWalletReconnectOption = connected && publicKey && wallet && !isWalletReady && !walletCheckingInProgress;
 
-  // Format market cap for display
   const formatMarketCap = (value: number | null): string => {
     if (value === null) return "Loading...";
     
@@ -595,7 +584,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         </TooltipProvider>
       </div>
       
-      {/* Market Cap Display - Always show loading animation until data is ready */}
       <div className="mb-2 p-3 bg-dream-background/60 rounded-md border border-dream-foreground/10">
         <div className="flex justify-between items-center">
           <span className="text-sm text-dream-foreground/70">Current Market Cap:</span>
@@ -870,15 +858,15 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
         <Slider
           value={[duration]}
           min={10}
-          max={60}
-          step={5}
+          max={1440}
+          step={10}
           onValueChange={(val) => setDuration(val[0])}
           className="py-4"
         />
         <div className="flex justify-between text-xs text-dream-foreground/50 mt-1">
           <span>10m</span>
-          <span>30m</span>
-          <span>60m</span>
+          <span>12h</span>
+          <span>24h</span>
         </div>
         {showExplanations && (
           <p className="text-xs text-dream-foreground/50 mt-1 italic">
@@ -1066,7 +1054,6 @@ const CreateBetForm: React.FC<CreateBetFormProps> = ({
                   <p className="text-green-400 font-medium">+{calculatePotentialReward()} PXB</p>
                 </div>
                 
-                {/* Market cap information in confirmation dialog */}
                 {currentMarketCap !== null && targetMarketCap !== null && (
                   <div className="space-y-1 mt-3 pt-3 border-t border-dream-foreground/10">
                     <div className="flex justify-between">
