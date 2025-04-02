@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => ({
       babel: {
         babelrc: true,
         configFile: true,
+        assumptions: {
+          privateFieldsAsProperties: true
+        }
       }
     }),
     mode === 'development' && componentTagger(),
