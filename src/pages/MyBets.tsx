@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -72,6 +71,7 @@ const PXBSpace = () => {
       const referralCode = searchParams.get('ref');
       if (referralCode && checkAndProcessReferral) {
         // Make sure not to process own referral code
+        // Add optional chaining to safely access referralCode
         if (userProfile.referralCode !== referralCode) {
           checkAndProcessReferral(referralCode);
         } else {
@@ -95,6 +95,7 @@ const PXBSpace = () => {
     }
   }, [connected, userProfile, generateReferralLink, referralLink]);
 
+  
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -157,6 +158,7 @@ const PXBSpace = () => {
                       </p>
                     </div>
                   </div>
+                
                 </div>
                 
                 <div className="glass-panel p-6">

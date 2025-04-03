@@ -41,28 +41,46 @@ export const useReferralSystem = (
         return `https://pumpxbounty.fun?ref=${data.referral_code}`;
       }
       
-      // If no referral code exists yet, try to ensure one is created
-      const { data: updatedData, error: updateError } = await supabase
-        .rpc('ensure_user_has_referral_code', { user_id: userProfile.id });
+      // If no referral code exists yet, make a direct API call to generate one
+      // instead of using RPC which is causing TypeScript issues
+      try {
+        const response = await fetch(`${supabase.functions.getUrl('ensure_user_has_referral_code')}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.auth.getSession() ? (await supabase.auth.getSession()).data.session?.access_token : ''}`,
+          },
+          body: JSON.stringify({ user_id: userProfile.id }),
+        });
         
-      if (updateError) {
-        console.error('Error generating referral code:', updateError);
+        if (!response.ok) {
+          throw new Error('Failed to generate referral code');
+        }
+        
+        const result = await response.json();
+        
+        if (result.error) {
+          console.error('Error generating referral code:', result.error);
+          return Promise.resolve('');
+        }
+        
+        // Fetch the newly created referral code
+        const { data: newData, error: newError } = await supabase
+          .from('users')
+          .select('referral_code')
+          .eq('id', userProfile.id)
+          .single();
+          
+        if (newError || !newData?.referral_code) {
+          console.error('Error fetching new referral code:', newError);
+          return Promise.resolve('');
+        }
+        
+        return `https://pumpxbounty.fun?ref=${newData.referral_code}`;
+      } catch (fetchError) {
+        console.error('Error calling ensure_user_has_referral_code function:', fetchError);
         return Promise.resolve('');
       }
-      
-      // Fetch the newly created referral code
-      const { data: newData, error: newError } = await supabase
-        .from('users')
-        .select('referral_code')
-        .eq('id', userProfile.id)
-        .single();
-        
-      if (newError || !newData?.referral_code) {
-        console.error('Error fetching new referral code:', newError);
-        return Promise.resolve('');
-      }
-      
-      return `https://pumpxbounty.fun?ref=${newData.referral_code}`;
     } catch (error) {
       console.error('Error in generateReferralLink:', error);
       return Promise.resolve('');
