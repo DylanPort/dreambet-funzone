@@ -279,35 +279,6 @@ export type Database = {
           },
         ]
       }
-      comment_likes: {
-        Row: {
-          comment_id: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          comment_id: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          comment_id?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "comment_likes_comment_id_fkey"
-            columns: ["comment_id"]
-            isOneToOne: false
-            referencedRelation: "comments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       comments: {
         Row: {
           author_id: string
@@ -347,54 +318,6 @@ export type Database = {
           },
         ]
       }
-      follows: {
-        Row: {
-          created_at: string
-          follower_id: string
-          following_id: string
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          follower_id: string
-          following_id: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          follower_id?: string
-          following_id?: string
-          id?: string
-        }
-        Relationships: []
-      }
-      messages: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          is_read: boolean
-          recipient_id: string
-          sender_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          recipient_id: string
-          sender_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          recipient_id?: string
-          sender_id?: string
-        }
-        Relationships: []
-      }
       points_history: {
         Row: {
           action: string
@@ -429,68 +352,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      post_likes: {
-        Row: {
-          created_at: string
-          id: string
-          post_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          post_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          post_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "post_likes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      posts: {
-        Row: {
-          comments_count: number
-          content: string
-          created_at: string
-          id: string
-          image_url: string | null
-          likes_count: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          comments_count?: number
-          content: string
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          likes_count?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          comments_count?: number
-          content?: string
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          likes_count?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       profiles: {
         Row: {
@@ -830,12 +691,8 @@ export type Database = {
       }
       users: {
         Row: {
-          avatar_url: string | null
-          bio: string | null
           created_at: string | null
-          display_name: string | null
           id: string
-          is_following: boolean | null
           points: number | null
           referral_code: string | null
           referred_by: string | null
@@ -844,12 +701,8 @@ export type Database = {
           wallet_address: string
         }
         Insert: {
-          avatar_url?: string | null
-          bio?: string | null
           created_at?: string | null
-          display_name?: string | null
           id?: string
-          is_following?: boolean | null
           points?: number | null
           referral_code?: string | null
           referred_by?: string | null
@@ -858,12 +711,8 @@ export type Database = {
           wallet_address: string
         }
         Update: {
-          avatar_url?: string | null
-          bio?: string | null
           created_at?: string | null
-          display_name?: string | null
           id?: string
-          is_following?: boolean | null
           points?: number | null
           referral_code?: string | null
           referred_by?: string | null
@@ -889,20 +738,6 @@ export type Database = {
       generate_referral_code: {
         Args: Record<PropertyKey, never>
         Returns: string
-      }
-      get_conversations: {
-        Args: {
-          user_id: string
-        }
-        Returns: {
-          conversation_user_id: string
-          conversation_username: string
-          conversation_display_name: string
-          conversation_avatar_url: string
-          last_message: string
-          last_message_time: string
-          unread_count: number
-        }[]
       }
       increment_bounty_views: {
         Args: {
