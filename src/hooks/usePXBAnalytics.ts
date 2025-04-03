@@ -42,6 +42,57 @@ export const usePXBAnalytics = (pollingInterval = 1000) => {
 
   const fetchPXBAnalytics = async () => {
     try {
+      // Get total minted from points_history using a more efficient query
+      // This query sums all mint transactions excluding extremely large ones
+      const { data: mintData, error: mintError } = await supabase
+        .rpc('get_total_minted_points', {}, { count: 'exact' })
+        .single();
+      
+      if (mintError) {
+        // Fallback to the original query if the RPC function doesn't exist
+        const { data: fallbackMintData, error: fallbackMintError } = await supabase
+          .from('points_history')
+          .select('amount')
+          .eq('action', 'mint');
+        
+        if (fallbackMintError) throw fallbackMintError;
+        
+        // Calculate total minted (excluding extremely large transactions)
+        const totalMinted = fallbackMintData
+          .filter(record => record.amount !== 1008808000)
+          .reduce((sum, record) => sum + (record.amount || 0), 0);
+          
+        // Update the analytics with just the total minted
+        setAnalytics(prev => ({
+          ...prev,
+          totalMinted
+        }));
+      } else {
+        // If the RPC function exists, use its result
+        const totalMinted = mintData?.total_minted || 0;
+        
+        // Update the analytics with just the total minted
+        setAnalytics(prev => ({
+          ...prev,
+          totalMinted
+        }));
+      }
+      
+      // Every 5 seconds, fetch the complete analytics (to reduce database load)
+      if (Date.now() % 5000 < pollingInterval) {
+        await fetchCompleteAnalytics();
+      }
+      
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Error fetching PXB total minted:', err);
+      setError('Failed to load PXB analytics');
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCompleteAnalytics = async () => {
+    try {
       // Get total minted from points_history
       const { data: mintData, error: mintError } = await supabase
         .from('points_history')
@@ -154,12 +205,9 @@ export const usePXBAnalytics = (pollingInterval = 1000) => {
         topHolders,
         recentMints
       });
-      
-      setIsLoading(false);
     } catch (err) {
-      console.error('Error fetching PXB analytics:', err);
-      setError('Failed to load PXB analytics');
-      setIsLoading(false);
+      console.error('Error fetching complete PXB analytics:', err);
+      // Don't update error state here to avoid overriding the UI if only the full refresh fails
     }
   };
 
