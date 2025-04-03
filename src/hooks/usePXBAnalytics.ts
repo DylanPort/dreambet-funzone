@@ -41,26 +41,13 @@ export const usePXBAnalytics = (pollingInterval = 86400000) => { // Default to 2
 
   const fetchPXBAnalytics = async () => {
     try {
-      // Get total minted from points_history using a direct sum query instead of RPC
-      const { data: mintData, error: mintError } = await supabase
-        .from('points_history')
-        .select('amount')
-        .eq('action', 'mint');
-      
-      if (mintError) throw mintError;
-      
-      // Calculate total minted (excluding extremely large transactions)
-      const totalMinted = mintData
-        .filter(record => record.amount !== 1008808000)
-        .reduce((sum, record) => sum + (record.amount || 0), 0);
-      
       // Fixed value for display (from user request)
-      const displayTotalMinted = 160057650;
+      const fixedTotalMinted = 160057650;
       
-      // Update the analytics with just the total minted
+      // Update the analytics with just the fixed total minted
       setAnalytics(prev => ({
         ...prev,
-        totalMinted: displayTotalMinted
+        totalMinted: fixedTotalMinted
       }));
       
       // Fetch the complete analytics
@@ -76,18 +63,8 @@ export const usePXBAnalytics = (pollingInterval = 86400000) => { // Default to 2
 
   const fetchCompleteAnalytics = async () => {
     try {
-      // Get total minted from points_history
-      const { data: mintData, error: mintError } = await supabase
-        .from('points_history')
-        .select('amount')
-        .eq('action', 'mint');
-      
-      if (mintError) throw mintError;
-      
-      // Calculate total minted (excluding extremely large transactions)
-      const totalMinted = mintData
-        .filter(record => record.amount !== 1008808000)
-        .reduce((sum, record) => sum + (record.amount || 0), 0);
+      // Fixed total minted value
+      const totalMinted = 160057650;
       
       // Get total users count
       const { data: userData, error: userError } = await supabase
@@ -178,8 +155,9 @@ export const usePXBAnalytics = (pollingInterval = 86400000) => { // Default to 2
         action: mint.action || ''
       }));
       
-      // Set the complete analytics data
-      setAnalytics({
+      // Set the complete analytics data with the fixed totalMinted value
+      setAnalytics(prev => ({
+        ...prev,
         totalMinted,
         totalUsers,
         usersWithPoints,
@@ -187,7 +165,7 @@ export const usePXBAnalytics = (pollingInterval = 86400000) => { // Default to 2
         distributionByRange,
         topHolders,
         recentMints
-      });
+      }));
     } catch (err) {
       console.error('Error fetching complete PXB analytics:', err);
       // Don't update error state here to avoid overriding the UI if only the full refresh fails
