@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, Percent, Coins, Award, CircleDollarSign, Users } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -34,9 +33,7 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
       const totalWon = wonBets.reduce((sum, bet) => sum + (bet.pointsWon || 0), 0);
       setTotalPointsWon(totalWon);
       
-      const avgAmount = bets.length > 0 
-        ? bets.reduce((sum, bet) => sum + bet.betAmount, 0) / bets.length 
-        : 0;
+      const avgAmount = bets.reduce((sum, bet) => sum + bet.betAmount, 0) / bets.length;
       setAvgBetAmount(avgAmount);
     }
   }, [bets]);

@@ -3,9 +3,7 @@ export interface UserProfile {
   username: string;
   pxbPoints: number;
   createdAt: string;
-  walletAddress?: string;
   isTemporary?: boolean; // Add this flag to identify temporary profiles
-  referralCode?: string; // Add the referralCode property
 }
 
 // Updated PXBBet interface with all required fields

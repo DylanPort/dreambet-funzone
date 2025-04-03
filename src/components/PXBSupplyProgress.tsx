@@ -1,15 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 
 const PXBSupplyProgress = () => {
   const [totalMinted, setTotalMinted] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
-  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
   const stakingRewards = 400_000_000; // 400 million reserved for staking rewards
@@ -27,62 +26,34 @@ const PXBSupplyProgress = () => {
     return num.toLocaleString();
   };
 
-  // Manually refresh the total minted amount
-  const manualRefresh = async () => {
-    if (isRefreshing) return;
-    
-    setIsRefreshing(true);
-    await fetchTotalMinted(true);
-    setIsRefreshing(false);
-  };
-
-  // Fetch the total minted points - improved to accurately count real user mints
-  const fetchTotalMinted = async (forceRefresh: boolean = false) => {
+  // Fetch the total minted points from points_history instead of users table
+  const fetchTotalMinted = async () => {
     try {
-      setIsLoading(forceRefresh ? true : isLoading);
-      
-      // Get all mint transactions
+      // Only count positive minting transactions, not transfers or other actions
+      // Exclude the massive mint transaction of 1,008,808,000 PXB
       const { data, error } = await supabase
         .from('points_history')
-        .select('amount, user_id, action, reference_id')
-        .eq('action', 'mint')
-        .order('created_at', { ascending: false });
+        .select('amount, user_id')
+        .eq('action', 'mint');
         
       if (error) {
         throw error;
       }
       
       if (data) {
-        console.log('Raw mint transactions:', data.length);
-        
-        // Filter out system transactions using multiple criteria
-        const filteredData = data.filter(record => {
-          // Filter out extremely large amounts (likely system transactions)
-          if (record.amount > 10000000) return false;
-          
-          // Filter out specific reference IDs that indicate system operations
-          if (record.reference_id?.includes('system_') || 
-              record.reference_id?.includes('init_') || 
-              record.reference_id?.includes('admin_')) return false;
-          
-          // Keep legitimate user mint transactions
-          return true;
-        });
-        
-        console.log('Filtered mint transactions (real user mints):', filteredData.length);
+        // Filter out the transaction with the extremely large amount
+        const filteredData = data.filter(record => record.amount !== 1008808000);
         
         // Sum all minting transactions to get the true minted amount
         const total = filteredData.reduce((sum, record) => sum + (record.amount || 0), 0);
         
-        // Animate when new points are minted and it's not the initial load
+        // Animate when new points are minted
         if (total > totalMinted && totalMinted !== 0) {
           setIsAnimating(true);
           setTimeout(() => setIsAnimating(false), 1500);
         }
         
-        console.log('Total minted by real users:', total, 'Previous:', totalMinted);
         setTotalMinted(total);
-        setLastRefreshTime(new Date());
       }
     } catch (err) {
       console.error('Error fetching total minted points:', err);
@@ -92,35 +63,19 @@ const PXBSupplyProgress = () => {
     }
   };
 
-  // Initial fetch and setup polling for regular updates
-  useEffect(() => {
-    fetchTotalMinted();
-    
-    // Poll for updates every 15 seconds to ensure fresh data
-    const pollInterval = setInterval(() => {
-      fetchTotalMinted();
-    }, 15000);
-    
-    return () => {
-      clearInterval(pollInterval);
-    };
-  }, []);
-
   // Set up real-time subscription to points_history table for live updates
   useEffect(() => {
+    fetchTotalMinted();
+
     // Subscribe to real-time updates on points_history table
-    const channel = supabase.channel('schema-db-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'points_history',
-        filter: 'action=eq.mint'
-      }, payload => {
-        // When there's any change to points_history with action=mint, refresh the total
-        console.log('Real-time update detected for minting:', payload);
-        fetchTotalMinted();
-      })
-      .subscribe();
+    const channel = supabase.channel('schema-db-changes').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'points_history'
+    }, payload => {
+      // When there's any change to points_history, refresh the total
+      fetchTotalMinted();
+    }).subscribe();
     
     return () => {
       supabase.removeChannel(channel);
@@ -144,22 +99,7 @@ const PXBSupplyProgress = () => {
               PXB Total Supply
             </span>
           </h2>
-          <div className="flex items-center gap-1">
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-dream-accent2" />
-            ) : error ? (
-              <span className="text-red-400 text-sm">{error}</span>
-            ) : (
-              <button 
-                onClick={manualRefresh} 
-                className="flex items-center text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors"
-                disabled={isRefreshing}
-              >
-                <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-            )}
-          </div>
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-dream-accent2" /> : error ? <span className="text-red-400 text-sm">{error}</span> : null}
         </div>
         
         {/* Stacked progress bar showing different allocations */}
@@ -228,7 +168,7 @@ const PXBSupplyProgress = () => {
       <div className="flex flex-wrap justify-between text-sm mt-3 relative z-20">
         <div className="mb-1">
           <span className="text-dream-foreground/60">Minted: </span>
-          <span className="text-[#00ff00] animate-pulse-subtle">
+          <span className="text-[#00ff00]">
             {formatNumber(totalMinted)} PXB
           </span>
           <span className="text-dream-foreground/40 text-xs ml-1">
@@ -263,10 +203,10 @@ const PXBSupplyProgress = () => {
         </div>
       </div>
       
-      <div className="text-xs text-dream-foreground/50 mt-2 text-center bg-gradient-to-r from-transparent via-white/5 to-transparent p-1 rounded">
+      <div className="text-xs text-dream-foreground/50 mt-2 text-center bg-gradient-to-r from-transparent via-white/5 to-transparent p-1 rounded animate-pulse-subtle">
         <span className="inline-flex items-center">
           <Sparkles className="h-3 w-3 mr-1 text-dream-accent2/70" />
-          Live updates: Last refreshed {lastRefreshTime.toLocaleTimeString()}
+          Live updates: Points are being minted in real-time
         </span>
       </div>
     </div>
