@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
 
 const PXBSupplyProgress = () => {
   const [totalMinted, setTotalMinted] = useState<number>(0);
@@ -10,6 +10,7 @@ const PXBSupplyProgress = () => {
   const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
   const stakingRewards = 400_000_000; // 400 million reserved for staking rewards
@@ -27,33 +28,45 @@ const PXBSupplyProgress = () => {
     return num.toLocaleString();
   };
 
-  // Fetch the total minted points from points_history instead of users table
-  const fetchTotalMinted = async () => {
+  // Manually refresh the total minted amount
+  const manualRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    await fetchTotalMinted(true);
+    setIsRefreshing(false);
+  };
+
+  // Fetch the total minted points from points_history
+  const fetchTotalMinted = async (forceRefresh: boolean = false) => {
     try {
-      // Only count positive minting transactions, not transfers or other actions
-      // Exclude the massive mint transaction of 1,008,808,000 PXB
+      setIsLoading(forceRefresh ? true : isLoading);
+      
+      // Get all mint transactions
       const { data, error } = await supabase
         .from('points_history')
         .select('amount, user_id')
-        .eq('action', 'mint');
+        .eq('action', 'mint')
+        .order('created_at', { ascending: false });
         
       if (error) {
         throw error;
       }
       
       if (data) {
-        // Filter out the transaction with the extremely large amount
-        const filteredData = data.filter(record => record.amount !== 1008808000);
+        // Filter out system transactions with extremely large amounts (like 1,008,808,000)
+        const filteredData = data.filter(record => record.amount < 1000000000);
         
         // Sum all minting transactions to get the true minted amount
         const total = filteredData.reduce((sum, record) => sum + (record.amount || 0), 0);
         
-        // Animate when new points are minted
+        // Animate when new points are minted and it's not the initial load
         if (total > totalMinted && totalMinted !== 0) {
           setIsAnimating(true);
           setTimeout(() => setIsAnimating(false), 1500);
         }
         
+        console.log('Total minted updated:', total, 'Previous:', totalMinted);
         setTotalMinted(total);
         setLastRefreshTime(new Date());
       }
@@ -117,7 +130,22 @@ const PXBSupplyProgress = () => {
               PXB Total Supply
             </span>
           </h2>
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-dream-accent2" /> : error ? <span className="text-red-400 text-sm">{error}</span> : null}
+          <div className="flex items-center gap-1">
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-dream-accent2" />
+            ) : error ? (
+              <span className="text-red-400 text-sm">{error}</span>
+            ) : (
+              <button 
+                onClick={manualRefresh} 
+                className="flex items-center text-xs text-dream-accent2 hover:text-dream-accent1 transition-colors"
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            )}
+          </div>
         </div>
         
         {/* Stacked progress bar showing different allocations */}
