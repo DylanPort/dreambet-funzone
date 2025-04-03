@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,7 +36,7 @@ const PXBSupplyProgress = () => {
     setIsRefreshing(false);
   };
 
-  // Fetch the total minted points from points_history
+  // Fetch the total minted points - improved to accurately count real user mints
   const fetchTotalMinted = async (forceRefresh: boolean = false) => {
     try {
       setIsLoading(forceRefresh ? true : isLoading);
@@ -45,7 +44,7 @@ const PXBSupplyProgress = () => {
       // Get all mint transactions
       const { data, error } = await supabase
         .from('points_history')
-        .select('amount, user_id')
+        .select('amount, user_id, action, reference_id')
         .eq('action', 'mint')
         .order('created_at', { ascending: false });
         
@@ -54,8 +53,23 @@ const PXBSupplyProgress = () => {
       }
       
       if (data) {
-        // Filter out system transactions with extremely large amounts (like 1,008,808,000)
-        const filteredData = data.filter(record => record.amount < 1000000000);
+        console.log('Raw mint transactions:', data.length);
+        
+        // Filter out system transactions using multiple criteria
+        const filteredData = data.filter(record => {
+          // Filter out extremely large amounts (likely system transactions)
+          if (record.amount > 10000000) return false;
+          
+          // Filter out specific reference IDs that indicate system operations
+          if (record.reference_id?.includes('system_') || 
+              record.reference_id?.includes('init_') || 
+              record.reference_id?.includes('admin_')) return false;
+          
+          // Keep legitimate user mint transactions
+          return true;
+        });
+        
+        console.log('Filtered mint transactions (real user mints):', filteredData.length);
         
         // Sum all minting transactions to get the true minted amount
         const total = filteredData.reduce((sum, record) => sum + (record.amount || 0), 0);
@@ -66,7 +80,7 @@ const PXBSupplyProgress = () => {
           setTimeout(() => setIsAnimating(false), 1500);
         }
         
-        console.log('Total minted updated:', total, 'Previous:', totalMinted);
+        console.log('Total minted by real users:', total, 'Previous:', totalMinted);
         setTotalMinted(total);
         setLastRefreshTime(new Date());
       }
