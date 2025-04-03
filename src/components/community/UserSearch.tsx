@@ -3,146 +3,135 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, User } from 'lucide-react';
-import { searchUsers } from '@/services/communityService';
+import { Search, User, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { searchUsers } from '@/services/communityService';
+import { UserProfile } from '@/types/community';
 
 interface UserSearchProps {
-  onSelect?: (userId: string) => void;
-  variant?: 'default' | 'compact';
-  className?: string;
+  onSelectUser?: (user: UserProfile) => void;
+  placeholder?: string;
+  buttonText?: string;
+  showButton?: boolean;
 }
 
 const UserSearch: React.FC<UserSearchProps> = ({ 
-  onSelect, 
-  variant = 'default',
-  className = ''
+  onSelectUser, 
+  placeholder = "Search users by username or wallet...",
+  buttonText = "View Profile",
+  showButton = true
 }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<UserProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const searchRef = React.useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const [searchFocused, setSearchFocused] = useState(false);
   
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowResults(false);
-      }
-    };
+    let timeoutId: NodeJS.Timeout;
     
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-  
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (query.length >= 2) {
-        setIsSearching(true);
+    if (query.length >= 2) {
+      setIsSearching(true);
+      
+      timeoutId = setTimeout(async () => {
         const users = await searchUsers(query);
         setResults(users);
-        setShowResults(true);
         setIsSearching(false);
-      } else {
-        setResults([]);
-        setShowResults(false);
-      }
-    }, 500);
+      }, 300);
+    } else {
+      setResults([]);
+      setIsSearching(false);
+    }
     
-    return () => clearTimeout(delayDebounceFn);
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [query]);
   
-  const handleSelect = (userId: string) => {
-    setShowResults(false);
-    setQuery('');
-    
-    if (onSelect) {
-      onSelect(userId);
-    } else {
-      navigate(`/community/profile/${userId}`);
-    }
+  const getInitials = (username: string | null) => {
+    if (!username) return 'AN';
+    return username.substring(0, 2).toUpperCase();
   };
   
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.length >= 2) {
-      navigate(`/community/search?q=${encodeURIComponent(query)}`);
-      setShowResults(false);
-    }
+  const formatWalletAddress = (address: string) => {
+    if (!address) return '';
+    return `${address.substring(0, 4)}...${address.substring(address.length - 4)}`;
   };
-  
-  const getInitials = (username: string) => {
-    return username?.substring(0, 2).toUpperCase() || 'AN';
-  };
-  
+
   return (
-    <div ref={searchRef} className={`relative ${className}`}>
-      <form onSubmit={handleSearch} className="relative">
-        <Input
-          placeholder="Search users..."
+    <div className="relative">
+      <div className="relative">
+        <Input 
+          type="text"
+          placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className={`pr-10 bg-[#191c31] border-indigo-900/30 placeholder-gray-500 text-white ${
-            variant === 'compact' ? 'h-9 text-sm' : ''
-          }`}
+          className="pr-10 bg-[#191c31] border-indigo-900/30 text-white"
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => {
+            // Delay hiding results to allow for clicks
+            setTimeout(() => setSearchFocused(false), 200);
+          }}
         />
-        <Button 
-          type="submit"
-          variant="ghost" 
-          size="icon" 
-          className="absolute right-0 top-0 h-full text-gray-400"
-        >
-          <Search className="h-5 w-5" />
-        </Button>
-      </form>
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          {query ? (
+            <button onClick={() => setQuery('')} className="focus:outline-none">
+              <X className="h-4 w-4" />
+            </button>
+          ) : (
+            <Search className="h-4 w-4" />
+          )}
+        </div>
+      </div>
       
-      {showResults && (
-        <div className="absolute z-20 mt-1 w-full bg-[#1a1d2d] shadow-lg rounded-md border border-indigo-900/50 max-h-80 overflow-y-auto">
+      {(searchFocused || results.length > 0) && query.length >= 2 && (
+        <div className="absolute z-10 mt-1 w-full rounded-md bg-[#191c31] border border-indigo-900/50 shadow-lg">
           {isSearching ? (
-            <div className="p-3 text-center text-gray-400">
+            <div className="py-3 px-4 text-gray-400 text-sm">
               Searching...
             </div>
-          ) : results.length > 0 ? (
-            results.map((user) => (
-              <div
-                key={user.id}
-                onClick={() => handleSelect(user.id)}
-                className="p-2 hover:bg-indigo-900/20 cursor-pointer flex items-center"
-              >
-                <Avatar className="h-8 w-8 mr-2">
-                  <AvatarImage src={user.avatar_url || ''} alt={user.username} />
-                  <AvatarFallback className="bg-indigo-600">{getInitials(user.username || '')}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="font-medium text-white">
-                    {user.display_name || user.username || 'Anonymous'}
-                  </div>
-                  {user.username && user.username !== user.display_name && (
-                    <div className="text-xs text-gray-400">@{user.username}</div>
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-3 text-center text-gray-400">
+          ) : results.length === 0 ? (
+            <div className="py-3 px-4 text-gray-400 text-sm">
               No users found
             </div>
-          )}
-          
-          {results.length > 0 && (
-            <div className="p-2 border-t border-indigo-900/30">
-              <Link 
-                to={`/community/search?q=${encodeURIComponent(query)}`}
-                className="block text-center text-indigo-400 hover:text-indigo-300 text-sm"
-                onClick={() => setShowResults(false)}
-              >
-                View all results
-              </Link>
-            </div>
+          ) : (
+            <ul className="max-h-56 overflow-y-auto">
+              {results.map(user => (
+                <li 
+                  key={user.id}
+                  className="border-b border-indigo-900/30 last:border-0"
+                >
+                  <div className="p-3 hover:bg-indigo-900/20 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Avatar className="h-8 w-8 mr-3">
+                        <AvatarImage src={user.avatar_url || ''} />
+                        <AvatarFallback className="bg-indigo-600">
+                          {getInitials(user.username)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-white font-medium">
+                          {user.display_name || user.username || 'Anonymous'}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {formatWalletAddress(user.wallet_address)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {showButton && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => onSelectUser && onSelectUser(user)}
+                        className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30"
+                      >
+                        {buttonText}
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       )}

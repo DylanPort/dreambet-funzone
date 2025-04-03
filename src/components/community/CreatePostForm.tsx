@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImagePlus, X, SendHorizonal } from 'lucide-react';
 import { createPost } from '@/services/communityService';
 import { supabase } from "@/integrations/supabase/client";
+import { UserProfile } from '@/types/community';
 
 interface CreatePostFormProps {
   onPostCreated?: () => void;
@@ -16,7 +17,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated }) => {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<Partial<UserProfile> | null>(null);
   
   React.useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -75,7 +76,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated }) => {
         if (user) {
           const fileExt = image.name.split('.').pop();
           const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-          const filePath = `post_images/${user.id}/${fileName}`;
+          const filePath = `${user.id}/${fileName}`;
           
           const { error: uploadError } = await supabase.storage
             .from('community_images')
@@ -118,7 +119,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated }) => {
     <form onSubmit={handleSubmit} className="mb-6 p-4 bg-[#10121f] rounded-lg border border-indigo-900/30">
       <div className="flex">
         <Avatar className="h-10 w-10 mr-3">
-          <AvatarImage src={currentUser?.avatar_url || ''} alt={currentUser?.username} />
+          <AvatarImage src={currentUser?.avatar_url || ''} alt={currentUser?.username || ''} />
           <AvatarFallback className="bg-indigo-600">{getInitials(currentUser?.username || '')}</AvatarFallback>
         </Avatar>
         

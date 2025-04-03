@@ -1,179 +1,171 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Post, Comment, UserProfile, Message, Conversation, Follow } from '@/types/community';
 import { toast } from "sonner";
 
-export interface Post {
-  id: string;
-  user_id: string;
-  content: string;
-  image_url?: string;
-  likes_count: number;
-  comments_count: number;
-  created_at: string;
-  updated_at: string;
-  username?: string;
-  isLiked?: boolean;
-}
-
-export interface Comment {
-  id: string;
-  post_id: string;
-  user_id: string;
-  content: string;
-  likes_count: number;
-  created_at: string;
-  updated_at: string;
-  username?: string;
-  isLiked?: boolean;
-}
-
-export interface UserProfile {
-  id: string;
-  username: string | null;
-  wallet_address: string;
-  points: number | null;
-  bio: string | null;
-  avatar_url: string | null;
-  display_name: string | null;
-  followers_count?: number;
-  following_count?: number;
-  is_following?: boolean;
-}
-
-export interface Message {
-  id: string;
-  sender_id: string;
-  recipient_id: string;
-  content: string;
-  is_read: boolean;
-  created_at: string;
-  sender_username?: string;
-  recipient_username?: string;
-}
-
-// Posts functions
-export const fetchPosts = async (limit = 20, offset = 0) => {
+// Post functions
+export const fetchPosts = async (): Promise<Post[]> => {
   try {
-    const { data: posts, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Fetch posts
+    const { data: postsData, error: postsError } = await supabase
       .from('posts')
       .select(`
         *,
-        users (username, avatar_url, display_name)
+        users:user_id (username, avatar_url, display_name)
       `)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) throw error;
-
-    // Get current user to check if posts are liked
-    const { data: { user } } = await supabase.auth.getUser();
+      .order('created_at', { ascending: false });
+      
+    if (postsError) throw postsError;
     
-    if (user) {
-      // Check which posts are liked by the current user
-      const { data: likedPosts, error: likesError } = await supabase
-        .from('post_likes')
-        .select('post_id')
-        .eq('user_id', user.id);
+    let posts: Post[] = [];
+    
+    if (postsData) {
+      // Fetch like status if user is authenticated
+      if (user) {
+        const { data: likesData } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+          
+        const likedPostIds = new Set(likesData?.map(like => like.post_id) || []);
         
-      if (!likesError && likedPosts) {
-        const likedPostIds = new Set(likedPosts.map(like => like.post_id));
-        
-        // Transform posts with additional information
-        return posts?.map(post => ({
-          ...post,
-          username: post.users?.username || 'Anonymous',
+        posts = postsData.map(post => ({
+          id: post.id,
+          user_id: post.user_id,
+          content: post.content,
+          image_url: post.image_url,
+          likes_count: post.likes_count,
+          comments_count: post.comments_count,
+          created_at: post.created_at,
+          updated_at: post.updated_at,
+          username: post.users?.username,
           avatar_url: post.users?.avatar_url,
           display_name: post.users?.display_name,
           isLiked: likedPostIds.has(post.id)
-        })) || [];
+        }));
+      } else {
+        posts = postsData.map(post => ({
+          id: post.id,
+          user_id: post.user_id,
+          content: post.content,
+          image_url: post.image_url,
+          likes_count: post.likes_count,
+          comments_count: post.comments_count,
+          created_at: post.created_at,
+          updated_at: post.updated_at,
+          username: post.users?.username,
+          avatar_url: post.users?.avatar_url,
+          display_name: post.users?.display_name,
+          isLiked: false
+        }));
       }
     }
     
-    // If user is not authenticated or there was an error with likes
-    return posts?.map(post => ({
-      ...post,
-      username: post.users?.username || 'Anonymous',
-      avatar_url: post.users?.avatar_url,
-      display_name: post.users?.display_name,
-      isLiked: false
-    })) || [];
+    return posts;
   } catch (error) {
     console.error('Error fetching posts:', error);
-    toast.error('Failed to load posts');
     return [];
   }
 };
 
-export const fetchUserPosts = async (userId: string, limit = 20, offset = 0) => {
+export const fetchPostById = async (postId: string): Promise<Post | null> => {
   try {
-    const { data: posts, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Fetch post
+    const { data: postData, error: postError } = await supabase
       .from('posts')
       .select(`
         *,
-        users (username, avatar_url, display_name)
+        users:user_id (username, avatar_url, display_name)
       `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) throw error;
-
-    // Get current user to check if posts are liked
-    const { data: { user } } = await supabase.auth.getUser();
+      .eq('id', postId)
+      .single();
+      
+    if (postError) throw postError;
     
+    if (!postData) return null;
+    
+    let isLiked = false;
+    
+    // Check if post is liked by current user
     if (user) {
-      // Check which posts are liked by the current user
-      const { data: likedPosts, error: likesError } = await supabase
+      const { data: likeData } = await supabase
         .from('post_likes')
-        .select('post_id')
-        .eq('user_id', user.id);
+        .select('id')
+        .eq('post_id', postId)
+        .eq('user_id', user.id)
+        .single();
         
-      if (!likesError && likedPosts) {
-        const likedPostIds = new Set(likedPosts.map(like => like.post_id));
-        
-        return posts?.map(post => ({
-          ...post,
-          username: post.users?.username || 'Anonymous',
-          avatar_url: post.users?.avatar_url,
-          display_name: post.users?.display_name,
-          isLiked: likedPostIds.has(post.id)
-        })) || [];
-      }
+      isLiked = !!likeData;
     }
     
-    return posts?.map(post => ({
-      ...post,
-      username: post.users?.username || 'Anonymous',
-      avatar_url: post.users?.avatar_url,
-      display_name: post.users?.display_name,
-      isLiked: false
-    })) || [];
+    const post: Post = {
+      id: postData.id,
+      user_id: postData.user_id,
+      content: postData.content,
+      image_url: postData.image_url,
+      likes_count: postData.likes_count,
+      comments_count: postData.comments_count,
+      created_at: postData.created_at,
+      updated_at: postData.updated_at,
+      username: postData.users?.username,
+      avatar_url: postData.users?.avatar_url,
+      display_name: postData.users?.display_name,
+      isLiked
+    };
+    
+    return post;
   } catch (error) {
-    console.error('Error fetching user posts:', error);
-    toast.error('Failed to load posts');
-    return [];
+    console.error('Error fetching post:', error);
+    return null;
   }
 };
 
-export const createPost = async (content: string, imageUrl?: string) => {
+export const createPost = async (content: string, imageUrl?: string | null): Promise<Post | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to create a post');
-
-    const { data, error } = await supabase
+    
+    if (!user) {
+      toast.error('You must be logged in to create a post');
+      return null;
+    }
+    
+    // Insert post
+    const { data: postData, error: postError } = await supabase
       .from('posts')
       .insert({
         user_id: user.id,
         content,
-        image_url: imageUrl,
+        image_url: imageUrl || null,
+        likes_count: 0,
+        comments_count: 0
       })
       .select()
       .single();
-
-    if (error) throw error;
+      
+    if (postError) throw postError;
     
-    toast.success('Post created successfully');
-    return data;
+    if (!postData) return null;
+    
+    // Get user info
+    const { data: userData } = await supabase
+      .from('users')
+      .select('username, avatar_url, display_name')
+      .eq('id', user.id)
+      .single();
+    
+    const post: Post = {
+      ...postData,
+      username: userData?.username,
+      avatar_url: userData?.avatar_url,
+      display_name: userData?.display_name,
+      isLiked: false
+    };
+    
+    return post;
   } catch (error) {
     console.error('Error creating post:', error);
     toast.error('Failed to create post');
@@ -181,16 +173,24 @@ export const createPost = async (content: string, imageUrl?: string) => {
   }
 };
 
-export const deletePost = async (postId: string) => {
+export const deletePost = async (postId: string): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast.error('You must be logged in to delete a post');
+      return false;
+    }
+    
+    // Delete post
     const { error } = await supabase
       .from('posts')
       .delete()
-      .eq('id', postId);
-
+      .eq('id', postId)
+      .eq('user_id', user.id);
+      
     if (error) throw error;
     
-    toast.success('Post deleted successfully');
     return true;
   } catch (error) {
     console.error('Error deleting post:', error);
@@ -199,155 +199,217 @@ export const deletePost = async (postId: string) => {
   }
 };
 
-export const likePost = async (postId: string) => {
+export const likePost = async (postId: string): Promise<boolean | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to like a post');
-
-    // Check if already liked
-    const { data: existingLike, error: checkError } = await supabase
+    
+    if (!user) {
+      toast.error('You must be logged in to like a post');
+      return null;
+    }
+    
+    // Check if user already liked the post
+    const { data: existingLike } = await supabase
       .from('post_likes')
       .select('id')
       .eq('post_id', postId)
       .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (checkError) throw checkError;
-
+      .single();
+    
     if (existingLike) {
-      // Unlike
-      const { error } = await supabase
+      // Unlike: delete the like
+      const { error: deleteError } = await supabase
         .from('post_likes')
         .delete()
         .eq('id', existingLike.id);
-
-      if (error) throw error;
+        
+      if (deleteError) throw deleteError;
       
       // Decrement likes count
-      await supabase
-        .rpc('decrement_post_likes', { post_id: postId });
+      const { error: functionError } = await supabase.rpc(
+        'decrement_post_likes',
+        { post_id: postId }
+      );
       
-      return false; // Not liked anymore
+      if (functionError) throw functionError;
+      
+      return false;
     } else {
-      // Like
-      const { error } = await supabase
+      // Like: insert a new like
+      const { error: insertError } = await supabase
         .from('post_likes')
         .insert({
           post_id: postId,
-          user_id: user.id,
+          user_id: user.id
         });
-
-      if (error) throw error;
+        
+      if (insertError) throw insertError;
       
       // Increment likes count
-      await supabase
-        .rpc('increment_post_likes', { post_id: postId });
+      const { error: functionError } = await supabase.rpc(
+        'increment_post_likes',
+        { post_id: postId }
+      );
       
-      return true; // Now liked
+      if (functionError) throw functionError;
+      
+      return true;
     }
   } catch (error) {
-    console.error('Error toggling post like:', error);
+    console.error('Error liking/unliking post:', error);
     toast.error('Failed to like/unlike post');
     return null;
   }
 };
 
-// Comments functions
-export const fetchComments = async (postId: string, limit = 50, offset = 0) => {
+// Comment functions
+export const fetchCommentsByPostId = async (postId: string): Promise<Comment[]> => {
   try {
-    const { data: comments, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Fetch comments
+    const { data: commentsData, error: commentsError } = await supabase
       .from('comments')
       .select(`
         *,
-        users (username, avatar_url, display_name)
+        users:user_id (username, avatar_url, display_name)
       `)
       .eq('post_id', postId)
-      .order('created_at', { ascending: true })
-      .range(offset, offset + limit - 1);
-
-    if (error) throw error;
-
-    // Get current user to check if comments are liked
-    const { data: { user } } = await supabase.auth.getUser();
+      .order('created_at', { ascending: true });
+      
+    if (commentsError) throw commentsError;
     
-    if (user) {
-      // Check which comments are liked by the current user
-      const { data: likedComments, error: likesError } = await supabase
-        .from('comment_likes')
-        .select('comment_id')
-        .eq('user_id', user.id);
+    let comments: Comment[] = [];
+    
+    if (commentsData) {
+      // Fetch like status if user is authenticated
+      if (user) {
+        const { data: likesData } = await supabase
+          .from('comment_likes')
+          .select('comment_id')
+          .eq('user_id', user.id);
+          
+        const likedCommentIds = new Set(likesData?.map(like => like.comment_id) || []);
         
-      if (!likesError && likedComments) {
-        const likedCommentIds = new Set(likedComments.map(like => like.comment_id));
-        
-        return comments?.map(comment => ({
-          ...comment,
-          username: comment.users?.username || 'Anonymous',
+        comments = commentsData.map(comment => ({
+          id: comment.id,
+          post_id: comment.post_id,
+          user_id: comment.user_id,
+          content: comment.content,
+          likes_count: comment.likes_count,
+          created_at: comment.created_at,
+          updated_at: comment.updated_at,
+          username: comment.users?.username,
           avatar_url: comment.users?.avatar_url,
           display_name: comment.users?.display_name,
           isLiked: likedCommentIds.has(comment.id)
-        })) || [];
+        }));
+      } else {
+        comments = commentsData.map(comment => ({
+          id: comment.id,
+          post_id: comment.post_id,
+          user_id: comment.user_id,
+          content: comment.content,
+          likes_count: comment.likes_count,
+          created_at: comment.created_at,
+          updated_at: comment.updated_at,
+          username: comment.users?.username,
+          avatar_url: comment.users?.avatar_url,
+          display_name: comment.users?.display_name,
+          isLiked: false
+        }));
       }
     }
     
-    return comments?.map(comment => ({
-      ...comment,
-      username: comment.users?.username || 'Anonymous',
-      avatar_url: comment.users?.avatar_url,
-      display_name: comment.users?.display_name,
-      isLiked: false
-    })) || [];
+    return comments;
   } catch (error) {
     console.error('Error fetching comments:', error);
-    toast.error('Failed to load comments');
     return [];
   }
 };
 
-export const createComment = async (postId: string, content: string) => {
+export const createComment = async (postId: string, content: string): Promise<Comment | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to comment');
-
-    const { data, error } = await supabase
+    
+    if (!user) {
+      toast.error('You must be logged in to comment');
+      return null;
+    }
+    
+    // Insert comment
+    const { data: commentData, error: commentError } = await supabase
       .from('comments')
       .insert({
         post_id: postId,
         user_id: user.id,
         content,
+        likes_count: 0
       })
       .select()
       .single();
-
-    if (error) throw error;
+      
+    if (commentError) throw commentError;
     
-    // Increment comment count on post
-    await supabase
-      .rpc('increment_post_comments', { post_id: postId });
+    if (!commentData) return null;
     
-    toast.success('Comment added');
-    return data;
+    // Increment comment count
+    const { error: functionError } = await supabase.rpc(
+      'increment_post_comments',
+      { post_id: postId }
+    );
+    
+    if (functionError) throw functionError;
+    
+    // Get user info
+    const { data: userData } = await supabase
+      .from('users')
+      .select('username, avatar_url, display_name')
+      .eq('id', user.id)
+      .single();
+    
+    const comment: Comment = {
+      ...commentData,
+      username: userData?.username,
+      avatar_url: userData?.avatar_url,
+      display_name: userData?.display_name,
+      isLiked: false
+    };
+    
+    return comment;
   } catch (error) {
     console.error('Error creating comment:', error);
-    toast.error('Failed to add comment');
+    toast.error('Failed to create comment');
     return null;
   }
 };
 
-export const deleteComment = async (commentId: string, postId: string) => {
+export const deleteComment = async (commentId: string, postId: string): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast.error('You must be logged in to delete a comment');
+      return false;
+    }
+    
+    // Delete comment
     const { error } = await supabase
       .from('comments')
       .delete()
-      .eq('id', commentId);
-
+      .eq('id', commentId)
+      .eq('user_id', user.id);
+      
     if (error) throw error;
     
-    // Decrement comment count on post
-    await supabase
-      .rpc('decrement_post_comments', { post_id: postId });
+    // Decrement comment count
+    const { error: functionError } = await supabase.rpc(
+      'decrement_post_comments',
+      { post_id: postId }
+    );
     
-    toast.success('Comment deleted');
+    if (functionError) throw functionError;
+    
     return true;
   } catch (error) {
     console.error('Error deleting comment:', error);
@@ -356,290 +418,343 @@ export const deleteComment = async (commentId: string, postId: string) => {
   }
 };
 
-export const likeComment = async (commentId: string) => {
+export const likeComment = async (commentId: string): Promise<boolean | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to like a comment');
-
-    // Check if already liked
-    const { data: existingLike, error: checkError } = await supabase
+    
+    if (!user) {
+      toast.error('You must be logged in to like a comment');
+      return null;
+    }
+    
+    // Check if user already liked the comment
+    const { data: existingLike } = await supabase
       .from('comment_likes')
       .select('id')
       .eq('comment_id', commentId)
       .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (checkError) throw checkError;
-
+      .single();
+    
     if (existingLike) {
-      // Unlike
-      const { error } = await supabase
+      // Unlike: delete the like
+      const { error: deleteError } = await supabase
         .from('comment_likes')
         .delete()
         .eq('id', existingLike.id);
-
-      if (error) throw error;
+        
+      if (deleteError) throw deleteError;
       
       // Decrement likes count
-      await supabase
-        .rpc('decrement_comment_likes', { comment_id: commentId });
+      const { error: functionError } = await supabase.rpc(
+        'decrement_comment_likes',
+        { comment_id: commentId }
+      );
       
-      return false; // Not liked anymore
+      if (functionError) throw functionError;
+      
+      return false;
     } else {
-      // Like
-      const { error } = await supabase
+      // Like: insert a new like
+      const { error: insertError } = await supabase
         .from('comment_likes')
         .insert({
           comment_id: commentId,
-          user_id: user.id,
+          user_id: user.id
         });
-
-      if (error) throw error;
+        
+      if (insertError) throw insertError;
       
       // Increment likes count
-      await supabase
-        .rpc('increment_comment_likes', { comment_id: commentId });
+      const { error: functionError } = await supabase.rpc(
+        'increment_comment_likes',
+        { comment_id: commentId }
+      );
       
-      return true; // Now liked
+      if (functionError) throw functionError;
+      
+      return true;
     }
   } catch (error) {
-    console.error('Error toggling comment like:', error);
+    console.error('Error liking/unliking comment:', error);
     toast.error('Failed to like/unlike comment');
     return null;
   }
 };
 
 // User Profile functions
-export const fetchUserProfile = async (userId: string) => {
+export const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
   try {
-    const { data: profile, error } = await supabase
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    
+    // Fetch user profile
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
       .single();
-
-    if (error) throw error;
-
-    // Get follower and following counts
+      
+    if (userError) throw userError;
+    
+    if (!userData) return null;
+    
+    // Get followers count
     const { count: followersCount, error: followersError } = await supabase
       .from('follows')
       .select('*', { count: 'exact', head: true })
       .eq('following_id', userId);
-
+      
+    if (followersError) throw followersError;
+    
+    // Get following count
     const { count: followingCount, error: followingError } = await supabase
       .from('follows')
       .select('*', { count: 'exact', head: true })
       .eq('follower_id', userId);
-
-    if (followersError) console.error('Error fetching followers count:', followersError);
-    if (followingError) console.error('Error fetching following count:', followingError);
-
-    // Check if current user is following this profile
-    const { data: { user } } = await supabase.auth.getUser();
-    let isFollowing = false;
+      
+    if (followingError) throw followingError;
     
-    if (user) {
-      const { data: followRecord, error: followCheckError } = await supabase
+    // Check if current user is following this user
+    let isFollowing = false;
+    if (currentUser && currentUser.id !== userId) {
+      const { data: followData } = await supabase
         .from('follows')
         .select('id')
-        .eq('follower_id', user.id)
+        .eq('follower_id', currentUser.id)
         .eq('following_id', userId)
-        .maybeSingle();
+        .single();
         
-      if (!followCheckError) {
-        isFollowing = !!followRecord;
-      }
+      isFollowing = !!followData;
     }
-
-    return {
-      ...profile,
+    
+    const userProfile: UserProfile = {
+      id: userData.id,
+      username: userData.username,
+      wallet_address: userData.wallet_address,
+      bio: userData.bio || null,
+      avatar_url: userData.avatar_url || null,
+      display_name: userData.display_name || null,
+      points: userData.points || 0,
       followers_count: followersCount || 0,
       following_count: followingCount || 0,
-      is_following: isFollowing
-    } as UserProfile;
+      is_following: isFollowing,
+      created_at: userData.created_at
+    };
+    
+    return userProfile;
   } catch (error) {
     console.error('Error fetching user profile:', error);
-    toast.error('Failed to load user profile');
     return null;
   }
 };
 
-export const followUser = async (userId: string) => {
+export const followUser = async (userId: string): Promise<boolean> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to follow users');
-    if (user.id === userId) throw new Error('You cannot follow yourself');
-
-    // Check if already following
-    const { data: existingFollow, error: checkError } = await supabase
-      .from('follows')
-      .select('id')
-      .eq('follower_id', user.id)
-      .eq('following_id', userId)
-      .maybeSingle();
-
-    if (checkError) throw checkError;
-
-    if (existingFollow) {
-      // Unfollow
-      const { error } = await supabase
-        .from('follows')
-        .delete()
-        .eq('id', existingFollow.id);
-
-      if (error) throw error;
-      
-      toast.success('Unfollowed user');
-      return false; // Not following anymore
-    } else {
-      // Follow
-      const { error } = await supabase
-        .from('follows')
-        .insert({
-          follower_id: user.id,
-          following_id: userId,
-        });
-
-      if (error) throw error;
-      
-      toast.success('Following user');
-      return true; // Now following
+    
+    if (!user) {
+      toast.error('You must be logged in to follow users');
+      return false;
     }
+    
+    if (user.id === userId) {
+      toast.error('You cannot follow yourself');
+      return false;
+    }
+    
+    // Insert follow
+    const { error } = await supabase
+      .from('follows')
+      .insert({
+        follower_id: user.id,
+        following_id: userId
+      });
+      
+    if (error) {
+      if (error.code === '23505') { // Unique constraint error
+        toast.error('You are already following this user');
+      } else {
+        throw error;
+      }
+      return false;
+    }
+    
+    return true;
   } catch (error) {
-    console.error('Error toggling follow:', error);
-    toast.error('Failed to follow/unfollow user');
-    return null;
+    console.error('Error following user:', error);
+    toast.error('Failed to follow user');
+    return false;
   }
 };
 
-export const updateUserProfile = async (
-  bio?: string, 
-  displayName?: string, 
-  avatarUrl?: string
-) => {
+export const unfollowUser = async (userId: string): Promise<boolean> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to update your profile');
-
-    const updates: any = {};
-    if (bio !== undefined) updates.bio = bio;
-    if (displayName !== undefined) updates.display_name = displayName;
-    if (avatarUrl !== undefined) updates.avatar_url = avatarUrl;
-
-    const { data, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', user.id)
-      .select()
-      .single();
-
+    
+    if (!user) {
+      toast.error('You must be logged in to unfollow users');
+      return false;
+    }
+    
+    // Delete follow
+    const { error } = await supabase
+      .from('follows')
+      .delete()
+      .eq('follower_id', user.id)
+      .eq('following_id', userId);
+      
     if (error) throw error;
     
-    toast.success('Profile updated successfully');
-    return data;
+    return true;
   } catch (error) {
-    console.error('Error updating user profile:', error);
-    toast.error('Failed to update profile');
-    return null;
+    console.error('Error unfollowing user:', error);
+    toast.error('Failed to unfollow user');
+    return false;
   }
 };
 
-export const searchUsers = async (query: string, limit = 20) => {
+export const searchUsers = async (query: string): Promise<UserProfile[]> => {
   try {
     if (!query || query.length < 2) return [];
     
-    const { data, error } = await supabase
+    // Search users
+    const { data: usersData, error: usersError } = await supabase
       .from('users')
-      .select('id, username, wallet_address, avatar_url, display_name')
-      .or(`username.ilike.%${query}%,wallet_address.ilike.%${query}%,display_name.ilike.%${query}%`)
-      .limit(limit);
-
-    if (error) throw error;
+      .select('id, username, avatar_url, display_name, wallet_address')
+      .or(`username.ilike.%${query}%, wallet_address.ilike.%${query}%, display_name.ilike.%${query}%`)
+      .limit(10);
+      
+    if (usersError) throw usersError;
     
-    return data as Pick<UserProfile, 'id' | 'username' | 'wallet_address' | 'avatar_url' | 'display_name'>[];
+    return usersData as UserProfile[];
   } catch (error) {
     console.error('Error searching users:', error);
-    toast.error('Failed to search users');
     return [];
   }
 };
 
-// Messages functions
-export const fetchConversations = async () => {
+// Message functions
+export const fetchConversations = async (): Promise<Conversation[]> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to view messages');
-
-    // This query finds the latest message for each unique conversation
-    const { data, error } = await supabase.rpc('get_conversations', {
-      user_id: user.id
-    });
-
-    if (error) throw error;
     
-    return data || [];
+    if (!user) {
+      toast.error('You must be logged in to view conversations');
+      return [];
+    }
+    
+    // Use custom function to get conversations
+    const { data: conversationsData, error: conversationsError } = await supabase.rpc(
+      'get_conversations',
+      { user_id: user.id }
+    );
+    
+    if (conversationsError) throw conversationsError;
+    
+    return conversationsData || [];
   } catch (error) {
     console.error('Error fetching conversations:', error);
-    toast.error('Failed to load conversations');
     return [];
   }
 };
 
-export const fetchMessages = async (otherUserId: string) => {
+export const fetchMessages = async (otherUserId: string): Promise<Message[]> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to view messages');
-
-    const { data, error } = await supabase
+    
+    if (!user) {
+      toast.error('You must be logged in to view messages');
+      return [];
+    }
+    
+    // Fetch messages between users
+    const { data: messagesData, error: messagesError } = await supabase
       .from('messages')
       .select(`
         *,
-        sender:sender_id(username, avatar_url, display_name),
-        recipient:recipient_id(username, avatar_url, display_name)
+        sender:sender_id (username),
+        recipient:recipient_id (username)
       `)
       .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id})`)
       .order('created_at', { ascending: true });
-
-    if (error) throw error;
+      
+    if (messagesError) throw messagesError;
     
-    // Mark messages as read if they're from the other user
-    await supabase
-      .from('messages')
-      .update({ is_read: true })
-      .eq('sender_id', otherUserId)
-      .eq('recipient_id', user.id)
-      .eq('is_read', false);
+    // Mark messages as read
+    if (messagesData && messagesData.length > 0) {
+      const { error: updateError } = await supabase
+        .from('messages')
+        .update({
+          is_read: true
+        })
+        .eq('recipient_id', user.id)
+        .eq('sender_id', otherUserId);
+        
+      if (updateError) console.error('Error marking messages as read:', updateError);
+    }
     
-    return data?.map(message => ({
-      ...message,
-      sender_username: message.sender?.username || 'Anonymous',
-      recipient_username: message.recipient?.username || 'Anonymous',
-    })) || [];
+    const messages: Message[] = messagesData ? messagesData.map(msg => ({
+      id: msg.id,
+      sender_id: msg.sender_id,
+      recipient_id: msg.recipient_id,
+      content: msg.content,
+      is_read: msg.is_read,
+      created_at: msg.created_at,
+      sender_username: msg.sender?.username,
+      recipient_username: msg.recipient?.username
+    })) : [];
+    
+    return messages;
   } catch (error) {
     console.error('Error fetching messages:', error);
-    toast.error('Failed to load messages');
     return [];
   }
 };
 
-export const sendMessage = async (recipientId: string, content: string) => {
+export const sendMessage = async (recipientId: string, content: string): Promise<Message | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to send messages');
-
-    const { data, error } = await supabase
+    
+    if (!user) {
+      toast.error('You must be logged in to send messages');
+      return null;
+    }
+    
+    // Insert message
+    const { data: messageData, error: messageError } = await supabase
       .from('messages')
       .insert({
         sender_id: user.id,
         recipient_id: recipientId,
         content,
+        is_read: false
       })
       .select()
       .single();
-
-    if (error) throw error;
+      
+    if (messageError) throw messageError;
     
-    return data;
+    if (!messageData) return null;
+    
+    // Get user info
+    const { data: userData } = await supabase
+      .from('users')
+      .select('username')
+      .eq('id', user.id)
+      .single();
+      
+    const { data: recipientData } = await supabase
+      .from('users')
+      .select('username')
+      .eq('id', recipientId)
+      .single();
+    
+    const message: Message = {
+      ...messageData,
+      sender_username: userData?.username || null,
+      recipient_username: recipientData?.username || null
+    };
+    
+    return message;
   } catch (error) {
     console.error('Error sending message:', error);
     toast.error('Failed to send message');
@@ -647,38 +762,69 @@ export const sendMessage = async (recipientId: string, content: string) => {
   }
 };
 
-export const markMessageAsRead = async (messageId: string) => {
-  try {
-    const { error } = await supabase
-      .from('messages')
-      .update({ is_read: true })
-      .eq('id', messageId);
-
-    if (error) throw error;
-    
-    return true;
-  } catch (error) {
-    console.error('Error marking message as read:', error);
-    return false;
-  }
-};
-
-export const getUnreadMessageCount = async () => {
+export const getUserPostsByUserId = async (userId: string): Promise<Post[]> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return 0;
-
-    const { count, error } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('recipient_id', user.id)
-      .eq('is_read', false);
-
-    if (error) throw error;
     
-    return count || 0;
+    // Fetch posts by user
+    const { data: postsData, error: postsError } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        users:user_id (username, avatar_url, display_name)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+      
+    if (postsError) throw postsError;
+    
+    let posts: Post[] = [];
+    
+    if (postsData) {
+      // Fetch like status if user is authenticated
+      if (user) {
+        const { data: likesData } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+          
+        const likedPostIds = new Set(likesData?.map(like => like.post_id) || []);
+        
+        posts = postsData.map(post => ({
+          id: post.id,
+          user_id: post.user_id,
+          content: post.content,
+          image_url: post.image_url,
+          likes_count: post.likes_count,
+          comments_count: post.comments_count,
+          created_at: post.created_at,
+          updated_at: post.updated_at,
+          username: post.users?.username,
+          avatar_url: post.users?.avatar_url,
+          display_name: post.users?.display_name,
+          isLiked: likedPostIds.has(post.id)
+        }));
+      } else {
+        posts = postsData.map(post => ({
+          id: post.id,
+          user_id: post.user_id,
+          content: post.content,
+          image_url: post.image_url,
+          likes_count: post.likes_count,
+          comments_count: post.comments_count,
+          created_at: post.created_at,
+          updated_at: post.updated_at,
+          username: post.users?.username,
+          avatar_url: post.users?.avatar_url,
+          display_name: post.users?.display_name,
+          isLiked: false
+        }));
+      }
+    }
+    
+    return posts;
   } catch (error) {
-    console.error('Error getting unread message count:', error);
-    return 0;
+    console.error('Error fetching user posts:', error);
+    return [];
   }
 };

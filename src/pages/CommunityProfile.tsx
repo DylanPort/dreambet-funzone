@@ -3,111 +3,134 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { ArrowLeft, MessageSquare, User, UserPlus, UserMinus, Calendar } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, MessageSquare, User, Users } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { fetchUserProfile, getUserPostsByUserId, followUser, unfollowUser } from '@/services/communityService';
+import { UserProfile, Post } from '@/types/community';
+import OrbitingParticles from '@/components/OrbitingParticles';
 import PostCard from '@/components/community/PostCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
-  fetchUserProfile, 
-  fetchUserPosts, 
-  followUser,
-  UserProfile,
-  Post
-} from '@/services/communityService';
+import { format } from 'date-fns';
+import Footer from '@/components/Footer';
 
-const CommunityProfile: React.FC = () => {
+const CommunityProfile = () => {
   const { userId } = useParams<{ userId: string }>();
+  
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPostsLoading, setIsPostsLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [isCurrentUser, setIsCurrentUser] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [isUpdatingFollow, setIsUpdatingFollow] = useState(false);
   
   useEffect(() => {
-    const loadData = async () => {
-      if (!userId) return;
-      
-      setIsLoading(true);
-      setIsPostsLoading(true);
-      
-      // Check auth status
+    const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setIsAuthenticated(!!user);
-      
-      if (user) {
-        setIsCurrentUser(user.id === userId);
-      }
-      
-      // Fetch user profile
-      const userProfile = await fetchUserProfile(userId);
-      
-      if (userProfile) {
-        setProfile(userProfile);
-        setIsFollowing(userProfile.is_following || false);
+      if (user && userId === user.id) {
+        setIsCurrentUser(true);
       } else {
-        toast.error('User not found');
+        setIsCurrentUser(false);
       }
-      
-      setIsLoading(false);
-      
-      // Fetch user posts
-      const userPosts = await fetchUserPosts(userId);
-      setPosts(userPosts);
-      setIsPostsLoading(false);
-      setHasMore(userPosts.length === 10);
     };
     
-    loadData();
+    checkAuth();
   }, [userId]);
   
-  const loadMorePosts = async () => {
+  const loadProfile = async () => {
     if (!userId) return;
     
-    setLoadingMore(true);
-    const offset = posts.length;
-    const limit = 10;
-    
-    const newPosts = await fetchUserPosts(userId, limit, offset);
-    
-    setPosts(prev => [...prev, ...newPosts]);
-    setLoadingMore(false);
-    setHasMore(newPosts.length === limit);
+    try {
+      setIsLoading(true);
+      
+      const profileData = await fetchUserProfile(userId);
+      if (profileData) {
+        setProfile(profileData);
+        setIsFollowing(profileData.is_following || false);
+      }
+      
+      const postsData = await getUserPostsByUserId(userId);
+      setPosts(postsData);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      toast.error('Failed to load profile');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const handleFollow = async () => {
+  useEffect(() => {
+    loadProfile();
+  }, [userId]);
+  
+  // Set up realtime subscription for new posts
+  useEffect(() => {
     if (!userId) return;
     
-    const result = await followUser(userId);
-    if (result !== null) {
-      setIsFollowing(result);
-      
-      // Update profile follower count
-      if (profile) {
-        setProfile({
-          ...profile,
-          followers_count: result 
-            ? (profile.followers_count || 0) + 1 
-            : Math.max(0, (profile.followers_count || 0) - 1),
-          is_following: result
+    const channel = supabase
+      .channel('user-posts-changes')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'posts',
+        filter: `user_id=eq.${userId}`
+      }, () => {
+        // Reload posts when this user creates a new one
+        getUserPostsByUserId(userId).then(postsData => {
+          setPosts(postsData);
         });
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+  
+  const handleFollow = async () => {
+    if (!userId || !isAuthenticated) return;
+    
+    setIsUpdatingFollow(true);
+    
+    try {
+      if (isFollowing) {
+        const success = await unfollowUser(userId);
+        if (success) {
+          setIsFollowing(false);
+          if (profile) {
+            setProfile({
+              ...profile,
+              followers_count: (profile.followers_count || 0) - 1,
+              is_following: false
+            });
+          }
+          toast.success('Unfollowed user');
+        }
+      } else {
+        const success = await followUser(userId);
+        if (success) {
+          setIsFollowing(true);
+          if (profile) {
+            setProfile({
+              ...profile,
+              followers_count: (profile.followers_count || 0) + 1,
+              is_following: true
+            });
+          }
+          toast.success('Following user');
+        }
       }
+    } catch (error) {
+      console.error('Error updating follow status:', error);
+    } finally {
+      setIsUpdatingFollow(false);
     }
   };
   
   const handlePostDeleted = () => {
-    if (!userId) return;
-    
-    // Refresh posts
-    fetchUserPosts(userId).then(userPosts => {
-      setPosts(userPosts);
-    });
+    loadProfile();
   };
   
   const handlePostLiked = (postId: string, isLiked: boolean) => {
@@ -118,24 +141,35 @@ const CommunityProfile: React.FC = () => {
               ...post, 
               isLiked, 
               likes_count: isLiked ? post.likes_count + 1 : post.likes_count - 1 
-            }
+            } 
           : post
       )
     );
   };
   
-  const getInitials = (username: string) => {
-    return username?.substring(0, 2).toUpperCase() || 'AN';
+  const getInitials = (username?: string | null) => {
+    return username ? username.substring(0, 2).toUpperCase() : 'AN';
+  };
+  
+  const formatWalletAddress = (address?: string) => {
+    if (!address) return '';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+  
+  const formatDate = (date?: string) => {
+    if (!date) return '';
+    return format(new Date(date), 'MMMM yyyy');
   };
   
   if (isLoading) {
     return (
       <>
+        <OrbitingParticles />
         <Navbar />
-        <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
-          <div className="max-w-4xl mx-auto px-4 pt-24 pb-16">
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+        <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
             </div>
           </div>
         </main>
@@ -146,162 +180,155 @@ const CommunityProfile: React.FC = () => {
   if (!profile) {
     return (
       <>
+        <OrbitingParticles />
         <Navbar />
-        <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
-          <div className="max-w-4xl mx-auto px-4 pt-24 pb-16">
-            <div className="text-center py-10">
-              <h1 className="text-2xl font-bold text-white mb-2">User Not Found</h1>
-              <p className="text-gray-400 mb-4">The user profile you're looking for doesn't exist or has been removed.</p>
-              <Link to="/community">
-                <Button className="bg-indigo-600 hover:bg-indigo-700">
-                  <ArrowLeft className="mr-2 h-5 w-5" /> Back to Community
-                </Button>
-              </Link>
+        <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center py-12">
+              <p className="text-xl text-gray-400 mb-4">User not found</p>
+              <Button 
+                variant="default"
+                onClick={() => window.history.back()}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Go Back
+              </Button>
             </div>
           </div>
         </main>
       </>
     );
   }
-  
+
   return (
     <>
+      <OrbitingParticles />
       <Navbar />
-      <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
-        <div className="max-w-4xl mx-auto px-4 pt-24 pb-16">
-          <div className="mb-6">
-            <Link to="/community">
-              <Button variant="ghost" className="text-gray-400">
-                <ArrowLeft className="mr-2 h-5 w-5" /> Back to Community
-              </Button>
-            </Link>
+      
+      <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
+        <div className="max-w-4xl mx-auto">
+          <Link to="/community" className="inline-flex items-center text-gray-400 hover:text-white mb-6">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Community
+          </Link>
+          
+          <div className="bg-[#10121f] rounded-lg border border-indigo-900/30 mb-6 p-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={profile.avatar_url || ''} alt={profile.username || ''} />
+                <AvatarFallback className="bg-indigo-600 text-2xl">{getInitials(profile.username)}</AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 text-center sm:text-left">
+                <h1 className="text-2xl font-bold">
+                  {profile.display_name || profile.username || 'Anonymous'}
+                </h1>
+                
+                <p className="text-gray-400 mb-3">
+                  {formatWalletAddress(profile.wallet_address)}
+                </p>
+                
+                {profile.bio && (
+                  <p className="text-gray-200 mb-4 whitespace-pre-wrap">{profile.bio}</p>
+                )}
+                
+                <div className="flex flex-wrap gap-4 justify-center sm:justify-start mb-4">
+                  <div className="text-center">
+                    <p className="text-xl font-semibold">{posts.length}</p>
+                    <p className="text-gray-400 text-sm">Posts</p>
+                  </div>
+                  
+                  <div className="text-center">
+                    <p className="text-xl font-semibold">{profile.followers_count || 0}</p>
+                    <p className="text-gray-400 text-sm">Followers</p>
+                  </div>
+                  
+                  <div className="text-center">
+                    <p className="text-xl font-semibold">{profile.following_count || 0}</p>
+                    <p className="text-gray-400 text-sm">Following</p>
+                  </div>
+                  
+                  <div className="text-center">
+                    <p className="text-xl font-semibold">{profile.points?.toLocaleString() || '0'}</p>
+                    <p className="text-gray-400 text-sm">Points</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
+                  {profile.created_at && (
+                    <div className="text-gray-400 text-sm inline-flex items-center">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      Joined {formatDate(profile.created_at)}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                {!isCurrentUser && isAuthenticated && (
+                  <Button
+                    className={isFollowing ? 
+                      "bg-gray-700 hover:bg-gray-600" : 
+                      "bg-indigo-600 hover:bg-indigo-700"
+                    }
+                    onClick={handleFollow}
+                    disabled={isUpdatingFollow}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <UserMinus className="h-4 w-4 mr-1" />
+                        Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+                )}
+                
+                {!isCurrentUser && isAuthenticated && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => window.location.href = `/community/messages/${userId}`}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    Message
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
           
-          <Card className="mb-6 bg-[#10121f] border-indigo-900/30">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <div className="flex items-center justify-between">
-                <h1 className="text-xl font-bold text-white">User Profile</h1>
-                {isAuthenticated && !isCurrentUser && (
-                  <div className="flex space-x-2">
-                    <Button
-                      variant={isFollowing ? "outline" : "default"}
-                      onClick={handleFollow}
-                      className={isFollowing ? "border-indigo-500 text-indigo-500" : "bg-indigo-600 hover:bg-indigo-700"}
-                    >
-                      <Users className="h-5 w-5 mr-2" />
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </Button>
-                    <Link to={`/community/messages/${userId}`}>
-                      <Button variant="outline" className="border-indigo-500 text-indigo-500">
-                        <MessageSquare className="h-5 w-5 mr-2" />
-                        Message
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-                {isCurrentUser && (
-                  <Link to="/community/profile/edit">
-                    <Button className="bg-indigo-600 hover:bg-indigo-700">
-                      <User className="h-5 w-5 mr-2" />
-                      Edit Profile
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="py-6">
-              <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                <Avatar className="h-28 w-28">
-                  <AvatarImage src={profile.avatar_url || ''} alt={profile.username || ''} />
-                  <AvatarFallback className="bg-indigo-600 text-3xl">{getInitials(profile.username || '')}</AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 text-center md:text-left">
-                  <h2 className="text-2xl font-semibold text-white">
-                    {profile.display_name || profile.username || 'Anonymous'}
-                  </h2>
-                  {profile.username && profile.username !== profile.display_name && (
-                    <p className="text-gray-400">@{profile.username}</p>
-                  )}
-                  
-                  <p className="text-sm text-gray-400 mt-1">
-                    Member since {profile.createdAt ? formatDistanceToNow(new Date(profile.createdAt), { addSuffix: true }) : 'unknown'}
-                  </p>
-                  
-                  <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
-                    <div className="text-center">
-                      <p className="text-xl font-semibold text-white">{profile.points ? profile.points.toLocaleString() : 0}</p>
-                      <p className="text-sm text-gray-400">PXB Points</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-semibold text-white">{profile.followers_count}</p>
-                      <p className="text-sm text-gray-400">Followers</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-semibold text-white">{profile.following_count}</p>
-                      <p className="text-sm text-gray-400">Following</p>
-                    </div>
-                  </div>
-                  
-                  {profile.bio && (
-                    <div className="mt-4 bg-[#191c31] p-3 rounded-lg">
-                      <p className="text-gray-200 whitespace-pre-wrap">{profile.bio}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <h2 className="text-xl font-semibold mb-4">Posts</h2>
           
-          <div className="bg-[#10121f] rounded-lg border border-indigo-900/30 mb-6">
-            <div className="p-4 border-b border-indigo-900/30">
-              <h2 className="text-lg font-semibold text-white">Posts</h2>
-            </div>
-            
-            <div className="p-4">
-              {isPostsLoading ? (
-                <div className="flex justify-center items-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-                </div>
-              ) : posts.length === 0 ? (
-                <div className="text-center py-10 text-gray-400">
-                  <p>No posts yet</p>
-                </div>
-              ) : (
-                <div>
-                  {posts.map(post => (
-                    <PostCard 
-                      key={post.id} 
-                      post={post} 
-                      onPostDeleted={handlePostDeleted}
-                      onPostLiked={handlePostLiked}
-                    />
-                  ))}
-                  
-                  {hasMore && (
-                    <div className="flex justify-center mt-6">
-                      <Button
-                        onClick={loadMorePosts}
-                        disabled={loadingMore}
-                        className="bg-indigo-600 hover:bg-indigo-700"
-                      >
-                        {loadingMore ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Loading...
-                          </>
-                        ) : (
-                          'Load More'
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+          <div className="space-y-4">
+            {posts.length === 0 ? (
+              <div className="text-center py-8 bg-[#10121f] rounded-lg border border-indigo-900/30">
+                <p className="text-gray-400">No posts yet</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  {isCurrentUser ? 
+                    'Create your first post to share with the community!' : 
+                    'This user has not posted anything yet.'
+                  }
+                </p>
+              </div>
+            ) : (
+              posts.map(post => (
+                <PostCard 
+                  key={post.id} 
+                  post={post} 
+                  onPostDeleted={handlePostDeleted}
+                  onPostLiked={handlePostLiked}
+                />
+              ))
+            )}
           </div>
         </div>
       </main>
+      
+      <Footer />
     </>
   );
 };
