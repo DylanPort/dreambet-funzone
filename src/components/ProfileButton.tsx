@@ -8,7 +8,7 @@ import { User } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ProfileButton = () => {
-  const { userProfile, addPointsToUser, checkAndProcessReferral, fetchUserProfile } = usePXBPoints();
+  const { userProfile, addPointsToUser, checkAndProcessReferral } = usePXBPoints();
   const { publicKey, connected } = useWallet();
   const [hasClaimedBonus, setHasClaimedBonus] = useState(false);
   const location = useLocation();
@@ -18,18 +18,6 @@ const ProfileButton = () => {
   // Show username if available, otherwise show wallet address or default text
   const displayName = userProfile?.username || 
                      (publicKey ? publicKey.toString().substring(0, 8) + '...' : 'Profile');
-
-  // Add polling for profile updates every 30 seconds
-  useEffect(() => {
-    if (connected && userProfile) {
-      // Set up polling to regularly refresh the user profile
-      const profileRefreshInterval = setInterval(() => {
-        fetchUserProfile();
-      }, 30000); // Every 30 seconds
-      
-      return () => clearInterval(profileRefreshInterval);
-    }
-  }, [connected, userProfile, fetchUserProfile]);
 
   useEffect(() => {
     // Check if the user has already claimed the bonus
@@ -60,11 +48,6 @@ const ProfileButton = () => {
       } catch (error) {
         console.error("Error awarding profile visit bonus:", error);
       }
-    }
-    
-    // Always refresh profile data when visiting profile
-    if (connected) {
-      fetchUserProfile();
     }
   };
 

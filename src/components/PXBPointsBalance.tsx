@@ -1,11 +1,9 @@
-
 import React, { useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { RefreshCw, User } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-
 const PXBPointsBalance: React.FC = () => {
   const {
     userProfile,
@@ -16,26 +14,16 @@ const PXBPointsBalance: React.FC = () => {
     connected,
     publicKey
   } = useWallet();
-  
   useEffect(() => {
     if (connected) {
       fetchUserProfile();
-      
-      // Set up automatic refresh every 30 seconds
-      const refreshInterval = setInterval(() => {
-        fetchUserProfile();
-      }, 30000);
-      
-      return () => clearInterval(refreshInterval);
     }
   }, [connected, fetchUserProfile]);
-  
   const handleRefresh = () => {
     if (!connected) return;
     toast.info("Refreshing PXB points...");
     fetchUserProfile();
   };
-  
   if (isLoading) {
     return <div className="glass-panel animate-pulse p-3 rounded-lg flex items-center space-x-3">
         <div className="w-10 h-10 bg-dream-accent2/20 rounded-full"></div>
@@ -45,15 +33,12 @@ const PXBPointsBalance: React.FC = () => {
         </div>
       </div>;
   }
-  
   if (!userProfile) {
     return <div className="glass-panel p-3 rounded-lg">
         <p className="text-sm text-dream-foreground/70">Connect to see your PXB Points</p>
       </div>;
   }
-  
   const displayName = userProfile.username || (publicKey ? publicKey.toString().substring(0, 8) : 'User');
-  
   return <div className="rounded-lg relative overflow-hidden border border-indigo-900/30 bg-[#0f1628] backdrop-blur-lg">
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-indigo-600/5 bg-[#00ff00]/0"></div>
       
@@ -81,5 +66,4 @@ const PXBPointsBalance: React.FC = () => {
       </div>
     </div>;
 };
-
 export default PXBPointsBalance;
