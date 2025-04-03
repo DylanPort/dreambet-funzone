@@ -8,6 +8,7 @@ import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -21,6 +22,7 @@ const Navbar = () => {
     fetchUserProfile
   } = usePXBPoints();
   const [pxbPoints, setPxbPoints] = useState<number | null>(null);
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -32,38 +34,74 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
   useEffect(() => {
     if (userProfile) {
       setPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
+
   useEffect(() => {
     if (!userProfile) return;
-    const channel = supabase.channel('public:users').on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'users',
-      filter: `id=eq.${userProfile.id}`
-    }, payload => {
-      console.log('User data updated:', payload);
-      if (payload.new && 'points' in payload.new) {
-        setPxbPoints(payload.new.points as number);
-        fetchUserProfile();
-      }
-    }).subscribe();
+    
+    const channel = supabase.channel('public:users')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: `id=eq.${userProfile.id}`
+      }, payload => {
+        console.log('User data updated:', payload);
+        if (payload.new && 'points' in payload.new) {
+          setPxbPoints(payload.new.points as number);
+          fetchUserProfile();
+        }
+      })
+      .subscribe();
+      
     return () => {
       supabase.removeChannel(channel);
     };
   }, [userProfile, fetchUserProfile]);
-  return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
+
+  return (
+    <header className="fixed top-0 left-0 right-0 w-full z-50 backdrop-blur-xl bg-[#080b16]/80 border-b border-indigo-900/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-1.5">
-          <Link to="/" className="flex items-center py-2">
-            <img alt="PumpXBounty" className="h-14 filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" src="/lovable-uploads/e40f498f-c7e1-4571-9713-0a90008ed233.png" />
-          </Link>
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <Link to="/" className="flex-shrink-0 flex items-center">
+              <img 
+                src="/lovable-uploads/b29e7031-78f0-44be-b383-e5d1dd184bb4.png" 
+                alt="PumpXBounty Logo" 
+                className="h-8 w-auto drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]" 
+              />
+              <span className="ml-2 text-xl font-bold text-white">PumpXBounty</span>
+            </Link>
+            <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
+              <Link
+                to="/"
+                className={`px-3 py-2 text-sm font-medium  hover:text-indigo-200 ${location.pathname === '/' ? 'text-white' : 'text-gray-300'}`}
+              >
+                Home
+              </Link>
+              <Link
+                to="/betting"
+                className={`px-3 py-2 text-sm font-medium hover:text-indigo-200 ${location.pathname.includes('/betting') ? 'text-white' : 'text-gray-300'}`}
+              >
+                Betting
+              </Link>
+              <Link
+                to="/community"
+                className={`px-3 py-2 text-sm font-medium hover:text-indigo-200 ${location.pathname.includes('/community') ? 'text-white' : 'text-gray-300'}`}
+              >
+                Community
+              </Link>
+            </div>
+          </div>
           
           <nav className="hidden md:flex space-x-4 items-center">
             <Link to="/betting" className={`nav-link flex items-center gap-1 ${location.pathname.includes('/betting') || location.pathname.includes('/token') ? 'text-green-400' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
@@ -81,18 +119,30 @@ const Navbar = () => {
             
             <ProfileButton />
             
-            {pxbPoints !== null && pxbPoints > 0 ? <div className="glass-panel relative overflow-hidden py-1 px-2 flex items-center gap-1 text-yellow-400 group animate-pulse-subtle">
+            {pxbPoints !== null && pxbPoints > 0 ? (
+              <div className="glass-panel relative overflow-hidden py-1 px-2 flex items-center gap-1 text-yellow-400 group animate-pulse-subtle">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300 py-[-7px]"></div>
                 <div className="w-5 h-5 flex items-center justify-center">
-                  <img alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" src="/lovable-uploads/d1c82b81-d141-4bf8-a3d8-7cdbbe82785a.png" />
+                  <img 
+                    alt="PXB Coin" 
+                    className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" 
+                    src="/lovable-uploads/d1c82b81-d141-4bf8-a3d8-7cdbbe82785a.png" 
+                  />
                 </div>
                 <span className="relative z-10 text-xs">{pxbPoints.toLocaleString()} PXB</span>
-              </div> : userProfile && <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400/70">
+              </div>
+            ) : userProfile && (
+              <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400/70">
                 <div className="w-5 h-5 flex items-center justify-center">
-                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                  <img 
+                    src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" 
+                    alt="PXB Coin" 
+                    className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" 
+                  />
                 </div>
                 <span className="text-xs">0 PXB</span>
-              </div>}
+              </div>
+            )}
             
             {balance !== null}
             
@@ -100,7 +150,6 @@ const Navbar = () => {
           </nav>
           
           <div className="md:hidden flex items-center gap-3">
-            {/* Mobile PXB Points display */}
             {userProfile && pxbPoints !== null && <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400">
                 <div className="w-4 h-4 flex items-center justify-center">
                   <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
@@ -159,6 +208,8 @@ const Navbar = () => {
             </div>
           </nav>
         </div>}
-    </header>;
+    </header>
+  );
 };
+
 export default Navbar;
