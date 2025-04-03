@@ -13,6 +13,7 @@ import PXBSupplyProgress from '@/components/PXBSupplyProgress';
 import PXBStakingPanel from '@/components/PXBStakingPanel';
 import PXBUserStats from '@/components/PXBUserStats';
 import BetReel from '@/components/BetReel';
+import { toast } from 'sonner';
 
 const PXBSpace = () => {
   const {
@@ -41,8 +42,14 @@ const PXBSpace = () => {
     try {
       const link = await generateReferralLink();
       setReferralLink(link);
+      if (link) {
+        toast.success("Referral link generated successfully");
+      } else {
+        toast.error("Failed to generate referral link");
+      }
     } catch (error) {
       console.error('Error generating referral link:', error);
+      toast.error("Error generating referral link");
     } finally {
       setIsGeneratingLink(false);
     }
@@ -50,7 +57,13 @@ const PXBSpace = () => {
 
   // Copy to clipboard function
   const copyToClipboard = (text: string) => {
+    if (!text) {
+      toast.error("No referral link to copy");
+      return;
+    }
+    
     navigator.clipboard.writeText(text);
+    toast.success("Referral link copied to clipboard");
   };
 
   // Check for referral code in URL
@@ -58,7 +71,12 @@ const PXBSpace = () => {
     if (connected && userProfile) {
       const referralCode = searchParams.get('ref');
       if (referralCode && checkAndProcessReferral) {
-        checkAndProcessReferral(referralCode);
+        // Make sure not to process own referral code
+        if (userProfile.referralCode !== referralCode) {
+          checkAndProcessReferral(referralCode);
+        } else {
+          console.log("Skipping self-referral attempt");
+        }
       }
     }
   }, [connected, userProfile, searchParams, checkAndProcessReferral]);
@@ -69,6 +87,13 @@ const PXBSpace = () => {
       fetchReferralStats();
     }
   }, [connected, userProfile, fetchReferralStats]);
+
+  // Generate referral link when component mounts or user profile changes
+  useEffect(() => {
+    if (connected && userProfile && generateReferralLink && !referralLink) {
+      handleGenerateReferralLink();
+    }
+  }, [connected, userProfile, generateReferralLink, referralLink]);
 
   return <>
       <OrbitingParticles />
@@ -218,13 +243,13 @@ const PXBSpace = () => {
                       <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
                         <p className="text-sm text-dream-foreground/60 mb-1">Total Referrals</p>
                         <p className="text-2xl font-display font-bold text-gradient">
-                          {isLoadingReferrals ? "..." : referralStats?.referrals_count || 0}
+                          {isLoadingReferrals ? "..." : referralStats?.totalReferrals || referralStats?.referrals_count || 0}
                         </p>
                       </div>
                       <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
                         <p className="text-sm text-dream-foreground/60 mb-1">Points Earned</p>
                         <p className="text-2xl font-display font-bold text-gradient">
-                          {isLoadingReferrals ? "..." : (referralStats?.pointsEarned || 0).toLocaleString()}
+                          {isLoadingReferrals ? "..." : (referralStats?.pointsEarned || referralStats?.points_earned || 0).toLocaleString()}
                         </p>
                       </div>
                     </div>

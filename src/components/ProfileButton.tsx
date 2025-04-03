@@ -31,8 +31,13 @@ const ProfileButton = () => {
   useEffect(() => {
     if (connected && userProfile) {
       const referralCode = searchParams.get('ref');
-      if (referralCode) {
-        checkAndProcessReferral(referralCode);
+      if (referralCode && checkAndProcessReferral) {
+        // Only process referral if the code exists and doesn't belong to current user
+        if (referralCode !== userProfile.referralCode) {
+          checkAndProcessReferral(referralCode);
+        } else {
+          console.log("Skipping self-referral attempt");
+        }
       }
     }
   }, [connected, userProfile, searchParams, checkAndProcessReferral]);
