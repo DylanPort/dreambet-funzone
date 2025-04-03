@@ -47,8 +47,36 @@ export const PXBWallet: React.FC = () => {
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [referralLink, setReferralLink] = useState<string>('');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
   const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (userProfile) {
+      setLocalPxbPoints(userProfile.pxbPoints);
+    }
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (!userProfile) return;
+    
+    const channel = supabase.channel(`user-points-${userProfile.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: `id=eq.${userProfile.id}`
+      }, payload => {
+        if (payload.new && 'points' in payload.new) {
+          setLocalPxbPoints(payload.new.points as number);
+        }
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile]);
 
   useEffect(() => {
     if (userProfile && generatePxbId) {
@@ -259,7 +287,9 @@ export const PXBWallet: React.FC = () => {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-3xl font-bold text-white">{userProfile.pxbPoints.toLocaleString()}</p>
+          <p className="text-3xl font-bold text-white">
+            {localPxbPoints !== null ? localPxbPoints.toLocaleString() : userProfile.pxbPoints.toLocaleString()}
+          </p>
           <p className="text-indigo-300/70 text-sm">PXB Points</p>
         </div>
       </div>

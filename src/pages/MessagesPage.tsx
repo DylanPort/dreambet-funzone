@@ -26,11 +26,18 @@ const MessagesPage = () => {
   
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getUser();
-      setIsAuthenticated(!!data.user);
-      
-      if (!data.user) {
-        toast.error('You must be logged in to view messages');
+      try {
+        const userData = await supabase.auth.getUser();
+        const isAuthed = !!userData.data.user;
+        setIsAuthenticated(isAuthed);
+        
+        if (!isAuthed) {
+          toast.error('You must be logged in to view messages');
+          navigate('/community');
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setIsAuthenticated(false);
         navigate('/community');
       }
     };

@@ -32,9 +32,15 @@ export const UserSearch: React.FC<UserSearchProps> = ({
       setIsSearching(true);
       
       timeoutId = setTimeout(async () => {
-        const users = await searchUsers(query);
-        setResults(users);
-        setIsSearching(false);
+        try {
+          const users = await searchUsers(query);
+          setResults(users);
+        } catch (error) {
+          console.error('Error searching users:', error);
+          setResults([]);
+        } finally {
+          setIsSearching(false);
+        }
       }, 300);
     } else {
       setResults([]);
