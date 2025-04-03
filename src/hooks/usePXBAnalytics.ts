@@ -34,14 +34,14 @@ const DEFAULT_ANALYTICS: PXBAnalytics = {
   recentMints: []
 };
 
-export const usePXBAnalytics = (pollingInterval = 1000) => {
+export const usePXBAnalytics = (pollingInterval = 60000) => { // Changed default to 60000ms (1 minute)
   const [analytics, setAnalytics] = useState<PXBAnalytics>(DEFAULT_ANALYTICS);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPXBAnalytics = async () => {
     try {
-      // Get total minted from points_history using a direct sum query instead of RPC
+      // Get total minted from points_history using a direct sum query
       const { data: mintData, error: mintError } = await supabase
         .from('points_history')
         .select('amount')
@@ -49,22 +49,24 @@ export const usePXBAnalytics = (pollingInterval = 1000) => {
       
       if (mintError) throw mintError;
       
-      // Calculate total minted (excluding extremely large transactions)
-      const totalMinted = mintData
+      // Calculate real total minted (excluding extremely large transactions)
+      const calculatedTotal = mintData
         .filter(record => record.amount !== 1008808000)
         .reduce((sum, record) => sum + (record.amount || 0), 0);
       
-      // Fixed value for display (from user request)
-      const displayTotalMinted = 160057650;
+      // Fixed value for display as requested, but add new mints to it
+      const baseDisplayValue = 160057650;
+      const newMintsToday = await getNewMintsToday();
+      const displayTotalMinted = baseDisplayValue + newMintsToday;
       
-      // Update the analytics with just the total minted
+      // Update the analytics with the total minted
       setAnalytics(prev => ({
         ...prev,
         totalMinted: displayTotalMinted
       }));
       
-      // Every 5 seconds, fetch the complete analytics (to reduce database load)
-      if (Date.now() % 5000 < pollingInterval) {
+      // Every 5 minutes, fetch the complete analytics (to reduce database load)
+      if (Math.floor(Date.now() / 300000) !== Math.floor((Date.now() - pollingInterval) / 300000)) {
         await fetchCompleteAnalytics();
       }
       
@@ -73,6 +75,31 @@ export const usePXBAnalytics = (pollingInterval = 1000) => {
       console.error('Error fetching PXB total minted:', err);
       setError('Failed to load PXB analytics');
       setIsLoading(false);
+    }
+  };
+
+  // New function to get mints from today only
+  const getNewMintsToday = async (): Promise<number> => {
+    try {
+      // Get today's date at midnight
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from('points_history')
+        .select('amount')
+        .eq('action', 'mint')
+        .gte('created_at', today.toISOString());
+        
+      if (error) throw error;
+      
+      // Sum up today's mints
+      return data
+        .filter(record => record.amount !== 1008808000)
+        .reduce((sum, record) => sum + (record.amount || 0), 0);
+    } catch (err) {
+      console.error('Error fetching today\'s mints:', err);
+      return 0;
     }
   };
 
@@ -200,7 +227,7 @@ export const usePXBAnalytics = (pollingInterval = 1000) => {
     // Initial fetch
     fetchPXBAnalytics();
     
-    // Set up polling for real-time updates
+    // Set up polling for updates every minute
     const intervalId = setInterval(fetchPXBAnalytics, pollingInterval);
     
     // Clean up interval on unmount

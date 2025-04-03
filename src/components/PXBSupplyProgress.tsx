@@ -374,7 +374,7 @@ const PXBSupplyProgress = () => {
       <div className="text-xs text-dream-foreground/50 mt-2 text-center bg-gradient-to-r from-transparent via-white/5 to-transparent p-1 rounded animate-pulse-subtle">
         <span className="inline-flex items-center">
           <Sparkles className="h-3 w-3 mr-1 text-dream-accent2/70" />
-          Live updates: Real-time statistics refreshing every second
+          Live updates: Statistics refreshing every minute with real-time mint tracking
         </span>
       </div>
     </div>
