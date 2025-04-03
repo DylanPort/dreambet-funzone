@@ -2,21 +2,27 @@
 import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, BarChart, ArrowUp, ArrowDown, Users, CircleDot, ChevronUp, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { usePXBAnalytics } from '@/hooks/usePXBAnalytics';
+import { format } from 'date-fns';
 
 const PXBSupplyProgress = () => {
-  const [totalMinted, setTotalMinted] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [showDistribution, setShowDistribution] = useState<boolean>(false);
+  const [showTopHolders, setShowTopHolders] = useState<boolean>(false);
+  const [showRecentActivity, setShowRecentActivity] = useState<boolean>(false);
+  
+  // Use our custom hook to fetch analytics with a 1-second polling interval
+  const { analytics, isLoading, error } = usePXBAnalytics(1000);
   
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
   const stakingRewards = 400_000_000; // 400 million reserved for staking rewards
-  const additionalBurned = 110_000_000; // 110 million reserved/removed from circulation (10M + 100M previously burned)
+  const additionalBurned = 110_000_000; // 110 million reserved/removed from circulation
   const totalReserved = stakingRewards + additionalBurned;
 
   // Calculate percentages for display
-  const mintedPercentage = (totalMinted / maxSupply) * 100;
+  const mintedPercentage = (analytics.totalMinted / maxSupply) * 100;
   const stakingPercentage = (stakingRewards / maxSupply) * 100;
   const burnedPercentage = (additionalBurned / maxSupply) * 100;
   const totalPercentage = mintedPercentage + stakingPercentage + burnedPercentage;
@@ -26,61 +32,138 @@ const PXBSupplyProgress = () => {
     return num.toLocaleString();
   };
 
-  // Fetch the total minted points from points_history instead of users table
-  const fetchTotalMinted = async () => {
-    try {
-      // Only count positive minting transactions, not transfers or other actions
-      // Exclude the massive mint transaction of 1,008,808,000 PXB
-      const { data, error } = await supabase
-        .from('points_history')
-        .select('amount, user_id')
-        .eq('action', 'mint');
-        
-      if (error) {
-        throw error;
-      }
-      
-      if (data) {
-        // Filter out the transaction with the extremely large amount
-        const filteredData = data.filter(record => record.amount !== 1008808000);
-        
-        // Sum all minting transactions to get the true minted amount
-        const total = filteredData.reduce((sum, record) => sum + (record.amount || 0), 0);
-        
-        // Animate when new points are minted
-        if (total > totalMinted && totalMinted !== 0) {
-          setIsAnimating(true);
-          setTimeout(() => setIsAnimating(false), 1500);
-        }
-        
-        setTotalMinted(total);
-      }
-    } catch (err) {
-      console.error('Error fetching total minted points:', err);
-      setError('Failed to load supply data');
-    } finally {
-      setIsLoading(false);
+  // Animate on new data
+  useEffect(() => {
+    if (analytics.totalMinted > 0 && !isLoading) {
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 1500);
+    }
+  }, [analytics.totalMinted, isLoading]);
+
+  const getActivityColor = (action: string) => {
+    switch (action) {
+      case 'mint':
+        return 'text-green-400';
+      case 'transfer_sent':
+        return 'text-amber-400';
+      case 'transfer_received':
+        return 'text-blue-400';
+      default:
+        return 'text-gray-400';
     }
   };
 
-  // Set up real-time subscription to points_history table for live updates
-  useEffect(() => {
-    fetchTotalMinted();
+  const getActionLabel = (action: string) => {
+    switch (action) {
+      case 'mint':
+        return 'Minted';
+      case 'transfer_sent':
+        return 'Sent';
+      case 'transfer_received':
+        return 'Received';
+      case 'bounty_completed':
+        return 'Bounty Reward';
+      case 'referral_reward':
+        return 'Referral Bonus';
+      default:
+        return action.replace(/_/g, ' ');
+    }
+  };
 
-    // Subscribe to real-time updates on points_history table
-    const channel = supabase.channel('schema-db-changes').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'points_history'
-    }, payload => {
-      // When there's any change to points_history, refresh the total
-      fetchTotalMinted();
-    }).subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  const renderDistributionChart = () => {
+    if (analytics.distributionByRange.length === 0) return null;
+
+    return (
+      <div className="mt-4 space-y-3 animate-fade-in">
+        <h3 className="text-sm font-semibold text-dream-foreground/80 flex items-center">
+          <BarChart className="h-4 w-4 mr-2 text-green-400" />
+          Point Distribution by Range
+        </h3>
+        <div className="space-y-2">
+          {analytics.distributionByRange.map((range, index) => (
+            <div key={range.range} className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="font-medium">{range.range} PXB</span>
+                <div className="flex space-x-2">
+                  <span className="text-dream-foreground/60">{range.users} users</span>
+                  <span className="text-dream-foreground/80">{formatNumber(range.totalPoints)} PXB</span>
+                  <span className="text-green-400">{range.percentage.toFixed(2)}%</span>
+                </div>
+              </div>
+              <div className="h-2 w-full bg-black/20 rounded overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-green-500 to-green-400" 
+                  style={{ width: `${range.percentage}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTopHolders = () => {
+    if (analytics.topHolders.length === 0) return null;
+
+    return (
+      <div className="mt-4 animate-fade-in">
+        <h3 className="text-sm font-semibold text-dream-foreground/80 flex items-center mb-2">
+          <Users className="h-4 w-4 mr-2 text-purple-400" />
+          Top PXB Holders
+        </h3>
+        <div className="divide-y divide-white/10">
+          {analytics.topHolders.map((holder, index) => (
+            <div key={index} className="flex justify-between py-2 text-sm">
+              <div className="flex items-center">
+                <span className="bg-dream-foreground/10 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs">
+                  {index + 1}
+                </span>
+                <span className="font-medium truncate max-w-[150px]">{holder.username}</span>
+              </div>
+              <div className="flex space-x-3">
+                <span className="text-dream-foreground/80">{formatNumber(holder.points)} PXB</span>
+                <span className="text-purple-400 w-12 text-right">{holder.percentage.toFixed(2)}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderRecentActivity = () => {
+    if (analytics.recentMints.length === 0) return null;
+
+    return (
+      <div className="mt-4 animate-fade-in">
+        <h3 className="text-sm font-semibold text-dream-foreground/80 flex items-center mb-2">
+          <Sparkles className="h-4 w-4 mr-2 text-amber-400" />
+          Recent PXB Activity
+        </h3>
+        <div className="divide-y divide-white/10">
+          {analytics.recentMints.map((mint, index) => (
+            <div key={index} className="flex justify-between py-2 text-sm">
+              <div className="flex items-center">
+                <span className={`mr-2 ${getActivityColor(mint.action)}`}>
+                  {mint.amount > 0 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                </span>
+                <span className="font-medium">{getActionLabel(mint.action)}</span>
+              </div>
+              <div className="flex space-x-3">
+                <span className={`${mint.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {mint.amount > 0 ? '+' : ''}{formatNumber(mint.amount)} PXB
+                </span>
+                <span className="text-dream-foreground/60 text-xs">
+                  {format(new Date(mint.timestamp), 'MMM d, HH:mm')}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="relative z-10">
@@ -169,7 +252,7 @@ const PXBSupplyProgress = () => {
         <div className="mb-1">
           <span className="text-dream-foreground/60">Minted: </span>
           <span className="text-[#00ff00]">
-            {formatNumber(totalMinted)} PXB
+            {formatNumber(analytics.totalMinted)} PXB
           </span>
           <span className="text-dream-foreground/40 text-xs ml-1">
             ({(mintedPercentage).toFixed(5)}%)
@@ -191,7 +274,7 @@ const PXBSupplyProgress = () => {
         </div>
         <div className="mb-1">
           <span className="text-dream-foreground/60">Remaining: </span>
-          <span className="font-medium">{formatNumber(maxSupply - totalReserved - totalMinted)} PXB</span>
+          <span className="font-medium">{formatNumber(maxSupply - totalReserved - analytics.totalMinted)} PXB</span>
           <span className="text-dream-foreground/40 text-xs ml-1">
             ({(100 - totalPercentage).toFixed(1)}%)
           </span>
@@ -203,10 +286,116 @@ const PXBSupplyProgress = () => {
         </div>
       </div>
       
+      {/* User statistics summary */}
+      <div className="grid grid-cols-3 gap-2 mt-4 text-xs">
+        <div className="bg-black/30 backdrop-blur-sm rounded p-2 border border-white/10">
+          <div className="text-dream-foreground/60">Total Users</div>
+          <div className="text-lg font-semibold">{formatNumber(analytics.totalUsers)}</div>
+        </div>
+        <div className="bg-black/30 backdrop-blur-sm rounded p-2 border border-white/10">
+          <div className="text-dream-foreground/60">Users with PXB</div>
+          <div className="text-lg font-semibold">{formatNumber(analytics.usersWithPoints)}</div>
+        </div>
+        <div className="bg-black/30 backdrop-blur-sm rounded p-2 border border-white/10">
+          <div className="text-dream-foreground/60">Avg. per User</div>
+          <div className="text-lg font-semibold">{formatNumber(analytics.averagePerUser)}</div>
+        </div>
+      </div>
+      
+      {/* Collapsible Distribution Chart */}
+      <div className="mt-4 bg-black/30 backdrop-blur-sm rounded p-2 border border-white/10">
+        <button 
+          onClick={() => setShowDistribution(!showDistribution)} 
+          className="w-full flex justify-between items-center focus:outline-none"
+        >
+          <span className="text-sm font-medium flex items-center">
+            <BarChart className="h-4 w-4 mr-2 text-green-400" />
+            Point Distribution Analysis
+          </span>
+          {showDistribution ? 
+            <ChevronUp className="h-4 w-4 text-dream-foreground/60" /> : 
+            <ChevronDown className="h-4 w-4 text-dream-foreground/60" />
+          }
+        </button>
+        <AnimatePresence>
+          {showDistribution && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              {renderDistributionChart()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      
+      {/* Collapsible Top Holders */}
+      <div className="mt-2 bg-black/30 backdrop-blur-sm rounded p-2 border border-white/10">
+        <button 
+          onClick={() => setShowTopHolders(!showTopHolders)} 
+          className="w-full flex justify-between items-center focus:outline-none"
+        >
+          <span className="text-sm font-medium flex items-center">
+            <Users className="h-4 w-4 mr-2 text-purple-400" />
+            Top PXB Holders
+          </span>
+          {showTopHolders ? 
+            <ChevronUp className="h-4 w-4 text-dream-foreground/60" /> : 
+            <ChevronDown className="h-4 w-4 text-dream-foreground/60" />
+          }
+        </button>
+        <AnimatePresence>
+          {showTopHolders && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              {renderTopHolders()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      
+      {/* Collapsible Recent Activity */}
+      <div className="mt-2 bg-black/30 backdrop-blur-sm rounded p-2 border border-white/10">
+        <button 
+          onClick={() => setShowRecentActivity(!showRecentActivity)} 
+          className="w-full flex justify-between items-center focus:outline-none"
+        >
+          <span className="text-sm font-medium flex items-center">
+            <Sparkles className="h-4 w-4 mr-2 text-amber-400" />
+            Recent PXB Activity
+          </span>
+          {showRecentActivity ? 
+            <ChevronUp className="h-4 w-4 text-dream-foreground/60" /> : 
+            <ChevronDown className="h-4 w-4 text-dream-foreground/60" />
+          }
+        </button>
+        <AnimatePresence>
+          {showRecentActivity && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              {renderRecentActivity()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      
       <div className="text-xs text-dream-foreground/50 mt-2 text-center bg-gradient-to-r from-transparent via-white/5 to-transparent p-1 rounded animate-pulse-subtle">
         <span className="inline-flex items-center">
           <Sparkles className="h-3 w-3 mr-1 text-dream-accent2/70" />
-          Live updates: Points are being minted in real-time
+          Live updates: Real-time statistics refreshing every second
         </span>
       </div>
     </div>
