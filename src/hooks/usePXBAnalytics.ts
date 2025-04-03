@@ -34,7 +34,7 @@ const DEFAULT_ANALYTICS: PXBAnalytics = {
   recentMints: []
 };
 
-export const usePXBAnalytics = (pollingInterval = 1000) => {
+export const usePXBAnalytics = (pollingInterval = 86400000) => { // Default to 24 hours (86400000 ms)
   const [analytics, setAnalytics] = useState<PXBAnalytics>(DEFAULT_ANALYTICS);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,10 +63,8 @@ export const usePXBAnalytics = (pollingInterval = 1000) => {
         totalMinted: displayTotalMinted
       }));
       
-      // Every 5 seconds, fetch the complete analytics (to reduce database load)
-      if (Date.now() % 5000 < pollingInterval) {
-        await fetchCompleteAnalytics();
-      }
+      // Fetch the complete analytics
+      await fetchCompleteAnalytics();
       
       setIsLoading(false);
     } catch (err) {
@@ -200,7 +198,7 @@ export const usePXBAnalytics = (pollingInterval = 1000) => {
     // Initial fetch
     fetchPXBAnalytics();
     
-    // Set up polling for real-time updates
+    // Set up polling for daily updates
     const intervalId = setInterval(fetchPXBAnalytics, pollingInterval);
     
     // Clean up interval on unmount
