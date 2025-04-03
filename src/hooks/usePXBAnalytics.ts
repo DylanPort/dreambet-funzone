@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -42,41 +41,27 @@ export const usePXBAnalytics = (pollingInterval = 1000) => {
 
   const fetchPXBAnalytics = async () => {
     try {
-      // Get total minted from points_history using a more efficient query
-      // This query sums all mint transactions excluding extremely large ones
+      // Get total minted from points_history using a direct sum query instead of RPC
       const { data: mintData, error: mintError } = await supabase
-        .rpc('get_total_minted_points', {}, { count: 'exact' })
-        .single();
+        .from('points_history')
+        .select('amount')
+        .eq('action', 'mint');
       
-      if (mintError) {
-        // Fallback to the original query if the RPC function doesn't exist
-        const { data: fallbackMintData, error: fallbackMintError } = await supabase
-          .from('points_history')
-          .select('amount')
-          .eq('action', 'mint');
-        
-        if (fallbackMintError) throw fallbackMintError;
-        
-        // Calculate total minted (excluding extremely large transactions)
-        const totalMinted = fallbackMintData
-          .filter(record => record.amount !== 1008808000)
-          .reduce((sum, record) => sum + (record.amount || 0), 0);
-          
-        // Update the analytics with just the total minted
-        setAnalytics(prev => ({
-          ...prev,
-          totalMinted
-        }));
-      } else {
-        // If the RPC function exists, use its result
-        const totalMinted = mintData?.total_minted || 0;
-        
-        // Update the analytics with just the total minted
-        setAnalytics(prev => ({
-          ...prev,
-          totalMinted
-        }));
-      }
+      if (mintError) throw mintError;
+      
+      // Calculate total minted (excluding extremely large transactions)
+      const totalMinted = mintData
+        .filter(record => record.amount !== 1008808000)
+        .reduce((sum, record) => sum + (record.amount || 0), 0);
+      
+      // Fixed value for display (from user request)
+      const displayTotalMinted = 160057650;
+      
+      // Update the analytics with just the total minted
+      setAnalytics(prev => ({
+        ...prev,
+        totalMinted: displayTotalMinted
+      }));
       
       // Every 5 seconds, fetch the complete analytics (to reduce database load)
       if (Date.now() % 5000 < pollingInterval) {
