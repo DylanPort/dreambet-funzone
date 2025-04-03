@@ -9,6 +9,7 @@ const PXBSupplyProgress = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
   const stakingRewards = 400_000_000; // 400 million reserved for staking rewards
@@ -54,6 +55,7 @@ const PXBSupplyProgress = () => {
         }
         
         setTotalMinted(total);
+        setLastRefreshTime(new Date());
       }
     } catch (err) {
       console.error('Error fetching total minted points:', err);
@@ -63,19 +65,35 @@ const PXBSupplyProgress = () => {
     }
   };
 
-  // Set up real-time subscription to points_history table for live updates
+  // Initial fetch and setup polling for regular updates
   useEffect(() => {
     fetchTotalMinted();
-
-    // Subscribe to real-time updates on points_history table
-    const channel = supabase.channel('schema-db-changes').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'points_history'
-    }, payload => {
-      // When there's any change to points_history, refresh the total
+    
+    // Poll for updates every 15 seconds to ensure fresh data
+    const pollInterval = setInterval(() => {
       fetchTotalMinted();
-    }).subscribe();
+    }, 15000);
+    
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, []);
+
+  // Set up real-time subscription to points_history table for live updates
+  useEffect(() => {
+    // Subscribe to real-time updates on points_history table
+    const channel = supabase.channel('schema-db-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'points_history',
+        filter: 'action=eq.mint'
+      }, payload => {
+        // When there's any change to points_history with action=mint, refresh the total
+        console.log('Real-time update detected for minting:', payload);
+        fetchTotalMinted();
+      })
+      .subscribe();
     
     return () => {
       supabase.removeChannel(channel);
@@ -168,7 +186,7 @@ const PXBSupplyProgress = () => {
       <div className="flex flex-wrap justify-between text-sm mt-3 relative z-20">
         <div className="mb-1">
           <span className="text-dream-foreground/60">Minted: </span>
-          <span className="text-[#00ff00]">
+          <span className="text-[#00ff00] animate-pulse-subtle">
             {formatNumber(totalMinted)} PXB
           </span>
           <span className="text-dream-foreground/40 text-xs ml-1">
@@ -203,10 +221,10 @@ const PXBSupplyProgress = () => {
         </div>
       </div>
       
-      <div className="text-xs text-dream-foreground/50 mt-2 text-center bg-gradient-to-r from-transparent via-white/5 to-transparent p-1 rounded animate-pulse-subtle">
+      <div className="text-xs text-dream-foreground/50 mt-2 text-center bg-gradient-to-r from-transparent via-white/5 to-transparent p-1 rounded">
         <span className="inline-flex items-center">
           <Sparkles className="h-3 w-3 mr-1 text-dream-accent2/70" />
-          Live updates: Points are being minted in real-time
+          Live updates: Last refreshed {lastRefreshTime.toLocaleTimeString()}
         </span>
       </div>
     </div>
