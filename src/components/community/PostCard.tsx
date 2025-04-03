@@ -1,151 +1,151 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageSquare, MoreHorizontal, Trash } from 'lucide-react';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { formatDistanceToNow } from 'date-fns';
-import { Post, likePost, deletePost } from '@/services/communityService';
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Post } from '@/types/community';
+import { deletePost, likePost } from '@/services/communityService';
+import { Heart, MessageSquare, MoreVertical, Trash } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from 'date-fns';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 interface PostCardProps {
   post: Post;
-  onPostDeleted?: () => void;
-  onPostLiked?: (postId: string, isLiked: boolean) => void;
+  onPostDeleted: () => void;
+  onPostLiked: (postId: string, isLiked: boolean) => void;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted, onPostLiked }) => {
-  const [isLiked, setIsLiked] = useState<boolean>(post.isLiked || false);
-  const [likesCount, setLikesCount] = useState<number>(post.likes_count || 0);
-  const [isDeleting, setIsDeleting] = useState<boolean>(false);
-  const navigate = useNavigate();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
   
-  // Check if current user is post author
-  const [isAuthor, setIsAuthor] = useState<boolean>(false);
-  
-  React.useEffect(() => {
-    const checkAuthor = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && user.id === post.user_id) {
-        setIsAuthor(true);
-      }
-    };
+  const handleLikePost = async () => {
+    if (isLiking) return;
     
-    checkAuthor();
-  }, [post.user_id]);
-
-  const handleLike = async () => {
-    const result = await likePost(post.id);
-    if (result !== null) {
-      setIsLiked(result);
-      setLikesCount(prev => result ? prev + 1 : prev - 1);
-      if (onPostLiked) onPostLiked(post.id, result);
+    try {
+      setIsLiking(true);
+      const isLiked = await likePost(post.id);
+      
+      // Only update state if we got a valid response (not null)
+      if (isLiked !== null) {
+        onPostLiked(post.id, isLiked);
+      }
+    } catch (error) {
+      console.error('Error liking post:', error);
+    } finally {
+      setIsLiking(false);
     }
   };
-
-  const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this post?')) {
+  
+  const handleDeletePost = async () => {
+    if (isDeleting) return;
+    
+    try {
       setIsDeleting(true);
       const success = await deletePost(post.id);
-      setIsDeleting(false);
       
       if (success) {
-        if (onPostDeleted) onPostDeleted();
-        toast.success('Post deleted');
+        toast.success('Post deleted successfully');
+        onPostDeleted();
       }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast.error('Failed to delete post');
+    } finally {
+      setIsDeleting(false);
     }
   };
-
-  const getInitials = (username: string) => {
-    return username?.substring(0, 2).toUpperCase() || 'AN';
+  
+  const isCurrentUserPost = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id === post.user_id;
+  };
+  
+  const formatTimeAgo = (date: string) => {
+    return formatDistanceToNow(new Date(date), { addSuffix: true });
+  };
+  
+  const getInitials = (username?: string | null) => {
+    return username ? username.substring(0, 2).toUpperCase() : 'AN';
   };
 
   return (
-    <Card className="w-full mb-4 bg-[#10121f] border-indigo-900/30">
-      <CardHeader className="pb-2 pt-4 px-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <Link to={`/community/profile/${post.user_id}`}>
-              <Avatar className="h-10 w-10 mr-3">
-                <AvatarImage src={post.avatar_url || ''} alt={post.username} />
-                <AvatarFallback className="bg-indigo-600">{getInitials(post.username || '')}</AvatarFallback>
-              </Avatar>
-            </Link>
+    <Card className="bg-[#10121f] border border-indigo-900/30">
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-3">
+          <Link to={`/community/profile/${post.user_id}`} className="flex items-center">
+            <Avatar className="h-10 w-10 mr-3">
+              <AvatarImage src={post.avatar_url || ''} />
+              <AvatarFallback className="bg-indigo-600">{getInitials(post.username)}</AvatarFallback>
+            </Avatar>
             <div>
-              <Link to={`/community/profile/${post.user_id}`} className="font-semibold text-white hover:text-indigo-400 transition">
-                {post.display_name || post.username || 'Anonymous'}
-              </Link>
-              <p className="text-xs text-gray-400">
-                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-              </p>
+              <p className="font-medium text-white">{post.display_name || post.username || 'Anonymous'}</p>
+              <p className="text-xs text-gray-400">{formatTimeAgo(post.created_at)}</p>
             </div>
-          </div>
+          </Link>
           
-          {isAuthor && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400">
-                  <MoreHorizontal className="h-5 w-5" />
+          {isCurrentUserPost() && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="p-1 text-gray-400 hover:text-white">
+                  <MoreVertical className="h-5 w-5" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-[#1a1d2d] border border-indigo-900/50">
-                <DropdownMenuItem 
-                  className="text-red-500 cursor-pointer flex items-center"
-                  onClick={handleDelete}
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-0 bg-[#191c31] border border-indigo-900/50">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-indigo-900/30 p-2"
+                  onClick={handleDeletePost}
                   disabled={isDeleting}
                 >
-                  <Trash className="h-4 w-4 mr-2" /> 
-                  {isDeleting ? 'Deleting...' : 'Delete Post'}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <Trash className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="px-4 py-2">
-        <Link to={`/community/post/${post.id}`}>
-          <div className="whitespace-pre-wrap text-gray-200">{post.content}</div>
+        
+        <div className="mb-4">
+          <p className="text-gray-200 whitespace-pre-wrap">{post.content}</p>
+          
           {post.image_url && (
             <div className="mt-3">
               <img 
                 src={post.image_url} 
-                alt="Post attachment" 
-                className="rounded-md max-h-96 object-contain bg-black/20"
+                alt="Post" 
+                className="rounded-md max-h-96 w-auto object-contain"
               />
             </div>
           )}
-        </Link>
+        </div>
       </CardContent>
-      <CardFooter className="px-4 py-2 flex justify-between border-t border-indigo-900/30">
+      
+      <CardFooter className="border-t border-indigo-900/30 p-3">
         <div className="flex space-x-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`flex items-center ${isLiked ? 'text-red-500' : 'text-gray-400'}`}
-            onClick={handleLike}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex items-center ${post.isLiked ? 'text-red-400' : 'text-gray-400'} hover:text-red-400 hover:bg-transparent`}
+            onClick={handleLikePost}
           >
-            <Heart className={`h-5 w-5 mr-1 ${isLiked ? 'fill-red-500' : ''}`} />
-            <span>{likesCount}</span>
+            <Heart className={`h-5 w-5 mr-1 ${post.isLiked ? 'fill-red-400' : ''}`} />
+            <span>{post.likes_count}</span>
           </Button>
           
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex items-center text-gray-400"
-            onClick={() => navigate(`/community/post/${post.id}`)}
-          >
-            <MessageSquare className="h-5 w-5 mr-1" />
-            <span>{post.comments_count}</span>
-          </Button>
+          <Link to={`/community/post/${post.id}`}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center text-gray-400 hover:text-indigo-400 hover:bg-transparent"
+            >
+              <MessageSquare className="h-5 w-5 mr-1" />
+              <span>{post.comments_count}</span>
+            </Button>
+          </Link>
         </div>
       </CardFooter>
     </Card>

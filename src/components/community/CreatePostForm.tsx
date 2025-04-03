@@ -1,186 +1,157 @@
 
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ImagePlus, X, SendHorizonal } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 import { createPost } from '@/services/communityService';
-import { supabase } from "@/integrations/supabase/client";
-import { UserProfile } from '@/types/community';
+import { Upload, Image, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CreatePostFormProps {
-  onPostCreated?: () => void;
+  onPostCreated: () => void;
 }
 
 const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated }) => {
-  const [content, setContent] = useState<string>('');
-  const [image, setImage] = useState<File | null>(null);
+  const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<Partial<UserProfile> | null>(null);
   
-  React.useEffect(() => {
-    const fetchCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Get user profile from users table
-        const { data, error } = await supabase
-          .from('users')
-          .select('username, avatar_url, display_name')
-          .eq('id', user.id)
-          .single();
-          
-        if (!error && data) {
-          setCurrentUser({
-            id: user.id,
-            ...data
-          });
-        }
-      }
-    };
-    
-    fetchCurrentUser();
-  }, []);
-  
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      setImage(selectedFile);
+      const file = e.target.files[0];
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImagePreview(event.target?.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please upload a valid image file (JPEG, PNG, GIF, WEBP)');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image must be smaller than 5MB');
+        return;
+      }
+      
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
   
   const removeImage = () => {
-    setImage(null);
-    setImagePreview(null);
+    setImageFile(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+      setImagePreview(null);
+    }
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
     
-    setIsSubmitting(true);
+    if (!content.trim() && !imageFile) {
+      toast.error('Please enter some content or add an image');
+      return;
+    }
     
     try {
+      setIsSubmitting(true);
+      
       let imageUrl = null;
       
-      // Upload image if one was selected
-      if (image) {
+      // Upload image if provided
+      if (imageFile) {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const fileExt = image.name.split('.').pop();
-          const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-          const filePath = `${user.id}/${fileName}`;
+        if (!user) throw new Error('User not authenticated');
+        
+        const filename = `${user.id}-${Date.now()}-${imageFile.name}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(filename, imageFile);
           
-          const { error: uploadError } = await supabase.storage
-            .from('community_images')
-            .upload(filePath, image);
-            
-          if (!uploadError) {
-            const { data } = supabase.storage
-              .from('community_images')
-              .getPublicUrl(filePath);
-              
-            imageUrl = data.publicUrl;
-          }
-        }
+        if (uploadError) throw uploadError;
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(filename);
+          
+        imageUrl = publicUrl;
       }
       
-      // Create post
-      const post = await createPost(content, imageUrl);
+      const newPost = await createPost(content, imageUrl);
       
-      if (post) {
+      if (newPost) {
         setContent('');
-        setImage(null);
-        setImagePreview(null);
-        
-        if (onPostCreated) {
-          onPostCreated();
-        }
+        removeImage();
+        onPostCreated();
+        toast.success('Post created successfully!');
       }
     } catch (error) {
       console.error('Error creating post:', error);
+      toast.error('Failed to create post. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
-  
-  const getInitials = (username: string) => {
-    return username?.substring(0, 2).toUpperCase() || 'AN';
-  };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-6 p-4 bg-[#10121f] rounded-lg border border-indigo-900/30">
-      <div className="flex">
-        <Avatar className="h-10 w-10 mr-3">
-          <AvatarImage src={currentUser?.avatar_url || ''} alt={currentUser?.username || ''} />
-          <AvatarFallback className="bg-indigo-600">{getInitials(currentUser?.username || '')}</AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1">
+    <Card className="mb-6 bg-[#10121f] border border-indigo-900/30">
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit}>
           <Textarea
-            placeholder="Share something with the community..."
+            placeholder="Share your thoughts with the community..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="min-h-[120px] bg-[#191c31] border-indigo-900/30 focus:ring-1 focus:ring-indigo-500 text-white"
+            className="mb-3 bg-[#191c31] border-indigo-900/30 min-h-[100px] text-white resize-none"
           />
           
           {imagePreview && (
-            <div className="relative mt-2 inline-block">
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
-                className="max-h-32 rounded"
+            <div className="relative mb-3 inline-block">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="h-24 w-auto rounded-md object-cover"
               />
               <button
                 type="button"
                 onClick={removeImage}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1 text-white"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3" />
               </button>
             </div>
           )}
           
-          <div className="flex justify-between mt-3">
-            <div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-gray-400"
-                onClick={() => document.getElementById('image-upload')?.click()}
-              >
-                <ImagePlus className="h-5 w-5 mr-1" />
-                <span>Add Image</span>
-              </Button>
-              <input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-              />
+          <div className="flex justify-between items-center">
+            <div className="flex">
+              <label htmlFor="image-upload" className="cursor-pointer">
+                <div className="flex items-center text-indigo-400 hover:text-indigo-300">
+                  <Image className="h-5 w-5 mr-1" />
+                  <span className="text-sm">Add Image</span>
+                </div>
+                <input
+                  id="image-upload"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </label>
             </div>
             
-            <Button 
-              type="submit" 
-              disabled={!content.trim() || isSubmitting}
-              className="bg-indigo-600 hover:bg-indigo-700"
+            <Button
+              type="submit"
+              disabled={isSubmitting || (!content.trim() && !imageFile)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
-              <SendHorizonal className="h-5 w-5 mr-2" />
               {isSubmitting ? 'Posting...' : 'Post'}
             </Button>
           </div>
-        </div>
-      </div>
-    </form>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

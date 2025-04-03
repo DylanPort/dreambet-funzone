@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Post, Comment, UserProfile, Conversation, Message } from '@/types/community';
+import { toast } from 'sonner';
 
 // Export the types to fix import errors in components
 export type { Post, Comment, UserProfile, Conversation, Message };
@@ -7,8 +8,65 @@ export type { Post, Comment, UserProfile, Conversation, Message };
 // Post functions
 export const fetchPosts = async (): Promise<Post[]> => {
   try {
-    // Return mocked data for now
-    return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Fetch posts with user information
+    const { data: postsData, error: postsError } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        users:user_id (username, avatar_url, display_name)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(50);
+      
+    if (postsError) throw postsError;
+    
+    let posts: Post[] = [];
+    
+    if (postsData) {
+      // Fetch like status if user is authenticated
+      if (user) {
+        const { data: likesData } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+          
+        const likedPostIds = new Set(likesData?.map(like => like.post_id) || []);
+        
+        posts = postsData.map((post: any) => ({
+          id: post.id,
+          user_id: post.user_id,
+          content: post.content,
+          image_url: post.image_url,
+          likes_count: post.likes_count,
+          comments_count: post.comments_count,
+          created_at: post.created_at,
+          updated_at: post.updated_at,
+          username: post.users?.username,
+          avatar_url: post.users?.avatar_url,
+          display_name: post.users?.display_name,
+          isLiked: likedPostIds.has(post.id)
+        }));
+      } else {
+        posts = postsData.map((post: any) => ({
+          id: post.id,
+          user_id: post.user_id,
+          content: post.content,
+          image_url: post.image_url,
+          likes_count: post.likes_count,
+          comments_count: post.comments_count,
+          created_at: post.created_at,
+          updated_at: post.updated_at,
+          username: post.users?.username,
+          avatar_url: post.users?.avatar_url,
+          display_name: post.users?.display_name,
+          isLiked: false
+        }));
+      }
+    }
+    
+    return posts;
   } catch (error) {
     console.error('Error fetching posts:', error);
     return [];
