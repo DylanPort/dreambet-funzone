@@ -2,23 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserSearch } from '@/components/ui/user-search';
-import { fetchPosts } from '@/services/communityService';
-import { Post } from '@/types/community';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import CreatePostForm from '@/components/community/CreatePostForm';
 import PostCard from '@/components/community/PostCard';
 import { useNavigate } from 'react-router-dom';
-import { Users, MessageSquare, Activity, Settings } from 'lucide-react';
+import { Users, MessageSquare, Activity } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
+import { Post } from '@/types/community';
+import { usePosts } from '@/hooks/useSupabaseHooks';
 
 const Community = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
+  const { fetchPosts } = usePosts();
   
   useEffect(() => {
     const checkAuth = async () => {

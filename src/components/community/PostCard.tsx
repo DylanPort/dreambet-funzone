@@ -6,11 +6,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Post } from '@/types/community';
-import { deletePost, likePost } from '@/services/communityService';
 import { Heart, MessageSquare, MoreVertical, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { usePosts } from '@/hooks/useSupabaseHooks';
 
 interface PostCardProps {
   post: Post;
@@ -21,6 +21,7 @@ interface PostCardProps {
 const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted, onPostLiked }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
+  const { likePost, deletePost } = usePosts();
   
   const handleLikePost = async () => {
     if (isLiking) return;

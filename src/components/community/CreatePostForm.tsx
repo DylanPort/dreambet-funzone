@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { createPost } from '@/services/communityService';
 import { Upload, Image, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePosts } from '@/hooks/useSupabaseHooks';
 
 interface CreatePostFormProps {
   onPostCreated: () => void;
@@ -17,6 +17,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const { createPost } = usePosts();
   
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

@@ -39,6 +39,8 @@ export interface UserProfile {
   followers_count?: number;
   following_count?: number;
   posts_count?: number;
+  is_following?: boolean;
+  points?: number;
 }
 
 export interface Conversation {

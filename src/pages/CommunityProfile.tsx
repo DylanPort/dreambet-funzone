@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, MessageSquare, User, UserPlus, UserMinus, Calendar } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { fetchUserProfile, getUserPostsByUserId, followUser, unfollowUser } from '@/services/communityService';
 import { UserProfile, Post } from '@/types/community';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import PostCard from '@/components/community/PostCard';
@@ -13,9 +12,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import Footer from '@/components/Footer';
+import { useProfile } from '@/hooks/useSupabaseHooks';
 
 const CommunityProfile = () => {
   const { userId } = useParams<{ userId: string }>();
+  const { fetchUserProfile, followUser, unfollowUser, getUserPostsByUserId } = useProfile();
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
