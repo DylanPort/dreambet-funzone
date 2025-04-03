@@ -12,16 +12,14 @@ const PXBSupplyProgress = () => {
   const [showTopHolders, setShowTopHolders] = useState<boolean>(false);
   const [showRecentActivity, setShowRecentActivity] = useState<boolean>(false);
   
-  const { analytics, isLoading, error } = usePXBAnalytics(86400000);
-  
-  const fixedTotalMinted = 160057650;
+  const { analytics, isLoading, error } = usePXBAnalytics(1000);
   
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
   const stakingRewards = 400_000_000; // 400 million reserved for staking rewards
   const additionalBurned = 110_000_000; // 110 million reserved/removed from circulation
   const totalReserved = stakingRewards + additionalBurned;
 
-  const mintedPercentage = (fixedTotalMinted / maxSupply) * 100;
+  const mintedPercentage = (analytics.totalMinted / maxSupply) * 100;
   const stakingPercentage = (stakingRewards / maxSupply) * 100;
   const burnedPercentage = (additionalBurned / maxSupply) * 100;
   const totalPercentage = mintedPercentage + stakingPercentage + burnedPercentage;
@@ -31,11 +29,11 @@ const PXBSupplyProgress = () => {
   };
 
   useEffect(() => {
-    if (!isLoading) {
+    if (analytics.totalMinted > 0 && !isLoading) {
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 1500);
     }
-  }, [isLoading]);
+  }, [analytics.totalMinted, isLoading]);
 
   const getActivityColor = (action: string) => {
     switch (action) {
@@ -237,7 +235,7 @@ const PXBSupplyProgress = () => {
         <div className="mb-1">
           <span className="text-dream-foreground/60">Minted: </span>
           <span className="text-[#00ff00] font-semibold animate-pulse-subtle">
-            {formatNumber(fixedTotalMinted)} PXB
+            {formatNumber(analytics.totalMinted)} PXB
           </span>
           <span className="text-dream-foreground/40 text-xs ml-1">
             ({(mintedPercentage).toFixed(5)}%)
@@ -259,7 +257,7 @@ const PXBSupplyProgress = () => {
         </div>
         <div className="mb-1">
           <span className="text-dream-foreground/60">Remaining: </span>
-          <span className="font-medium">{formatNumber(maxSupply - totalReserved - fixedTotalMinted)} PXB</span>
+          <span className="font-medium">{formatNumber(maxSupply - totalReserved - analytics.totalMinted)} PXB</span>
           <span className="text-dream-foreground/40 text-xs ml-1">
             ({(100 - totalPercentage).toFixed(1)}%)
           </span>
