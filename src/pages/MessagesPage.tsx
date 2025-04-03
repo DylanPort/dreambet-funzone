@@ -3,14 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare, Search, User, Clock } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
 import { fetchConversations, fetchUserProfile } from '@/services/communityService';
 import { Conversation, UserProfile } from '@/types/community';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import MessageThread from '@/components/community/MessageThread';
-import UserSearch from '@/components/community/UserSearch';
+import { UserSearch } from '@/components/ui/user-search';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -27,10 +26,10 @@ const MessagesPage = () => {
   
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
+      const { data } = await supabase.auth.getUser();
+      setIsAuthenticated(!!data.user);
       
-      if (!user) {
+      if (!data.user) {
         toast.error('You must be logged in to view messages');
         navigate('/community');
       }
@@ -71,24 +70,36 @@ const MessagesPage = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     
-    const { data: { user } } = supabase.auth.getUser();
-    if (!user) return;
-    
-    const channel = supabase
-      .channel('messages-changes')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `recipient_id=eq.${user.id}`
-      }, () => {
-        // Reload conversations when a new message is received
-        loadConversations();
-      })
-      .subscribe();
+    const checkUserAndSubscribe = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
       
+      const channel = supabase
+        .channel('messages-changes')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `recipient_id=eq.${data.user.id}`
+        }, () => {
+          // Reload conversations when a new message is received
+          loadConversations();
+        })
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+    
+    const unsubscribe = checkUserAndSubscribe();
+    
     return () => {
-      supabase.removeChannel(channel);
+      if (unsubscribe) {
+        unsubscribe.then(cleanup => {
+          if (cleanup) cleanup();
+        });
+      }
     };
   }, [isAuthenticated]);
   

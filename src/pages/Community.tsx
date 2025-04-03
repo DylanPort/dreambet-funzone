@@ -131,7 +131,7 @@ const Community = () => {
             ) : posts.length === 0 ? (
               <div className="text-center py-12 bg-[#10121f] rounded-lg border border-indigo-900/30">
                 <p className="text-gray-400 mb-2">No posts yet</p>
-                <p className="text-gray-500 text-sm">Be the first to share something with the community!</p>
+                <p className="text-gray-500 text-sm mt-1">Be the first to share something with the community!</p>
               </div>
             ) : (
               posts.map(post => (
