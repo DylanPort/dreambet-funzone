@@ -42,7 +42,7 @@ export const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
         .from('comments')
         .select(`
           *,
-          author:author_id (
+          author:users(
             username,
             wallet_address,
             avatar_url
@@ -110,18 +110,10 @@ export const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
         });
       
       // Increment comments count on the post
-      const { data: post } = await supabase
+      await supabase
         .from('posts')
-        .select('comments_count')
-        .eq('id', postId)
-        .single();
-        
-      if (post) {
-        await supabase
-          .from('posts')
-          .update({ comments_count: post.comments_count + 1 })
-          .eq('id', postId);
-      }
+        .update({ comments_count: supabase.rpc('increment', { value: 1 }) })
+        .eq('id', postId);
       
       setNewComment("");
       toast.success('Comment added successfully');

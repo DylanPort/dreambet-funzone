@@ -886,6 +886,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrement: {
+        Args: {
+          value?: number
+        }
+        Returns: number
+      }
       generate_referral_code: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -906,6 +912,12 @@ export type Database = {
       }
       get_total_minted_pxb: {
         Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      increment: {
+        Args: {
+          value?: number
+        }
         Returns: number
       }
       increment_bounty_views: {
