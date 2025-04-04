@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -11,45 +10,48 @@ import PXBBetsHistory from '@/components/PXBBetsHistory';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
-
 const UserProfilePage = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const {
+    userId
+  } = useParams<{
+    userId: string;
+  }>();
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [winRate, setWinRate] = useState(0);
   const [userRank, setUserRank] = useState<number | null>(null);
   const [totalBets, setTotalBets] = useState(0);
-  
+
   // Fetch the user profile data by ID or wallet address
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!userId) return;
-      
       setIsLoading(true);
       try {
         // Check if userId is a UUID or wallet address
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
-        
+
         // Construct query based on whether userId is a UUID or wallet address
-        const query = isUuid 
-          ? supabase.from('users').select('*').eq('id', userId).single()
-          : supabase.from('users').select('*').eq('wallet_address', userId).single();
-          
+        const query = isUuid ? supabase.from('users').select('*').eq('id', userId).single() : supabase.from('users').select('*').eq('wallet_address', userId).single();
+
         // Fetch user data
-        const { data: userData, error: userError } = await query;
-        
+        const {
+          data: userData,
+          error: userError
+        } = await query;
         if (userError) {
           console.error('Error fetching user profile:', userError);
           toast.error('Failed to load user profile');
           return;
         }
-        
+
         // Fetch user leaderboard position
-        const { data: leaderboardData, error: leaderboardError } = await supabase
-          .from('users')
-          .select('id, points')
-          .order('points', { ascending: false });
-          
+        const {
+          data: leaderboardData,
+          error: leaderboardError
+        } = await supabase.from('users').select('id, points').order('points', {
+          ascending: false
+        });
         if (leaderboardError) {
           console.error('Error fetching leaderboard data:', leaderboardError);
         } else if (leaderboardData) {
@@ -58,29 +60,26 @@ const UserProfilePage = () => {
             setUserRank(userPosition + 1);
           }
         }
-        
+
         // Fetch user's bet count and calculate win rate
-        const { data: betsData, error: betsError } = await supabase
-          .from('bets')
-          .select('*')
-          .eq('bettor1_id', userData.id);
-          
+        const {
+          data: betsData,
+          error: betsError
+        } = await supabase.from('bets').select('*').eq('bettor1_id', userData.id);
         if (betsError) {
           console.error('Error fetching bets data:', betsError);
         } else if (betsData) {
           setTotalBets(betsData.length);
-          
           const completedBets = betsData.filter(bet => bet.status === 'won' || bet.status === 'lost');
           const wonBets = betsData.filter(bet => bet.status === 'won');
-          setWinRate(completedBets.length > 0 ? (wonBets.length / completedBets.length) * 100 : 0);
+          setWinRate(completedBets.length > 0 ? wonBets.length / completedBets.length * 100 : 0);
         }
-        
         if (userData) {
           setProfileData({
             id: userData.id,
             username: userData.username || `User_${userData.id.substring(0, 8)}`,
             pxbPoints: userData.points || 0,
-            createdAt: userData.created_at,
+            createdAt: userData.created_at
           });
         }
       } catch (error) {
@@ -90,10 +89,9 @@ const UserProfilePage = () => {
         setIsLoading(false);
       }
     };
-    
     fetchUserProfile();
   }, [userId]);
-  
+
   // Function to format the date
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Unknown';
@@ -104,10 +102,8 @@ const UserProfilePage = () => {
       day: 'numeric'
     }).format(date);
   };
-
   if (isLoading) {
-    return (
-      <>
+    return <>
         <Navbar />
         <main className="min-h-screen bg-dream-background">
           <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 flex justify-center items-center min-h-[80vh]">
@@ -117,13 +113,10 @@ const UserProfilePage = () => {
             </div>
           </div>
         </main>
-      </>
-    );
+      </>;
   }
-
   if (!profileData) {
-    return (
-      <>
+    return <>
         <Navbar />
         <main className="min-h-screen bg-dream-background">
           <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 flex justify-center items-center min-h-[80vh]">
@@ -131,10 +124,7 @@ const UserProfilePage = () => {
               <h2 className="text-2xl font-bold text-dream-foreground mb-4">User Not Found</h2>
               <p className="text-dream-foreground/70 mb-6">The user profile you're looking for doesn't exist or has been removed.</p>
               <Link to="/">
-                <Button 
-                  variant="default" 
-                  className="bg-dream-accent1 hover:bg-dream-accent1/80"
-                >
+                <Button variant="default" className="bg-dream-accent1 hover:bg-dream-accent1/80">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Return Home
                 </Button>
@@ -142,12 +132,9 @@ const UserProfilePage = () => {
             </div>
           </div>
         </main>
-      </>
-    );
+      </>;
   }
-
-  return (
-    <>
+  return <>
       <Navbar />
       <main className="min-h-screen bg-dream-background">
         <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16">
@@ -178,12 +165,10 @@ const UserProfilePage = () => {
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
                       <h1 className="text-3xl font-bold text-dream-foreground font-display">{profileData?.username}</h1>
-                      {userRank && (
-                        <div className="flex items-center px-3 py-1 bg-dream-accent1/10 border border-dream-accent1/20 rounded-full">
+                      {userRank && <div className="flex items-center px-3 py-1 bg-dream-accent1/10 border border-dream-accent1/20 rounded-full">
                           <Trophy className="w-4 h-4 text-dream-accent1 mr-1" />
                           <span className="text-sm font-medium">Rank #{userRank}</span>
-                        </div>
-                      )}
+                        </div>}
                     </div>
                     
                     <div className="flex flex-wrap gap-3 mb-4">
@@ -261,42 +246,12 @@ const UserProfilePage = () => {
               <div className="sticky top-24">
                 <OnlineUsersSidebar className="mb-6" />
                 
-                <Card className="bg-dream-background/30 border border-dream-foreground/10 backdrop-blur-sm p-4">
-                  <h3 className="font-display font-semibold text-lg mb-3">How to Earn PXB</h3>
-                  <ul className="space-y-2 text-sm text-dream-foreground/80">
-                    <li className="flex items-start">
-                      <div className="w-5 h-5 rounded-full bg-dream-accent1/20 text-dream-accent1 flex items-center justify-center mr-2 mt-0.5">1</div>
-                      <span>Place bets on tokens</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="w-5 h-5 rounded-full bg-dream-accent1/20 text-dream-accent1 flex items-center justify-center mr-2 mt-0.5">2</div>
-                      <span>Participate in community discussions</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="w-5 h-5 rounded-full bg-dream-accent1/20 text-dream-accent1 flex items-center justify-center mr-2 mt-0.5">3</div>
-                      <span>Invite friends with your referral code</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="w-5 h-5 rounded-full bg-dream-accent1/20 text-dream-accent1 flex items-center justify-center mr-2 mt-0.5">4</div>
-                      <span>Complete daily tasks and challenges</span>
-                    </li>
-                  </ul>
-                  
-                  <div className="mt-4 pt-4 border-t border-dream-foreground/10">
-                    <Link to="/">
-                      <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90">
-                        Start Earning PXB
-                      </Button>
-                    </Link>
-                  </div>
-                </Card>
+                
               </div>
             </div>
           </div>
         </div>
       </main>
-    </>
-  );
+    </>;
 };
-
 export default UserProfilePage;
