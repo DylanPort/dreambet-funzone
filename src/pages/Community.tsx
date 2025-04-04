@@ -1,14 +1,17 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown, Award } from 'lucide-react';
+import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown, Award, Trophy, Percent, Coins, ExternalLink } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useCommunityMessages } from '@/hooks/useCommunityMessages';
 import { toast } from 'sonner';
 import { CommunityMessage, CommunityReply } from '@/services/communityService';
 import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { Link } from 'react-router-dom';
 
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
@@ -33,6 +36,27 @@ const CommunityPage = () => {
     fetchTopLiked
   } = useCommunityMessages();
   const messageEndRef = useRef<HTMLDivElement>(null);
+  
+  // Add PXB context to access user profile, balance, and bet statistics
+  const { userProfile, bets, isLoadingBets, fetchUserBets } = usePXBPoints();
+
+  // Calculate win rate when bets change
+  const [winRate, setWinRate] = useState(0);
+  
+  useEffect(() => {
+    if (connected && userProfile) {
+      fetchUserBets();
+    }
+  }, [connected, userProfile, fetchUserBets]);
+  
+  useEffect(() => {
+    if (bets && bets.length > 0) {
+      const completedBets = bets.filter(bet => bet.status === 'won' || bet.status === 'lost');
+      const wonBets = bets.filter(bet => bet.status === 'won');
+      
+      setWinRate(completedBets.length > 0 ? (wonBets.length / completedBets.length) * 100 : 0);
+    }
+  }, [bets]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({
@@ -159,6 +183,57 @@ const CommunityPage = () => {
         {/* Online Users Sidebar */}
         <div className="hidden md:block w-72 mr-6 sticky top-24 self-start">
           <OnlineUsersSidebar />
+          
+          {/* User Stats Card - New addition */}
+          {connected && userProfile && (
+            <div className="mt-6 bg-dream-background/30 border border-dream-foreground/10 rounded-lg p-4">
+              <div className="flex items-center mb-4">
+                <User className="w-5 h-5 mr-2 text-dream-accent2" />
+                <h3 className="font-display font-bold text-lg">Your Profile</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between mb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2">
+                      <User className="w-4 h-4 text-dream-foreground/70" />
+                    </div>
+                    <span className="font-medium">{userProfile.username || truncateAddress(publicKey?.toString() || '')}</span>
+                  </div>
+                  <Link to={`/profile/${userProfile.id}`} className="text-xs text-dream-accent1 hover:text-dream-accent2 flex items-center">
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    Profile
+                  </Link>
+                </div>
+                
+                <div className="bg-dream-background/20 p-3 rounded-lg border border-dream-foreground/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center text-sm">
+                      <Coins className="w-4 h-4 mr-1 text-yellow-500" />
+                      <span className="text-dream-foreground/70">PXB Balance:</span>
+                    </div>
+                    <span className="font-bold text-dream-accent2">{userProfile.pxbPoints.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center text-sm">
+                      <Trophy className="w-4 h-4 mr-1 text-dream-accent1" />
+                      <span className="text-dream-foreground/70">Rank:</span>
+                    </div>
+                    <span className="font-bold text-dream-accent1">#{userProfile.rank || '—'}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-sm">
+                      <Percent className="w-4 h-4 mr-1 text-green-500" />
+                      <span className="text-dream-foreground/70">Win Rate:</span>
+                    </div>
+                    <span className="font-bold text-green-500">{winRate.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Most Liked Messages Section */}
           <div className="mt-6 bg-dream-background/30 border border-dream-foreground/10 rounded-lg p-4">
