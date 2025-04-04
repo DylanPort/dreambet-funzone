@@ -21,12 +21,14 @@ const CommunityPage = () => {
     messages, 
     messageReplies, 
     messageReactions,
+    topLikedMessages,
     loading, 
     error, 
     postMessage, 
     loadRepliesForMessage, 
     postReply,
-    reactToMessage
+    reactToMessage,
+    fetchTopLiked
   } = useCommunityMessages();
   
   const messageEndRef = useRef<HTMLDivElement>(null);

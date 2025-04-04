@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface CommunityMessage {
@@ -51,26 +52,56 @@ export const fetchCommunityMessages = async (): Promise<CommunityMessage[]> => {
 
 export const fetchTopLikedMessages = async (limit: number = 5): Promise<CommunityMessage[]> => {
   try {
-    const { data, error } = await supabase
-      .from('community_messages')
-      .select(`
-        *,
-        likes_count:community_message_reactions(count).filter(reaction_type.eq.like)
-      `)
-      .order('likes_count', { ascending: false })
-      .limit(limit);
+    // First, get all message IDs with their like counts
+    const { data: reactionsData, error: reactionsError } = await supabase
+      .from('community_message_reactions')
+      .select('message_id, reaction_type')
+      .eq('reaction_type', 'like');
     
-    if (error) {
-      console.error('Error fetching top liked messages:', error);
-      throw error;
+    if (reactionsError) {
+      console.error('Error fetching message reactions:', reactionsError);
+      throw reactionsError;
     }
     
-    const formattedData = data.map(item => ({
-      ...item,
-      likes_count: item.likes_count || 0
+    // Count likes per message
+    const likesCount: Record<string, number> = {};
+    reactionsData.forEach(reaction => {
+      if (reaction.reaction_type === 'like') {
+        likesCount[reaction.message_id] = (likesCount[reaction.message_id] || 0) + 1;
+      }
+    });
+    
+    // Sort message IDs by like count
+    const sortedMessageIds = Object.entries(likesCount)
+      .sort(([, countA], [, countB]) => countB - countA)
+      .slice(0, limit)
+      .map(([messageId]) => messageId);
+    
+    if (sortedMessageIds.length === 0) {
+      return [];
+    }
+    
+    // Fetch the actual messages
+    const { data: messages, error: messagesError } = await supabase
+      .from('community_messages')
+      .select('*')
+      .in('id', sortedMessageIds);
+    
+    if (messagesError) {
+      console.error('Error fetching top liked messages:', messagesError);
+      throw messagesError;
+    }
+    
+    // Add the like counts to the messages
+    const formattedMessages = messages.map(message => ({
+      ...message,
+      likes_count: likesCount[message.id] || 0
     }));
     
-    return formattedData as unknown as CommunityMessage[];
+    // Sort by likes count
+    formattedMessages.sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
+    
+    return formattedMessages as CommunityMessage[];
   } catch (error) {
     console.error('Error in fetchTopLikedMessages:', error);
     throw error;
