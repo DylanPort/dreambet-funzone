@@ -63,25 +63,30 @@ const CommunityPage = () => {
   };
   
   const handleLoadReplies = async (messageId: string) => {
-    if (!expandedReplies[messageId]) {
-      const replies = await loadRepliesForMessage(messageId);
-      if (replies.length > 0) {
+    try {
+      if (!expandedReplies[messageId]) {
+        const replies = await loadRepliesForMessage(messageId);
+        if (replies.length > 0) {
+          setExpandedReplies(prev => ({
+            ...prev,
+            [messageId]: true
+          }));
+        } else {
+          toast.info("No replies yet. Be the first to reply!");
+          setShowReplyInput(prev => ({
+            ...prev,
+            [messageId]: true
+          }));
+        }
+      } else {
         setExpandedReplies(prev => ({
           ...prev,
-          [messageId]: true
-        }));
-      } else {
-        toast.info("No replies yet. Be the first to reply!");
-        setShowReplyInput(prev => ({
-          ...prev,
-          [messageId]: true
+          [messageId]: false
         }));
       }
-    } else {
-      setExpandedReplies(prev => ({
-        ...prev,
-        [messageId]: false
-      }));
+    } catch (error) {
+      console.error("Error loading replies:", error);
+      toast.error("Failed to load replies. Please try again.");
     }
   };
   
