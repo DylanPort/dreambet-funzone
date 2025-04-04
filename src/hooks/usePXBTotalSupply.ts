@@ -22,88 +22,47 @@ export const usePXBTotalSupply = (refreshInterval = 1000) => {
   const fetchTotalMinted = async () => {
     try {
       // Get total minted (sum of all points in users table)
-      const { data: totalPointsData, error: totalPointsError } = await supabase
+      // Instead of using a sum query that doesn't exist, we'll directly calculate it
+      const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select('sum')
-        .eq('sum_field', 'points')
-        .single();
+        .select('points');
       
-      if (totalPointsError) {
-        // Fallback query if the sum RPC is not working
-        const { data: usersData, error: usersError } = await supabase
-          .from('users')
-          .select('points');
-        
-        if (usersError) throw usersError;
-        
-        // Calculate sum manually
-        const totalMinted = usersData.reduce((sum, user) => {
-          return sum + (typeof user.points === 'number' ? user.points : 0);
-        }, 0);
-        
-        // Get total users count
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('count');
-        
-        if (userError) throw userError;
-        
-        const totalUsers = userData[0]?.count || 0;
-        
-        // Get users with points count
-        const { data: usersWithPointsData, error: pointsError } = await supabase
-          .from('users')
-          .select('count')
-          .gt('points', 0);
-        
-        if (pointsError) throw pointsError;
-        
-        const usersWithPoints = usersWithPointsData[0]?.count || 0;
-        
-        // Calculate average points per user (only for users with points)
-        const averagePerUser = usersWithPoints > 0 ? 
-          Math.round(totalMinted / usersWithPoints) : 0;
-        
-        setSupplyData({
-          totalMinted,
-          totalUsers,
-          usersWithPoints,
-          averagePerUser
-        });
-      } else {
-        // If the sum RPC worked, use its result
-        const totalMinted = totalPointsData?.sum || 0;
-        
-        // Get total users count
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('count');
-        
-        if (userError) throw userError;
-        
-        const totalUsers = userData[0]?.count || 0;
-        
-        // Get users with points count
-        const { data: usersWithPointsData, error: pointsError } = await supabase
-          .from('users')
-          .select('count')
-          .gt('points', 0);
-        
-        if (pointsError) throw pointsError;
-        
-        const usersWithPoints = usersWithPointsData[0]?.count || 0;
-        
-        // Calculate average points per user (only for users with points)
-        const averagePerUser = usersWithPoints > 0 ? 
-          Math.round(Number(totalMinted) / usersWithPoints) : 0;
-        
-        setSupplyData({
-          totalMinted: Number(totalMinted),
-          totalUsers,
-          usersWithPoints,
-          averagePerUser
-        });
-      }
+      if (usersError) throw usersError;
+      
+      // Calculate sum manually
+      const totalMinted = usersData.reduce((sum, user) => {
+        return sum + (typeof user.points === 'number' ? user.points : 0);
+      }, 0);
+      
+      // Get total users count
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('count');
+      
+      if (userError) throw userError;
+      
+      const totalUsers = userData[0]?.count || 0;
+      
+      // Get users with points count
+      const { data: usersWithPointsData, error: pointsError } = await supabase
+        .from('users')
+        .select('count')
+        .gt('points', 0);
+      
+      if (pointsError) throw pointsError;
+      
+      const usersWithPoints = usersWithPointsData[0]?.count || 0;
+      
+      // Calculate average points per user (only for users with points)
+      const averagePerUser = usersWithPoints > 0 ? 
+        Math.round(totalMinted / usersWithPoints) : 0;
+      
+      setSupplyData({
+        totalMinted,
+        totalUsers,
+        usersWithPoints,
+        averagePerUser
+      });
       
       setIsLoading(false);
     } catch (err) {
