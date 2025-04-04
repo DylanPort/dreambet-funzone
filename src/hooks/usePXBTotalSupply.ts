@@ -11,7 +11,7 @@ export interface PXBSupplyData {
 
 export const usePXBTotalSupply = (refreshInterval = 1000) => {
   const [supplyData, setSupplyData] = useState<PXBSupplyData>({
-    totalMinted: 220590627, // Use the updated fixed value
+    totalMinted: 220590627, // Start with the known correct value
     totalUsers: 0,
     usersWithPoints: 0,
     averagePerUser: 0
@@ -21,15 +21,14 @@ export const usePXBTotalSupply = (refreshInterval = 1000) => {
 
   const fetchTotalMinted = async () => {
     try {
-      // Get total minted from our database function
+      // Get total minted from our new database function
+      // Since TypeScript doesn't know about this function yet, we need to use a type assertion
       const { data: totalMintedData, error: totalMintedError } = await supabase
         .rpc('get_total_minted_pxb') as { data: number | null, error: any };
       
       if (totalMintedError) throw totalMintedError;
       
-      // If the database function returns null or a very different value, use our fixed value
-      // to ensure consistency across the application
-      const totalMinted = totalMintedData ? Number(totalMintedData) : 220590627;
+      const totalMinted = totalMintedData || 220590627; // Fallback to known value if needed
       
       // Get total users count
       const { data: userData, error: userError } = await supabase
@@ -51,6 +50,7 @@ export const usePXBTotalSupply = (refreshInterval = 1000) => {
       const usersWithPoints = usersWithPointsData[0]?.count || 0;
       
       // Calculate average points per user (only for users with points)
+      // Fix type issue by explicitly converting to number
       const averagePerUser = usersWithPoints > 0 ? 
         Math.round(Number(totalMinted) / Number(usersWithPoints)) : 0;
       

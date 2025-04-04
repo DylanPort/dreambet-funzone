@@ -43,7 +43,7 @@ export const usePXBAnalytics = (pollingInterval = 86400000) => { // Default to 2
   const fetchPXBAnalytics = async () => {
     try {
       // Fixed value for display (from user request)
-      const fixedTotalMinted = 220590627; // Updated to match the current supply
+      const fixedTotalMinted = 160057650;
       
       // Update the analytics with just the fixed total minted
       setAnalytics(prev => ({
@@ -52,7 +52,7 @@ export const usePXBAnalytics = (pollingInterval = 86400000) => { // Default to 2
       }));
       
       // Fetch the complete analytics
-      await fetchCompleteAnalytics(fixedTotalMinted);
+      await fetchCompleteAnalytics();
       
       setIsLoading(false);
     } catch (err) {
@@ -62,10 +62,10 @@ export const usePXBAnalytics = (pollingInterval = 86400000) => { // Default to 2
     }
   };
 
-  const fetchCompleteAnalytics = async (fixedTotalMinted: number) => {
+  const fetchCompleteAnalytics = async () => {
     try {
-      // Use the fixed total minted value for all calculations
-      const totalMinted = fixedTotalMinted;
+      // Fixed total minted value
+      const totalMinted = 160057650;
       
       // Get total users count
       const { data: userData, error: userError } = await supabase
