@@ -378,7 +378,7 @@ const CommunityPage = () => {
                       </div>
                       
                       {messageReplies[msg.id]?.length > 0 && <Button variant="ghost" size="sm" onClick={() => handleLoadReplies(msg.id)} className="flex items-center text-xs px-2 py-1 h-auto">
-                          <span className="text-dream-accent2">
+                          <span className="text-[#00ff26]">
                             {messageReplies[msg.id].length} {messageReplies[msg.id].length === 1 ? 'reply' : 'replies'}
                           </span>
                         </Button>}
