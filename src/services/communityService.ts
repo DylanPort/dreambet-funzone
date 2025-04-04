@@ -22,7 +22,7 @@ export const fetchCommunityMessages = async (): Promise<CommunityMessage[]> => {
       throw error;
     }
     
-    return data as CommunityMessage[];
+    return data as unknown as CommunityMessage[];
   } catch (error) {
     console.error('Error in fetchCommunityMessages:', error);
     throw error;
@@ -50,7 +50,7 @@ export const postCommunityMessage = async (
       throw error;
     }
     
-    return data as CommunityMessage;
+    return data as unknown as CommunityMessage;
   } catch (error) {
     console.error('Error in postCommunityMessage:', error);
     throw error;

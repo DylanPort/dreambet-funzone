@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { fetchCommunityMessages, postCommunityMessage, CommunityMessage } from '@/services/communityService';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import { supabase } from "@/integrations/supabase/client";
 
 export const useCommunityMessages = () => {
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
@@ -37,7 +38,7 @@ export const useCommunityMessages = () => {
         table: 'community_messages'
       }, payload => {
         // Add new message to the state
-        setMessages(prevMessages => [payload.new as CommunityMessage, ...prevMessages]);
+        setMessages(prevMessages => [payload.new as unknown as CommunityMessage, ...prevMessages]);
       })
       .subscribe();
       
@@ -69,6 +70,3 @@ export const useCommunityMessages = () => {
     refreshMessages
   };
 };
-
-// Add missing import
-import { supabase } from "@/integrations/supabase/client";
