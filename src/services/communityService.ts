@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface CommunityMessage {
@@ -46,6 +45,34 @@ export const fetchCommunityMessages = async (): Promise<CommunityMessage[]> => {
     return data as unknown as CommunityMessage[];
   } catch (error) {
     console.error('Error in fetchCommunityMessages:', error);
+    throw error;
+  }
+};
+
+export const fetchTopLikedMessages = async (limit: number = 5): Promise<CommunityMessage[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('community_messages')
+      .select(`
+        *,
+        likes_count:community_message_reactions(count).filter(reaction_type.eq.like)
+      `)
+      .order('likes_count', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error('Error fetching top liked messages:', error);
+      throw error;
+    }
+    
+    const formattedData = data.map(item => ({
+      ...item,
+      likes_count: item.likes_count || 0
+    }));
+    
+    return formattedData as unknown as CommunityMessage[];
+  } catch (error) {
+    console.error('Error in fetchTopLikedMessages:', error);
     throw error;
   }
 };
@@ -153,7 +180,6 @@ export const addReactionToMessage = async (
   reactionType: 'like' | 'dislike'
 ): Promise<MessageReaction> => {
   try {
-    // First, check if user already has a reaction to this message
     const { data: existingReaction } = await supabase
       .from('community_message_reactions')
       .select('*')
@@ -163,7 +189,6 @@ export const addReactionToMessage = async (
     
     if (existingReaction) {
       if (existingReaction.reaction_type === reactionType) {
-        // User is toggling off the same reaction - delete it
         const { error: deleteError } = await supabase
           .from('community_message_reactions')
           .delete()
@@ -176,7 +201,6 @@ export const addReactionToMessage = async (
         
         return null as unknown as MessageReaction;
       } else {
-        // User is changing reaction type - update it
         const { data, error } = await supabase
           .from('community_message_reactions')
           .update({ reaction_type: reactionType })
@@ -192,7 +216,6 @@ export const addReactionToMessage = async (
         return data as MessageReaction;
       }
     } else {
-      // User is adding a new reaction
       const { data, error } = await supabase
         .from('community_message_reactions')
         .insert({

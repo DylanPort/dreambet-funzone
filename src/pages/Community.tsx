@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown, Award } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useCommunityMessages } from '@/hooks/useCommunityMessages';
 import { toast } from 'sonner';
@@ -160,6 +160,43 @@ const CommunityPage = () => {
         {/* Online Users Sidebar */}
         <div className="hidden md:block w-72 mr-6 sticky top-24 self-start">
           <OnlineUsersSidebar />
+          
+          {/* Most Liked Messages Section */}
+          <div className="mt-6 bg-dream-background/30 border border-dream-foreground/10 rounded-lg p-4">
+            <div className="flex items-center mb-4">
+              <Award className="w-5 h-5 mr-2 text-yellow-500" />
+              <h3 className="font-display font-bold text-lg">Most Liked Messages</h3>
+            </div>
+            
+            {topLikedMessages.length === 0 ? (
+              <p className="text-dream-foreground/50 text-sm text-center py-3">No liked messages yet</p>
+            ) : (
+              <div className="space-y-3">
+                {topLikedMessages.slice(0, 3).map((msg) => (
+                  <Card 
+                    key={`liked-${msg.id}`} 
+                    className="p-3 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all"
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="flex items-center">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2">
+                          <User className="w-3 h-3 text-dream-foreground/70" />
+                        </div>
+                        <span className="text-sm font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-dream-foreground/50">
+                        <ThumbsUp className="w-3 h-3 mr-1 text-green-500 fill-green-500" />
+                        <span>{msg.likes_count || messageReactions[msg.id]?.likes || 0}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-dream-foreground/80 line-clamp-2 mt-1">
+                      {msg.content}
+                    </p>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Main Content */}
