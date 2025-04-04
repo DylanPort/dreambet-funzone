@@ -21,7 +21,7 @@ export const useSolanaBalance = () => {
         setError(null);
         
         // Use a different RPC endpoint with better rate limits
-        const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+        const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
         const lamports = await connection.getBalance(publicKey);
         const solBalance = lamports / LAMPORTS_PER_SOL;
         
