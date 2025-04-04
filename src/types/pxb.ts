@@ -1,9 +1,12 @@
+
 export interface UserProfile {
   id: string;
   username: string;
   pxbPoints: number;
   createdAt: string;
   isTemporary?: boolean; // Add this flag to identify temporary profiles
+  walletAddress?: string; // Add wallet address field
+  avatar_url?: string; // Add avatar URL for UI display
 }
 
 // Updated PXBBet interface with all required fields
@@ -89,6 +92,7 @@ export interface SupabaseUserProfile {
   wallet_address: string;
   points: number;
   created_at: string;
+  avatar_url?: string; // Add avatar URL field
 }
 
 // Updated to include current_market_cap in the database schema
@@ -118,4 +122,32 @@ export interface SupabaseBetsRow {
   transaction_signature?: string;
   end_time?: string;
   start_time?: string;
+}
+
+// Add community-related interfaces
+export interface Comment {
+  id: string;
+  post_id?: string;
+  bounty_id?: string;
+  user_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  likes_count: number;
+  username?: string;
+  avatar_url?: string;
+}
+
+export interface Post {
+  id: string;
+  user_id: string;
+  content: string;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+  likes_count: number;
+  comments_count: number;
+  views_count?: number;
+  username?: string;
+  avatar_url?: string;
 }
