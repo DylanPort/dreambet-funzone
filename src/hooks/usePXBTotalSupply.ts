@@ -11,7 +11,7 @@ export interface PXBSupplyData {
 
 export const usePXBTotalSupply = (refreshInterval = 1000) => {
   const [supplyData, setSupplyData] = useState<PXBSupplyData>({
-    totalMinted: 0,
+    totalMinted: 220590627, // Start with the known correct value
     totalUsers: 0,
     usersWithPoints: 0,
     averagePerUser: 0
