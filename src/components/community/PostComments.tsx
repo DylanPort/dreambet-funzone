@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -52,7 +53,7 @@ export const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
       
       if (error) throw error;
       
-      // Need to cast to unknown first before casting to Comment[] to avoid TypeScript error
+      // Cast to the expected Comment[] type
       let commentsWithLikes = [...((data as unknown) as Comment[])];
       
       if (userId) {
@@ -108,11 +109,9 @@ export const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
           content: newComment.trim()
         });
       
-      // Increment comments count on the post - using direct update instead of RPC
+      // Increment comments count on the post using RPC function
       await supabase
-        .from('posts')
-        .update({ comments_count: "comments_count + 1" })
-        .eq('id', postId);
+        .rpc('increment_post_comments', { post_id: postId });
       
       setNewComment("");
       toast.success('Comment added successfully');

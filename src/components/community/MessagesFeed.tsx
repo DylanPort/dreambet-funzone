@@ -49,7 +49,7 @@ export const MessagesFeed: React.FC = () => {
       
       if (error) throw error;
       
-      // Need to cast to unknown first before casting to Post[] to avoid TypeScript error
+      // Cast data to the expected type to avoid TypeScript errors
       let postsWithLikeStatus = (data as unknown) as Post[];
       
       // If user is authenticated, check which posts they've liked
@@ -109,22 +109,20 @@ export const MessagesFeed: React.FC = () => {
           .eq('post_id', postId)
           .eq('user_id', userId);
           
-        // Decrement likes count - using direct update instead of RPC
+        // Decrement likes count using direct SQL expression
+        // Use rpc call instead of raw SQL string
         await supabase
-          .from('posts')
-          .update({ likes_count: "GREATEST(likes_count - 1, 0)" })
-          .eq('id', postId);
+          .rpc('decrement_post_likes', { post_id: postId });
       } else {
         // Like the post
         await supabase
           .from('post_likes')
           .insert({ post_id: postId, user_id: userId });
           
-        // Increment likes count - using direct update instead of RPC
+        // Increment likes count using direct SQL expression
+        // Use rpc call instead of raw SQL string
         await supabase
-          .from('posts')
-          .update({ likes_count: "likes_count + 1" })
-          .eq('id', postId);
+          .rpc('increment_post_likes', { post_id: postId });
       }
       
       refetch();
