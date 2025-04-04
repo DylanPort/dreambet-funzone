@@ -1,6 +1,10 @@
+
 // This file is kept for backward compatibility
 // It re-exports all functionality from the new modular structure
 export { PXBPointsProvider, usePXBPoints } from './pxb/PXBPointsContext';
+
+// Import UserProfile type from the types file
+import { UserProfile } from '@/types/pxb';
 
 export interface UserContextType {
   userProfile: UserProfile | null;

@@ -208,8 +208,8 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
           
           return {
             ...comment,
-            username: userData.username,
-            avatar_url: userData.avatar_url
+            username: userData?.username || 'Unknown User',
+            avatar_url: userData?.avatar_url
           };
         })
       );
@@ -237,7 +237,7 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
     try {
       setIsSubmitting(true);
       
-      // Add the comment
+      // Add the comment to the comments table
       const { error } = await supabase
         .from('comments')
         .insert({
