@@ -110,10 +110,18 @@ export const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
         });
       
       // Increment comments count on the post
-      await supabase
+      const { data: post } = await supabase
         .from('posts')
-        .update({ comments_count: supabase.rpc('increment', { x: 1 }) })
-        .eq('id', postId);
+        .select('comments_count')
+        .eq('id', postId)
+        .single();
+        
+      if (post) {
+        await supabase
+          .from('posts')
+          .update({ comments_count: post.comments_count + 1 })
+          .eq('id', postId);
+      }
       
       setNewComment("");
       toast.success('Comment added successfully');

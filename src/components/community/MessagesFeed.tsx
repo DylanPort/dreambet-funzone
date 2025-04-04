@@ -50,7 +50,7 @@ export const MessagesFeed: React.FC = () => {
       if (error) throw error;
       
       // If user is authenticated, check which posts they've liked
-      let postsWithLikeStatus = data as Post[];
+      let postsWithLikeStatus = data as unknown as Post[];
       
       if (userId) {
         const { data: likedPosts } = await supabase
@@ -109,10 +109,18 @@ export const MessagesFeed: React.FC = () => {
           .eq('user_id', userId);
           
         // Decrement likes count
-        await supabase
+        const { data: post } = await supabase
           .from('posts')
-          .update({ likes_count: supabase.rpc('decrement', { x: 1 }) })
-          .eq('id', postId);
+          .select('likes_count')
+          .eq('id', postId)
+          .single();
+        
+        if (post) {
+          await supabase
+            .from('posts')
+            .update({ likes_count: Math.max(0, post.likes_count - 1) })
+            .eq('id', postId);
+        }
       } else {
         // Like the post
         await supabase
@@ -120,10 +128,18 @@ export const MessagesFeed: React.FC = () => {
           .insert({ post_id: postId, user_id: userId });
           
         // Increment likes count
-        await supabase
+        const { data: post } = await supabase
           .from('posts')
-          .update({ likes_count: supabase.rpc('increment', { x: 1 }) })
-          .eq('id', postId);
+          .select('likes_count')
+          .eq('id', postId)
+          .single();
+        
+        if (post) {
+          await supabase
+            .from('posts')
+            .update({ likes_count: post.likes_count + 1 })
+            .eq('id', postId);
+        }
       }
       
       refetch();
