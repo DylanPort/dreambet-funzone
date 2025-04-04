@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown } from 'lucide-r
 import Navbar from '@/components/Navbar';
 import { useCommunityMessages } from '@/hooks/useCommunityMessages';
 import { toast } from 'sonner';
+import { CommunityMessage, CommunityReply } from '@/services/communityService';
 import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
 
 const CommunityPage = () => {
