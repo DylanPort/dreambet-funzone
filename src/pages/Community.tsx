@@ -235,7 +235,7 @@ const CommunityPage = () => {
                 <div className="bg-dream-background/20 p-3 rounded-lg border border-dream-foreground/10">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center text-sm">
-                      <Coins className="w-4 h-4 mr-1 text-yellow-500" />
+                      <img src="/lovable-uploads/5bea0b92-6460-4b88-890b-093867d1e680.png" className="w-4 h-4 mr-1" alt="PXB" />
                       <span className="text-dream-foreground/70">PXB Balance:</span>
                     </div>
                     <span className="font-bold text-dream-accent2">{userProfile.pxbPoints.toLocaleString()}</span>
@@ -327,7 +327,7 @@ const CommunityPage = () => {
                 <span className="font-display font-semibold text-dream-foreground/90">Messages sorted by PXB Points</span>
               </div>
               <div className="flex items-center text-sm text-dream-foreground/60">
-                <Coins className="w-4 h-4 mr-1 text-yellow-500" />
+                <img src="/lovable-uploads/5bea0b92-6460-4b88-890b-093867d1e680.png" className="w-4 h-4 mr-1" alt="PXB" />
                 <span>Higher points at top</span>
                 <ArrowDown className="w-4 h-4 ml-1 text-dream-foreground/50" />
               </div>
@@ -362,7 +362,7 @@ const CommunityPage = () => {
                           
                           <div className="flex mt-1 space-x-2">
                             <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
-                              <Coins className="w-3 h-3 mr-1 text-yellow-500" />
+                              <img src="/lovable-uploads/5bea0b92-6460-4b88-890b-093867d1e680.png" className="w-3 h-3 mr-1" alt="PXB" />
                               <span>{msg.user_pxb_points?.toLocaleString() || "0"}</span>
                             </div>
                             {msg.user_win_rate !== undefined && (
