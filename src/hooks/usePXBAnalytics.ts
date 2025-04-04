@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -89,7 +90,7 @@ export const usePXBAnalytics = (pollingInterval = 86400000) => { // Default to 2
       const averagePerUser = usersWithPoints > 0 ? 
         Math.round(totalMinted / usersWithPoints) : 0;
       
-      // Get distribution by ranges
+      // Get distribution by ranges directly from database
       const ranges = [
         { min: 0, max: 1000, label: '0-1,000' },
         { min: 1001, max: 10000, label: '1,001-10,000' },
