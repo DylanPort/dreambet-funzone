@@ -1,12 +1,11 @@
 
-import React, { useEffect, useMemo } from 'react';
+import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useCommunity } from '@/hooks/useCommunity';
 import UserList from '@/components/community/UserList';
 import PostInput from '@/components/community/PostInput';
 import PostCard from '@/components/community/PostCard';
-import CommentItem from '@/components/community/CommentItem';
 import { Loader2 } from 'lucide-react';
 
 const Community: React.FC = () => {
@@ -15,32 +14,8 @@ const Community: React.FC = () => {
     posts,
     loadingUsers,
     loadingPosts,
-    expandedPostId,
-    setExpandedPostId,
-    commentsMap,
-    loadingComments,
-    handleCreatePost,
-    loadComments,
-    handleCreateComment,
-    handleTogglePostLike,
-    handleToggleCommentLike
+    handleCreatePost
   } = useCommunity();
-
-  // Sort posts by interaction score (comments * 3 + likes * 2 + views)
-  const sortedPosts = useMemo(() => {
-    return [...posts].sort((a, b) => {
-      const scoreA = a.comments_count * 3 + a.likes_count * 2 + a.views_count;
-      const scoreB = b.comments_count * 3 + b.likes_count * 2 + b.views_count;
-      return scoreB - scoreA;
-    });
-  }, [posts]);
-
-  // Load comments when a post is expanded
-  useEffect(() => {
-    if (expandedPostId) {
-      loadComments(expandedPostId);
-    }
-  }, [expandedPostId, loadComments]);
 
   return (
     <div className="min-h-screen flex flex-col bg-dream-background">
@@ -69,41 +44,16 @@ const Community: React.FC = () => {
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-dream-accent1" />
               </div>
-            ) : sortedPosts.length === 0 ? (
+            ) : posts.length === 0 ? (
               <div className="text-center py-12 border border-border rounded-lg bg-card/70 backdrop-blur-sm">
                 <h3 className="text-lg font-medium mb-2">No Posts Yet</h3>
                 <p className="text-muted-foreground">Be the first to start a conversation!</p>
               </div>
             ) : (
-              sortedPosts.map(post => (
+              posts.map(post => (
                 <PostCard
                   key={post.id}
                   post={post}
-                  expanded={expandedPostId === post.id}
-                  onExpand={setExpandedPostId}
-                  onLike={handleTogglePostLike}
-                  onComment={handleCreateComment}
-                  onCommentLike={handleToggleCommentLike}
-                  loadingComments={!!loadingComments[post.id]}
-                  comments={
-                    commentsMap[post.id]?.length ? (
-                      <div className="space-y-4">
-                        {commentsMap[post.id].map(comment => (
-                          <CommentItem
-                            key={comment.id}
-                            comment={comment}
-                            postId={post.id}
-                            onLike={handleToggleCommentLike}
-                            onReply={handleCreateComment}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground">
-                        No comments yet. Be the first to comment!
-                      </div>
-                    )
-                  }
                 />
               ))
             )}
