@@ -9,7 +9,8 @@ import {
   postReplyToMessage, 
   CommunityReply,
   fetchMessageReactions,
-  addReactionToMessage
+  addReactionToMessage,
+  MessageReaction
 } from '@/services/communityService';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { supabase } from "@/integrations/supabase/client";
@@ -80,7 +81,8 @@ export const useCommunityMessages = () => {
         table: 'community_messages'
       }, payload => {
         // Add new message to the state
-        setMessages(prevMessages => [payload.new as unknown as CommunityMessage, ...prevMessages]);
+        const newMessage = payload.new as unknown as CommunityMessage;
+        setMessages(prevMessages => [newMessage, ...prevMessages]);
       })
       .subscribe();
       

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -223,5 +222,44 @@ export const updateUsername = async (walletAddress: string, username: string): P
     console.error("Unexpected error in updateUsername:", error);
     toast.error("An unexpected error occurred");
     return false;
+  }
+};
+
+// Fetch all users from the database
+export const fetchAllUsers = async (): Promise<UserProfile[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching users:", error);
+      return [];
+    }
+    
+    return data as unknown as UserProfile[];
+  } catch (error) {
+    console.error("Unexpected error in fetchAllUsers:", error);
+    return [];
+  }
+};
+
+// Calculate total users count
+export const getTotalUsersCount = async (): Promise<number> => {
+  try {
+    const { count, error } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error("Error getting users count:", error);
+      return 0;
+    }
+    
+    return count || 0;
+  } catch (error) {
+    console.error("Unexpected error in getTotalUsersCount:", error);
+    return 0;
   }
 };

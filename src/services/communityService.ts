@@ -140,7 +140,7 @@ export const fetchMessageReactions = async (messageId: string): Promise<MessageR
       throw error;
     }
     
-    return data as MessageReaction[];
+    return data as unknown as MessageReaction[];
   } catch (error) {
     console.error('Error in fetchMessageReactions:', error);
     throw error;
@@ -151,15 +151,20 @@ export const addReactionToMessage = async (
   messageId: string,
   userId: string,
   reactionType: 'like' | 'dislike'
-): Promise<MessageReaction> => {
+): Promise<MessageReaction | null> => {
   try {
     // First, check if user already has a reaction to this message
-    const { data: existingReaction } = await supabase
+    const { data: existingReaction, error: fetchError } = await supabase
       .from('community_message_reactions')
       .select('*')
       .eq('message_id', messageId)
       .eq('user_id', userId)
       .maybeSingle();
+    
+    if (fetchError) {
+      console.error('Error checking existing reaction:', fetchError);
+      throw fetchError;
+    }
     
     if (existingReaction) {
       if (existingReaction.reaction_type === reactionType) {
@@ -174,26 +179,26 @@ export const addReactionToMessage = async (
           throw deleteError;
         }
         
-        return null as unknown as MessageReaction;
+        return null;
       } else {
         // User is changing reaction type - update it
-        const { data, error } = await supabase
+        const { data: updatedReaction, error: updateError } = await supabase
           .from('community_message_reactions')
           .update({ reaction_type: reactionType })
           .eq('id', existingReaction.id)
           .select()
           .single();
           
-        if (error) {
-          console.error('Error updating reaction:', error);
-          throw error;
+        if (updateError) {
+          console.error('Error updating reaction:', updateError);
+          throw updateError;
         }
         
-        return data as MessageReaction;
+        return updatedReaction as unknown as MessageReaction;
       }
     } else {
       // User is adding a new reaction
-      const { data, error } = await supabase
+      const { data: newReaction, error: insertError } = await supabase
         .from('community_message_reactions')
         .insert({
           message_id: messageId,
@@ -203,12 +208,12 @@ export const addReactionToMessage = async (
         .select()
         .single();
         
-      if (error) {
-        console.error('Error adding reaction:', error);
-        throw error;
+      if (insertError) {
+        console.error('Error adding reaction:', insertError);
+        throw insertError;
       }
       
-      return data as MessageReaction;
+      return newReaction as unknown as MessageReaction;
     }
   } catch (error) {
     console.error('Error in addReactionToMessage:', error);
