@@ -158,28 +158,45 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
     try {
       setLoadingComments(true);
       
-      const { data, error } = await supabase
+      // First get comments
+      const { data: commentsData, error: commentsError } = await supabase
         .from('post_comments')
-        .select(`
-          *,
-          users:user_id (username, avatar_url)
-        `)
+        .select('*')
         .eq('post_id', post.id)
         .order('created_at', { ascending: false });
         
-      if (error) {
-        console.error('Error fetching comments:', error);
+      if (commentsError) {
+        console.error('Error fetching comments:', commentsError);
         return;
       }
       
-      // Transform the data
-      const transformedComments = data.map(comment => ({
-        ...comment,
-        username: comment.users?.username,
-        avatar_url: comment.users?.avatar_url
-      }));
+      // Fetch user data for each comment
+      const commentsWithUserData = await Promise.all(
+        commentsData.map(async (comment) => {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('username, avatar_url')
+            .eq('id', comment.user_id)
+            .single();
+          
+          if (userError) {
+            console.error('Error fetching user for comment:', userError);
+            return {
+              ...comment,
+              username: 'Unknown User',
+              avatar_url: undefined
+            };
+          }
+          
+          return {
+            ...comment,
+            username: userData.username,
+            avatar_url: userData.avatar_url
+          };
+        })
+      );
       
-      setComments(transformedComments);
+      setComments(commentsWithUserData);
     } catch (error) {
       console.error('Error in fetchComments:', error);
     } finally {
@@ -201,18 +218,6 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
     
     try {
       setIsSubmitting(true);
-      
-      // First check if user exists
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', userProfile.id)
-        .single();
-      
-      if (userError || !userData) {
-        toast.error('User validation failed');
-        return;
-      }
       
       // Add the comment
       const { error } = await supabase

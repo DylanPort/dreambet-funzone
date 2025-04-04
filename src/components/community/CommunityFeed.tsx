@@ -35,13 +35,10 @@ const CommunityFeed = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      let query = supabase
-        .from('posts')
-        .select(`
-          *,
-          users:user_id (username, avatar_url)
-        `);
-
+      
+      // Build the query based on sort option
+      let query = supabase.from('posts').select('*');
+      
       // Apply sorting
       if (sortBy === 'latest') {
         query = query.order('created_at', { ascending: false });
@@ -50,23 +47,42 @@ const CommunityFeed = () => {
       } else if (sortBy === 'trending') {
         query = query.order('comments_count', { ascending: false });
       }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching posts:', error);
+      
+      const { data: postsData, error: postsError } = await query;
+      
+      if (postsError) {
+        console.error('Error fetching posts:', postsError);
         toast.error('Failed to load community posts');
         return;
       }
-
-      // Transform the data to match our Post type
-      const transformedPosts = data.map(post => ({
-        ...post,
-        username: post.users?.username,
-        avatar_url: post.users?.avatar_url,
-      }));
-
-      setPosts(transformedPosts);
+      
+      // Fetch user data separately for each post
+      const postsWithUserData = await Promise.all(
+        postsData.map(async (post) => {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('username, avatar_url')
+            .eq('id', post.user_id)
+            .single();
+          
+          if (userError) {
+            console.error('Error fetching user data for post:', userError);
+            return {
+              ...post,
+              username: 'Unknown User',
+              avatar_url: undefined
+            };
+          }
+          
+          return {
+            ...post,
+            username: userData.username,
+            avatar_url: userData.avatar_url
+          };
+        })
+      );
+      
+      setPosts(postsWithUserData);
     } catch (error) {
       console.error('Error in fetchPosts:', error);
     } finally {
