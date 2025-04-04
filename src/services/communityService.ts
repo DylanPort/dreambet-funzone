@@ -1,4 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface CommunityMessage {
   id: string;
@@ -9,6 +11,7 @@ export interface CommunityMessage {
   user_pxb_points?: number;
   user_win_rate?: number;
   user_rank?: number;
+  likes_count?: number;
 }
 
 export interface CommunityReply {
