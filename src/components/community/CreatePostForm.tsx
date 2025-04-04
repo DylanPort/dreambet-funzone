@@ -1,12 +1,12 @@
-
 import React, { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Image as ImageIcon, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { Image, X, Upload } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { nanoid } from 'nanoid';
 import WalletConnectButton from '../WalletConnectButton';
@@ -14,9 +14,9 @@ import { useQueryClient } from '@tanstack/react-query';
 
 export const CreatePostForm = () => {
   const [content, setContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { connected, publicKey } = useWallet();
   const { addPointsToUser } = usePXBPoints();
@@ -25,81 +25,95 @@ export const CreatePostForm = () => {
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!content.trim() && !imageFile) {
-      toast.error('Please add some content to your post');
+    if (!connected) {
+      toast.error('Please connect your wallet to post');
       return;
     }
     
-    if (!connected || !publicKey) {
-      toast.error('Please connect your wallet to post');
+    if (!content.trim() && !imageFile) {
+      toast.error('Post cannot be empty');
       return;
     }
     
     try {
       setIsSubmitting(true);
       
-      // First, get or create the user in the users table using the wallet address
-      const walletAddress = publicKey.toString();
+      // Get the session to ensure we have the user ID
+      const { data: { session } } = await supabase.auth.getSession();
+      let userId = session?.user?.id;
       
-      // Check if user exists
-      const { data: existingUser, error: findError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('wallet_address', walletAddress)
-        .maybeSingle();
-      
-      let userId;
-      
-      if (findError) {
-        console.error('Error finding user:', findError);
-      }
-      
-      if (!existingUser) {
-        // Create a new user record if none exists
-        console.log('Creating new user with wallet:', walletAddress);
-        const { data: newUser, error: createError } = await supabase
+      // If no session (not authenticated via Supabase), use wallet address as fallback
+      if (!userId && publicKey) {
+        // Try to find or create a user record for this wallet
+        const walletAddress = publicKey.toString();
+        
+        // Check if user exists
+        const { data: existingUser } = await supabase
           .from('users')
-          .insert({
-            wallet_address: walletAddress,
-            points: 0 // Start with 0 points
-          })
           .select('id')
+          .eq('wallet_address', walletAddress)
           .single();
         
-        if (createError) {
-          console.error('Error creating user:', createError);
-          toast.error('Failed to create user profile');
-          setIsSubmitting(false);
-          return;
+        if (existingUser) {
+          userId = existingUser.id;
+        } else {
+          // Create a new user
+          const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert({
+              wallet_address: walletAddress,
+              username: `user_${walletAddress.substring(0, 4)}`,
+              points: 0
+            })
+            .select('id')
+            .single();
+          
+          if (createError) {
+            console.error('Error creating user:', createError);
+            toast.error('Failed to create user account');
+            setIsSubmitting(false);
+            return;
+          }
+          
+          userId = newUser.id;
         }
-        
-        userId = newUser.id;
-      } else {
-        userId = existingUser.id;
       }
       
-      // Handle image upload if present
+      if (!userId) {
+        toast.error('Unable to identify user. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log('Creating post with user ID:', userId);
+      
       let imageUrl = null;
+      
+      // If there's an image, upload it first
       if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${nanoid()}.${fileExt}`;
-        const filePath = `post_images/${fileName}`;
+        // Check if storage bucket exists
+        const { data: buckets } = await supabase
+          .storage
+          .listBuckets();
         
-        // Create a storage bucket if it doesn't exist
-        const { data: buckets } = await supabase.storage.listBuckets();
-        if (!buckets?.find(bucket => bucket.name === 'media')) {
-          const { error: bucketError } = await supabase.storage.createBucket('media', {
-            public: true
-          });
-          if (bucketError) {
-            console.error('Error creating bucket:', bucketError);
-          }
+        const postImagesBucket = buckets?.find(b => b.name === 'post-images');
+        
+        // Create bucket if it doesn't exist
+        if (!postImagesBucket) {
+          await supabase
+            .storage
+            .createBucket('post-images', {
+              public: true,
+              fileSizeLimit: 5242880, // 5MB
+            });
         }
         
-        const { error: uploadError } = await supabase
+        // Upload image
+        const fileName = `${nanoid()}-${imageFile.name}`;
+        const { data: uploadData, error: uploadError } = await supabase
           .storage
-          .from('media')
-          .upload(filePath, imageFile);
+          .from('post-images')
+          .upload(fileName, imageFile);
         
         if (uploadError) {
           console.error('Error uploading image:', uploadError);
@@ -108,19 +122,17 @@ export const CreatePostForm = () => {
           return;
         }
         
+        // Get public URL for the uploaded image
         const { data: { publicUrl } } = supabase
           .storage
-          .from('media')
-          .getPublicUrl(filePath);
+          .from('post-images')
+          .getPublicUrl(fileName);
           
         imageUrl = publicUrl;
       }
       
-      console.log('Creating post with user ID:', userId);
-      
-      // Use a service role key via the server endpoint for authenticated operations
-      // or update RLS policy to allow anonymous inserts (for this specific table)
-      const { data: post, error } = await supabase
+      // Create post in the database
+      const { error: postError } = await supabase
         .from('posts')
         .insert({
           user_id: userId,
@@ -128,20 +140,23 @@ export const CreatePostForm = () => {
           image_url: imageUrl,
           likes_count: 0,
           comments_count: 0
-        })
-        .select();
+        });
       
-      if (error) {
-        console.error('Error creating post:', error);
-        toast.error(`Failed to create post: ${error.message || 'Unknown error'}`);
+      if (postError) {
+        console.error('Error creating post:', postError);
+        toast.error('Failed to create post');
         setIsSubmitting(false);
         return;
       }
       
-      // Award points for posting
-      const pointsAmount = 10;
-      await addPointsToUser(pointsAmount, 'Created a post');
+      // Add points for creating a post
+      if (userId) {
+        // Give user 10 points for creating a post
+        await addPointsToUser(userId, 10, 'post_created');
+      }
       
+      // Reset form
+      setIsSubmitting(false);
       setContent('');
       setImageFile(null);
       setImagePreview(null);
@@ -151,9 +166,8 @@ export const CreatePostForm = () => {
       
       toast.success('Post created! +10 PXB');
     } catch (error) {
-      console.error('Error in handleSubmitPost:', error);
-      toast.error('An error occurred');
-    } finally {
+      console.error('Error creating post:', error);
+      toast.error('Something went wrong. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -246,7 +260,7 @@ export const CreatePostForm = () => {
               htmlFor="image-upload" 
               className="cursor-pointer text-dream-accent1 hover:text-dream-accent1/80 flex items-center gap-1.5"
             >
-              <ImageIcon size={18} />
+              <Image size={18} />
               <span>Add Image</span>
             </label>
           </div>
