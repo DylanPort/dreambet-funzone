@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -37,10 +36,7 @@ const CommunityPage = () => {
   } = useCommunityMessages();
   const messageEndRef = useRef<HTMLDivElement>(null);
   
-  // Add PXB context to access user profile, balance, and bet statistics
   const { userProfile, bets, isLoadingBets, fetchUserBets } = usePXBPoints();
-
-  // Calculate win rate when bets change
   const [winRate, setWinRate] = useState(0);
   
   useEffect(() => {
@@ -180,11 +176,9 @@ const CommunityPage = () => {
       <Navbar />
       
       <div className="flex max-w-7xl mx-auto pt-24 px-4 pb-20">
-        {/* Online Users Sidebar */}
         <div className="hidden md:block w-72 mr-6 sticky top-24 self-start">
           <OnlineUsersSidebar />
           
-          {/* User Stats Card - New addition */}
           {connected && userProfile && (
             <div className="mt-6 bg-dream-background/30 border border-dream-foreground/10 rounded-lg p-4">
               <div className="flex items-center mb-4">
@@ -220,7 +214,7 @@ const CommunityPage = () => {
                       <Trophy className="w-4 h-4 mr-1 text-dream-accent1" />
                       <span className="text-dream-foreground/70">Rank:</span>
                     </div>
-                    <span className="font-bold text-dream-accent1">#{userProfile.rank?.toString() || '—'}</span>
+                    <span className="font-bold text-dream-accent1">#{userProfile.rank || '—'}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -235,7 +229,6 @@ const CommunityPage = () => {
             </div>
           )}
           
-          {/* Most Liked Messages Section */}
           <div className="mt-6 bg-dream-background/30 border border-dream-foreground/10 rounded-lg p-4">
             <div className="flex items-center mb-4">
               <Award className="w-5 h-5 mr-2 text-yellow-500" />
@@ -264,12 +257,7 @@ const CommunityPage = () => {
           </div>
         </div>
         
-        {/* Main Content */}
         <div className="flex-1 flex flex-col space-y-8">
-          {/* Header */}
-          
-          
-          {/* Message Form - Now with sticky positioning */}
           <Card className="sticky top-24 z-10 p-6 bg-dream-background/30 border border-dream-foreground/10 backdrop-blur-sm">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative">
@@ -281,7 +269,6 @@ const CommunityPage = () => {
             </form>
           </Card>
           
-          {/* Messages List */}
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-display font-bold flex items-center">
@@ -311,7 +298,6 @@ const CommunityPage = () => {
                         <div>
                           <span className="font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
                           
-                          {/* User stats badges - New addition */}
                           <div className="flex mt-1 space-x-2">
                             <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
                               <Coins className="w-3 h-3 mr-1 text-yellow-500" />
@@ -330,10 +316,8 @@ const CommunityPage = () => {
                     </div>
                     <p className="text-dream-foreground/90 mt-1 mb-3">{msg.content}</p>
                     
-                    {/* Reaction buttons and counters */}
                     <div className="flex items-center justify-between mt-2 mb-1 text-dream-foreground/50">
                       <div className="flex items-center space-x-4">
-                        {/* Like button */}
                         <Button variant="ghost" size="sm" onClick={() => handleReaction(msg.id, 'like')} className={`flex items-center text-xs px-2 py-1 h-auto group ${messageReactions[msg.id]?.userReaction === 'like' ? 'text-green-500' : ''}`} disabled={!connected}>
                           <ThumbsUp className={`w-4 h-4 mr-1 ${messageReactions[msg.id]?.userReaction === 'like' ? 'fill-green-500 text-green-500' : 'group-hover:text-green-400'}`} />
                           <span className={`font-medium ${messageReactions[msg.id]?.userReaction === 'like' ? 'text-green-500' : ''}`}>
@@ -341,7 +325,6 @@ const CommunityPage = () => {
                           </span>
                         </Button>
                         
-                        {/* Dislike button */}
                         <Button variant="ghost" size="sm" onClick={() => handleReaction(msg.id, 'dislike')} className={`flex items-center text-xs px-2 py-1 h-auto group ${messageReactions[msg.id]?.userReaction === 'dislike' ? 'text-red-500' : ''}`} disabled={!connected}>
                           <ThumbsDown className={`w-4 h-4 mr-1 ${messageReactions[msg.id]?.userReaction === 'dislike' ? 'fill-red-500 text-red-500' : 'group-hover:text-red-400'}`} />
                           <span className={`font-medium ${messageReactions[msg.id]?.userReaction === 'dislike' ? 'text-red-500' : ''}`}>
@@ -349,14 +332,12 @@ const CommunityPage = () => {
                           </span>
                         </Button>
                         
-                        {/* Reply button */}
                         <Button variant="ghost" size="sm" onClick={() => handleReplyClick(msg.id)} className="flex items-center text-xs px-2 py-1 h-auto group hover:text-dream-accent2">
                           <Reply className="w-4 h-4 mr-1 group-hover:text-dream-accent2" />
                           Reply
                         </Button>
                       </div>
                       
-                      {/* Reply counter */}
                       {messageReplies[msg.id]?.length > 0 && <Button variant="ghost" size="sm" onClick={() => handleLoadReplies(msg.id)} className="flex items-center text-xs px-2 py-1 h-auto">
                           <span className="text-dream-accent2">
                             {messageReplies[msg.id].length} {messageReplies[msg.id].length === 1 ? 'reply' : 'replies'}
@@ -364,7 +345,6 @@ const CommunityPage = () => {
                         </Button>}
                     </div>
                     
-                    {/* Reply input */}
                     {showReplyInput[msg.id] && <div className="mt-3 pl-4 border-l-2 border-dream-foreground/10">
                         <div className="relative">
                           <Textarea value={replyContent[msg.id] || ''} onChange={e => setReplyContent(prev => ({
@@ -377,7 +357,6 @@ const CommunityPage = () => {
                         </div>
                       </div>}
                     
-                    {/* Replies section */}
                     {expandedReplies[msg.id] && messageReplies[msg.id]?.length > 0 && <div className="mt-3 pl-4 border-l-2 border-dream-foreground/10 space-y-3">
                         {messageReplies[msg.id].map(reply => <div key={reply.id} className="pt-2">
                             <div className="flex justify-between items-start mb-1">

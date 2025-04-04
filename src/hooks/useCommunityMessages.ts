@@ -51,7 +51,9 @@ export const useCommunityMessages = () => {
 
         // Store current user's reaction
         if (connected && publicKey && reaction.user_id === publicKey.toString()) {
-          reactionsMap[reaction.message_id].userReaction = reaction.reaction_type as 'like' | 'dislike';
+          if (reaction.reaction_type === 'like' || reaction.reaction_type === 'dislike') {
+            reactionsMap[reaction.message_id].userReaction = reaction.reaction_type;
+          }
         }
       });
 
@@ -111,7 +113,7 @@ export const useCommunityMessages = () => {
         
         return {
           ...msg,
-          username: msg.username || (userData?.username || undefined),
+          username: msg.username || (userData?.username || null),
           user_pxb_points: userData?.points || 0,
           user_win_rate: winRates[msg.user_id] || 0
         };

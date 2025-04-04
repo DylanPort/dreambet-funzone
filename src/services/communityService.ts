@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -37,16 +38,10 @@ export interface MessageReaction {
 // Get community messages
 export const getCommunityMessages = async (): Promise<CommunityMessage[]> => {
   try {
-    // Get messages with user data from users table
+    // Get messages with direct query since there's an issue with the join
     const { data, error } = await supabase
       .from('community_messages')
-      .select(`
-        *,
-        users!community_messages_user_id_fkey(
-          points,
-          username
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -55,17 +50,17 @@ export const getCommunityMessages = async (): Promise<CommunityMessage[]> => {
       throw error;
     }
 
-    // Format the messages with user data
+    // Format the messages without user data (will be added in useCommunityMessages hook)
     const messages = data.map(item => {
-      const userData = item.users || {};
-      
       return {
         id: item.id,
         content: item.content,
         created_at: item.created_at,
         user_id: item.user_id,
-        username: item.username || userData.username,
-        user_pxb_points: userData.points || 0
+        username: item.username || null,
+        user_pxb_points: 0, // Will be populated in the hook
+        user_win_rate: 0,   // Will be populated in the hook
+        user_rank: 0        // Will be populated in the hook
       };
     });
 
@@ -294,7 +289,12 @@ export const getUserReaction = async (messageId: string, userId: string): Promis
       throw error;
     }
 
-    return data ? data.reaction_type : null;
+    // Make sure we only return 'like' or 'dislike' or null to satisfy TypeScript
+    if (data && (data.reaction_type === 'like' || data.reaction_type === 'dislike')) {
+      return data.reaction_type;
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error in getUserReaction:', error);
     return null;
