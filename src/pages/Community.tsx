@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, User, Reply, RefreshCw } from 'lucide-react';
+import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useCommunityMessages } from '@/hooks/useCommunityMessages';
 import { toast } from 'sonner';
@@ -19,11 +19,13 @@ const CommunityPage = () => {
   const { 
     messages, 
     messageReplies, 
+    messageReactions,
     loading, 
     error, 
     postMessage, 
     loadRepliesForMessage, 
-    postReply 
+    postReply,
+    reactToMessage
   } = useCommunityMessages();
   
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -116,6 +118,20 @@ const CommunityPage = () => {
     } catch (error) {
       console.error("Error posting reply:", error);
       toast.error("Failed to post reply. Please try again.");
+    }
+  };
+  
+  const handleReaction = async (messageId: string, reactionType: 'like' | 'dislike') => {
+    if (!connected) {
+      toast.error("Please connect your wallet to like or dislike");
+      return;
+    }
+    
+    try {
+      await reactToMessage(messageId, reactionType);
+    } catch (error) {
+      console.error("Error reacting to message:", error);
+      toast.error("Failed to record your reaction. Please try again.");
     }
   };
   
@@ -213,18 +229,66 @@ const CommunityPage = () => {
                     </div>
                     <p className="text-dream-foreground/90 mt-1 mb-3">{msg.content}</p>
                     
-                    {/* Reply button and counter */}
-                    <div className="flex items-center space-x-2 mt-2 text-dream-foreground/50">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleReplyClick(msg.id)}
-                        className="flex items-center text-xs px-2 py-1 h-auto"
-                      >
-                        <Reply className="w-3 h-3 mr-1" />
-                        Reply
-                      </Button>
+                    {/* Reaction buttons and counters */}
+                    <div className="flex items-center justify-between mt-2 mb-1 text-dream-foreground/50">
+                      <div className="flex items-center space-x-4">
+                        {/* Like button */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleReaction(msg.id, 'like')}
+                          className={`flex items-center text-xs px-2 py-1 h-auto group ${
+                            messageReactions[msg.id]?.userReaction === 'like' ? 'text-green-500' : ''
+                          }`}
+                          disabled={!connected}
+                        >
+                          <ThumbsUp className={`w-4 h-4 mr-1 ${
+                            messageReactions[msg.id]?.userReaction === 'like' 
+                              ? 'fill-green-500 text-green-500' 
+                              : 'group-hover:text-green-400'
+                          }`} />
+                          <span className={`font-medium ${
+                            messageReactions[msg.id]?.userReaction === 'like' ? 'text-green-500' : ''
+                          }`}>
+                            {messageReactions[msg.id]?.likes || 0}
+                          </span>
+                        </Button>
+                        
+                        {/* Dislike button */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleReaction(msg.id, 'dislike')}
+                          className={`flex items-center text-xs px-2 py-1 h-auto group ${
+                            messageReactions[msg.id]?.userReaction === 'dislike' ? 'text-red-500' : ''
+                          }`}
+                          disabled={!connected}
+                        >
+                          <ThumbsDown className={`w-4 h-4 mr-1 ${
+                            messageReactions[msg.id]?.userReaction === 'dislike' 
+                              ? 'fill-red-500 text-red-500' 
+                              : 'group-hover:text-red-400'
+                          }`} />
+                          <span className={`font-medium ${
+                            messageReactions[msg.id]?.userReaction === 'dislike' ? 'text-red-500' : ''
+                          }`}>
+                            {messageReactions[msg.id]?.dislikes || 0}
+                          </span>
+                        </Button>
+                        
+                        {/* Reply button */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleReplyClick(msg.id)}
+                          className="flex items-center text-xs px-2 py-1 h-auto group hover:text-dream-accent2"
+                        >
+                          <Reply className="w-4 h-4 mr-1 group-hover:text-dream-accent2" />
+                          Reply
+                        </Button>
+                      </div>
                       
+                      {/* Reply counter */}
                       {messageReplies[msg.id]?.length > 0 && (
                         <Button 
                           variant="ghost" 
