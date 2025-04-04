@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -36,8 +37,9 @@ const CommunityPage = () => {
   } = useCommunityMessages();
   const messageEndRef = useRef<HTMLDivElement>(null);
   
-  const { userProfile, bets, isLoadingBets, fetchUserBets } = usePXBPoints();
+  const { userProfile, bets, isLoadingBets, fetchUserBets, leaderboard } = usePXBPoints();
   const [winRate, setWinRate] = useState(0);
+  const [userRank, setUserRank] = useState<number | undefined>(undefined);
   
   useEffect(() => {
     if (connected && userProfile) {
@@ -53,6 +55,16 @@ const CommunityPage = () => {
       setWinRate(completedBets.length > 0 ? (wonBets.length / completedBets.length) * 100 : 0);
     }
   }, [bets]);
+
+  // Find user's rank from leaderboard when available
+  useEffect(() => {
+    if (userProfile && leaderboard && leaderboard.length > 0) {
+      const userEntry = leaderboard.find(entry => entry.id === userProfile.id);
+      if (userEntry) {
+        setUserRank(userEntry.rank);
+      }
+    }
+  }, [userProfile, leaderboard]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({
@@ -214,7 +226,7 @@ const CommunityPage = () => {
                       <Trophy className="w-4 h-4 mr-1 text-dream-accent1" />
                       <span className="text-dream-foreground/70">Rank:</span>
                     </div>
-                    <span className="font-bold text-dream-accent1">#{userProfile.rank || '—'}</span>
+                    <span className="font-bold text-dream-accent1">#{userRank || '—'}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -307,6 +319,12 @@ const CommunityPage = () => {
                               <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
                                 <Percent className="w-3 h-3 mr-1 text-green-500" />
                                 <span>{(msg.user_win_rate || 0).toFixed(1)}%</span>
+                              </div>
+                            )}
+                            {msg.user_rank !== undefined && (
+                              <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
+                                <Trophy className="w-3 h-3 mr-1 text-dream-accent1" />
+                                <span>#{msg.user_rank}</span>
                               </div>
                             )}
                           </div>
