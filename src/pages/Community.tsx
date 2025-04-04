@@ -1,20 +1,37 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, User } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { MessageSquare, Send, User, Reply, RefreshCw } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useCommunityMessages } from '@/hooks/useCommunityMessages';
 import { toast } from 'sonner';
+import { CommunityMessage, CommunityReply } from '@/services/communityService';
 
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
+  const [replyContent, setReplyContent] = useState<Record<string, string>>({});
+  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
+  const [showReplyInput, setShowReplyInput] = useState<Record<string, boolean>>({});
   const { publicKey, connected } = useWallet();
-  const { messages, loading, error, postMessage } = useCommunityMessages();
+  const { 
+    messages, 
+    messageReplies, 
+    loading, 
+    error, 
+    postMessage, 
+    loadRepliesForMessage, 
+    postReply 
+  } = useCommunityMessages();
+  
+  const messageEndRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    // Scroll to bottom when new messages are added
+    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +53,69 @@ const CommunityPage = () => {
     } catch (error) {
       console.error("Error posting message:", error);
       toast.error("Failed to post message. Please try again.");
+    }
+  };
+  
+  const handleLoadReplies = async (messageId: string) => {
+    if (!expandedReplies[messageId]) {
+      const replies = await loadRepliesForMessage(messageId);
+      if (replies.length > 0) {
+        setExpandedReplies(prev => ({
+          ...prev,
+          [messageId]: true
+        }));
+      } else {
+        toast.info("No replies yet. Be the first to reply!");
+        setShowReplyInput(prev => ({
+          ...prev,
+          [messageId]: true
+        }));
+      }
+    } else {
+      setExpandedReplies(prev => ({
+        ...prev,
+        [messageId]: false
+      }));
+    }
+  };
+  
+  const handleReplyClick = (messageId: string) => {
+    setShowReplyInput(prev => ({
+      ...prev,
+      [messageId]: !prev[messageId]
+    }));
+  };
+  
+  const handleSubmitReply = async (messageId: string) => {
+    if (!connected) {
+      toast.error("Please connect your wallet to reply");
+      return;
+    }
+    
+    const content = replyContent[messageId];
+    if (!content || !content.trim()) {
+      toast.error("Reply cannot be empty");
+      return;
+    }
+    
+    try {
+      await postReply(messageId, content);
+      setReplyContent(prev => ({
+        ...prev,
+        [messageId]: ''
+      }));
+      
+      if (!expandedReplies[messageId]) {
+        setExpandedReplies(prev => ({
+          ...prev,
+          [messageId]: true
+        }));
+      }
+      
+      toast.success("Reply posted successfully!");
+    } catch (error) {
+      console.error("Error posting reply:", error);
+      toast.error("Failed to post reply. Please try again.");
     }
   };
   
@@ -131,9 +211,82 @@ const CommunityPage = () => {
                       </div>
                       <span className="text-dream-foreground/50 text-sm">{formatTimeAgo(msg.created_at)}</span>
                     </div>
-                    <p className="text-dream-foreground/90 mt-1">{msg.content}</p>
+                    <p className="text-dream-foreground/90 mt-1 mb-3">{msg.content}</p>
+                    
+                    {/* Reply button and counter */}
+                    <div className="flex items-center space-x-2 mt-2 text-dream-foreground/50">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleReplyClick(msg.id)}
+                        className="flex items-center text-xs px-2 py-1 h-auto"
+                      >
+                        <Reply className="w-3 h-3 mr-1" />
+                        Reply
+                      </Button>
+                      
+                      {messageReplies[msg.id]?.length > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleLoadReplies(msg.id)}
+                          className="flex items-center text-xs px-2 py-1 h-auto"
+                        >
+                          <span className="text-dream-accent2">
+                            {messageReplies[msg.id].length} {messageReplies[msg.id].length === 1 ? 'reply' : 'replies'}
+                          </span>
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {/* Reply input */}
+                    {showReplyInput[msg.id] && (
+                      <div className="mt-3 pl-4 border-l-2 border-dream-foreground/10">
+                        <div className="relative">
+                          <Textarea
+                            value={replyContent[msg.id] || ''}
+                            onChange={(e) => setReplyContent(prev => ({
+                              ...prev,
+                              [msg.id]: e.target.value
+                            }))}
+                            placeholder={connected ? "Write a reply..." : "Connect wallet to reply"}
+                            disabled={!connected}
+                            className="w-full bg-dream-background/20 border border-dream-foreground/10 focus:border-dream-accent2/50 rounded-lg px-3 py-2 pr-10 min-h-16 text-sm placeholder:text-dream-foreground/30 focus:outline-none focus:ring-1 focus:ring-dream-accent2/50 transition-all resize-none"
+                          />
+                          <Button 
+                            onClick={() => handleSubmitReply(msg.id)} 
+                            disabled={!connected || !replyContent[msg.id]?.trim()}
+                            className="absolute bottom-2 right-2 p-1 rounded-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 text-white"
+                            size="sm"
+                          >
+                            <Send className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Replies section */}
+                    {expandedReplies[msg.id] && messageReplies[msg.id]?.length > 0 && (
+                      <div className="mt-3 pl-4 border-l-2 border-dream-foreground/10 space-y-3">
+                        {messageReplies[msg.id].map((reply) => (
+                          <div key={reply.id} className="pt-2">
+                            <div className="flex justify-between items-start mb-1">
+                              <div className="flex items-center">
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2">
+                                  <User className="w-3 h-3 text-dream-foreground/70" />
+                                </div>
+                                <span className="text-sm font-medium">{reply.username || truncateAddress(reply.user_id)}</span>
+                              </div>
+                              <span className="text-dream-foreground/50 text-xs">{formatTimeAgo(reply.created_at)}</span>
+                            </div>
+                            <p className="text-dream-foreground/80 text-sm ml-8">{reply.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </Card>
                 ))}
+                <div ref={messageEndRef} />
               </div>
             )}
           </div>

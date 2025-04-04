@@ -7,6 +7,16 @@ export interface CommunityMessage {
   username: string | null;
   content: string;
   created_at: string;
+  reply_count?: number;
+}
+
+export interface CommunityReply {
+  id: string;
+  message_id: string;
+  user_id: string;
+  username: string | null;
+  content: string;
+  created_at: string;
 }
 
 export const fetchCommunityMessages = async (): Promise<CommunityMessage[]> => {
@@ -53,6 +63,56 @@ export const postCommunityMessage = async (
     return data as unknown as CommunityMessage;
   } catch (error) {
     console.error('Error in postCommunityMessage:', error);
+    throw error;
+  }
+};
+
+export const fetchRepliesForMessage = async (messageId: string): Promise<CommunityReply[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('community_replies')
+      .select('*')
+      .eq('message_id', messageId)
+      .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching replies:', error);
+      throw error;
+    }
+    
+    return data as CommunityReply[];
+  } catch (error) {
+    console.error('Error in fetchRepliesForMessage:', error);
+    throw error;
+  }
+};
+
+export const postReplyToMessage = async (
+  messageId: string,
+  content: string, 
+  userId: string,
+  username?: string
+): Promise<CommunityReply> => {
+  try {
+    const { data, error } = await supabase
+      .from('community_replies')
+      .insert({
+        message_id: messageId,
+        user_id: userId,
+        username: username || null,
+        content
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error posting reply:', error);
+      throw error;
+    }
+    
+    return data as CommunityReply;
+  } catch (error) {
+    console.error('Error in postReplyToMessage:', error);
     throw error;
   }
 };

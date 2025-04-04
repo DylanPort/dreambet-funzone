@@ -1,12 +1,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { fetchCommunityMessages, postCommunityMessage, CommunityMessage } from '@/services/communityService';
+import { fetchCommunityMessages, postCommunityMessage, CommunityMessage, fetchRepliesForMessage, postReplyToMessage, CommunityReply } from '@/services/communityService';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { supabase } from "@/integrations/supabase/client";
 
 export const useCommunityMessages = () => {
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
+  const [messageReplies, setMessageReplies] = useState<Record<string, CommunityReply[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const { publicKey, connected } = useWallet();
@@ -29,8 +30,8 @@ export const useCommunityMessages = () => {
   useEffect(() => {
     loadMessages();
     
-    // Set up real-time subscription
-    const channel = supabase
+    // Set up real-time subscription for new messages
+    const messagesChannel = supabase
       .channel('public:community_messages')
       .on('postgres_changes', {
         event: 'INSERT',
@@ -42,8 +43,29 @@ export const useCommunityMessages = () => {
       })
       .subscribe();
       
+    // Set up real-time subscription for new replies
+    const repliesChannel = supabase
+      .channel('public:community_replies')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'community_replies'
+      }, payload => {
+        const newReply = payload.new as unknown as CommunityReply;
+        // Add new reply to the appropriate message
+        setMessageReplies(prevReplies => ({
+          ...prevReplies,
+          [newReply.message_id]: [
+            ...(prevReplies[newReply.message_id] || []),
+            newReply
+          ]
+        }));
+      })
+      .subscribe();
+      
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(repliesChannel);
     };
   }, [loadMessages]);
   
@@ -58,15 +80,43 @@ export const useCommunityMessages = () => {
     return await postCommunityMessage(content, walletAddress, username);
   }, [connected, publicKey, userProfile]);
   
+  const loadRepliesForMessage = useCallback(async (messageId: string) => {
+    try {
+      const replies = await fetchRepliesForMessage(messageId);
+      setMessageReplies(prev => ({
+        ...prev,
+        [messageId]: replies
+      }));
+      return replies;
+    } catch (err) {
+      console.error('Failed to load replies:', err);
+      return [];
+    }
+  }, []);
+  
+  const postReply = useCallback(async (messageId: string, content: string) => {
+    if (!connected || !publicKey) {
+      throw new Error('Wallet not connected');
+    }
+    
+    const walletAddress = publicKey.toString();
+    const username = userProfile?.username;
+    
+    return await postReplyToMessage(messageId, content, walletAddress, username);
+  }, [connected, publicKey, userProfile]);
+  
   const refreshMessages = useCallback(() => {
     loadMessages();
   }, [loadMessages]);
   
   return {
     messages,
+    messageReplies,
     loading,
     error,
     postMessage,
+    postReply,
+    loadRepliesForMessage,
     refreshMessages
   };
 };
