@@ -17,6 +17,7 @@ const CommunityPage = () => {
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
   const [showReplyInput, setShowReplyInput] = useState<Record<string, boolean>>({});
   const { publicKey, connected } = useWallet();
+  
   const { 
     messages, 
     messageReplies, 
@@ -170,7 +171,7 @@ const CommunityPage = () => {
               <h3 className="font-display font-bold text-lg">Most Liked Messages</h3>
             </div>
             
-            {topLikedMessages.length === 0 ? (
+            {!topLikedMessages || topLikedMessages.length === 0 ? (
               <p className="text-dream-foreground/50 text-sm text-center py-3">No liked messages yet</p>
             ) : (
               <div className="space-y-3">
