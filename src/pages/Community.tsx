@@ -190,7 +190,7 @@ const CommunityPage = () => {
   return <div className="min-h-screen bg-dream-background">
       <Navbar />
       
-      <div className="flex max-w-7xl mx-auto pt-24 px-4 pb-20">
+      <div className="flex max-w-7xl mx-auto pt-32 px-4 pb-20">
         <div className="hidden md:block w-72 mr-6 sticky top-24 self-start">
           <OnlineUsersSidebar />
           
