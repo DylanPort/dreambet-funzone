@@ -64,11 +64,11 @@ const CommunityPage = () => {
     }
   }, [userProfile, leaderboard]);
 
-  useEffect(() => {
+  const scrollToBottom = () => {
     messageEndRef.current?.scrollIntoView({
       behavior: 'smooth'
     });
-  }, [messages]);
+  };
 
   useEffect(() => {
     const initialExpandedState: Record<string, boolean> = {};
@@ -94,6 +94,7 @@ const CommunityPage = () => {
       await postMessage(message);
       setMessage('');
       toast.success("Message posted successfully!");
+      setTimeout(scrollToBottom, 300);
     } catch (error) {
       console.error("Error posting message:", error);
       toast.error("Failed to post message. Please try again.");
