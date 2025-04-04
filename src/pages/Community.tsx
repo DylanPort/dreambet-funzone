@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import { useCommunityMessages } from '@/hooks/useCommunityMessages';
 import { toast } from 'sonner';
 import { CommunityMessage, CommunityReply } from '@/services/communityService';
+import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
 
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
@@ -155,8 +156,14 @@ const CommunityPage = () => {
     <div className="min-h-screen bg-dream-background">
       <Navbar />
       
-      <div className="max-w-4xl mx-auto pt-24 px-4 pb-20">
-        <div className="flex flex-col space-y-8">
+      <div className="flex max-w-7xl mx-auto pt-24 px-4 pb-20">
+        {/* Online Users Sidebar */}
+        <div className="hidden md:block w-72 mr-6 sticky top-24 self-start">
+          <OnlineUsersSidebar />
+        </div>
+        
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col space-y-8">
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-3xl font-display font-bold text-dream-foreground">Community Chat</h1>
