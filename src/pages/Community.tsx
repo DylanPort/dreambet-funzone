@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, User } from 'lucide-react';
+import { MessageSquare, Send, User, Heart, Reply, ThumbsUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import { useCommunityMessages } from '@/hooks/useCommunityMessages';
@@ -14,7 +14,9 @@ import { toast } from 'sonner';
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
   const { publicKey, connected } = useWallet();
-  const { messages, loading, error, postMessage } = useCommunityMessages();
+  const { messages, loading, error, postMessage, postReply, toggleLike } = useCommunityMessages();
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +38,42 @@ const CommunityPage = () => {
     } catch (error) {
       console.error("Error posting message:", error);
       toast.error("Failed to post message. Please try again.");
+    }
+  };
+
+  const handleReplySubmit = async (messageId: string) => {
+    if (!connected) {
+      toast.error("Please connect your wallet to reply");
+      return;
+    }
+    
+    if (!replyContent.trim()) {
+      toast.error("Reply cannot be empty");
+      return;
+    }
+    
+    try {
+      await postReply(messageId, replyContent);
+      setReplyContent('');
+      setReplyingTo(null);
+      toast.success("Reply posted successfully!");
+    } catch (error) {
+      console.error("Error posting reply:", error);
+      toast.error("Failed to post reply. Please try again.");
+    }
+  };
+
+  const handleLike = async (messageId: string) => {
+    if (!connected) {
+      toast.error("Please connect your wallet to like messages");
+      return;
+    }
+    
+    try {
+      await toggleLike(messageId);
+    } catch (error) {
+      console.error("Error liking message:", error);
+      toast.error("Failed to like message. Please try again.");
     }
   };
   
@@ -132,6 +170,74 @@ const CommunityPage = () => {
                       <span className="text-dream-foreground/50 text-sm">{formatTimeAgo(msg.created_at)}</span>
                     </div>
                     <p className="text-dream-foreground/90 mt-1">{msg.content}</p>
+                    
+                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-dream-foreground/5">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex items-center text-dream-foreground/60 hover:text-dream-accent2"
+                        onClick={() => handleLike(msg.id)}
+                        disabled={!connected}
+                      >
+                        <ThumbsUp className="w-4 h-4 mr-1" />
+                        <span>{msg.likes_count || 0}</span>
+                      </Button>
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex items-center text-dream-foreground/60 hover:text-dream-accent2"
+                        onClick={() => setReplyingTo(replyingTo === msg.id ? null : msg.id)}
+                        disabled={!connected}
+                      >
+                        <Reply className="w-4 h-4 mr-1" />
+                        <span>Reply</span>
+                      </Button>
+                    </div>
+                    
+                    {/* Reply form */}
+                    {replyingTo === msg.id && (
+                      <div className="mt-3 pl-4 border-l-2 border-dream-foreground/10">
+                        <div className="flex gap-2">
+                          <Textarea
+                            value={replyContent}
+                            onChange={(e) => setReplyContent(e.target.value)}
+                            placeholder="Write a reply..."
+                            className="flex-1 bg-dream-background/20 border border-dream-foreground/10 focus:border-dream-accent2/50 rounded-lg px-3 py-2 min-h-20 placeholder:text-dream-foreground/30 focus:outline-none focus:ring-1 focus:ring-dream-accent2/50 transition-all resize-none"
+                          />
+                          <Button
+                            onClick={() => handleReplySubmit(msg.id)}
+                            disabled={!replyContent.trim()}
+                            className="self-end bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 text-white"
+                          >
+                            <Send className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Replies */}
+                    {msg.replies && msg.replies.length > 0 && (
+                      <div className="mt-3 pl-4 border-l-2 border-dream-foreground/10 space-y-3">
+                        <div className="text-xs text-dream-foreground/50 font-medium uppercase">
+                          Replies
+                        </div>
+                        {msg.replies.map((reply) => (
+                          <div key={reply.id} className="bg-dream-background/10 rounded-lg p-3">
+                            <div className="flex justify-between mb-1">
+                              <div className="flex items-center">
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2">
+                                  <User className="w-3 h-3 text-dream-foreground/70" />
+                                </div>
+                                <span className="font-medium text-sm">{reply.username || truncateAddress(reply.user_id)}</span>
+                              </div>
+                              <span className="text-dream-foreground/50 text-xs">{formatTimeAgo(reply.created_at)}</span>
+                            </div>
+                            <p className="text-dream-foreground/80 text-sm ml-8">{reply.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </Card>
                 ))}
               </div>
