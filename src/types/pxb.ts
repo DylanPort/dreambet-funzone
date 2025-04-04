@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   id: string;
   username: string;
@@ -122,4 +121,46 @@ export interface SupabaseBetsRow {
   transaction_signature?: string;
   end_time?: string;
   start_time?: string;
+}
+
+// Community-related interfaces
+export interface Post {
+  id: string;
+  user_id: string;
+  content: string;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+  likes_count: number;
+  comments_count: number;
+  views_count: number;
+  username?: string;
+  avatar_url?: string;
+}
+
+export interface Comment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  parent_id?: string;
+  content: string;
+  created_at: string;
+  likes_count: number;
+  username?: string;
+  avatar_url?: string;
+  replies?: Comment[];
+}
+
+export interface PostLike {
+  id: string;
+  post_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface CommentLike {
+  id: string;
+  comment_id: string;
+  user_id: string;
+  created_at: string;
 }
