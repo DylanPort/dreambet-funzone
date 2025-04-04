@@ -109,20 +109,22 @@ export const MessagesFeed: React.FC = () => {
           .eq('post_id', postId)
           .eq('user_id', userId);
           
-        // Decrement likes count using direct SQL expression
-        // Use rpc call instead of raw SQL string
+        // Call the SQL function via a direct SQL query since TypeScript doesn't know about our custom functions
         await supabase
-          .rpc('decrement_post_likes', { post_id: postId });
+          .from('posts')
+          .update({ likes_count: supabase.sql`decrement_post_likes(${postId})` })
+          .eq('id', postId);
       } else {
         // Like the post
         await supabase
           .from('post_likes')
           .insert({ post_id: postId, user_id: userId });
           
-        // Increment likes count using direct SQL expression
-        // Use rpc call instead of raw SQL string
+        // Call the SQL function via a direct SQL query
         await supabase
-          .rpc('increment_post_likes', { post_id: postId });
+          .from('posts')
+          .update({ likes_count: supabase.sql`increment_post_likes(${postId})` })
+          .eq('id', postId);
       }
       
       refetch();

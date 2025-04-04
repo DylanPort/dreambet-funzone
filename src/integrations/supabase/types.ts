@@ -892,6 +892,12 @@ export type Database = {
         }
         Returns: number
       }
+      decrement_post_likes: {
+        Args: {
+          post_id: string
+        }
+        Returns: undefined
+      }
       generate_referral_code: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -923,6 +929,18 @@ export type Database = {
       increment_bounty_views: {
         Args: {
           bounty_id: string
+        }
+        Returns: undefined
+      }
+      increment_post_comments: {
+        Args: {
+          post_id: string
+        }
+        Returns: undefined
+      }
+      increment_post_likes: {
+        Args: {
+          post_id: string
         }
         Returns: undefined
       }
