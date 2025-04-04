@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -56,7 +55,6 @@ const CommunityPage = () => {
     }
   }, [bets]);
 
-  // Find user's rank from leaderboard when available
   useEffect(() => {
     if (userProfile && leaderboard && leaderboard.length > 0) {
       const userEntry = leaderboard.find(entry => entry.id === userProfile.id);

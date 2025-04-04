@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { 
@@ -24,7 +23,6 @@ export const useCommunityMessages = () => {
   const { publicKey, connected } = useWallet();
   const { bets } = usePXBPoints();
 
-  // Function to fetch message reactions
   const fetchMessageReactions = useCallback(async () => {
     try {
       if (!messages.length) return;
@@ -37,7 +35,6 @@ export const useCommunityMessages = () => {
 
       const reactionsMap: Record<string, { likes: number; dislikes: number; userReaction?: 'like' | 'dislike' }> = {};
 
-      // Process all reactions and group by message_id
       data.forEach(reaction => {
         if (!reactionsMap[reaction.message_id]) {
           reactionsMap[reaction.message_id] = { likes: 0, dislikes: 0 };
@@ -49,7 +46,6 @@ export const useCommunityMessages = () => {
           reactionsMap[reaction.message_id].dislikes++;
         }
 
-        // Store current user's reaction
         if (connected && publicKey && reaction.user_id === publicKey.toString()) {
           if (reaction.reaction_type === 'like' || reaction.reaction_type === 'dislike') {
             reactionsMap[reaction.message_id].userReaction = reaction.reaction_type;
@@ -63,15 +59,12 @@ export const useCommunityMessages = () => {
     }
   }, [messages, connected, publicKey]);
 
-  // Function to fetch user data for messages
   const enrichMessagesWithUserData = useCallback(async (messages: CommunityMessage[]) => {
     try {
-      // Get all unique user IDs from messages
       const userIds = [...new Set(messages.map(msg => msg.user_id))];
       
       if (userIds.length === 0) return messages;
       
-      // Fetch user data for all messages at once
       const { data: usersData, error } = await supabase
         .from('users')
         .select('wallet_address, points, username')
@@ -79,43 +72,75 @@ export const useCommunityMessages = () => {
         
       if (error) throw error;
       
-      // Create a map of user data by wallet address
       const userDataMap: Record<string, any> = {};
       usersData.forEach(user => {
         userDataMap[user.wallet_address] = user;
       });
       
-      // Calculate win rates for each user if we have bets data
-      const winRates: Record<string, number> = {};
+      const { data: leaderboardData, error: leaderboardError } = await supabase
+        .from('users')
+        .select('id, wallet_address, points')
+        .order('points', { ascending: false })
+        .limit(100);
+        
+      if (leaderboardError) throw leaderboardError;
       
-      if (bets && bets.length > 0) {
-        userIds.forEach(userId => {
-          const userBets = bets.filter(bet => 
-            bet.creator === userId || 
-            bet.userId === userId
-          );
-          
-          const completedBets = userBets.filter(bet => 
-            bet.status === 'won' || bet.status === 'lost'
-          );
-          
-          const wonBets = userBets.filter(bet => bet.status === 'won');
-          
-          winRates[userId] = completedBets.length > 0 
-            ? (wonBets.length / completedBets.length) * 100 
-            : 0;
+      const rankMap: Record<string, number> = {};
+      if (leaderboardData) {
+        leaderboardData.forEach((user, index) => {
+          if (user.wallet_address) {
+            rankMap[user.wallet_address] = index + 1;
+          }
         });
       }
       
-      // Enrich messages with user data
+      const { data: betsData, error: betsError } = await supabase
+        .from('bets')
+        .select('creator, status')
+        .in('creator', userIds)
+        .in('status', ['won', 'lost', 'completed']);
+        
+      if (betsError) {
+        console.error('Error fetching bets data:', betsError);
+      }
+      
+      const winRates: Record<string, { total: number, wins: number }> = {};
+      
+      if (betsData) {
+        userIds.forEach(userId => {
+          winRates[userId] = { total: 0, wins: 0 };
+        });
+        
+        betsData.forEach(bet => {
+          if (!bet.creator) return;
+          
+          if (!winRates[bet.creator]) {
+            winRates[bet.creator] = { total: 0, wins: 0 };
+          }
+          
+          winRates[bet.creator].total += 1;
+          
+          if (bet.status === 'won') {
+            winRates[bet.creator].wins += 1;
+          }
+        });
+      }
+      
       const enrichedMessages = messages.map(msg => {
         const userData = userDataMap[msg.user_id];
+        const userRank = rankMap[msg.user_id];
+        const userWinRateData = winRates[msg.user_id];
+        
+        const winRateValue = userWinRateData && userWinRateData.total > 0
+          ? (userWinRateData.wins / userWinRateData.total) * 100
+          : 0;
         
         return {
           ...msg,
           username: msg.username || (userData?.username || null),
           user_pxb_points: userData?.points || 0,
-          user_win_rate: winRates[msg.user_id] || 0
+          user_win_rate: winRateValue,
+          user_rank: userRank
         };
       });
       
@@ -126,7 +151,6 @@ export const useCommunityMessages = () => {
     }
   }, [bets]);
 
-  // Fetch community messages
   const fetchMessages = useCallback(async () => {
     try {
       setLoading(true);
@@ -142,7 +166,6 @@ export const useCommunityMessages = () => {
     }
   }, [enrichMessagesWithUserData]);
 
-  // Fetch top liked messages
   const fetchTopLiked = useCallback(async () => {
     try {
       const topMessages = await getTopLikedMessages(5);
@@ -153,7 +176,6 @@ export const useCommunityMessages = () => {
     }
   }, [enrichMessagesWithUserData]);
 
-  // Post a new message
   const postMessage = useCallback(async (content: string) => {
     if (!connected || !publicKey) {
       throw new Error('Wallet not connected');
@@ -164,7 +186,6 @@ export const useCommunityMessages = () => {
       const newMessage = await postCommunityMessage(content, userId);
       
       if (newMessage) {
-        // Refresh messages to include the new one
         fetchMessages();
       }
       
@@ -175,7 +196,6 @@ export const useCommunityMessages = () => {
     }
   }, [connected, publicKey, fetchMessages]);
 
-  // Load replies for a message
   const loadRepliesForMessage = useCallback(async (messageId: string) => {
     try {
       const replies = await getRepliesForMessage(messageId);
@@ -190,7 +210,6 @@ export const useCommunityMessages = () => {
     }
   }, []);
 
-  // Post a reply to a message
   const postReply = useCallback(async (messageId: string, content: string) => {
     if (!connected || !publicKey) {
       throw new Error('Wallet not connected');
@@ -214,7 +233,6 @@ export const useCommunityMessages = () => {
     }
   }, [connected, publicKey]);
 
-  // React to a message
   const reactToMessage = useCallback(async (messageId: string, reactionType: 'like' | 'dislike') => {
     if (!connected || !publicKey) {
       throw new Error('Wallet not connected');
@@ -224,13 +242,11 @@ export const useCommunityMessages = () => {
       const userId = publicKey.toString();
       await reactToMessageService(messageId, userId, reactionType);
       
-      // Update local state
       setMessageReactions(prev => {
         const messagePrev = prev[messageId] || { likes: 0, dislikes: 0 };
         let likes = messagePrev.likes;
         let dislikes = messagePrev.dislikes;
 
-        // If user already reacted with the same type, remove it
         if (messagePrev.userReaction === reactionType) {
           if (reactionType === 'like') likes--;
           if (reactionType === 'dislike') dislikes--;
@@ -241,7 +257,6 @@ export const useCommunityMessages = () => {
           };
         }
         
-        // If user already reacted with the other type, switch it
         if (messagePrev.userReaction) {
           if (messagePrev.userReaction === 'like') {
             likes--;
@@ -257,7 +272,6 @@ export const useCommunityMessages = () => {
           };
         }
         
-        // If user hasn't reacted yet, add their reaction
         if (reactionType === 'like') likes++;
         if (reactionType === 'dislike') dislikes++;
         
@@ -267,7 +281,6 @@ export const useCommunityMessages = () => {
         };
       });
       
-      // Refresh top liked messages
       fetchTopLiked();
       
       return true;
@@ -277,9 +290,7 @@ export const useCommunityMessages = () => {
     }
   }, [connected, publicKey, fetchTopLiked]);
 
-  // Initialize real-time subscriptions
   useEffect(() => {
-    // Subscribe to new messages
     const messagesSubscription = supabase
       .channel('community-messages-changes')
       .on('postgres_changes', 
@@ -289,7 +300,6 @@ export const useCommunityMessages = () => {
           table: 'community_messages'
         }, 
         payload => {
-          // Check if this message is already in our list
           const exists = messages.some(msg => msg.id === payload.new.id);
           if (!exists) {
             enrichMessagesWithUserData([payload.new as CommunityMessage])
@@ -301,7 +311,6 @@ export const useCommunityMessages = () => {
       )
       .subscribe();
 
-    // Subscribe to new replies
     const repliesSubscription = supabase
       .channel('community-replies-changes')
       .on('postgres_changes', 
@@ -314,7 +323,6 @@ export const useCommunityMessages = () => {
           const newReply = payload.new as CommunityReply;
           setMessageReplies(prev => {
             const msgReplies = prev[newReply.message_id] || [];
-            // Check if this reply is already in our list
             const exists = msgReplies.some(reply => reply.id === newReply.id);
             if (!exists) {
               return {
@@ -328,7 +336,6 @@ export const useCommunityMessages = () => {
       )
       .subscribe();
 
-    // Subscribe to new reactions
     const reactionsSubscription = supabase
       .channel('community-reactions-changes')
       .on('postgres_changes', 
@@ -338,19 +345,16 @@ export const useCommunityMessages = () => {
           table: 'community_message_reactions'
         }, 
         () => {
-          // Just fetch all reactions again
           fetchMessageReactions();
           fetchTopLiked();
         }
       )
       .subscribe();
 
-    // Initial fetch
     fetchMessages();
     fetchMessageReactions();
     fetchTopLiked();
 
-    // Cleanup subscriptions on unmount
     return () => {
       messagesSubscription.unsubscribe();
       repliesSubscription.unsubscribe();

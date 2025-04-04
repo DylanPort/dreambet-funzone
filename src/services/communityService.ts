@@ -1,80 +1,55 @@
+import { supabase } from "@/integrations/supabase/client";
 
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-// Define the types for the community message
 export interface CommunityMessage {
   id: string;
   content: string;
-  created_at: string;
   user_id: string;
-  username: string | null;
-  likes_count?: number;
-  dislikes_count?: number;
-  user_pxb_points?: number; // Added user points
-  user_win_rate?: number;   // Added user win rate
-  user_rank?: number;       // Added user rank
+  username?: string | null;
+  created_at: string;
+  user_pxb_points?: number;
+  user_win_rate?: number;
+  user_rank?: number;
 }
 
-// Define the type for the community reply
 export interface CommunityReply {
   id: string;
+  message_id: string;
   content: string;
-  created_at: string;
-  message_id: string;
   user_id: string;
-  username: string | null;
-}
-
-// Define the type for the reaction object
-export interface MessageReaction {
-  id: string;
-  message_id: string;
-  user_id: string;
-  reaction_type: 'like' | 'dislike';
+  username?: string | null;
   created_at: string;
 }
 
-// Get community messages
+// Get all community messages
 export const getCommunityMessages = async (): Promise<CommunityMessage[]> => {
   try {
-    // Get messages with direct query since there's an issue with the join
     const { data, error } = await supabase
       .from('community_messages')
-      .select('*')
+      .select(`
+        id,
+        content,
+        user_id,
+        username,
+        created_at
+      `)
       .order('created_at', { ascending: false })
       .limit(50);
-
+    
     if (error) {
-      console.error('Error fetching community messages:', error);
+      console.error("Error fetching community messages:", error);
       throw error;
     }
-
-    // Format the messages without user data (will be added in useCommunityMessages hook)
-    const messages = data.map(item => {
-      return {
-        id: item.id,
-        content: item.content,
-        created_at: item.created_at,
-        user_id: item.user_id,
-        username: item.username || null,
-        user_pxb_points: 0, // Will be populated in the hook
-        user_win_rate: 0,   // Will be populated in the hook
-        user_rank: 0        // Will be populated in the hook
-      };
-    });
-
-    return messages;
+    
+    return data || [];
   } catch (error) {
-    console.error('Error in getCommunityMessages:', error);
-    return [];
+    console.error("Unexpected error in getCommunityMessages:", error);
+    throw error;
   }
 };
 
 // Post a new community message
 export const postCommunityMessage = async (content: string, userId: string, username?: string): Promise<CommunityMessage | null> => {
   try {
-    // Get the user's username from the users table if available
     let actualUsername = username;
     
     if (!actualUsername) {
@@ -89,7 +64,6 @@ export const postCommunityMessage = async (content: string, userId: string, user
       }
     }
     
-    // Insert the new message
     const { data, error } = await supabase
       .from('community_messages')
       .insert({
@@ -143,7 +117,6 @@ export const getRepliesForMessage = async (messageId: string): Promise<Community
 // Post a reply to a message
 export const postReply = async (messageId: string, content: string, userId: string, username?: string): Promise<CommunityReply | null> => {
   try {
-    // Get the user's username from the users table if available
     let actualUsername = username;
     
     if (!actualUsername) {
@@ -158,7 +131,6 @@ export const postReply = async (messageId: string, content: string, userId: stri
       }
     }
     
-    // Insert the new reply
     const { data, error } = await supabase
       .from('community_replies')
       .insert({
@@ -186,7 +158,6 @@ export const postReply = async (messageId: string, content: string, userId: stri
 // React to a message (like or dislike)
 export const reactToMessage = async (messageId: string, userId: string, reactionType: 'like' | 'dislike'): Promise<boolean> => {
   try {
-    // Check if the user has already reacted to this message
     const { data: existingReaction, error: checkError } = await supabase
       .from('community_message_reactions')
       .select('*')
@@ -199,7 +170,6 @@ export const reactToMessage = async (messageId: string, userId: string, reaction
       throw checkError;
     }
 
-    // If the user already reacted with the same type, remove the reaction
     if (existingReaction && existingReaction.reaction_type === reactionType) {
       const { error: deleteError } = await supabase
         .from('community_message_reactions')
@@ -214,7 +184,6 @@ export const reactToMessage = async (messageId: string, userId: string, reaction
       return true;
     }
 
-    // If the user already reacted with a different type, update the reaction
     if (existingReaction) {
       const { error: updateError } = await supabase
         .from('community_message_reactions')
@@ -229,7 +198,6 @@ export const reactToMessage = async (messageId: string, userId: string, reaction
       return true;
     }
 
-    // Otherwise, insert a new reaction
     const { error: insertError } = await supabase
       .from('community_message_reactions')
       .insert({
@@ -289,7 +257,6 @@ export const getUserReaction = async (messageId: string, userId: string): Promis
       throw error;
     }
 
-    // Make sure we only return 'like' or 'dislike' or null to satisfy TypeScript
     if (data && (data.reaction_type === 'like' || data.reaction_type === 'dislike')) {
       return data.reaction_type;
     }
@@ -304,7 +271,6 @@ export const getUserReaction = async (messageId: string, userId: string): Promis
 // Get top liked messages
 export const getTopLikedMessages = async (limit: number = 5): Promise<CommunityMessage[]> => {
   try {
-    // Get message reactions
     const { data: reactionsData, error: reactionsError } = await supabase
       .from('community_message_reactions')
       .select('*')
@@ -315,13 +281,11 @@ export const getTopLikedMessages = async (limit: number = 5): Promise<CommunityM
       throw reactionsError;
     }
     
-    // Count likes per message
     const likesCount: Record<string, number> = {};
     reactionsData.forEach(reaction => {
       likesCount[reaction.message_id] = (likesCount[reaction.message_id] || 0) + 1;
     });
     
-    // Get top message IDs
     const topMessageIds = Object.entries(likesCount)
       .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
@@ -331,7 +295,6 @@ export const getTopLikedMessages = async (limit: number = 5): Promise<CommunityM
       return [];
     }
     
-    // Get the actual messages
     const { data: messagesData, error: messagesError } = await supabase
       .from('community_messages')
       .select('*')
@@ -342,13 +305,11 @@ export const getTopLikedMessages = async (limit: number = 5): Promise<CommunityM
       throw messagesError;
     }
     
-    // Add the likes count to each message
     const topMessages = messagesData.map(message => ({
       ...message,
       likes_count: likesCount[message.id] || 0
     }));
     
-    // Sort by likes count
     topMessages.sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
     
     return topMessages;
