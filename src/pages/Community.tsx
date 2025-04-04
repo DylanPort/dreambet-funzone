@@ -12,6 +12,7 @@ import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
   const [replyContent, setReplyContent] = useState<Record<string, string>>({});
@@ -49,11 +50,13 @@ const CommunityPage = () => {
     const pointsB = b.user_pxb_points || 0;
     return pointsB - pointsA;
   });
+
   useEffect(() => {
     if (connected && userProfile) {
       fetchUserBets();
     }
   }, [connected, userProfile, fetchUserBets]);
+
   useEffect(() => {
     if (bets && bets.length > 0) {
       const completedBets = bets.filter(bet => bet.status === 'won' || bet.status === 'lost');
@@ -61,6 +64,7 @@ const CommunityPage = () => {
       setWinRate(completedBets.length > 0 ? wonBets.length / completedBets.length * 100 : 0);
     }
   }, [bets]);
+
   useEffect(() => {
     if (userProfile && leaderboard && leaderboard.length > 0) {
       const userEntry = leaderboard.find(entry => entry.id === userProfile.id);
@@ -69,11 +73,13 @@ const CommunityPage = () => {
       }
     }
   }, [userProfile, leaderboard]);
+
   const scrollToBottom = () => {
     messageEndRef.current?.scrollIntoView({
       behavior: 'smooth'
     });
   };
+
   useEffect(() => {
     const initialExpandedState: Record<string, boolean> = {};
     Object.entries(messageReplies).forEach(([messageId, replies]) => {
@@ -83,6 +89,7 @@ const CommunityPage = () => {
     });
     setExpandedReplies(initialExpandedState);
   }, [messageReplies]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connected) {
@@ -103,6 +110,7 @@ const CommunityPage = () => {
       toast.error("Failed to post message. Please try again.");
     }
   };
+
   const handleLoadReplies = async (messageId: string) => {
     try {
       setExpandedReplies(prev => ({
@@ -124,12 +132,14 @@ const CommunityPage = () => {
       toast.error("Failed to load replies. Please try again.");
     }
   };
+
   const handleReplyClick = (messageId: string) => {
     setShowReplyInput(prev => ({
       ...prev,
       [messageId]: !prev[messageId]
     }));
   };
+
   const handleSubmitReply = async (messageId: string) => {
     if (!connected) {
       toast.error("Please connect your wallet to reply");
@@ -158,6 +168,7 @@ const CommunityPage = () => {
       toast.error("Failed to post reply. Please try again.");
     }
   };
+
   const handleReaction = async (messageId: string, reactionType: 'like' | 'dislike') => {
     if (!connected) {
       toast.error("Please connect your wallet to like or dislike");
@@ -170,6 +181,7 @@ const CommunityPage = () => {
       toast.error("Failed to record your reaction. Please try again.");
     }
   };
+
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
     const messageDate = new Date(timestamp);
@@ -180,9 +192,11 @@ const CommunityPage = () => {
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
     return `${Math.floor(diffMins / 1440)}d ago`;
   };
+
   const truncateAddress = (address: string) => {
     return address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
   };
+
   return <div className="min-h-screen bg-dream-background">
       <Navbar />
       
@@ -281,8 +295,9 @@ const CommunityPage = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative">
                 <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={connected ? "What's on your mind?" : "Connect wallet to join the conversation"} disabled={!connected} className="w-full bg-dream-background/20 border border-dream-foreground/10 focus:border-dream-accent2/50 rounded-lg px-4 py-3 pr-12 min-h-24 placeholder:text-dream-foreground/30 focus:outline-none focus:ring-1 focus:ring-dream-accent2/50 transition-all resize-none" />
-                <Button type="submit" disabled={!connected || !message.trim()} className="absolute bottom-3 right-3 p-2 rounded-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 text-white">
+                <Button type="submit" disabled={!connected || !message.trim()} className="absolute bottom-3 right-3 p-2 rounded-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 text-white flex items-center gap-1">
                   <Send className="w-4 h-4" />
+                  <span>Post</span>
                 </Button>
               </div>
             </form>
@@ -418,4 +433,5 @@ const CommunityPage = () => {
       </div>
     </div>;
 };
+
 export default CommunityPage;
