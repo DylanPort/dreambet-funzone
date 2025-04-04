@@ -4,6 +4,7 @@ import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 import { Users, User, Signal } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 export interface OnlineUsersSidebarProps {
   className?: string;
@@ -46,8 +47,17 @@ const OnlineUsersSidebar = ({ className }: OnlineUsersSidebarProps) => {
                   key={user.id} 
                   className="flex items-center p-2 rounded-md bg-dream-background/30 hover:bg-dream-background/40 transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2">
-                    <User className="w-3.5 h-3.5 text-dream-foreground/70" />
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2 overflow-hidden">
+                    <Avatar className="w-full h-full">
+                      <AvatarImage 
+                        src="/lovable-uploads/465e1d7b-8647-4ada-a42d-b52fc4e41841.png" 
+                        alt="User avatar" 
+                        className="w-full h-full object-cover"
+                      />
+                      <AvatarFallback className="bg-transparent">
+                        <User className="w-3.5 h-3.5 text-dream-foreground/70" />
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
                   <div className="overflow-hidden">
                     <p className="text-sm truncate font-medium">{user.username}</p>
