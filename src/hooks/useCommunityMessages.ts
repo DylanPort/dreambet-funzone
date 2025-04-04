@@ -1,275 +1,366 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { supabase } from '@/integrations/supabase/client';
 import { 
-  fetchCommunityMessages, 
+  getCommunityMessages, 
   postCommunityMessage, 
-  fetchRepliesForMessage, 
-  postReplyToMessage,
-  addReactionToMessage,
-  fetchTopLikedMessages,
-  fetchMessageReactions,
-  CommunityMessage,
+  getRepliesForMessage, 
+  postReply as postReplyService, 
+  reactToMessage as reactToMessageService, 
+  CommunityMessage, 
   CommunityReply,
-  MessageReaction
+  getTopLikedMessages
 } from '@/services/communityService';
-
-interface MessageReactions {
-  [messageId: string]: {
-    likes: number;
-    dislikes: number;
-    userReaction: 'like' | 'dislike' | null;
-  };
-}
+import { supabase } from '@/integrations/supabase/client';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 
 export const useCommunityMessages = () => {
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
   const [topLikedMessages, setTopLikedMessages] = useState<CommunityMessage[]>([]);
-  const [messageReplies, setMessageReplies] = useState<{[key: string]: CommunityReply[]}>({});
-  const [messageReactions, setMessageReactions] = useState<MessageReactions>({});
+  const [messageReplies, setMessageReplies] = useState<Record<string, CommunityReply[]>>({});
+  const [messageReactions, setMessageReactions] = useState<Record<string, { likes: number; dislikes: number; userReaction?: 'like' | 'dislike' }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const { publicKey } = useWallet();
+  const { publicKey, connected } = useWallet();
+  const { bets } = usePXBPoints();
 
+  // Function to fetch message reactions
+  const fetchMessageReactions = useCallback(async () => {
+    try {
+      if (!messages.length) return;
+
+      const { data, error } = await supabase
+        .from('community_message_reactions')
+        .select('*');
+
+      if (error) throw error;
+
+      const reactionsMap: Record<string, { likes: number; dislikes: number; userReaction?: 'like' | 'dislike' }> = {};
+
+      // Process all reactions and group by message_id
+      data.forEach(reaction => {
+        if (!reactionsMap[reaction.message_id]) {
+          reactionsMap[reaction.message_id] = { likes: 0, dislikes: 0 };
+        }
+
+        if (reaction.reaction_type === 'like') {
+          reactionsMap[reaction.message_id].likes++;
+        } else if (reaction.reaction_type === 'dislike') {
+          reactionsMap[reaction.message_id].dislikes++;
+        }
+
+        // Store current user's reaction
+        if (connected && publicKey && reaction.user_id === publicKey.toString()) {
+          reactionsMap[reaction.message_id].userReaction = reaction.reaction_type as 'like' | 'dislike';
+        }
+      });
+
+      setMessageReactions(reactionsMap);
+    } catch (error) {
+      console.error('Error fetching message reactions:', error);
+    }
+  }, [messages, connected, publicKey]);
+
+  // Function to fetch user data for messages
+  const enrichMessagesWithUserData = useCallback(async (messages: CommunityMessage[]) => {
+    try {
+      // Get all unique user IDs from messages
+      const userIds = [...new Set(messages.map(msg => msg.user_id))];
+      
+      if (userIds.length === 0) return messages;
+      
+      // Fetch user data for all messages at once
+      const { data: usersData, error } = await supabase
+        .from('users')
+        .select('wallet_address, points, username')
+        .in('wallet_address', userIds);
+        
+      if (error) throw error;
+      
+      // Create a map of user data by wallet address
+      const userDataMap: Record<string, any> = {};
+      usersData.forEach(user => {
+        userDataMap[user.wallet_address] = user;
+      });
+      
+      // Calculate win rates for each user if we have bets data
+      const winRates: Record<string, number> = {};
+      
+      if (bets && bets.length > 0) {
+        userIds.forEach(userId => {
+          const userBets = bets.filter(bet => 
+            bet.creator === userId || 
+            bet.userId === userId
+          );
+          
+          const completedBets = userBets.filter(bet => 
+            bet.status === 'won' || bet.status === 'lost'
+          );
+          
+          const wonBets = userBets.filter(bet => bet.status === 'won');
+          
+          winRates[userId] = completedBets.length > 0 
+            ? (wonBets.length / completedBets.length) * 100 
+            : 0;
+        });
+      }
+      
+      // Enrich messages with user data
+      const enrichedMessages = messages.map(msg => {
+        const userData = userDataMap[msg.user_id];
+        
+        return {
+          ...msg,
+          username: msg.username || (userData?.username || undefined),
+          user_pxb_points: userData?.points || 0,
+          user_win_rate: winRates[msg.user_id] || 0
+        };
+      });
+      
+      return enrichedMessages;
+    } catch (error) {
+      console.error('Error enriching messages with user data:', error);
+      return messages;
+    }
+  }, [bets]);
+
+  // Fetch community messages
   const fetchMessages = useCallback(async () => {
     try {
       setLoading(true);
-      const fetchedMessages = await fetchCommunityMessages();
-      setMessages(fetchedMessages);
-      
-      // Fetch reactions for all messages
-      const initialReactions: MessageReactions = {};
-      
-      await Promise.all(fetchedMessages.map(async (msg) => {
-        const reactions = await fetchMessageReactions(msg.id);
-        
-        const likes = reactions.filter(r => r.reaction_type === 'like').length;
-        const dislikes = reactions.filter(r => r.reaction_type === 'dislike').length;
-        
-        let userReaction = null;
-        if (publicKey) {
-          const userId = publicKey.toString();
-          const userReactionItem = reactions.find(r => r.user_id === userId);
-          if (userReactionItem) {
-            userReaction = userReactionItem.reaction_type;
-          }
-        }
-        
-        initialReactions[msg.id] = {
-          likes,
-          dislikes,
-          userReaction: userReaction as 'like' | 'dislike' | null
-        };
-      }));
-      
-      setMessageReactions(initialReactions);
+      const fetchedMessages = await getCommunityMessages();
+      const enriched = await enrichMessagesWithUserData(fetchedMessages);
+      setMessages(enriched);
       setError(null);
     } catch (err) {
+      setError(err as Error);
       console.error('Error fetching messages:', err);
-      setError(err instanceof Error ? err : new Error('Failed to fetch messages'));
     } finally {
       setLoading(false);
     }
-  }, [publicKey]);
+  }, [enrichMessagesWithUserData]);
 
+  // Fetch top liked messages
   const fetchTopLiked = useCallback(async () => {
     try {
-      const topMessages = await fetchTopLikedMessages();
-      setTopLikedMessages(topMessages);
+      const topMessages = await getTopLikedMessages(5);
+      const enriched = await enrichMessagesWithUserData(topMessages);
+      setTopLikedMessages(enriched);
     } catch (err) {
       console.error('Error fetching top liked messages:', err);
     }
-  }, []);
+  }, [enrichMessagesWithUserData]);
 
+  // Post a new message
   const postMessage = useCallback(async (content: string) => {
-    if (!publicKey) throw new Error('Wallet not connected');
-    
-    const userId = publicKey.toString();
-    const newMessage = await postCommunityMessage(content, userId);
-    
-    setMessages(prev => [newMessage, ...prev]);
-    
-    setMessageReactions(prev => ({
-      ...prev,
-      [newMessage.id]: {
-        likes: 0,
-        dislikes: 0,
-        userReaction: null
-      }
-    }));
-    
-    return newMessage;
-  }, [publicKey]);
+    if (!connected || !publicKey) {
+      throw new Error('Wallet not connected');
+    }
 
+    try {
+      const userId = publicKey.toString();
+      const newMessage = await postCommunityMessage(content, userId);
+      
+      if (newMessage) {
+        // Refresh messages to include the new one
+        fetchMessages();
+      }
+      
+      return newMessage;
+    } catch (err) {
+      console.error('Error posting message:', err);
+      throw err;
+    }
+  }, [connected, publicKey, fetchMessages]);
+
+  // Load replies for a message
   const loadRepliesForMessage = useCallback(async (messageId: string) => {
     try {
-      const replies = await fetchRepliesForMessage(messageId);
+      const replies = await getRepliesForMessage(messageId);
       setMessageReplies(prev => ({
         ...prev,
         [messageId]: replies
       }));
       return replies;
     } catch (err) {
-      console.error(`Error fetching replies for message ${messageId}:`, err);
+      console.error('Error loading replies:', err);
       throw err;
     }
   }, []);
 
+  // Post a reply to a message
   const postReply = useCallback(async (messageId: string, content: string) => {
-    if (!publicKey) throw new Error('Wallet not connected');
-    
-    const userId = publicKey.toString();
-    const newReply = await postReplyToMessage(messageId, content, userId);
-    
-    setMessageReplies(prev => ({
-      ...prev,
-      [messageId]: [...(prev[messageId] || []), newReply]
-    }));
-    
-    return newReply;
-  }, [publicKey]);
+    if (!connected || !publicKey) {
+      throw new Error('Wallet not connected');
+    }
 
-  const reactToMessage = useCallback(async (messageId: string, reactionType: 'like' | 'dislike') => {
-    if (!publicKey) throw new Error('Wallet not connected');
-    
-    const userId = publicKey.toString();
-    
     try {
-      const result = await addReactionToMessage(messageId, userId, reactionType);
+      const userId = publicKey.toString();
+      const newReply = await postReplyService(messageId, content, userId);
       
-      const currentReaction = messageReactions[messageId]?.userReaction;
+      if (newReply) {
+        setMessageReplies(prev => ({
+          ...prev,
+          [messageId]: [...(prev[messageId] || []), newReply]
+        }));
+      }
       
-      setMessageReactions(prev => {
-        const newState = { ...prev };
-        
-        if (!result) {
-          // Reaction was removed
-          newState[messageId] = {
-            likes: currentReaction === 'like' ? prev[messageId].likes - 1 : prev[messageId].likes,
-            dislikes: currentReaction === 'dislike' ? prev[messageId].dislikes - 1 : prev[messageId].dislikes,
-            userReaction: null
-          };
-        } else if (currentReaction && currentReaction !== reactionType) {
-          // Reaction was changed
-          newState[messageId] = {
-            likes: currentReaction === 'like' ? prev[messageId].likes - 1 : prev[messageId].likes + (reactionType === 'like' ? 1 : 0),
-            dislikes: currentReaction === 'dislike' ? prev[messageId].dislikes - 1 : prev[messageId].dislikes + (reactionType === 'dislike' ? 1 : 0),
-            userReaction: reactionType
-          };
-        } else if (!currentReaction) {
-          // New reaction
-          newState[messageId] = {
-            likes: reactionType === 'like' ? prev[messageId].likes + 1 : prev[messageId].likes,
-            dislikes: reactionType === 'dislike' ? prev[messageId].dislikes + 1 : prev[messageId].dislikes,
-            userReaction: reactionType
-          };
-        }
-        
-        return newState;
-      });
-      
-      // Update top liked messages if necessary
-      fetchTopLiked();
-      
-      return result;
+      return newReply;
     } catch (err) {
-      console.error(`Error reacting to message ${messageId}:`, err);
+      console.error('Error posting reply:', err);
       throw err;
     }
-  }, [publicKey, messageReactions, fetchTopLiked]);
+  }, [connected, publicKey]);
 
-  useEffect(() => {
-    fetchMessages();
-    fetchTopLiked();
-  }, [fetchMessages, fetchTopLiked]);
+  // React to a message
+  const reactToMessage = useCallback(async (messageId: string, reactionType: 'like' | 'dislike') => {
+    if (!connected || !publicKey) {
+      throw new Error('Wallet not connected');
+    }
 
-  // Load replies for all messages when the component mounts
+    try {
+      const userId = publicKey.toString();
+      await reactToMessageService(messageId, userId, reactionType);
+      
+      // Update local state
+      setMessageReactions(prev => {
+        const messagePrev = prev[messageId] || { likes: 0, dislikes: 0 };
+        let likes = messagePrev.likes;
+        let dislikes = messagePrev.dislikes;
+
+        // If user already reacted with the same type, remove it
+        if (messagePrev.userReaction === reactionType) {
+          if (reactionType === 'like') likes--;
+          if (reactionType === 'dislike') dislikes--;
+          
+          return {
+            ...prev,
+            [messageId]: { likes, dislikes }
+          };
+        }
+        
+        // If user already reacted with the other type, switch it
+        if (messagePrev.userReaction) {
+          if (messagePrev.userReaction === 'like') {
+            likes--;
+            dislikes++;
+          } else {
+            likes++;
+            dislikes--;
+          }
+          
+          return {
+            ...prev,
+            [messageId]: { likes, dislikes, userReaction: reactionType }
+          };
+        }
+        
+        // If user hasn't reacted yet, add their reaction
+        if (reactionType === 'like') likes++;
+        if (reactionType === 'dislike') dislikes++;
+        
+        return {
+          ...prev,
+          [messageId]: { likes, dislikes, userReaction: reactionType }
+        };
+      });
+      
+      // Refresh top liked messages
+      fetchTopLiked();
+      
+      return true;
+    } catch (err) {
+      console.error('Error reacting to message:', err);
+      throw err;
+    }
+  }, [connected, publicKey, fetchTopLiked]);
+
+  // Initialize real-time subscriptions
   useEffect(() => {
-    const loadAllReplies = async () => {
-      if (messages.length > 0) {
-        for (const msg of messages) {
-          if (!messageReplies[msg.id]) {
-            try {
-              await loadRepliesForMessage(msg.id);
-            } catch (error) {
-              console.error(`Error preloading replies for message ${msg.id}:`, error);
-            }
+    // Subscribe to new messages
+    const messagesSubscription = supabase
+      .channel('community-messages-changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'community_messages'
+        }, 
+        payload => {
+          // Check if this message is already in our list
+          const exists = messages.some(msg => msg.id === payload.new.id);
+          if (!exists) {
+            enrichMessagesWithUserData([payload.new as CommunityMessage])
+              .then(enrichedMessages => {
+                setMessages(prev => [enrichedMessages[0], ...prev]);
+              });
           }
         }
-      }
-    };
-    
-    loadAllReplies();
-  }, [messages, messageReplies, loadRepliesForMessage]);
+      )
+      .subscribe();
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('public:community_messages')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'community_messages' 
-      }, (payload) => {
-        if (payload.new && (!publicKey || payload.new.user_id !== publicKey.toString())) {
-          const newMessage = payload.new as CommunityMessage;
-          setMessages(prev => [newMessage, ...prev]);
-          
-          setMessageReactions(prev => ({
-            ...prev,
-            [newMessage.id]: {
-              likes: 0,
-              dislikes: 0,
-              userReaction: null
-            }
-          }));
-        }
-      })
-      .subscribe();
-      
-    const reactionsChannel = supabase
-      .channel('public:community_message_reactions')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'community_message_reactions' 
-      }, (payload) => {
-        fetchMessages();
-        fetchTopLiked();
-      })
-      .subscribe();
-      
-    const repliesChannel = supabase
-      .channel('public:community_replies')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'community_replies'
-      }, (payload) => {
-        if (payload.new) {
+    // Subscribe to new replies
+    const repliesSubscription = supabase
+      .channel('community-replies-changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'community_replies'
+        }, 
+        payload => {
           const newReply = payload.new as CommunityReply;
-          const messageId = newReply.message_id;
-          
-          setMessageReplies(prev => ({
-            ...prev,
-            [messageId]: [...(prev[messageId] || []), newReply]
-          }));
+          setMessageReplies(prev => {
+            const msgReplies = prev[newReply.message_id] || [];
+            // Check if this reply is already in our list
+            const exists = msgReplies.some(reply => reply.id === newReply.id);
+            if (!exists) {
+              return {
+                ...prev,
+                [newReply.message_id]: [...msgReplies, newReply]
+              };
+            }
+            return prev;
+          });
         }
-      })
+      )
       .subscribe();
 
+    // Subscribe to new reactions
+    const reactionsSubscription = supabase
+      .channel('community-reactions-changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'community_message_reactions'
+        }, 
+        () => {
+          // Just fetch all reactions again
+          fetchMessageReactions();
+          fetchTopLiked();
+        }
+      )
+      .subscribe();
+
+    // Initial fetch
+    fetchMessages();
+    fetchMessageReactions();
+    fetchTopLiked();
+
+    // Cleanup subscriptions on unmount
     return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(reactionsChannel);
-      supabase.removeChannel(repliesChannel);
+      messagesSubscription.unsubscribe();
+      repliesSubscription.unsubscribe();
+      reactionsSubscription.unsubscribe();
     };
-  }, [fetchMessages, fetchTopLiked, publicKey]);
+  }, [fetchMessages, fetchMessageReactions, fetchTopLiked, messages, enrichMessagesWithUserData]);
 
   return {
     messages,
-    topLikedMessages,
     messageReplies,
     messageReactions,
+    topLikedMessages,
     loading,
     error,
     postMessage,

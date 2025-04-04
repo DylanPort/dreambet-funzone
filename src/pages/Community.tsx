@@ -220,7 +220,7 @@ const CommunityPage = () => {
                       <Trophy className="w-4 h-4 mr-1 text-dream-accent1" />
                       <span className="text-dream-foreground/70">Rank:</span>
                     </div>
-                    <span className="font-bold text-dream-accent1">#{userProfile.rank || '—'}</span>
+                    <span className="font-bold text-dream-accent1">#{userProfile.rank?.toString() || '—'}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -308,7 +308,23 @@ const CommunityPage = () => {
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2">
                           <User className="w-4 h-4 text-dream-foreground/70" />
                         </div>
-                        <span className="font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
+                        <div>
+                          <span className="font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
+                          
+                          {/* User stats badges - New addition */}
+                          <div className="flex mt-1 space-x-2">
+                            <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
+                              <Coins className="w-3 h-3 mr-1 text-yellow-500" />
+                              <span>{msg.user_pxb_points?.toLocaleString() || "0"}</span>
+                            </div>
+                            {msg.user_win_rate !== undefined && (
+                              <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
+                                <Percent className="w-3 h-3 mr-1 text-green-500" />
+                                <span>{(msg.user_win_rate || 0).toFixed(1)}%</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <span className="text-dream-foreground/50 text-sm">{formatTimeAgo(msg.created_at)}</span>
                     </div>
