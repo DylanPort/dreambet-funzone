@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 export interface User {
   id: string;
@@ -22,6 +23,7 @@ export interface User {
 
 const PointsCommunity = () => {
   const [activeTab, setActiveTab] = useState<string>("feed");
+  const { connected } = useWallet();
 
   const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['communityUsers'],

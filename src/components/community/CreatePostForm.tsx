@@ -1,63 +1,35 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Textarea } from "@/components/ui/textarea";
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Image, X } from 'lucide-react';
+import { Textarea } from "@/components/ui/textarea";
+import { PlusCircle, Image as ImageIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { nanoid } from 'nanoid';
+import WalletConnectButton from '../WalletConnectButton';
 
-export const CreatePostForm: React.FC = () => {
-  const [content, setContent] = useState("");
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+export const CreatePostForm = () => {
+  const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{id: string, username?: string, avatar_url?: string} | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { connected, publicKey } = useWallet();
+  const { addPointsToUser } = usePXBPoints();
   
-  React.useEffect(() => {
-    // Get current user
-    const fetchUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id, username, avatar_url')
-          .eq('id', session.user.id)
-          .single();
-          
-        setCurrentUser(userData);
-      }
-    };
-    
-    fetchUser();
-  }, []);
-  
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    
-    if (file) {
-      setImage(file);
-      
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-  
-  const removeImage = () => {
-    setImage(null);
-    setImagePreview(null);
-  };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!content.trim() && !image) {
+    if (!content.trim() && !imageFile) {
       toast.error('Please add some content to your post');
+      return;
+    }
+    
+    if (!connected || !publicKey) {
+      toast.error('Please connect your wallet to post');
       return;
     }
     
@@ -67,133 +39,176 @@ export const CreatePostForm: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        toast.error('You need to be logged in to create a post');
+        toast.error('You need to be logged in to post');
         return;
       }
       
-      let imageUrl = null;
+      const userId = session.user.id;
       
-      // Upload image if exists
-      if (image) {
-        const timestamp = Date.now();
-        const fileExt = image.name.split('.').pop();
-        const fileName = `${timestamp}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `post-images/${fileName}`;
+      // Handle image upload if present
+      let imageUrl = null;
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${nanoid()}.${fileExt}`;
+        const filePath = `post_images/${fileName}`;
         
         const { error: uploadError } = await supabase
           .storage
-          .from('community')
-          .upload(filePath, image);
-          
+          .from('media')
+          .upload(filePath, imageFile);
+        
         if (uploadError) {
           console.error('Error uploading image:', uploadError);
           toast.error('Failed to upload image');
           return;
         }
         
-        // Get public URL
-        const { data: urlData } = supabase
+        const { data: { publicUrl } } = supabase
           .storage
-          .from('community')
+          .from('media')
           .getPublicUrl(filePath);
           
-        imageUrl = urlData.publicUrl;
+        imageUrl = publicUrl;
       }
       
-      // Create post
-      const { error } = await supabase
+      // Add post
+      const { data: post, error } = await supabase
         .from('posts')
         .insert({
-          user_id: session.user.id,
+          user_id: userId,
           content: content.trim(),
-          image_url: imageUrl
-        });
-        
+          image_url: imageUrl,
+          likes_count: 0,
+          comments_count: 0
+        })
+        .select()
+        .single();
+      
       if (error) {
         console.error('Error creating post:', error);
         toast.error('Failed to create post');
         return;
       }
       
-      setContent("");
-      setImage(null);
+      // Award points for posting
+      const pointsAmount = 10;
+      await addPointsToUser(pointsAmount, 'Created a post');
+      
+      setContent('');
+      setImageFile(null);
       setImagePreview(null);
-      toast.success('Post created successfully');
+      
+      toast.success('Post created! +10 PXB');
     } catch (error) {
-      console.error('Error creating post:', error);
-      toast.error('Failed to create post');
+      console.error('Error in handleSubmitPost:', error);
+      toast.error('An error occurred');
     } finally {
       setIsSubmitting(false);
     }
   };
   
-  if (!currentUser) {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload only images (JPEG, PNG, GIF, WEBP)');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    
+    setImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  // If not connected, show a simplified form with connect wallet button
+  if (!connected) {
     return (
-      <div className="glass-panel p-6 text-center">
-        <p className="mb-4">Sign in to share your thoughts with the community</p>
-        <Button className="bg-dream-accent1 hover:bg-dream-accent1/90">Connect Wallet</Button>
+      <div className="glass-panel p-5 animate-fade-in">
+        <h3 className="text-lg font-medium mb-4">Sign in to share your thoughts with the community</h3>
+        <div className="flex justify-center">
+          <WalletConnectButton />
+        </div>
       </div>
     );
   }
   
   return (
-    <form onSubmit={handleSubmit} className="glass-panel p-6 animate-fade-in">
-      <div className="flex gap-4">
-        <Avatar className="h-10 w-10 border border-dream-accent1/30">
-          <AvatarImage src={currentUser.avatar_url || undefined} />
-          <AvatarFallback className="bg-dream-accent3/20 text-dream-accent3">
-            {currentUser.username ? currentUser.username.substring(0, 2).toUpperCase() : 'PX'}
-          </AvatarFallback>
-        </Avatar>
+    <div className="glass-panel p-5 animate-fade-in">
+      <h3 className="text-lg font-medium mb-4">Create a Post</h3>
+      
+      <form onSubmit={handleSubmitPost}>
+        <Textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="What's on your mind?"
+          className="bg-white/5 border-white/10 focus-visible:ring-dream-accent1/40 mb-2 h-24"
+        />
         
-        <div className="flex-1">
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Share something with the community..."
-            className="bg-white/5 border-white/10 focus-visible:ring-dream-accent1/40 min-h-[120px]"
-          />
-          
-          {imagePreview && (
-            <div className="relative mt-3 rounded-lg overflow-hidden border border-white/10">
-              <img src={imagePreview} alt="Upload preview" className="w-full h-auto max-h-60 object-contain" />
-              <button 
-                type="button"
-                onClick={removeImage}
-                className="absolute top-2 right-2 bg-black/60 rounded-full p-1 hover:bg-black/80 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
+        {imagePreview && (
+          <div className="relative mb-4 mt-2">
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img src={imagePreview} alt="Upload preview" className="max-h-60 w-auto mx-auto" />
             </div>
-          )}
-          
-          <div className="flex justify-between mt-4">
-            <div>
-              <label htmlFor="image-upload" className="cursor-pointer">
-                <div className="flex items-center gap-2 text-white/60 hover:text-white">
-                  <Image className="h-5 w-5" />
-                  <span className="text-sm">Add Image</span>
-                </div>
-                <input 
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </label>
-            </div>
-            
-            <Button 
-              type="submit" 
-              disabled={isSubmitting || (!content.trim() && !image)}
-              className="bg-dream-accent1 hover:bg-dream-accent1/90"
+            <button 
+              type="button"
+              onClick={removeImage}
+              className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
             >
-              {isSubmitting ? 'Posting...' : 'Post'}
-            </Button>
+              <X size={16} />
+            </button>
           </div>
+        )}
+        
+        <div className="flex justify-between items-center">
+          <div>
+            <input
+              type="file"
+              id="image-upload"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleFileChange}
+            />
+            <label 
+              htmlFor="image-upload" 
+              className="cursor-pointer text-dream-accent1 hover:text-dream-accent1/80 flex items-center gap-1.5"
+            >
+              <ImageIcon size={18} />
+              <span>Add Image</span>
+            </label>
+          </div>
+          
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || (!content.trim() && !imageFile)}
+            className="bg-dream-accent1 hover:bg-dream-accent1/90"
+          >
+            {isSubmitting ? 'Posting...' : 'Post'}
+          </Button>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
