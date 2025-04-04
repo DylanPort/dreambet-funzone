@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Coins, Users } from 'lucide-react';
+import { Menu, X, Coins } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 import ProfileButton from './ProfileButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
@@ -9,7 +8,6 @@ import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -23,7 +21,6 @@ const Navbar = () => {
     fetchUserProfile
   } = usePXBPoints();
   const [pxbPoints, setPxbPoints] = useState<number | null>(null);
-  
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -35,17 +32,14 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
-  
   useEffect(() => {
     if (userProfile) {
       setPxbPoints(userProfile.pxbPoints);
     }
   }, [userProfile]);
-  
   useEffect(() => {
     if (!userProfile) return;
     const channel = supabase.channel('public:users').on('postgres_changes', {
@@ -64,7 +58,6 @@ const Navbar = () => {
       supabase.removeChannel(channel);
     };
   }, [userProfile, fetchUserProfile]);
-  
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'backdrop-blur-lg bg-dream-background/80 shadow-lg' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-1.5">
@@ -84,15 +77,6 @@ const Navbar = () => {
                 <img alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" src="/lovable-uploads/f4f0715a-b593-4250-b09f-b31137657bf2.png" />
               </div>
               <span className="text-sm">PXB Space</span>
-            </Link>
-            
-            <Link to="/community" className={`nav-link flex items-center gap-1 ${location.pathname === '/community' ? 'text-green-400' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105">
-                <div className="w-10 h-10 rounded-full bg-dream-accent1/10 flex items-center justify-center border border-dream-accent2/30">
-                  <Users className="w-6 h-6 text-dream-accent2 drop-shadow-[0_0_8px_rgba(0,255,224,0.5)]" />
-                </div>
-              </div>
-              <span className="text-sm">Community</span>
             </Link>
             
             <ProfileButton />
@@ -149,15 +133,6 @@ const Navbar = () => {
               <span className="text-sm">PXB Space</span>
             </Link>
             
-            <Link to="/community" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/community' ? 'text-green-400' : 'text-dream-foreground/70'}`}>
-              <div className="w-8 h-8 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-dream-accent1/10 flex items-center justify-center border border-dream-accent2/30">
-                  <Users className="w-5 h-5 text-dream-accent2" />
-                </div>
-              </div>
-              <span className="text-sm">Community</span>
-            </Link>
-            
             <Link to="/profile" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/profile' ? 'text-green-400' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
                 <img src="/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png" alt="Profile" className="w-full h-full object-cover" />
@@ -186,5 +161,4 @@ const Navbar = () => {
         </div>}
     </header>;
 };
-
 export default Navbar;

@@ -1,13 +1,9 @@
-
 export interface UserProfile {
   id: string;
   username: string;
   pxbPoints: number;
   createdAt: string;
   isTemporary?: boolean; // Add this flag to identify temporary profiles
-  avatarUrl?: string;  // Add avatar URL property
-  walletAddress?: string;
-  avatar_url?: string; // Add this for compatibility with database naming
 }
 
 // Updated PXBBet interface with all required fields
