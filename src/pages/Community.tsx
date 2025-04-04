@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -243,7 +244,7 @@ const CommunityPage = () => {
                   
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center text-sm">
-                      <Trophy className="w-4 h-4 mr-1 text-dream-accent1" />
+                      <img src="/lovable-uploads/710dcb90-5e8c-496a-98a7-a0b2dba75e90.png" className="w-4 h-4 mr-1" alt="PXB" />
                       <span className="text-dream-foreground/70">Rank:</span>
                     </div>
                     <span className="font-bold text-dream-accent1">#{userRank || '—'}</span>
@@ -323,7 +324,7 @@ const CommunityPage = () => {
             
             <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-dream-accent1/10 to-dream-accent2/10 rounded-lg mb-3">
               <div className="flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
+                <img src="/lovable-uploads/710dcb90-5e8c-496a-98a7-a0b2dba75e90.png" className="w-5 h-5 mr-2" alt="PXB Rank" />
                 <span className="font-display font-semibold text-dream-foreground/90">Messages sorted by PXB Points</span>
               </div>
               <div className="flex items-center text-sm text-dream-foreground/60">
@@ -373,7 +374,7 @@ const CommunityPage = () => {
                             )}
                             {msg.user_rank !== undefined && (
                               <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
-                                <Trophy className="w-3 h-3 mr-1 text-dream-accent1" />
+                                <img src="/lovable-uploads/710dcb90-5e8c-496a-98a7-a0b2dba75e90.png" className="w-3 h-3 mr-1" alt="PXB Rank" />
                                 <span>#{msg.user_rank}</span>
                               </div>
                             )}
@@ -464,3 +465,4 @@ const CommunityPage = () => {
 };
 
 export default CommunityPage;
+
