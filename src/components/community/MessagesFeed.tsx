@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare, Heart, Share } from 'lucide-react';
 import { toast } from 'sonner';
@@ -69,7 +68,8 @@ export const MessagesFeed: React.FC = () => {
       
       return postsWithLikeStatus;
     },
-    refetchInterval: 3000, // Refresh every 3 seconds
+    // Increase refetch interval for better performance, we'll rely on real-time updates
+    refetchInterval: 15000,
   });
   
   useEffect(() => {
@@ -81,6 +81,7 @@ export const MessagesFeed: React.FC = () => {
         schema: 'public',
         table: 'posts'
       }, () => {
+        console.log('Posts changed, refetching...');
         refetch();
       })
       .subscribe();

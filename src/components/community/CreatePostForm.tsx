@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { nanoid } from 'nanoid';
 import WalletConnectButton from '../WalletConnectButton';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const CreatePostForm = () => {
   const [content, setContent] = useState('');
@@ -19,6 +20,7 @@ export const CreatePostForm = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { connected, publicKey } = useWallet();
   const { addPointsToUser } = usePXBPoints();
+  const queryClient = useQueryClient();
   
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +145,9 @@ export const CreatePostForm = () => {
       setContent('');
       setImageFile(null);
       setImagePreview(null);
+      
+      // Invalidate the posts query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['communityPosts'] });
       
       toast.success('Post created! +10 PXB');
     } catch (error) {
