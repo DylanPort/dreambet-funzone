@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -201,6 +200,23 @@ const CommunityPage = () => {
   const truncateAddress = (address: string) => {
     return address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
   };
+  
+  // Add new ref for horizontal scroll container
+  const horizontalScrollRef = useRef<HTMLDivElement>(null);
+  
+  // Function to scroll horizontally
+  const scrollHorizontally = (direction: 'left' | 'right') => {
+    if (!horizontalScrollRef.current) return;
+    
+    const scrollContainer = horizontalScrollRef.current;
+    const scrollAmount = 200; // Amount to scroll in pixels
+    
+    if (direction === 'left') {
+      scrollContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    } else {
+      scrollContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   return <div className="min-h-screen bg-dream-background bg-[url('/lovable-uploads/de5a5440-6c74-4a87-af08-110c2e96ffbc.png')] bg-cover bg-center bg-no-repeat bg-fixed">
       <div className="absolute inset-0 bg-dream-background/80 backdrop-blur-sm"></div>
@@ -211,7 +227,11 @@ const CommunityPage = () => {
         <div className="flex flex-col md:flex-row max-w-7xl mx-auto pt-32 px-4 pb-20">
           {/* Mobile horizontal scrollable section */}
           <div className={`md:hidden w-full overflow-x-auto pb-4 horizontal-scroll`}>
-            <div className="flex space-x-4" style={{ minWidth: 'max-content' }}>
+            <div 
+              ref={horizontalScrollRef}
+              className="flex space-x-4" 
+              style={{ minWidth: 'max-content' }}
+            >
               <OnlineUsersSidebar className="min-w-64" />
               
               {connected && userProfile && (
@@ -306,12 +326,18 @@ const CommunityPage = () => {
               </div>
             </div>
             
-            {/* Mobile scroll indicator */}
+            {/* Mobile scroll indicator - Updated with click functionality */}
             <div className="flex justify-center mt-2 md:hidden">
               <div className="flex items-center space-x-1 text-xs text-dream-foreground/50">
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft 
+                  className="w-4 h-4 cursor-pointer hover:text-dream-accent1 transition-colors" 
+                  onClick={() => scrollHorizontally('left')}
+                />
                 <span>Scroll for more</span>
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight 
+                  className="w-4 h-4 cursor-pointer hover:text-dream-accent1 transition-colors" 
+                  onClick={() => scrollHorizontally('right')}
+                />
               </div>
             </div>
           </div>
@@ -529,29 +555,4 @@ const CommunityPage = () => {
                           {messageReplies[msg.id].map(reply => <div key={reply.id} className="pt-2">
                               <div className="flex justify-between items-start mb-1">
                                 <Link to={`/profile/${reply.user_id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
-                                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2 overflow-hidden">
-                                    <Avatar className="w-full h-full">
-                                      <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
-                                      <AvatarFallback className="bg-transparent">
-                                        <User className="w-3 h-3 text-dream-foreground/70" />
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  </div>
-                                  <span className="text-sm font-medium">{reply.username || truncateAddress(reply.user_id)}</span>
-                                </Link>
-                                <span className="text-dream-foreground/50 text-xs">{formatTimeAgo(reply.created_at)}</span>
-                              </div>
-                              <p className="text-dream-foreground/80 text-sm ml-8">{reply.content}</p>
-                            </div>)}
-                        </div>}
-                    </Card>)}
-                  <div ref={messageEndRef} />
-                </div>}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>;
-};
-
-export default CommunityPage;
+                                  <div className="w-6 h-6
