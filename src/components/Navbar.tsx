@@ -87,7 +87,7 @@ const Navbar = () => {
             
             <Link to="/community" className={`nav-link flex items-center gap-1 ${location.pathname === '/community' ? 'text-green-400' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
               <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105 relative">
-                <MessageSquare className="w-6 h-6 text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                <img src="/lovable-uploads/dc0e4ed7-1c9d-4cca-9abc-12614bc6013e.png" alt="Community" className="w-8 h-8 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
               </div>
               <span className="text-sm">Community</span>
             </Link>
@@ -147,7 +147,7 @@ const Navbar = () => {
             
             <Link to="/community" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/community' ? 'text-green-400' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-purple-400" />
+                <img src="/lovable-uploads/dc0e4ed7-1c9d-4cca-9abc-12614bc6013e.png" alt="Community" className="w-6 h-6 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
               </div>
               <span className="text-sm">Community</span>
             </Link>
