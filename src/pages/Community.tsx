@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown, Award, Trophy, Percent, Coins, ExternalLink } from 'lucide-react';
+import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown, Award, Trophy, Percent, Coins, ExternalLink, ArrowDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useCommunityMessages } from '@/hooks/useCommunityMessages';
 import { toast } from 'sonner';
@@ -304,6 +304,18 @@ const CommunityPage = () => {
                 </div>}
             </div>
             
+            <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-dream-accent1/10 to-dream-accent2/10 rounded-lg mb-3">
+              <div className="flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
+                <span className="font-display font-semibold text-dream-foreground/90">Messages sorted by PXB Points</span>
+              </div>
+              <div className="flex items-center text-sm text-dream-foreground/60">
+                <Coins className="w-4 h-4 mr-1 text-yellow-500" />
+                <span>Higher points at top</span>
+                <ArrowDown className="w-4 h-4 ml-1 text-dream-foreground/50" />
+              </div>
+            </div>
+            
             {error && <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500">
                 Error loading messages. Please try refreshing the page.
               </div>}
@@ -313,7 +325,7 @@ const CommunityPage = () => {
                 <p className="text-lg">No messages yet</p>
                 <p className="text-sm mt-2">Be the first to start the conversation!</p>
               </div> : <div className="space-y-4">
-                {sortedMessages.map(msg => <Card key={msg.id} className="p-4 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
+                {sortedMessages.map((msg, index) => <Card key={msg.id} className="p-4 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
                     <div className="flex justify-between mb-2">
                       <div className="flex items-center">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2">
@@ -337,6 +349,12 @@ const CommunityPage = () => {
                               <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
                                 <Trophy className="w-3 h-3 mr-1 text-dream-accent1" />
                                 <span>#{msg.user_rank}</span>
+                              </div>
+                            )}
+                            {index === 0 && (
+                              <div className="flex items-center px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs text-yellow-500">
+                                <Award className="w-3 h-3 mr-1" />
+                                <span>Top Contributor</span>
                               </div>
                             )}
                           </div>
