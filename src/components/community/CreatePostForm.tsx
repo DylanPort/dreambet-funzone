@@ -36,21 +36,45 @@ export const CreatePostForm = () => {
     try {
       setIsSubmitting(true);
       
-      // First, get the user UUID from the users table using the wallet address
-      const { data: userData, error: userError } = await supabase
+      // First, get or create the user in the users table using the wallet address
+      const walletAddress = publicKey.toString();
+      
+      // Check if user exists
+      const { data: existingUser, error: findError } = await supabase
         .from('users')
         .select('id')
-        .eq('wallet_address', publicKey.toString())
-        .single();
+        .eq('wallet_address', walletAddress)
+        .maybeSingle();
       
-      if (userError) {
-        console.error('Error finding user:', userError);
-        toast.error('Unable to find your user account');
-        setIsSubmitting(false);
-        return;
+      let userId;
+      
+      if (findError) {
+        console.error('Error finding user:', findError);
       }
       
-      const userId = userData.id;
+      if (!existingUser) {
+        // Create a new user record if none exists
+        console.log('Creating new user with wallet:', walletAddress);
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            wallet_address: walletAddress,
+            points: 0 // Start with 0 points
+          })
+          .select('id')
+          .single();
+        
+        if (createError) {
+          console.error('Error creating user:', createError);
+          toast.error('Failed to create user profile');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        userId = newUser.id;
+      } else {
+        userId = existingUser.id;
+      }
       
       // Handle image upload if present
       let imageUrl = null;
@@ -67,6 +91,7 @@ export const CreatePostForm = () => {
         if (uploadError) {
           console.error('Error uploading image:', uploadError);
           toast.error('Failed to upload image');
+          setIsSubmitting(false);
           return;
         }
         
@@ -78,7 +103,9 @@ export const CreatePostForm = () => {
         imageUrl = publicUrl;
       }
       
-      // Add post - use the UUID from the users table
+      console.log('Creating post with user ID:', userId);
+      
+      // Add post using the UUID from the users table
       const { data: post, error } = await supabase
         .from('posts')
         .insert({
@@ -94,6 +121,7 @@ export const CreatePostForm = () => {
       if (error) {
         console.error('Error creating post:', error);
         toast.error('Failed to create post');
+        setIsSubmitting(false);
         return;
       }
       
