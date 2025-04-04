@@ -297,7 +297,7 @@ const CommunityPage = () => {
               <div className="relative">
                 <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={connected ? "What's on your mind?" : "Connect wallet to join the conversation"} disabled={!connected} className="w-full bg-dream-background/20 border border-dream-foreground/10 focus:border-dream-accent2/50 rounded-lg px-4 py-3 pr-12 min-h-24 placeholder:text-dream-foreground/30 focus:outline-none focus:ring-1 focus:ring-dream-accent2/50 transition-all resize-none" />
                 <Button type="submit" disabled={!connected || !message.trim()} className="absolute bottom-3 right-3 p-2 rounded-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 text-white flex items-center gap-1">
-                  <Send className="w-4 h-4" />
+                  <img src="/lovable-uploads/abc92dca-55b1-439a-9c76-e221f2c38be8.png" alt="Post" className="w-4 h-4" />
                   <span>Post</span>
                 </Button>
               </div>
