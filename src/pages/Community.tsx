@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown, Award, Trophy, Percent, Coins, ExternalLink, ArrowDown } from 'lucide-react';
+import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown, Award, Trophy, Percent, Coins, ExternalLink, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useCommunityMessages } from '@/hooks/useCommunityMessages';
 import { toast } from 'sonner';
@@ -13,6 +13,8 @@ import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
@@ -46,6 +48,7 @@ const CommunityPage = () => {
   } = usePXBPoints();
   const [winRate, setWinRate] = useState(0);
   const [userRank, setUserRank] = useState<number | undefined>(undefined);
+  const isMobile = useIsMobile();
 
   const sortedMessages = [...messages].sort((a, b) => {
     const pointsA = a.user_pxb_points || 0;
@@ -205,7 +208,115 @@ const CommunityPage = () => {
       <div className="relative z-10">
         <Navbar />
         
-        <div className="flex max-w-7xl mx-auto pt-32 px-4 pb-20">
+        <div className="flex flex-col md:flex-row max-w-7xl mx-auto pt-32 px-4 pb-20">
+          {/* Mobile horizontal scrollable section */}
+          <div className={`md:hidden w-full overflow-x-auto pb-4 horizontal-scroll`}>
+            <div className="flex space-x-4" style={{ minWidth: 'max-content' }}>
+              <OnlineUsersSidebar className="min-w-64" />
+              
+              {connected && userProfile && (
+                <div className="min-w-64 glass-panel p-4">
+                  <div className="flex items-center mb-4">
+                    <h3 className="font-display font-bold text-lg">Your Profile</h3>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between mb-2">
+                      <Link to={`/profile/${userProfile.id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
+                          <Avatar className="w-full h-full">
+                            <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
+                            <AvatarFallback className="bg-transparent">
+                              <User className="w-4 h-4 text-dream-foreground/70" />
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <span className="font-medium">{userProfile.username || truncateAddress(publicKey?.toString() || '')}</span>
+                      </Link>
+                      <Link to={`/profile/${userProfile.id}`} className="text-xs text-dream-accent1 hover:text-dream-accent2 flex items-center">
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        Profile
+                      </Link>
+                    </div>
+                    
+                    <div className="bg-dream-background/20 p-3 rounded-lg border border-dream-foreground/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center text-sm">
+                          <img src="/lovable-uploads/5bea0b92-6460-4b88-890b-093867d1e680.png" className="w-4 h-4 mr-1" alt="PXB" />
+                          <span className="text-dream-foreground/70">PXB Balance:</span>
+                        </div>
+                        <span className="font-bold text-[#30ff00]">{userProfile.pxbPoints.toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center text-sm">
+                          <img src="/lovable-uploads/710dcb90-5e8c-496a-98a7-a0b2dba75e90.png" className="w-4 h-4 mr-1" alt="PXB" />
+                          <span className="text-dream-foreground/70">Rank:</span>
+                        </div>
+                        <span className="font-bold text-dream-accent1">#{userRank || '—'}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-sm">
+                          <Percent className="w-4 h-4 mr-1 text-green-500" />
+                          <span className="text-dream-foreground/70">Win Rate:</span>
+                        </div>
+                        <span className="font-bold text-green-500">{winRate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="min-w-64 glass-panel p-4">
+                <div className="flex items-center mb-4">
+                  <h3 className="font-display font-bold text-lg">Most Liked Messages</h3>
+                </div>
+                
+                {!topLikedMessages || topLikedMessages.length === 0 ? (
+                  <p className="text-dream-foreground/50 text-sm text-center py-3">No liked messages yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {topLikedMessages.slice(0, 3).map(msg => (
+                      <Card key={`liked-${msg.id}`} className="p-3 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
+                        <div className="flex justify-between items-start mb-1">
+                          <Link to={`/profile/${msg.user_id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
+                              <Avatar className="w-full h-full">
+                                <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
+                                <AvatarFallback className="bg-transparent">
+                                  <User className="w-3 h-3 text-dream-foreground/70" />
+                                </AvatarFallback>
+                              </Avatar>
+                            </div>
+                            <span className="text-sm font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
+                          </Link>
+                          <div className="flex items-center text-xs text-dream-foreground/50">
+                            <ThumbsUp className="w-3 h-3 mr-1 text-green-500 fill-green-500" />
+                            <span>{msg.likes_count || messageReactions[msg.id]?.likes || 0}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-dream-foreground/80 line-clamp-2 mt-1">
+                          {msg.content}
+                        </p>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Mobile scroll indicator */}
+            <div className="flex justify-center mt-2 md:hidden">
+              <div className="flex items-center space-x-1 text-xs text-dream-foreground/50">
+                <ChevronLeft className="w-4 h-4" />
+                <span>Scroll for more</span>
+                <ChevronRight className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+          
+          {/* Desktop sidebar */}
           <div className="hidden md:block w-72 mr-6 sticky top-24 self-start">
             <OnlineUsersSidebar />
             
@@ -295,6 +406,7 @@ const CommunityPage = () => {
             </div>
           </div>
           
+          {/* Main content area */}
           <div className="flex-1 flex flex-col space-y-8">
             <Card className="sticky top-24 z-10 p-6 glass-panel">
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -309,8 +421,6 @@ const CommunityPage = () => {
             </Card>
             
             <div className="space-y-4">
-              
-              
               <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-dream-accent1/10 to-dream-accent2/10 rounded-lg mb-3">
                 <div className="flex items-center">
                   <img src="/lovable-uploads/710dcb90-5e8c-496a-98a7-a0b2dba75e90.png" className="w-5 h-5 mr-2" alt="PXB Rank" />
