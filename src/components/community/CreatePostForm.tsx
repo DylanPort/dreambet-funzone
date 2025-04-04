@@ -87,6 +87,20 @@ export const CreatePostForm = () => {
       
       console.log('Creating post with user ID:', userId);
       
+      // Check if the user ID exists in the users table before proceeding
+      const { data: userExists, error: userCheckError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
+        
+      if (userCheckError || !userExists) {
+        console.error('User ID not found in users table:', userCheckError);
+        toast.error('User account not found. Please try again later.');
+        setIsSubmitting(false);
+        return;
+      }
+      
       let imageUrl = null;
       
       // If there's an image, upload it first
@@ -152,7 +166,7 @@ export const CreatePostForm = () => {
       // Add points for creating a post
       if (userId) {
         // Give user 10 points for creating a post
-        await addPointsToUser(userId, 10, 'post_created');
+        await addPointsToUser(userId, 10);
       }
       
       // Reset form
