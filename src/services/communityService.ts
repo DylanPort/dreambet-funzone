@@ -38,8 +38,9 @@ export const fetchAllPosts = async (): Promise<Post[]> => {
     const { data, error } = await supabase
       .from('posts')
       .select(`
-        *,
-        users:user_id (username, avatar_url)
+        id, content, image_url, created_at, updated_at, 
+        likes_count, comments_count, views_count, user_id, 
+        users(username, avatar_url)
       `)
       .order('created_at', { ascending: false });
 
@@ -109,11 +110,12 @@ export const createPost = async (content: string, userId: string, imageUrl?: str
 // Function to fetch comments for a post
 export const fetchComments = async (postId: string): Promise<Comment[]> => {
   try {
+    // Query post_comments table and join with users table for author info
     const { data, error } = await supabase
       .from('post_comments')
       .select(`
-        *,
-        users:user_id (username, avatar_url)
+        id, post_id, user_id, parent_id, content, created_at, likes_count,
+        users(username, avatar_url)
       `)
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
@@ -196,7 +198,7 @@ export const createComment = async (
       return null;
     }
 
-    // Increment the comments count on the post
+    // Call the function to increment the comments count
     await supabase.rpc('increment_post_comments', { post_id: postId });
 
     const { data: userData } = await supabase
@@ -242,7 +244,7 @@ export const likePost = async (postId: string, userId: string): Promise<boolean>
         return false;
       }
 
-      // Decrement the likes count on the post
+      // Call the function to decrement the likes count
       await supabase.rpc('decrement_post_likes', { post_id: postId });
       return false; // Return false to indicate post is now unliked
     } else {
@@ -260,7 +262,7 @@ export const likePost = async (postId: string, userId: string): Promise<boolean>
         return false;
       }
 
-      // Increment the likes count on the post
+      // Call the function to increment the likes count
       await supabase.rpc('increment_post_likes', { post_id: postId });
       return true; // Return true to indicate post is now liked
     }
@@ -296,10 +298,14 @@ export const likeComment = async (commentId: string, userId: string): Promise<bo
       }
 
       // Update the comment's likes_count
-      await supabase
+      const { error: updateError } = await supabase
         .from('post_comments')
         .update({ likes_count: supabase.rpc('decrement', { value: 1 }) })
         .eq('id', commentId);
+
+      if (updateError) {
+        console.error('Error updating comment like count:', updateError);
+      }
 
       return false; // Return false to indicate comment is now unliked
     } else {
@@ -318,10 +324,14 @@ export const likeComment = async (commentId: string, userId: string): Promise<bo
       }
 
       // Update the comment's likes_count
-      await supabase
+      const { error: updateError } = await supabase
         .from('post_comments')
         .update({ likes_count: supabase.rpc('increment', { value: 1 }) })
         .eq('id', commentId);
+
+      if (updateError) {
+        console.error('Error updating comment like count:', updateError);
+      }
 
       return true; // Return true to indicate comment is now liked
     }
@@ -379,7 +389,14 @@ export const checkCommentLiked = async (commentId: string, userId: string): Prom
 // Function to increment the views count of a post
 export const incrementPostViews = async (postId: string): Promise<void> => {
   try {
-    await supabase.rpc('increment_post_views', { post_id: postId });
+    const { error } = await supabase
+      .from('posts')
+      .update({ views_count: supabase.rpc('increment', { value: 1 }) })
+      .eq('id', postId);
+      
+    if (error) {
+      console.error('Error incrementing post views:', error);
+    }
   } catch (error) {
     console.error('Error incrementing post views:', error);
   }

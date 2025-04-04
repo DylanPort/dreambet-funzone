@@ -235,9 +235,9 @@ export const useCommunity = () => {
       .channel('public:post_comments')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'post_comments' }, 
-        payload => {
-          if (payload.new && expandedPostId === payload.new.post_id) {
-            loadComments(payload.new.post_id);
+        (payload) => {
+          if (payload.new && typeof payload.new === 'object' && 'post_id' in payload.new) {
+            loadComments(payload.new.post_id as string);
           }
         }
       )
@@ -249,20 +249,7 @@ export const useCommunity = () => {
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(commentsChannel);
     };
-  }, [loadUsers, loadPosts, loadComments, expandedPostId]);
-
-  // Set up polling to update data every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadUsers();
-      loadPosts();
-      if (expandedPostId) {
-        loadComments(expandedPostId);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [loadUsers, loadPosts, loadComments, expandedPostId]);
+  }, [loadUsers, loadPosts, loadComments]);
 
   return {
     users,
