@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { CommunityMessage, CommunityReply } from '@/services/communityService';
 import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Link } from 'react-router-dom';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
@@ -41,7 +41,6 @@ const CommunityPage = () => {
   const [winRate, setWinRate] = useState(0);
   const [userRank, setUserRank] = useState<number | undefined>(undefined);
   
-  // Sort messages by user_pxb_points (highest first)
   const sortedMessages = [...messages].sort((a, b) => {
     const pointsA = a.user_pxb_points || 0;
     const pointsB = b.user_pxb_points || 0;
@@ -213,8 +212,17 @@ const CommunityPage = () => {
               <div className="space-y-3">
                 <div className="flex justify-between mb-2">
                   <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2">
-                      <User className="w-4 h-4 text-dream-foreground/70" />
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
+                      <Avatar className="w-full h-full">
+                        <AvatarImage 
+                          src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" 
+                          alt="User avatar" 
+                          className="w-full h-full object-cover"
+                        />
+                        <AvatarFallback className="bg-transparent">
+                          <User className="w-4 h-4 text-dream-foreground/70" />
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
                     <span className="font-medium">{userProfile.username || truncateAddress(publicKey?.toString() || '')}</span>
                   </div>
@@ -263,8 +271,17 @@ const CommunityPage = () => {
                 {topLikedMessages.slice(0, 3).map(msg => <Card key={`liked-${msg.id}`} className="p-3 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
                     <div className="flex justify-between items-start mb-1">
                       <div className="flex items-center">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2">
-                          <User className="w-3 h-3 text-dream-foreground/70" />
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
+                          <Avatar className="w-full h-full">
+                            <AvatarImage 
+                              src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" 
+                              alt="User avatar" 
+                              className="w-full h-full object-cover"
+                            />
+                            <AvatarFallback className="bg-transparent">
+                              <User className="w-3 h-3 text-dream-foreground/70" />
+                            </AvatarFallback>
+                          </Avatar>
                         </div>
                         <span className="text-sm font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
                       </div>
@@ -328,8 +345,17 @@ const CommunityPage = () => {
                 {sortedMessages.map((msg, index) => <Card key={msg.id} className="p-4 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
                     <div className="flex justify-between mb-2">
                       <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2">
-                          <User className="w-4 h-4 text-dream-foreground/70" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
+                          <Avatar className="w-full h-full">
+                            <AvatarImage 
+                              src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" 
+                              alt="User avatar" 
+                              className="w-full h-full object-cover"
+                            />
+                            <AvatarFallback className="bg-transparent">
+                              <User className="w-4 h-4 text-dream-foreground/70" />
+                            </AvatarFallback>
+                          </Avatar>
                         </div>
                         <div>
                           <span className="font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
@@ -409,8 +435,17 @@ const CommunityPage = () => {
                         {messageReplies[msg.id].map(reply => <div key={reply.id} className="pt-2">
                             <div className="flex justify-between items-start mb-1">
                               <div className="flex items-center">
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2">
-                                  <User className="w-3 h-3 text-dream-foreground/70" />
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2 overflow-hidden">
+                                  <Avatar className="w-full h-full">
+                                    <AvatarImage 
+                                      src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" 
+                                      alt="User avatar" 
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <AvatarFallback className="bg-transparent">
+                                      <User className="w-3 h-3 text-dream-foreground/70" />
+                                    </AvatarFallback>
+                                  </Avatar>
                                 </div>
                                 <span className="text-sm font-medium">{reply.username || truncateAddress(reply.user_id)}</span>
                               </div>
