@@ -83,6 +83,17 @@ export const CreatePostForm = () => {
         const fileName = `${nanoid()}.${fileExt}`;
         const filePath = `post_images/${fileName}`;
         
+        // Create a storage bucket if it doesn't exist
+        const { data: buckets } = await supabase.storage.listBuckets();
+        if (!buckets?.find(bucket => bucket.name === 'media')) {
+          const { error: bucketError } = await supabase.storage.createBucket('media', {
+            public: true
+          });
+          if (bucketError) {
+            console.error('Error creating bucket:', bucketError);
+          }
+        }
+        
         const { error: uploadError } = await supabase
           .storage
           .from('media')
@@ -105,7 +116,8 @@ export const CreatePostForm = () => {
       
       console.log('Creating post with user ID:', userId);
       
-      // Add post using the UUID from the users table
+      // Use a service role key via the server endpoint for authenticated operations
+      // or update RLS policy to allow anonymous inserts (for this specific table)
       const { data: post, error } = await supabase
         .from('posts')
         .insert({
@@ -115,12 +127,11 @@ export const CreatePostForm = () => {
           likes_count: 0,
           comments_count: 0
         })
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error('Error creating post:', error);
-        toast.error('Failed to create post');
+        toast.error(`Failed to create post: ${error.message || 'Unknown error'}`);
         setIsSubmitting(false);
         return;
       }
