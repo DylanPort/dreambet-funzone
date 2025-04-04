@@ -20,19 +20,23 @@ const UserProfilePage = () => {
   const [userRank, setUserRank] = useState<number | null>(null);
   const [totalBets, setTotalBets] = useState(0);
   
-  // Fetch the user profile data by ID
+  // Fetch the user profile data by ID or wallet address
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!userId) return;
       
       setIsLoading(true);
       try {
+        // Check if userId is a UUID or wallet address
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+        
+        // Construct query based on whether userId is a UUID or wallet address
+        const query = isUuid 
+          ? supabase.from('users').select('*').eq('id', userId).single()
+          : supabase.from('users').select('*').eq('wallet_address', userId).single();
+          
         // Fetch user data
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .single();
+        const { data: userData, error: userError } = await query;
         
         if (userError) {
           console.error('Error fetching user profile:', userError);
@@ -49,7 +53,7 @@ const UserProfilePage = () => {
         if (leaderboardError) {
           console.error('Error fetching leaderboard data:', leaderboardError);
         } else if (leaderboardData) {
-          const userPosition = leaderboardData.findIndex(user => user.id === userId);
+          const userPosition = leaderboardData.findIndex(user => user.id === userData.id);
           if (userPosition !== -1) {
             setUserRank(userPosition + 1);
           }
@@ -59,7 +63,7 @@ const UserProfilePage = () => {
         const { data: betsData, error: betsError } = await supabase
           .from('bets')
           .select('*')
-          .eq('bettor1_id', userId);
+          .eq('bettor1_id', userData.id);
           
         if (betsError) {
           console.error('Error fetching bets data:', betsError);
@@ -173,7 +177,7 @@ const UserProfilePage = () => {
                   
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
-                      <h1 className="text-3xl font-bold text-dream-foreground font-display">{profileData.username}</h1>
+                      <h1 className="text-3xl font-bold text-dream-foreground font-display">{profileData?.username}</h1>
                       {userRank && (
                         <div className="flex items-center px-3 py-1 bg-dream-accent1/10 border border-dream-accent1/20 rounded-full">
                           <Trophy className="w-4 h-4 text-dream-accent1 mr-1" />
@@ -185,11 +189,11 @@ const UserProfilePage = () => {
                     <div className="flex flex-wrap gap-3 mb-4">
                       <div className="flex items-center text-sm text-dream-foreground/70">
                         <CalendarDays className="w-4 h-4 mr-1 text-dream-foreground/50" />
-                        <span>Joined {formatDate(profileData.createdAt)}</span>
+                        <span>Joined {formatDate(profileData?.createdAt)}</span>
                       </div>
                       <div className="flex items-center text-sm text-dream-foreground/70">
                         <Hash className="w-4 h-4 mr-1 text-dream-foreground/50" />
-                        <span>ID: {profileData.id.substring(0, 8)}</span>
+                        <span>ID: {profileData?.id.substring(0, 8)}</span>
                       </div>
                     </div>
                     
@@ -203,7 +207,7 @@ const UserProfilePage = () => {
                         </div>
                       </div>
                       
-                      <p className="text-3xl font-bold text-dream-accent2 relative z-10">{profileData.pxbPoints.toLocaleString()}</p>
+                      <p className="text-3xl font-bold text-dream-accent2 relative z-10">{profileData?.pxbPoints.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -245,10 +249,10 @@ const UserProfilePage = () => {
               {/* Bets History */}
               <Card className="bg-dream-background/30 border border-dream-foreground/10 backdrop-blur-sm">
                 <div className="p-6 border-b border-dream-foreground/10">
-                  <h2 className="text-xl font-bold text-dream-foreground font-display">{profileData.username}'s Betting History</h2>
+                  <h2 className="text-xl font-bold text-dream-foreground font-display">{profileData?.username}'s Betting History</h2>
                 </div>
                 <div className="p-6">
-                  <PXBBetsHistory userId={userId} />
+                  <PXBBetsHistory userId={profileData?.id} walletAddress={userId} />
                 </div>
               </Card>
             </div>
