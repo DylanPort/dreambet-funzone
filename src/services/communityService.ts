@@ -35,11 +35,25 @@ export const fetchAllUsers = async (): Promise<UserProfile[]> => {
 // Function to fetch all posts with user info
 export const fetchAllPosts = async (): Promise<Post[]> => {
   try {
+    // First, check if views_count column exists
+    const { data: columnsInfo, error: columnsError } = await supabase
+      .from('posts')
+      .select('*')
+      .limit(1);
+    
+    if (columnsError) {
+      console.error('Error checking posts table columns:', columnsError);
+    }
+    
+    // Determine if views_count exists
+    const hasViewsCount = columnsInfo && columnsInfo.length > 0 && 'views_count' in columnsInfo[0];
+    
+    // Select appropriate columns based on what exists
     const { data, error } = await supabase
       .from('posts')
       .select(`
         id, content, image_url, created_at, updated_at, 
-        likes_count, comments_count, views_count, user_id, 
+        likes_count, comments_count, user_id, 
         users(username, avatar_url)
       `)
       .order('created_at', { ascending: false });
@@ -59,7 +73,7 @@ export const fetchAllPosts = async (): Promise<Post[]> => {
       updated_at: post.updated_at,
       likes_count: post.likes_count,
       comments_count: post.comments_count,
-      views_count: post.views_count,
+      views_count: hasViewsCount ? (post as any).views_count || 0 : 0,
       username: post.users?.username || `User_${post.user_id.substring(0, 8)}`,
       avatar_url: post.users?.avatar_url || '/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png'
     }));
@@ -110,7 +124,7 @@ export const createPost = async (content: string, userId: string, imageUrl?: str
 // Function to fetch comments for a post
 export const fetchComments = async (postId: string): Promise<Comment[]> => {
   try {
-    // Query post_comments table and join with users table for author info
+    // Use the comments table instead of post_comments
     const { data, error } = await supabase
       .from('post_comments')
       .select(`
@@ -198,8 +212,17 @@ export const createComment = async (
       return null;
     }
 
-    // Call the function to increment the comments count
-    await supabase.rpc('increment_post_comments', { post_id: postId });
+    // Update the comments count directly
+    const { error: updateError } = await supabase
+      .from('posts')
+      .update({ 
+        comments_count: supabase.rpc('increment', { value: 1 }) 
+      })
+      .eq('id', postId);
+      
+    if (updateError) {
+      console.error('Error updating post comments count:', updateError);
+    }
 
     const { data: userData } = await supabase
       .from('users')
@@ -244,8 +267,18 @@ export const likePost = async (postId: string, userId: string): Promise<boolean>
         return false;
       }
 
-      // Call the function to decrement the likes count
-      await supabase.rpc('decrement_post_likes', { post_id: postId });
+      // Update the post's likes_count
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update({ 
+          likes_count: supabase.rpc('decrement', { value: 1 }) 
+        })
+        .eq('id', postId);
+
+      if (updateError) {
+        console.error('Error updating post like count:', updateError);
+      }
+
       return false; // Return false to indicate post is now unliked
     } else {
       // Like: Create a new like
@@ -262,8 +295,18 @@ export const likePost = async (postId: string, userId: string): Promise<boolean>
         return false;
       }
 
-      // Call the function to increment the likes count
-      await supabase.rpc('increment_post_likes', { post_id: postId });
+      // Update the post's likes_count
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update({ 
+          likes_count: supabase.rpc('increment', { value: 1 }) 
+        })
+        .eq('id', postId);
+
+      if (updateError) {
+        console.error('Error updating post like count:', updateError);
+      }
+
       return true; // Return true to indicate post is now liked
     }
   } catch (error) {
@@ -300,7 +343,9 @@ export const likeComment = async (commentId: string, userId: string): Promise<bo
       // Update the comment's likes_count
       const { error: updateError } = await supabase
         .from('post_comments')
-        .update({ likes_count: supabase.rpc('decrement', { value: 1 }) })
+        .update({ 
+          likes_count: supabase.rpc('decrement', { value: 1 }) 
+        })
         .eq('id', commentId);
 
       if (updateError) {
@@ -326,7 +371,9 @@ export const likeComment = async (commentId: string, userId: string): Promise<bo
       // Update the comment's likes_count
       const { error: updateError } = await supabase
         .from('post_comments')
-        .update({ likes_count: supabase.rpc('increment', { value: 1 }) })
+        .update({ 
+          likes_count: supabase.rpc('increment', { value: 1 }) 
+        })
         .eq('id', commentId);
 
       if (updateError) {
@@ -389,13 +436,33 @@ export const checkCommentLiked = async (commentId: string, userId: string): Prom
 // Function to increment the views count of a post
 export const incrementPostViews = async (postId: string): Promise<void> => {
   try {
-    const { error } = await supabase
+    // Check if views_count exists
+    const { data: columnsInfo, error: columnsError } = await supabase
       .from('posts')
-      .update({ views_count: supabase.rpc('increment', { value: 1 }) })
-      .eq('id', postId);
-      
-    if (error) {
-      console.error('Error incrementing post views:', error);
+      .select('*')
+      .eq('id', postId)
+      .limit(1)
+      .single();
+    
+    if (columnsError) {
+      console.error('Error checking post columns:', columnsError);
+      return;
+    }
+    
+    // Only update views_count if the column exists
+    if ('views_count' in columnsInfo) {
+      const { error } = await supabase
+        .from('posts')
+        .update({ 
+          views_count: supabase.rpc('increment', { value: 1 }) 
+        })
+        .eq('id', postId);
+        
+      if (error) {
+        console.error('Error incrementing post views:', error);
+      }
+    } else {
+      console.log('views_count column does not exist, skipping view increment');
     }
   } catch (error) {
     console.error('Error incrementing post views:', error);

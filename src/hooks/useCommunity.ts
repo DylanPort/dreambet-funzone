@@ -68,8 +68,10 @@ export const useCommunity = () => {
     const comments = await fetchComments(postId);
     setCommentsMap(prev => ({ ...prev, [postId]: comments }));
     setLoadingComments(prev => ({ ...prev, [postId]: false }));
+    
     // Increment view count when a post is expanded
     await incrementPostViews(postId);
+    
     // Update the post's view count in the UI
     setPosts(prevPosts => 
       prevPosts.map(post => 
