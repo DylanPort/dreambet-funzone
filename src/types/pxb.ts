@@ -123,32 +123,3 @@ export interface SupabaseBetsRow {
   end_time?: string;
   start_time?: string;
 }
-
-// Add community-related interfaces
-export interface Comment {
-  id: string;
-  post_id?: string;
-  bounty_id?: string;
-  user_id: string;
-  author_id: string;
-  content: string;
-  created_at: string;
-  likes_count: number;
-  username?: string;
-  avatar_url?: string;
-}
-
-// Update the Post interface to include views_count
-export interface Post {
-  id: string;
-  user_id: string;
-  content: string;
-  image_url?: string;
-  created_at: string;
-  updated_at: string;
-  likes_count: number;
-  comments_count: number;
-  views_count?: number;
-  username?: string;
-  avatar_url?: string;
-}
