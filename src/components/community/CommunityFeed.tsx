@@ -1,240 +1,192 @@
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowUpIcon, MessageSquare, TrendingUp, Clock, RefreshCcw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import CreatePostForm from './CreatePostForm';
 import PostCard from './PostCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
-export type Post = {
+interface Post {
   id: string;
   user_id: string;
   content: string;
-  image_url?: string;
+  image_url: string | null;
   created_at: string;
-  updated_at: string;
   likes_count: number;
   comments_count: number;
   username?: string;
   avatar_url?: string;
-};
-
-type SortOption = 'latest' | 'trending' | 'top';
+}
 
 const CommunityFeed = () => {
-  const { userProfile } = usePXBPoints();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<SortOption>('latest');
-  const [showCreatePost, setShowCreatePost] = useState(false);
-
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
-      
-      // Build the query based on sort option
-      let query = supabase.from('posts').select('*');
-      
-      // Apply sorting
-      if (sortBy === 'latest') {
-        query = query.order('created_at', { ascending: false });
-      } else if (sortBy === 'top') {
-        query = query.order('likes_count', { ascending: false });
-      } else if (sortBy === 'trending') {
-        query = query.order('comments_count', { ascending: false });
-      }
-      
-      const { data: postsData, error: postsError } = await query;
-      
-      if (postsError) {
-        console.error('Error fetching posts:', postsError);
-        toast.error('Failed to load community posts');
-        return;
-      }
-      
-      // Fetch user data separately for each post
-      const postsWithUserData = await Promise.all(
-        postsData.map(async (post) => {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('username, avatar_url')
-            .eq('id', post.user_id)
-            .single();
-          
-          if (userError) {
-            console.error('Error fetching user data for post:', userError);
-            return {
-              ...post,
-              username: 'Unknown User',
-              avatar_url: undefined
-            };
-          }
-          
-          return {
-            ...post,
-            username: userData.username,
-            avatar_url: userData.avatar_url
-          };
-        })
-      );
-      
-      setPosts(postsWithUserData);
-    } catch (error) {
-      console.error('Error in fetchPosts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [userId, setUserId] = useState<string | null>(null);
+  const [feedType, setFeedType] = useState<'latest' | 'popular'>('latest');
 
   useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          setUserId(data.user.id);
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+
+    fetchCurrentUser();
     fetchPosts();
 
-    // Set up real-time subscription
-    const postsChannel = supabase
+    // Subscribe to realtime changes
+    const channel = supabase
       .channel('public:posts')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'posts' 
-      }, payload => {
-        console.log('Post change received:', payload);
-        fetchPosts(); // Refresh the list when changes occur
+      }, () => {
+        fetchPosts();
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(channel);
     };
-  }, [sortBy]);
+  }, [feedType]);
 
-  const handleRefresh = () => {
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      
+      let query = supabase
+        .from('posts')
+        .select(`
+          *,
+          users (username, avatar_url)
+        `);
+      
+      if (feedType === 'latest') {
+        query = query.order('created_at', { ascending: false });
+      } else {
+        query = query.order('likes_count', { ascending: false });
+      }
+      
+      const { data, error } = await query.limit(20);
+      
+      if (error) throw error;
+      
+      if (data) {
+        // Transform data to flatten user info
+        const transformedPosts = data.map(post => ({
+          ...post,
+          username: post.users?.username || 'Unknown User',
+          avatar_url: post.users?.avatar_url
+        }));
+        
+        setPosts(transformedPosts);
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      toast.error('Failed to load posts');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePostSuccess = () => {
     fetchPosts();
-    toast.success('Feed refreshed');
   };
 
   return (
-    <div className="space-y-4">
-      <Card className="glass-panel">
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-center">
-            <CardTitle>Community Feed</CardTitle>
-            <div className="flex gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleRefresh}
-                className="text-dream-accent2"
-              >
-                <RefreshCcw className="h-4 w-4 mr-1" />
-                Refresh
-              </Button>
-              {userProfile && (
-                <Button 
-                  onClick={() => setShowCreatePost(!showCreatePost)}
-                  variant="outline"
-                  size="sm"
-                  className="border-dream-accent1 text-dream-accent1 hover:bg-dream-accent1/10"
-                >
-                  {showCreatePost ? 'Cancel' : 'New Post'}
-                </Button>
-              )}
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-dream-foreground">Community Feed</h2>
+      
+      {userId && (
+        <CreatePostForm userId={userId} onSuccess={handlePostSuccess} />
+      )}
+      
+      <Tabs defaultValue="latest" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-black/20 text-dream-muted">
+          <TabsTrigger 
+            value="latest" 
+            onClick={() => setFeedType('latest')}
+            className="data-[state=active]:bg-dream-accent1 data-[state=active]:text-white"
+          >
+            Latest
+          </TabsTrigger>
+          <TabsTrigger 
+            value="popular" 
+            onClick={() => setFeedType('popular')}
+            className="data-[state=active]:bg-dream-accent1 data-[state=active]:text-white"
+          >
+            Popular
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="latest" className="mt-6">
+          {loading ? (
+            <div className="text-center py-10">
+              <div className="animate-spin h-10 w-10 border-4 border-dream-accent1 rounded-full border-t-transparent mx-auto"></div>
+              <p className="mt-4 text-dream-muted">Loading posts...</p>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {showCreatePost && userProfile && (
-            <div className="mb-6">
-              <CreatePostForm 
-                userId={userProfile.id} 
-                onSuccess={() => {
-                  setShowCreatePost(false);
-                  fetchPosts();
-                }} 
-              />
+          ) : posts.length > 0 ? (
+            <div className="space-y-6">
+              {posts.map(post => (
+                <PostCard
+                  key={post.id}
+                  id={post.id}
+                  userId={post.user_id}
+                  username={post.username || 'Unknown User'}
+                  avatarUrl={post.avatar_url}
+                  content={post.content}
+                  imageUrl={post.image_url || undefined}
+                  createdAt={post.created_at}
+                  likesCount={post.likes_count}
+                  commentsCount={post.comments_count}
+                  onLikeUpdate={fetchPosts}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10">
+              <p className="text-dream-muted">No posts yet. Be the first to post!</p>
             </div>
           )}
-
-          <Tabs defaultValue="latest" className="w-full mb-6" onValueChange={(value) => setSortBy(value as SortOption)}>
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="latest" className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Latest</span>
-              </TabsTrigger>
-              <TabsTrigger value="trending" className="flex items-center gap-1">
-                <TrendingUp className="h-4 w-4" />
-                <span className="hidden sm:inline">Trending</span>
-              </TabsTrigger>
-              <TabsTrigger value="top" className="flex items-center gap-1">
-                <ArrowUpIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">Top</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="latest" className="mt-0">
-              {loading ? (
-                <div className="flex justify-center p-8">
-                  <div className="animate-spin h-8 w-8 border-2 border-dream-accent1 rounded-full border-t-transparent"></div>
-                </div>
-              ) : posts.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-2" />
-                  <p className="text-muted-foreground">No posts yet. Be the first to share something!</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {posts.map(post => (
-                    <PostCard key={post.id} post={post} onUpdate={fetchPosts} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="trending" className="mt-0">
-              {/* Content is the same, switching tabs changes the sortBy state and triggers a refetch */}
-              {loading ? (
-                <div className="flex justify-center p-8">
-                  <div className="animate-spin h-8 w-8 border-2 border-dream-accent1 rounded-full border-t-transparent"></div>
-                </div>
-              ) : posts.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-2" />
-                  <p className="text-muted-foreground">No trending posts yet.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {posts.map(post => (
-                    <PostCard key={post.id} post={post} onUpdate={fetchPosts} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="top" className="mt-0">
-              {/* Content is the same, switching tabs changes the sortBy state and triggers a refetch */}
-              {loading ? (
-                <div className="flex justify-center p-8">
-                  <div className="animate-spin h-8 w-8 border-2 border-dream-accent1 rounded-full border-t-transparent"></div>
-                </div>
-              ) : posts.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-2" />
-                  <p className="text-muted-foreground">No top posts yet.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {posts.map(post => (
-                    <PostCard key={post.id} post={post} onUpdate={fetchPosts} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+        </TabsContent>
+        
+        <TabsContent value="popular" className="mt-6">
+          {loading ? (
+            <div className="text-center py-10">
+              <div className="animate-spin h-10 w-10 border-4 border-dream-accent1 rounded-full border-t-transparent mx-auto"></div>
+              <p className="mt-4 text-dream-muted">Loading popular posts...</p>
+            </div>
+          ) : posts.length > 0 ? (
+            <div className="space-y-6">
+              {posts.map(post => (
+                <PostCard
+                  key={post.id}
+                  id={post.id}
+                  userId={post.user_id}
+                  username={post.username || 'Unknown User'}
+                  avatarUrl={post.avatar_url}
+                  content={post.content}
+                  imageUrl={post.image_url || undefined}
+                  createdAt={post.created_at}
+                  likesCount={post.likes_count}
+                  commentsCount={post.comments_count}
+                  onLikeUpdate={fetchPosts}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10">
+              <p className="text-dream-muted">No posts yet. Be the first to post!</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -1,21 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, ThumbsUp, Share2, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { HeartIcon, MessageCircleIcon, Share2Icon, HeartFilledIcon } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import type { Post } from './CommunityFeed';
+import { useAuth } from '@supabase/auth-helpers-react';
 
-interface PostCardProps {
-  post: Post;
-  onUpdate: () => void;
-}
-
-type Comment = {
+interface Comment {
   id: string;
   post_id: string;
   user_id: string;
@@ -24,173 +20,98 @@ type Comment = {
   likes_count: number;
   username?: string;
   avatar_url?: string;
-};
+}
 
-const PostCard = ({ post, onUpdate }: PostCardProps) => {
-  const { userProfile } = usePXBPoints();
-  const [liked, setLiked] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
+interface PostCardProps {
+  id: string;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  content: string;
+  imageUrl?: string;
+  createdAt: string;
+  likesCount: number;
+  commentsCount: number;
+  onLikeUpdate?: () => void;
+}
+
+const PostCard = ({
+  id,
+  userId,
+  username,
+  avatarUrl,
+  content,
+  imageUrl,
+  createdAt,
+  likesCount,
+  commentsCount,
+  onLikeUpdate
+}: PostCardProps) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [likes, setLikes] = useState(likesCount);
   const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadingComments, setLoadingComments] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const timeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    if (seconds < 60) return 'just now';
-    
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    
-    return formatDate(dateString).split(',')[0]; // Just return the date part
-  };
-
-  // Check if the current user has liked the post
-  const checkLikeStatus = async () => {
-    if (!userProfile) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('post_likes')
-        .select('id')
-        .eq('post_id', post.id)
-        .eq('user_id', userProfile.id)
-        .maybeSingle();
+  // Get current user on component mount
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setCurrentUserId(data.user.id);
         
-      if (error) {
-        console.error('Error checking like status:', error);
-        return;
-      }
-      
-      setLiked(!!data);
-    } catch (error) {
-      console.error('Error in checkLikeStatus:', error);
-    }
-  };
-
-  // Toggle like status
-  const toggleLike = async () => {
-    if (!userProfile) {
-      toast.error('Please sign in to like posts');
-      return;
-    }
-    
-    try {
-      if (liked) {
-        // Unlike the post
-        const { error } = await supabase
-          .from('post_likes')
-          .delete()
-          .eq('post_id', post.id)
-          .eq('user_id', userProfile.id);
+        // Check if user has liked this post
+        if (data.user.id) {
+          const { data: likeData } = await supabase
+            .from('post_likes')
+            .select('id')
+            .eq('post_id', id)
+            .eq('user_id', data.user.id)
+            .single();
           
-        if (error) {
-          console.error('Error unliking post:', error);
-          toast.error('Failed to unlike post');
-          return;
+          setIsLiked(!!likeData);
         }
-        
-        // Update the likes count
-        await supabase
-          .from('posts')
-          .update({ likes_count: Math.max(0, post.likes_count - 1) })
-          .eq('id', post.id);
-          
-        setLiked(false);
-      } else {
-        // Like the post
-        const { error } = await supabase
-          .from('post_likes')
-          .insert({
-            post_id: post.id,
-            user_id: userProfile.id
-          });
-          
-        if (error) {
-          console.error('Error liking post:', error);
-          toast.error('Failed to like post');
-          return;
-        }
-        
-        // Update the likes count
-        await supabase
-          .from('posts')
-          .update({ likes_count: post.likes_count + 1 })
-          .eq('id', post.id);
-          
-        setLiked(true);
       }
-      
-      // Refresh the post to update like count
-      onUpdate();
-    } catch (error) {
-      console.error('Error in toggleLike:', error);
+    };
+    
+    fetchCurrentUser();
+  }, [id]);
+
+  // Toggle comments visibility
+  const toggleComments = async () => {
+    const newVisibility = !showComments;
+    setShowComments(newVisibility);
+    
+    if (newVisibility && comments.length === 0) {
+      await fetchComments();
     }
   };
 
-  // Fetch comments for the post
+  // Fetch comments for this post
   const fetchComments = async () => {
-    if (!showComments) return;
-    
     try {
-      setLoadingComments(true);
-      
-      // First get comments
+      // Get comments for this post
       const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
         .select('*')
-        .eq('post_id', post.id)
+        .eq('post_id', id)
         .order('created_at', { ascending: false });
-        
+      
       if (commentsError) {
         console.error('Error fetching comments:', commentsError);
         return;
       }
       
-      // Ensure commentsData is an array
-      if (!commentsData || !Array.isArray(commentsData)) {
-        console.error('Comments data is not an array:', commentsData);
+      if (!commentsData || commentsData.length === 0) {
         setComments([]);
         return;
       }
       
-      // Fetch user data for each comment
-      const commentsWithUserData = await Promise.all(
+      // Fetch user details for each comment
+      const commentsWithUserDetails = await Promise.all(
         commentsData.map(async (comment) => {
-          if (!comment || typeof comment !== 'object' || !('user_id' in comment)) {
-            console.error('Invalid comment object:', comment);
-            return {
-              id: 'unknown',
-              post_id: post.id,
-              user_id: 'unknown',
-              content: 'Error loading comment',
-              created_at: new Date().toISOString(),
-              likes_count: 0,
-              username: 'Unknown User',
-              avatar_url: undefined
-            };
-          }
-          
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('username, avatar_url')
@@ -198,11 +119,11 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
             .single();
           
           if (userError) {
-            console.error('Error fetching user for comment:', userError);
+            console.error('Error fetching user data for comment:', userError);
             return {
               ...comment,
               username: 'Unknown User',
-              avatar_url: undefined
+              avatar_url: null
             };
           }
           
@@ -214,23 +135,67 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
         })
       );
       
-      setComments(commentsWithUserData as Comment[]);
+      setComments(commentsWithUserDetails);
     } catch (error) {
       console.error('Error in fetchComments:', error);
-    } finally {
-      setLoadingComments(false);
+      toast.error('Failed to load comments');
     }
   };
 
-  // Submit a new comment
-  const submitComment = async () => {
-    if (!userProfile) {
-      toast.error('Please sign in to comment');
+  // Handle like/unlike post
+  const handleLikePost = async () => {
+    if (!currentUserId) {
+      toast.error('Please sign in to like posts');
       return;
     }
     
+    try {
+      if (isLiked) {
+        // Unlike post
+        const { error } = await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', id)
+          .eq('user_id', currentUserId);
+        
+        if (error) throw error;
+        
+        setIsLiked(false);
+        setLikes(prev => prev - 1);
+      } else {
+        // Like post
+        const { error } = await supabase
+          .from('post_likes')
+          .insert({
+            post_id: id,
+            user_id: currentUserId
+          });
+        
+        if (error) throw error;
+        
+        setIsLiked(true);
+        setLikes(prev => prev + 1);
+      }
+      
+      // Call the optional callback to refresh parent component
+      if (onLikeUpdate) {
+        onLikeUpdate();
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast.error('Failed to process your like');
+    }
+  };
+
+  // Handle submit comment
+  const handleSubmitComment = async () => {
     if (!newComment.trim()) {
       toast.error('Comment cannot be empty');
+      return;
+    }
+    
+    if (!currentUserId) {
+      toast.error('Please sign in to comment');
       return;
     }
     
@@ -241,223 +206,187 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
       const { error } = await supabase
         .from('comments')
         .insert({
-          post_id: post.id,
-          user_id: userProfile.id,
+          post_id: id,
+          user_id: currentUserId,
           content: newComment,
           likes_count: 0
         });
-        
-      if (error) {
-        console.error('Error adding comment:', error);
-        toast.error('Failed to add comment');
-        return;
-      }
       
-      // Update the comments count
-      await supabase
-        .from('posts')
-        .update({ comments_count: post.comments_count + 1 })
-        .eq('id', post.id);
-        
-      // Clear the form
+      if (error) throw error;
+      
+      // Fetch the current user data to display in the new comment
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('username, avatar_url')
+        .eq('id', currentUserId)
+        .single();
+      
+      if (userError) throw userError;
+      
+      // Update comments list with the new comment
+      const newCommentObj: Comment = {
+        id: crypto.randomUUID(), // This will be replaced when we refresh
+        post_id: id,
+        user_id: currentUserId,
+        content: newComment,
+        created_at: new Date().toISOString(),
+        likes_count: 0,
+        username: userData?.username || 'Unknown User',
+        avatar_url: userData?.avatar_url
+      };
+      
+      setComments(prev => [newCommentObj, ...prev]);
       setNewComment('');
-      // Refresh comments
-      fetchComments();
-      // Refresh post to update comment count
-      onUpdate();
       
-      toast.success('Comment added successfully!');
+      // Increment comments count in the UI
+      // Note: The actual count in the database is updated by a trigger
+      
+      // Refresh comments to get the accurate data
+      fetchComments();
+      
+      toast.success('Comment added successfully');
     } catch (error) {
-      console.error('Error in submitComment:', error);
-      toast.error('An error occurred. Please try again.');
+      console.error('Error submitting comment:', error);
+      toast.error('Failed to add comment');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Share the post
-  const sharePost = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `Post by ${post.username || 'Anonymous'}`,
-        text: post.content.substring(0, 50) + (post.content.length > 50 ? '...' : ''),
-        url: window.location.href + '?post=' + post.id
-      })
-      .then(() => toast.success('Shared successfully!'))
-      .catch(error => console.error('Error sharing:', error));
-    } else {
-      // Fallback for browsers that don't support the Web Share API
-      navigator.clipboard.writeText(window.location.href + '?post=' + post.id)
-        .then(() => toast.success('Link copied to clipboard!'))
-        .catch(() => toast.error('Failed to copy link'));
-    }
-  };
-
-  useEffect(() => {
-    if (userProfile) {
-      checkLikeStatus();
-    }
-  }, [userProfile, post.id]);
-
-  useEffect(() => {
-    fetchComments();
-    
-    // Set up real-time subscription for comments
-    const commentsChannel = supabase
-      .channel(`comments-for-post-${post.id}`)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'comments',
-        filter: `post_id=eq.${post.id}`
-      }, payload => {
-        console.log('Comment change received:', payload);
-        fetchComments(); // Refresh comments when changes occur
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(commentsChannel);
-    };
-  }, [showComments, post.id]);
-
   return (
-    <Card className="glass-panel overflow-hidden">
-      <CardContent className="pt-4">
-        <div className="flex items-start space-x-3 mb-3">
-          <Avatar className="h-10 w-10 border border-dream-accent3/30">
-            <AvatarImage src={post.avatar_url || '/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png'} alt={post.username || 'User'} />
-            <AvatarFallback className="bg-dream-accent3/20">{(post.username || 'User').substring(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium">{post.username || 'Anonymous User'}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <Clock className="h-3 w-3 mr-1" />
-              {timeAgo(post.created_at)}
-            </div>
-          </div>
+    <Card className="glass-panel mb-6">
+      <CardHeader className="flex flex-row items-center gap-4 pb-2">
+        <Avatar className="h-10 w-10 border border-dream-accent2/30">
+          <AvatarImage src={avatarUrl || `/placeholder.svg`} alt={username} />
+          <AvatarFallback>{username?.substring(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+        <div>
+          <h3 className="font-semibold text-dream-foreground">{username}</h3>
+          <p className="text-xs text-dream-muted">{formatDistanceToNow(new Date(createdAt), { addSuffix: true })}</p>
         </div>
+      </CardHeader>
+      
+      <CardContent className="pt-2 pb-4">
+        <p className="text-dream-foreground mb-4">{content}</p>
         
-        <div className="mb-4">
-          <p className="whitespace-pre-line">{post.content}</p>
-        </div>
-        
-        {post.image_url && (
-          <div className="mb-4 flex justify-center">
+        {imageUrl && (
+          <div className="w-full rounded-md overflow-hidden mt-4">
             <img 
-              src={post.image_url} 
-              alt="Post content" 
-              className="rounded-md max-h-96 w-auto object-contain"
+              src={imageUrl} 
+              alt="Post image" 
+              className="w-full h-auto object-cover max-h-[400px]" 
             />
           </div>
         )}
+        
+        <div className="flex items-center justify-between text-sm text-dream-muted mt-4">
+          <span>{likes} {likes === 1 ? 'like' : 'likes'}</span>
+          <span>{commentsCount} {commentsCount === 1 ? 'comment' : 'comments'}</span>
+        </div>
       </CardContent>
       
-      <CardFooter className="flex flex-col items-stretch pt-0">
-        <div className="flex justify-between items-center border-t border-white/10 pt-3">
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleLike}
-              className={`flex items-center ${liked ? 'text-dream-accent1' : 'text-muted-foreground'}`}
-            >
-              <ThumbsUp className="h-4 w-4 mr-1" />
-              {post.likes_count > 0 && <span>{post.likes_count}</span>}
-            </Button>
+      <Separator className="bg-dream-accent2/10" />
+      
+      <CardFooter className="py-3 px-6 flex justify-between">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className={`flex items-center ${isLiked ? 'text-dream-accent1' : 'text-dream-muted'}`}
+          onClick={handleLikePost}
+        >
+          {isLiked ? (
+            <HeartIcon className="mr-1 h-5 w-5 fill-dream-accent1 text-dream-accent1" />
+          ) : (
+            <HeartIcon className="mr-1 h-5 w-5" />
+          )}
+          Like
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex items-center text-dream-muted"
+          onClick={toggleComments}
+        >
+          <MessageCircleIcon className="mr-1 h-5 w-5" />
+          Comment
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex items-center text-dream-muted"
+        >
+          <Share2Icon className="mr-1 h-5 w-5" />
+          Share
+        </Button>
+      </CardFooter>
+      
+      {showComments && (
+        <div className="px-6 pb-4">
+          <Separator className="bg-dream-accent2/10 mb-4" />
+          
+          <div className="flex gap-4 mb-4">
+            <Avatar className="h-8 w-8 border border-dream-accent2/30">
+              <AvatarImage src={avatarUrl || `/placeholder.svg`} alt="Your avatar" />
+              <AvatarFallback>YO</AvatarFallback>
+            </Avatar>
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setShowComments(!showComments)}
-              className="flex items-center text-muted-foreground"
-            >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              {post.comments_count > 0 && <span>{post.comments_count}</span>}
-            </Button>
+            <div className="flex-1">
+              <Textarea 
+                placeholder="Write a comment..." 
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="bg-black/30 border-dream-accent2/20 focus:border-dream-accent1/60 min-h-[80px]"
+              />
+              
+              <div className="flex justify-end mt-2">
+                <Button 
+                  size="sm" 
+                  className="bg-dream-accent1 hover:bg-dream-accent1/80"
+                  onClick={handleSubmitComment}
+                  disabled={isSubmitting || !newComment.trim()}
+                >
+                  {isSubmitting ? 'Posting...' : 'Post Comment'}
+                </Button>
+              </div>
+            </div>
           </div>
           
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={sharePost}
-            className="text-muted-foreground"
-          >
-            <Share2 className="h-4 w-4 mr-1" />
-            Share
-          </Button>
-        </div>
-        
-        {showComments && (
-          <div className="mt-4 space-y-4 w-full">
-            {userProfile && (
-              <div className="flex space-x-2">
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage 
-                    src={userProfile.avatarUrl || '/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png'} 
-                    alt={userProfile.username || 'You'} 
-                  />
-                  <AvatarFallback className="bg-dream-accent2/20">
-                    {(userProfile.username || 'You').substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 flex space-x-2">
-                  <Textarea 
-                    placeholder="Write a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[60px] flex-1 bg-black/40 border-dream-accent2/20 focus:border-dream-accent1/60"
-                  />
-                  <Button 
-                    onClick={submitComment}
-                    disabled={isSubmitting || !newComment.trim()}
-                    className="self-end bg-dream-accent2 hover:bg-dream-accent2/80 text-black h-9"
-                  >
-                    {isSubmitting ? (
-                      <div className="animate-spin h-4 w-4 border-2 border-black rounded-full border-t-transparent" />
-                    ) : (
-                      'Post'
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {loadingComments ? (
-              <div className="flex justify-center p-4">
-                <div className="animate-spin h-6 w-6 border-2 border-dream-accent1 rounded-full border-t-transparent"></div>
-              </div>
-            ) : comments.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                No comments yet. Be the first to comment!
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {comments.map(comment => (
-                  <div key={comment.id} className="flex space-x-2 bg-black/20 p-3 rounded-md">
-                    <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarImage 
-                        src={comment.avatar_url || '/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png'} 
-                        alt={comment.username || 'User'} 
-                      />
-                      <AvatarFallback className="bg-dream-accent3/20">
-                        {(comment.username || 'User').substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <div className="font-medium">{comment.username || 'Anonymous User'}</div>
-                        <div className="text-xs text-muted-foreground">{timeAgo(comment.created_at)}</div>
+          {comments.length > 0 ? (
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <div key={comment.id} className="flex gap-3">
+                  <Avatar className="h-8 w-8 border border-dream-accent2/30">
+                    <AvatarImage src={comment.avatar_url || `/placeholder.svg`} alt={comment.username} />
+                    <AvatarFallback>{comment.username?.substring(0, 2).toUpperCase() || 'UN'}</AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1">
+                    <div className="bg-black/20 p-3 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-semibold text-sm text-dream-foreground">{comment.username}</h4>
+                        <span className="text-xs text-dream-muted">
+                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                        </span>
                       </div>
-                      <p className="mt-1 text-sm whitespace-pre-line">{comment.content}</p>
+                      <p className="text-sm mt-1 text-dream-foreground">{comment.content}</p>
+                    </div>
+                    
+                    <div className="flex gap-4 ml-2 mt-1 text-xs text-dream-muted">
+                      <button className="hover:text-dream-accent1 transition-colors">Like</button>
+                      <button className="hover:text-dream-accent1 transition-colors">Reply</button>
+                      <span>{comment.likes_count} {comment.likes_count === 1 ? 'like' : 'likes'}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </CardFooter>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-dream-muted text-sm py-4">No comments yet. Be the first to comment!</p>
+          )}
+        </div>
+      )}
     </Card>
   );
 };

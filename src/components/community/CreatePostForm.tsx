@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -59,9 +59,45 @@ const CreatePostForm = ({ userId, onSuccess }: CreatePostFormProps) => {
         .single();
       
       if (userError) {
-        console.error('User validation error:', userError);
-        toast.error('User validation failed. Please try again later.');
-        return;
+        // Check if this is a "not found" error
+        if (userError.code === 'PGRST116') {
+          // User not found, try to create the user from auth
+          try {
+            const { data: authUser } = await supabase.auth.getUser();
+            if (!authUser || !authUser.user) {
+              throw new Error('Authentication required');
+            }
+            
+            // Get user wallet address from auth metadata if available
+            const walletAddress = authUser.user.user_metadata.wallet_address || 'unknown';
+            const username = authUser.user.user_metadata.username || `user_${authUser.user.id.substring(0, 8)}`;
+            
+            // Create user record
+            const { error: createError } = await supabase
+              .from('users')
+              .insert({
+                id: authUser.user.id,
+                wallet_address: walletAddress,
+                username: username
+              });
+              
+            if (createError) {
+              console.error('Error creating user profile:', createError);
+              toast.error('Failed to create your user profile. Please try again later.');
+              return;
+            }
+            
+            // Successfully created user, continue with post creation
+          } catch (authError) {
+            console.error('Authentication error:', authError);
+            toast.error('Authentication required. Please sign in before posting.');
+            return;
+          }
+        } else {
+          console.error('User validation error:', userError);
+          toast.error('User validation failed. Please try again later.');
+          return;
+        }
       }
       
       let imageUrl = null;
