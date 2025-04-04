@@ -1,9 +1,11 @@
+
 export interface UserProfile {
   id: string;
   username: string;
   pxbPoints: number;
   createdAt: string;
   isTemporary?: boolean; // Add this flag to identify temporary profiles
+  avatarUrl?: string;  // Add avatar URL property
 }
 
 // Updated PXBBet interface with all required fields

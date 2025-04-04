@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ImagePlus, Send, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ImagePlus, X } from 'lucide-react';
 
 interface CreatePostFormProps {
   userId: string;
@@ -21,156 +21,171 @@ const CreatePostForm = ({ userId, onSuccess }: CreatePostFormProps) => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setImage(file);
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
       
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setImage(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
   const removeImage = () => {
     setImage(null);
-    setImagePreview(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+      setImagePreview(null);
+    }
   };
 
-  const createPost = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!content.trim()) {
-      toast.error('Please enter some content for your post');
+      toast.error('Post content cannot be empty');
       return;
     }
-
+    
     try {
       setIsSubmitting(true);
 
-      // First, check if the user exists in the users table
+      // First check if user exists
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id')
         .eq('id', userId)
         .single();
-
-      if (userError || !userData) {
-        console.error('Error fetching user:', userError);
+      
+      if (userError) {
+        console.error('User validation error:', userError);
         toast.error('User validation failed. Please try again later.');
         return;
       }
-
+      
       let imageUrl = null;
-
-      // If there's an image, upload it first
+      
+      // Upload image if available
       if (image) {
         const fileExt = image.name.split('.').pop();
-        const filePath = `${userId}/${Date.now()}.${fileExt}`;
-
-        const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('post-images')
+        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `posts/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('media')
           .upload(filePath, image);
-
+          
         if (uploadError) {
           console.error('Error uploading image:', uploadError);
-          toast.error('Failed to upload image. Post will be created without image.');
-        } else if (uploadData) {
-          // Get the public URL
-          const { data: urlData } = supabase.storage
-            .from('post-images')
-            .getPublicUrl(filePath);
-          
-          imageUrl = urlData.publicUrl;
+          toast.error('Failed to upload image');
+          return;
         }
+        
+        // Get public URL
+        const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+        imageUrl = data.publicUrl;
       }
-
+      
       // Create the post
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('posts')
         .insert({
           user_id: userId,
           content,
           image_url: imageUrl,
-        })
-        .select()
-        .single();
-
+          likes_count: 0,
+          comments_count: 0
+        });
+        
       if (error) {
         console.error('Error creating post:', error);
-        toast.error('Failed to create post. Please try again.');
+        toast.error('Failed to create post');
         return;
       }
-
-      // Clear form
+      
+      // Reset form
       setContent('');
       removeImage();
+      
+      // Notify success
       toast.success('Post created successfully!');
+      
+      // Call onSuccess callback
       onSuccess();
     } catch (error) {
-      console.error('Error in createPost:', error);
-      toast.error('An unexpected error occurred. Please try again.');
+      console.error('Error in handleSubmit:', error);
+      toast.error('An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Card className="p-4 bg-black/20 border border-dream-accent1/20">
-      <Textarea
-        placeholder="Share something with the community..."
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        className="min-h-[100px] mb-4 bg-black/40 border-dream-accent2/20 focus:border-dream-accent1/60"
-      />
-      
-      {imagePreview && (
-        <div className="relative mb-4">
-          <img 
-            src={imagePreview} 
-            alt="Preview" 
-            className="rounded-md max-h-64 w-auto mx-auto object-contain"
+    <Card className="glass-panel">
+      <CardContent className="pt-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Textarea
+            placeholder="What's on your mind?"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="min-h-[120px] bg-black/30 border-dream-accent2/20 focus:border-dream-accent1/60"
           />
-          <button 
-            onClick={removeImage}
-            className="absolute top-2 right-2 rounded-full p-1 bg-black/70 text-white hover:bg-red-600"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-      
-      <div className="flex justify-between items-center">
-        <div>
-          <label 
-            htmlFor="post-image" 
-            className="cursor-pointer inline-flex items-center text-sm text-dream-accent2 hover:text-dream-accent1"
-          >
-            <ImagePlus className="h-5 w-5 mr-1" />
-            Add Image
-          </label>
-          <input 
-            id="post-image" 
-            type="file" 
-            accept="image/*" 
-            className="hidden" 
-            onChange={handleImageChange}
-          />
-        </div>
-        
-        <Button 
-          onClick={createPost}
-          disabled={isSubmitting || !content.trim()}
-          className="bg-dream-accent3 hover:bg-dream-accent3/80 text-white"
-        >
-          {isSubmitting ? (
-            <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
-          ) : (
-            <>
-              <Send className="h-4 w-4 mr-1" />
-              Post
-            </>
+          
+          {imagePreview && (
+            <div className="relative">
+              <Button 
+                type="button" 
+                variant="destructive" 
+                size="icon" 
+                className="absolute top-2 right-2 h-8 w-8 rounded-full"
+                onClick={removeImage}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <img 
+                src={imagePreview} 
+                alt="Image preview" 
+                className="rounded-md max-h-64 w-auto object-contain mx-auto" 
+              />
+            </div>
           )}
-        </Button>
-      </div>
+          
+          <div className="flex justify-between">
+            <div>
+              <label htmlFor="image-upload" className="cursor-pointer">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  className="text-dream-accent3"
+                >
+                  <ImagePlus className="h-5 w-5 mr-2" />
+                  Add Image
+                </Button>
+                <input 
+                  id="image-upload" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleImageChange}
+                />
+              </label>
+            </div>
+            
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || !content.trim()}
+              className="bg-dream-accent1 hover:bg-dream-accent1/80"
+            >
+              {isSubmitting ? (
+                <div className="animate-spin h-5 w-5 border-2 border-white rounded-full border-t-transparent"></div>
+              ) : (
+                'Post'
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
     </Card>
   );
 };

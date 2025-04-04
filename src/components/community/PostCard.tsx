@@ -71,11 +71,10 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
     
     try {
       const { data, error } = await supabase
-        .from('post_reactions')
+        .from('post_likes')
         .select('id')
         .eq('post_id', post.id)
         .eq('user_id', userProfile.id)
-        .eq('reaction_type', 'like')
         .maybeSingle();
         
       if (error) {
@@ -100,11 +99,10 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
       if (liked) {
         // Unlike the post
         const { error } = await supabase
-          .from('post_reactions')
+          .from('post_likes')
           .delete()
           .eq('post_id', post.id)
-          .eq('user_id', userProfile.id)
-          .eq('reaction_type', 'like');
+          .eq('user_id', userProfile.id);
           
         if (error) {
           console.error('Error unliking post:', error);
@@ -122,11 +120,10 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
       } else {
         // Like the post
         const { error } = await supabase
-          .from('post_reactions')
+          .from('post_likes')
           .insert({
             post_id: post.id,
-            user_id: userProfile.id,
-            reaction_type: 'like'
+            user_id: userProfile.id
           });
           
         if (error) {
@@ -160,7 +157,7 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
       
       // First get comments
       const { data: commentsData, error: commentsError } = await supabase
-        .from('post_comments')
+        .from('comments')
         .select('*')
         .eq('post_id', post.id)
         .order('created_at', { ascending: false });
@@ -170,9 +167,30 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
         return;
       }
       
+      // Ensure commentsData is an array
+      if (!commentsData || !Array.isArray(commentsData)) {
+        console.error('Comments data is not an array:', commentsData);
+        setComments([]);
+        return;
+      }
+      
       // Fetch user data for each comment
       const commentsWithUserData = await Promise.all(
         commentsData.map(async (comment) => {
+          if (!comment || typeof comment !== 'object' || !('user_id' in comment)) {
+            console.error('Invalid comment object:', comment);
+            return {
+              id: 'unknown',
+              post_id: post.id,
+              user_id: 'unknown',
+              content: 'Error loading comment',
+              created_at: new Date().toISOString(),
+              likes_count: 0,
+              username: 'Unknown User',
+              avatar_url: undefined
+            };
+          }
+          
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('username, avatar_url')
@@ -196,7 +214,7 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
         })
       );
       
-      setComments(commentsWithUserData);
+      setComments(commentsWithUserData as Comment[]);
     } catch (error) {
       console.error('Error in fetchComments:', error);
     } finally {
@@ -221,11 +239,12 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
       
       // Add the comment
       const { error } = await supabase
-        .from('post_comments')
+        .from('comments')
         .insert({
           post_id: post.id,
           user_id: userProfile.id,
-          content: newComment
+          content: newComment,
+          likes_count: 0
         });
         
       if (error) {
@@ -289,7 +308,7 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'post_comments',
+        table: 'comments',
         filter: `post_id=eq.${post.id}`
       }, payload => {
         console.log('Comment change received:', payload);
@@ -375,7 +394,7 @@ const PostCard = ({ post, onUpdate }: PostCardProps) => {
               <div className="flex space-x-2">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarImage 
-                    src={userProfile.avatar_url || '/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png'} 
+                    src={userProfile.avatarUrl || '/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png'} 
                     alt={userProfile.username || 'You'} 
                   />
                   <AvatarFallback className="bg-dream-accent2/20">
