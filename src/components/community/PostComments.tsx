@@ -53,8 +53,8 @@ export const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
       
       if (error) throw error;
       
-      // Get comment likes if user is authenticated
-      let commentsWithLikes = [...(data as Comment[])];
+      // Need to cast to unknown first before casting to Comment[] to avoid TypeScript error
+      let commentsWithLikes = [...((data as unknown) as Comment[])];
       
       if (userId) {
         // Get likes for each comment
@@ -109,10 +109,10 @@ export const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
           content: newComment.trim()
         });
       
-      // Increment comments count on the post
+      // Increment comments count on the post - using direct update instead of RPC
       await supabase
         .from('posts')
-        .update({ comments_count: supabase.rpc('increment', { value: 1 }) })
+        .update({ comments_count: supabase.raw('comments_count + 1') })
         .eq('id', postId);
       
       setNewComment("");
