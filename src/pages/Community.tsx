@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,13 @@ const CommunityPage = () => {
   const { userProfile, bets, isLoadingBets, fetchUserBets, leaderboard } = usePXBPoints();
   const [winRate, setWinRate] = useState(0);
   const [userRank, setUserRank] = useState<number | undefined>(undefined);
+  
+  // Sort messages by user_pxb_points (highest first)
+  const sortedMessages = [...messages].sort((a, b) => {
+    const pointsA = a.user_pxb_points || 0;
+    const pointsB = b.user_pxb_points || 0;
+    return pointsB - pointsA;
+  });
   
   useEffect(() => {
     if (connected && userProfile) {
@@ -300,12 +308,12 @@ const CommunityPage = () => {
                 Error loading messages. Please try refreshing the page.
               </div>}
             
-            {!loading && messages.length === 0 ? <div className="text-center py-12 text-dream-foreground/50">
+            {!loading && sortedMessages.length === 0 ? <div className="text-center py-12 text-dream-foreground/50">
                 <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p className="text-lg">No messages yet</p>
                 <p className="text-sm mt-2">Be the first to start the conversation!</p>
               </div> : <div className="space-y-4">
-                {messages.map(msg => <Card key={msg.id} className="p-4 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
+                {sortedMessages.map(msg => <Card key={msg.id} className="p-4 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
                     <div className="flex justify-between mb-2">
                       <div className="flex items-center">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2">
