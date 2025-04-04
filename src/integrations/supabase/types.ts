@@ -347,6 +347,30 @@ export type Database = {
           },
         ]
       }
+      community_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -886,6 +910,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrement: {
+        Args: {
+          value?: number
+        }
+        Returns: number
+      }
+      decrement_post_likes: {
+        Args: {
+          post_id: string
+        }
+        Returns: undefined
+      }
       generate_referral_code: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -908,9 +944,27 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      increment: {
+        Args: {
+          value?: number
+        }
+        Returns: number
+      }
       increment_bounty_views: {
         Args: {
           bounty_id: string
+        }
+        Returns: undefined
+      }
+      increment_post_comments: {
+        Args: {
+          post_id: string
+        }
+        Returns: undefined
+      }
+      increment_post_likes: {
+        Args: {
+          post_id: string
         }
         Returns: undefined
       }
