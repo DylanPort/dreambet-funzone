@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
   const [replyContent, setReplyContent] = useState<Record<string, string>>({});
@@ -51,13 +49,11 @@ const CommunityPage = () => {
     const pointsB = b.user_pxb_points || 0;
     return pointsB - pointsA;
   });
-
   useEffect(() => {
     if (connected && userProfile) {
       fetchUserBets();
     }
   }, [connected, userProfile, fetchUserBets]);
-
   useEffect(() => {
     if (bets && bets.length > 0) {
       const completedBets = bets.filter(bet => bet.status === 'won' || bet.status === 'lost');
@@ -65,7 +61,6 @@ const CommunityPage = () => {
       setWinRate(completedBets.length > 0 ? wonBets.length / completedBets.length * 100 : 0);
     }
   }, [bets]);
-
   useEffect(() => {
     if (userProfile && leaderboard && leaderboard.length > 0) {
       const userEntry = leaderboard.find(entry => entry.id === userProfile.id);
@@ -74,13 +69,11 @@ const CommunityPage = () => {
       }
     }
   }, [userProfile, leaderboard]);
-
   const scrollToBottom = () => {
     messageEndRef.current?.scrollIntoView({
       behavior: 'smooth'
     });
   };
-
   useEffect(() => {
     const initialExpandedState: Record<string, boolean> = {};
     Object.entries(messageReplies).forEach(([messageId, replies]) => {
@@ -90,7 +83,6 @@ const CommunityPage = () => {
     });
     setExpandedReplies(initialExpandedState);
   }, [messageReplies]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connected) {
@@ -111,7 +103,6 @@ const CommunityPage = () => {
       toast.error("Failed to post message. Please try again.");
     }
   };
-
   const handleLoadReplies = async (messageId: string) => {
     try {
       setExpandedReplies(prev => ({
@@ -133,14 +124,12 @@ const CommunityPage = () => {
       toast.error("Failed to load replies. Please try again.");
     }
   };
-
   const handleReplyClick = (messageId: string) => {
     setShowReplyInput(prev => ({
       ...prev,
       [messageId]: !prev[messageId]
     }));
   };
-
   const handleSubmitReply = async (messageId: string) => {
     if (!connected) {
       toast.error("Please connect your wallet to reply");
@@ -169,7 +158,6 @@ const CommunityPage = () => {
       toast.error("Failed to post reply. Please try again.");
     }
   };
-
   const handleReaction = async (messageId: string, reactionType: 'like' | 'dislike') => {
     if (!connected) {
       toast.error("Please connect your wallet to like or dislike");
@@ -182,7 +170,6 @@ const CommunityPage = () => {
       toast.error("Failed to record your reaction. Please try again.");
     }
   };
-
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
     const messageDate = new Date(timestamp);
@@ -193,11 +180,9 @@ const CommunityPage = () => {
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
     return `${Math.floor(diffMins / 1440)}d ago`;
   };
-
   const truncateAddress = (address: string) => {
     return address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
   };
-
   return <div className="min-h-screen bg-dream-background">
       <Navbar />
       
@@ -236,7 +221,7 @@ const CommunityPage = () => {
                       <img src="/lovable-uploads/5bea0b92-6460-4b88-890b-093867d1e680.png" className="w-4 h-4 mr-1" alt="PXB" />
                       <span className="text-dream-foreground/70">PXB Balance:</span>
                     </div>
-                    <span className="font-bold text-dream-accent2">{userProfile.pxbPoints.toLocaleString()}</span>
+                    <span className="font-bold text-[#30ff00]">{userProfile.pxbPoints.toLocaleString()}</span>
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
@@ -438,5 +423,4 @@ const CommunityPage = () => {
       </div>
     </div>;
 };
-
 export default CommunityPage;
