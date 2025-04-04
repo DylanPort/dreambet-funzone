@@ -36,14 +36,9 @@ export const CreatePostForm = () => {
     try {
       setIsSubmitting(true);
       
+      // For Supabase auth
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error('You need to be logged in to post');
-        return;
-      }
-      
-      const userId = session.user.id;
+      const userId = session?.user?.id || publicKey.toString();
       
       // Handle image upload if present
       let imageUrl = null;
@@ -71,7 +66,7 @@ export const CreatePostForm = () => {
         imageUrl = publicUrl;
       }
       
-      // Add post
+      // Add post - always use the wallet address for user_id if auth fails
       const { data: post, error } = await supabase
         .from('posts')
         .insert({

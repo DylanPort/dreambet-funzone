@@ -36,7 +36,7 @@ const PointsCommunity = () => {
       if (error) throw error;
       return data as User[];
     },
-    refetchInterval: 1000, // Update every second
+    refetchInterval: 10000, // Update every 10 seconds instead of 1 second to reduce load
   });
 
   if (usersError) {
