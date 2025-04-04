@@ -36,9 +36,21 @@ export const CreatePostForm = () => {
     try {
       setIsSubmitting(true);
       
-      // For Supabase auth
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id || publicKey.toString();
+      // First, get the user UUID from the users table using the wallet address
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('wallet_address', publicKey.toString())
+        .single();
+      
+      if (userError) {
+        console.error('Error finding user:', userError);
+        toast.error('Unable to find your user account');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const userId = userData.id;
       
       // Handle image upload if present
       let imageUrl = null;
@@ -66,7 +78,7 @@ export const CreatePostForm = () => {
         imageUrl = publicUrl;
       }
       
-      // Add post - always use the wallet address for user_id if auth fails
+      // Add post - use the UUID from the users table
       const { data: post, error } = await supabase
         .from('posts')
         .insert({
