@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Heart, MessageSquare, Send, Eye } from 'lucide-react';
+import { Heart, MessageSquare, Send, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Post, Comment } from '@/types/pxb';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -102,7 +102,8 @@ const PostCard = ({ post, onInteraction }: PostCardProps) => {
                   ...comment,
                   user_id: comment.author_id, // Map author_id to user_id for consistency
                   username: userData?.username || 'Unknown User',
-                  avatar_url: userData?.avatar_url || null
+                  avatar_url: userData?.avatar_url || null,
+                  likes_count: comment.likes_count || 0
                 } as Comment;
               } catch (error) {
                 console.error(`Error fetching user data for comment ${comment.id}:`, error);
@@ -110,7 +111,8 @@ const PostCard = ({ post, onInteraction }: PostCardProps) => {
                   ...comment,
                   user_id: comment.author_id,
                   username: 'Unknown User',
-                  avatar_url: null
+                  avatar_url: null,
+                  likes_count: comment.likes_count || 0
                 } as Comment;
               }
             })
@@ -191,15 +193,16 @@ const PostCard = ({ post, onInteraction }: PostCardProps) => {
     }
     
     try {
-      // Create the comment
+      // Create the comment - make sure to use post_id and not bounty_id
       const { data, error } = await supabase
         .from('comments')
         .insert({
           post_id: post.id,
           author_id: userProfile.id,
-          content: commentContent
+          content: commentContent,
+          bounty_id: null
         })
-        .select('*, users:author_id(username, avatar_url)')
+        .select()
         .single();
       
       if (error) throw error;

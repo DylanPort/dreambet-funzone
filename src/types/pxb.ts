@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   id: string;
   username: string;
@@ -138,6 +137,7 @@ export interface Comment {
   avatar_url?: string;
 }
 
+// Update the Post interface to include views_count
 export interface Post {
   id: string;
   user_id: string;
