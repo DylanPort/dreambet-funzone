@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { 
@@ -157,6 +158,17 @@ export const useCommunityMessages = () => {
       const fetchedMessages = await getCommunityMessages();
       const enriched = await enrichMessagesWithUserData(fetchedMessages);
       setMessages(enriched);
+      
+      // Load all replies for all messages
+      const repliesPromises = enriched.map(message => getRepliesForMessage(message.id));
+      const repliesResults = await Promise.all(repliesPromises);
+      
+      const repliesMap: Record<string, CommunityReply[]> = {};
+      enriched.forEach((message, index) => {
+        repliesMap[message.id] = repliesResults[index];
+      });
+      
+      setMessageReplies(repliesMap);
       setError(null);
     } catch (err) {
       setError(err as Error);
@@ -305,6 +317,15 @@ export const useCommunityMessages = () => {
             enrichMessagesWithUserData([payload.new as CommunityMessage])
               .then(enrichedMessages => {
                 setMessages(prev => [enrichedMessages[0], ...prev]);
+                
+                // Load replies for the new message
+                getRepliesForMessage(enrichedMessages[0].id)
+                  .then(replies => {
+                    setMessageReplies(prev => ({
+                      ...prev,
+                      [enrichedMessages[0].id]: replies
+                    }));
+                  });
               });
           }
         }

@@ -70,6 +70,16 @@ const CommunityPage = () => {
     });
   }, [messages]);
 
+  useEffect(() => {
+    const initialExpandedState: Record<string, boolean> = {};
+    Object.entries(messageReplies).forEach(([messageId, replies]) => {
+      if (replies && replies.length > 0) {
+        initialExpandedState[messageId] = true;
+      }
+    });
+    setExpandedReplies(initialExpandedState);
+  }, [messageReplies]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connected) {
@@ -92,25 +102,20 @@ const CommunityPage = () => {
 
   const handleLoadReplies = async (messageId: string) => {
     try {
-      if (!expandedReplies[messageId]) {
+      setExpandedReplies(prev => ({
+        ...prev,
+        [messageId]: !prev[messageId]
+      }));
+      
+      if (!messageReplies[messageId] || messageReplies[messageId].length === 0) {
         const replies = await loadRepliesForMessage(messageId);
-        if (replies.length > 0) {
-          setExpandedReplies(prev => ({
-            ...prev,
-            [messageId]: true
-          }));
-        } else {
+        if (replies.length === 0) {
           toast.info("No replies yet. Be the first to reply!");
           setShowReplyInput(prev => ({
             ...prev,
             [messageId]: true
           }));
         }
-      } else {
-        setExpandedReplies(prev => ({
-          ...prev,
-          [messageId]: false
-        }));
       }
     } catch (error) {
       console.error("Error loading replies:", error);
