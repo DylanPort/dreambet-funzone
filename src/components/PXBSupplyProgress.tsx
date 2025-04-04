@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Sparkles, BarChart, ArrowUp, ArrowDown, Users, CircleDot, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { usePXBAnalytics } from '@/hooks/usePXBAnalytics';
 import { format } from 'date-fns';
+import { usePXBAnalytics } from '@/hooks/usePXBAnalytics';
+import { usePXBTotalSupply } from '@/hooks/usePXBTotalSupply';
 
 const PXBSupplyProgress = () => {
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
@@ -12,16 +13,18 @@ const PXBSupplyProgress = () => {
   const [showTopHolders, setShowTopHolders] = useState<boolean>(false);
   const [showRecentActivity, setShowRecentActivity] = useState<boolean>(false);
   
-  const { analytics, isLoading, error } = usePXBAnalytics(86400000);
+  const { analytics, isLoading: analyticsLoading, error: analyticsError } = usePXBAnalytics(86400000);
+  const { supplyData, isLoading: supplyLoading, error: supplyError } = usePXBTotalSupply(1000); // Update every second
   
-  const fixedTotalMinted = 160057650;
+  const isLoading = supplyLoading || analyticsLoading;
+  const error = supplyError || analyticsError;
   
   const maxSupply = 1_000_000_000; // 1 billion maximum supply
   const stakingRewards = 400_000_000; // 400 million reserved for staking rewards
   const additionalBurned = 110_000_000; // 110 million reserved/removed from circulation
   const totalReserved = stakingRewards + additionalBurned;
 
-  const mintedPercentage = (fixedTotalMinted / maxSupply) * 100;
+  const mintedPercentage = (supplyData.totalMinted / maxSupply) * 100;
   const stakingPercentage = (stakingRewards / maxSupply) * 100;
   const burnedPercentage = (additionalBurned / maxSupply) * 100;
   const totalPercentage = mintedPercentage + stakingPercentage + burnedPercentage;
@@ -164,7 +167,7 @@ const PXBSupplyProgress = () => {
 
   return (
     <div className="relative z-10">
-      <div className={`absolute inset-0 bg-gradient-to-r from-dream-accent1/30 to-dream-accent3/30 rounded-lg blur-xl transition-opacity duration-700 ${isAnimating ? 'opacity-80' : 'opacity-20'}`}></div>
+      <div className={`absolute inset-0 bg-gradient-to-r from-dream-accent1/30 to-dream-accent3/30 rounded-lg blur-xl transition-opacity duration-300 ${isAnimating ? 'opacity-80' : 'opacity-20'}`}></div>
       
       <div className="relative z-20">
         <div className="flex justify-between items-center mb-2">
@@ -237,7 +240,7 @@ const PXBSupplyProgress = () => {
         <div className="mb-1">
           <span className="text-dream-foreground/60">Minted: </span>
           <span className="text-[#00ff00] font-semibold animate-pulse-subtle">
-            {formatNumber(fixedTotalMinted)} PXB
+            {formatNumber(supplyData.totalMinted)} PXB
           </span>
           <span className="text-dream-foreground/40 text-xs ml-1">
             ({(mintedPercentage).toFixed(5)}%)
@@ -259,7 +262,7 @@ const PXBSupplyProgress = () => {
         </div>
         <div className="mb-1">
           <span className="text-dream-foreground/60">Remaining: </span>
-          <span className="font-medium">{formatNumber(maxSupply - totalReserved - fixedTotalMinted)} PXB</span>
+          <span className="font-medium">{formatNumber(maxSupply - totalReserved - supplyData.totalMinted)} PXB</span>
           <span className="text-dream-foreground/40 text-xs ml-1">
             ({(100 - totalPercentage).toFixed(1)}%)
           </span>
@@ -274,15 +277,15 @@ const PXBSupplyProgress = () => {
       <div className="grid grid-cols-3 gap-2 mt-4 text-xs">
         <div className="bg-black/30 backdrop-blur-sm rounded p-2 border border-white/10">
           <div className="text-dream-foreground/60">Total Users</div>
-          <div className="text-lg font-semibold">{formatNumber(analytics.totalUsers)}</div>
+          <div className="text-lg font-semibold">{formatNumber(supplyData.totalUsers)}</div>
         </div>
         <div className="bg-black/30 backdrop-blur-sm rounded p-2 border border-white/10">
           <div className="text-dream-foreground/60">Users with PXB</div>
-          <div className="text-lg font-semibold">{formatNumber(analytics.usersWithPoints)}</div>
+          <div className="text-lg font-semibold">{formatNumber(supplyData.usersWithPoints)}</div>
         </div>
         <div className="bg-black/30 backdrop-blur-sm rounded p-2 border border-white/10">
           <div className="text-dream-foreground/60">Avg. per User</div>
-          <div className="text-lg font-semibold">{formatNumber(analytics.averagePerUser)}</div>
+          <div className="text-lg font-semibold">{formatNumber(supplyData.averagePerUser)}</div>
         </div>
       </div>
       
@@ -376,7 +379,7 @@ const PXBSupplyProgress = () => {
       <div className="text-xs text-dream-foreground/50 mt-2 text-center bg-gradient-to-r from-transparent via-white/5 to-transparent p-1 rounded animate-pulse-subtle">
         <span className="inline-flex items-center">
           <Sparkles className="h-3 w-3 mr-1 text-dream-accent2/70" />
-          Stats update: PXB statistics refreshed every 24 hours
+          Real-time PXB stats: Supply updated every second from database
         </span>
       </div>
     </div>
