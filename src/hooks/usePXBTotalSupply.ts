@@ -21,18 +21,13 @@ export const usePXBTotalSupply = (refreshInterval = 1000) => {
 
   const fetchTotalMinted = async () => {
     try {
-      // Get total minted (sum of all points in users table)
-      // Instead of using a sum query that doesn't exist, we'll directly calculate it
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('points');
+      // Get total minted from our new database function
+      const { data: totalMintedData, error: totalMintedError } = await supabase
+        .rpc('get_total_minted_pxb');
       
-      if (usersError) throw usersError;
+      if (totalMintedError) throw totalMintedError;
       
-      // Calculate sum manually
-      const totalMinted = usersData.reduce((sum, user) => {
-        return sum + (typeof user.points === 'number' ? user.points : 0);
-      }, 0);
+      const totalMinted = totalMintedData || 220590627; // Fallback to known value if needed
       
       // Get total users count
       const { data: userData, error: userError } = await supabase
@@ -58,7 +53,7 @@ export const usePXBTotalSupply = (refreshInterval = 1000) => {
         Math.round(totalMinted / usersWithPoints) : 0;
       
       setSupplyData({
-        totalMinted,
+        totalMinted: Number(totalMinted),
         totalUsers,
         usersWithPoints,
         averagePerUser

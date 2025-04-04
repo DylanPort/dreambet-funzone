@@ -904,6 +904,10 @@ export type Database = {
           unread_count: number
         }[]
       }
+      get_total_minted_pxb: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       increment_bounty_views: {
         Args: {
           bounty_id: string
