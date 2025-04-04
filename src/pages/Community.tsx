@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
   const [replyContent, setReplyContent] = useState<Record<string, string>>({});
@@ -37,32 +35,32 @@ const CommunityPage = () => {
     fetchTopLiked
   } = useCommunityMessages();
   const messageEndRef = useRef<HTMLDivElement>(null);
-  
-  const { userProfile, bets, isLoadingBets, fetchUserBets, leaderboard } = usePXBPoints();
+  const {
+    userProfile,
+    bets,
+    isLoadingBets,
+    fetchUserBets,
+    leaderboard
+  } = usePXBPoints();
   const [winRate, setWinRate] = useState(0);
   const [userRank, setUserRank] = useState<number | undefined>(undefined);
-  
   const sortedMessages = [...messages].sort((a, b) => {
     const pointsA = a.user_pxb_points || 0;
     const pointsB = b.user_pxb_points || 0;
     return pointsB - pointsA;
   });
-  
   useEffect(() => {
     if (connected && userProfile) {
       fetchUserBets();
     }
   }, [connected, userProfile, fetchUserBets]);
-  
   useEffect(() => {
     if (bets && bets.length > 0) {
       const completedBets = bets.filter(bet => bet.status === 'won' || bet.status === 'lost');
       const wonBets = bets.filter(bet => bet.status === 'won');
-      
-      setWinRate(completedBets.length > 0 ? (wonBets.length / completedBets.length) * 100 : 0);
+      setWinRate(completedBets.length > 0 ? wonBets.length / completedBets.length * 100 : 0);
     }
   }, [bets]);
-
   useEffect(() => {
     if (userProfile && leaderboard && leaderboard.length > 0) {
       const userEntry = leaderboard.find(entry => entry.id === userProfile.id);
@@ -71,13 +69,11 @@ const CommunityPage = () => {
       }
     }
   }, [userProfile, leaderboard]);
-
   const scrollToBottom = () => {
     messageEndRef.current?.scrollIntoView({
       behavior: 'smooth'
     });
   };
-
   useEffect(() => {
     const initialExpandedState: Record<string, boolean> = {};
     Object.entries(messageReplies).forEach(([messageId, replies]) => {
@@ -87,7 +83,6 @@ const CommunityPage = () => {
     });
     setExpandedReplies(initialExpandedState);
   }, [messageReplies]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connected) {
@@ -108,14 +103,12 @@ const CommunityPage = () => {
       toast.error("Failed to post message. Please try again.");
     }
   };
-
   const handleLoadReplies = async (messageId: string) => {
     try {
       setExpandedReplies(prev => ({
         ...prev,
         [messageId]: !prev[messageId]
       }));
-      
       if (!messageReplies[messageId] || messageReplies[messageId].length === 0) {
         const replies = await loadRepliesForMessage(messageId);
         if (replies.length === 0) {
@@ -131,14 +124,12 @@ const CommunityPage = () => {
       toast.error("Failed to load replies. Please try again.");
     }
   };
-
   const handleReplyClick = (messageId: string) => {
     setShowReplyInput(prev => ({
       ...prev,
       [messageId]: !prev[messageId]
     }));
   };
-
   const handleSubmitReply = async (messageId: string) => {
     if (!connected) {
       toast.error("Please connect your wallet to reply");
@@ -167,7 +158,6 @@ const CommunityPage = () => {
       toast.error("Failed to post reply. Please try again.");
     }
   };
-
   const handleReaction = async (messageId: string, reactionType: 'like' | 'dislike') => {
     if (!connected) {
       toast.error("Please connect your wallet to like or dislike");
@@ -180,7 +170,6 @@ const CommunityPage = () => {
       toast.error("Failed to record your reaction. Please try again.");
     }
   };
-
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
     const messageDate = new Date(timestamp);
@@ -191,11 +180,9 @@ const CommunityPage = () => {
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
     return `${Math.floor(diffMins / 1440)}d ago`;
   };
-
   const truncateAddress = (address: string) => {
     return address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
   };
-
   return <div className="min-h-screen bg-dream-background">
       <Navbar />
       
@@ -203,10 +190,9 @@ const CommunityPage = () => {
         <div className="hidden md:block w-72 mr-6 sticky top-24 self-start">
           <OnlineUsersSidebar />
           
-          {connected && userProfile && (
-            <div className="mt-6 bg-dream-background/30 border border-dream-foreground/10 rounded-lg p-4">
+          {connected && userProfile && <div className="mt-6 bg-dream-background/30 border border-dream-foreground/10 rounded-lg p-4">
               <div className="flex items-center mb-4">
-                <User className="w-5 h-5 mr-2 text-dream-accent2" />
+                
                 <h3 className="font-display font-bold text-lg">Your Profile</h3>
               </div>
               
@@ -215,11 +201,7 @@ const CommunityPage = () => {
                   <div className="flex items-center">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
                       <Avatar className="w-full h-full">
-                        <AvatarImage 
-                          src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" 
-                          alt="User avatar" 
-                          className="w-full h-full object-cover"
-                        />
+                        <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
                         <AvatarFallback className="bg-transparent">
                           <User className="w-4 h-4 text-dream-foreground/70" />
                         </AvatarFallback>
@@ -259,12 +241,11 @@ const CommunityPage = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
           
           <div className="mt-6 bg-dream-background/30 border border-dream-foreground/10 rounded-lg p-4">
             <div className="flex items-center mb-4">
-              <Award className="w-5 h-5 mr-2 text-yellow-500" />
+              
               <h3 className="font-display font-bold text-lg">Most Liked Messages</h3>
             </div>
             
@@ -274,11 +255,7 @@ const CommunityPage = () => {
                       <div className="flex items-center">
                         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
                           <Avatar className="w-full h-full">
-                            <AvatarImage 
-                              src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" 
-                              alt="User avatar" 
-                              className="w-full h-full object-cover"
-                            />
+                            <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
                             <AvatarFallback className="bg-transparent">
                               <User className="w-3 h-3 text-dream-foreground/70" />
                             </AvatarFallback>
@@ -312,15 +289,7 @@ const CommunityPage = () => {
           </Card>
           
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-display font-bold flex items-center">
-                <MessageSquare className="w-5 h-5 mr-2 text-dream-accent2" />
-                Community Messages
-              </h2>
-              {loading && <div className="text-sm text-dream-foreground/50 animate-pulse">
-                  Loading messages...
-                </div>}
-            </div>
+            
             
             <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-dream-accent1/10 to-dream-accent2/10 rounded-lg mb-3">
               <div className="flex items-center">
@@ -348,11 +317,7 @@ const CommunityPage = () => {
                       <div className="flex items-center">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
                           <Avatar className="w-full h-full">
-                            <AvatarImage 
-                              src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" 
-                              alt="User avatar" 
-                              className="w-full h-full object-cover"
-                            />
+                            <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
                             <AvatarFallback className="bg-transparent">
                               <User className="w-4 h-4 text-dream-foreground/70" />
                             </AvatarFallback>
@@ -366,24 +331,18 @@ const CommunityPage = () => {
                               <img src="/lovable-uploads/5bea0b92-6460-4b88-890b-093867d1e680.png" className="w-3 h-3 mr-1" alt="PXB" />
                               <span>{msg.user_pxb_points?.toLocaleString() || "0"}</span>
                             </div>
-                            {msg.user_win_rate !== undefined && (
-                              <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
+                            {msg.user_win_rate !== undefined && <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
                                 <Percent className="w-3 h-3 mr-1 text-green-500" />
                                 <span>{(msg.user_win_rate || 0).toFixed(1)}%</span>
-                              </div>
-                            )}
-                            {msg.user_rank !== undefined && (
-                              <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
+                              </div>}
+                            {msg.user_rank !== undefined && <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
                                 <img src="/lovable-uploads/710dcb90-5e8c-496a-98a7-a0b2dba75e90.png" className="w-3 h-3 mr-1" alt="PXB Rank" />
                                 <span>#{msg.user_rank}</span>
-                              </div>
-                            )}
-                            {index === 0 && (
-                              <div className="flex items-center px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs text-yellow-500">
+                              </div>}
+                            {index === 0 && <div className="flex items-center px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs text-yellow-500">
                                 <Award className="w-3 h-3 mr-1" />
                                 <span>Top Contributor</span>
-                              </div>
-                            )}
+                              </div>}
                           </div>
                         </div>
                       </div>
@@ -438,11 +397,7 @@ const CommunityPage = () => {
                               <div className="flex items-center">
                                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2 overflow-hidden">
                                   <Avatar className="w-full h-full">
-                                    <AvatarImage 
-                                      src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" 
-                                      alt="User avatar" 
-                                      className="w-full h-full object-cover"
-                                    />
+                                    <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
                                     <AvatarFallback className="bg-transparent">
                                       <User className="w-3 h-3 text-dream-foreground/70" />
                                     </AvatarFallback>
@@ -463,6 +418,4 @@ const CommunityPage = () => {
       </div>
     </div>;
 };
-
 export default CommunityPage;
-
