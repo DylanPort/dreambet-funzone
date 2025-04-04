@@ -112,7 +112,7 @@ export const MessagesFeed: React.FC = () => {
         // Decrement likes count - using direct update instead of RPC
         await supabase
           .from('posts')
-          .update({ likes_count: supabase.raw('GREATEST(likes_count - 1, 0)') })
+          .update({ likes_count: "GREATEST(likes_count - 1, 0)" })
           .eq('id', postId);
       } else {
         // Like the post
@@ -123,7 +123,7 @@ export const MessagesFeed: React.FC = () => {
         // Increment likes count - using direct update instead of RPC
         await supabase
           .from('posts')
-          .update({ likes_count: supabase.raw('likes_count + 1') })
+          .update({ likes_count: "likes_count + 1" })
           .eq('id', postId);
       }
       

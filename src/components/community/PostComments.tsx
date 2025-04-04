@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -112,7 +111,7 @@ export const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
       // Increment comments count on the post - using direct update instead of RPC
       await supabase
         .from('posts')
-        .update({ comments_count: supabase.raw('comments_count + 1') })
+        .update({ comments_count: "comments_count + 1" })
         .eq('id', postId);
       
       setNewComment("");
