@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/pxb';
-import { User, Trophy, ArrowLeft, CalendarDays, Hash, MessageSquare, Percent } from 'lucide-react';
+import { User, Trophy, ArrowLeft, CalendarDays, Hash, MessageSquare, Percent, Copy } from 'lucide-react';
 import PXBBetsHistory from '@/components/PXBBetsHistory';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
@@ -21,6 +22,7 @@ const UserProfilePage = () => {
   const [winRate, setWinRate] = useState(0);
   const [userRank, setUserRank] = useState<number | null>(null);
   const [totalBets, setTotalBets] = useState(0);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
   // Fetch the user profile data by ID or wallet address
   useEffect(() => {
@@ -44,6 +46,9 @@ const UserProfilePage = () => {
           toast.error('Failed to load user profile');
           return;
         }
+
+        // Set wallet address
+        setWalletAddress(userData.wallet_address || null);
 
         // Fetch user leaderboard position
         const {
@@ -102,6 +107,12 @@ const UserProfilePage = () => {
       day: 'numeric'
     }).format(date);
   };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Wallet address copied to clipboard');
+  };
+
   if (isLoading) {
     return <>
         <Navbar />
@@ -181,6 +192,29 @@ const UserProfilePage = () => {
                         <span>ID: {profileData?.id.substring(0, 8)}</span>
                       </div>
                     </div>
+
+                    {walletAddress && (
+                      <div className="mb-4 p-3 bg-dream-background/40 border border-dream-foreground/10 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center text-sm text-dream-foreground/70">
+                          <img 
+                            src="/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png" 
+                            alt="Wallet" 
+                            className="w-4 h-4 mr-2" 
+                          />
+                          <span className="font-mono text-xs sm:text-sm truncate max-w-[180px] sm:max-w-md">
+                            {walletAddress}
+                          </span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => copyToClipboard(walletAddress)}
+                          className="p-1 h-auto text-dream-foreground/50 hover:text-dream-accent1 hover:bg-transparent"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                     
                     <div className="relative overflow-hidden rounded-lg p-5 bg-gradient-to-r from-dream-background/40 to-dream-background/20 border border-dream-foreground/10">
                       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-dream-accent1/5 via-transparent to-transparent"></div>

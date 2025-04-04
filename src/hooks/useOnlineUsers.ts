@@ -7,6 +7,7 @@ export interface OnlineUser {
   id: string;
   username: string | null;
   lastSeen: string;
+  wallet_address?: string; // Added this property to fix the type error
 }
 
 export function useOnlineUsers() {
@@ -31,7 +32,8 @@ export function useOnlineUsers() {
           .map((presence: any) => ({
             id: presence.user_id,
             username: presence.username || presence.user_id.substring(0, 6) + '...',
-            lastSeen: presence.online_at
+            lastSeen: presence.online_at,
+            wallet_address: presence.user_id // Add wallet address (which is the user_id in this case)
           }));
         
         setOnlineUsers(users);
