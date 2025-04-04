@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -198,7 +199,7 @@ const CommunityPage = () => {
     return address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
   };
 
-  return <div className="min-h-screen bg-dream-background bg-[url('/lovable-uploads/e1b33d2f-7fd6-471b-802e-f18d0c0b7155.png')] bg-cover bg-center bg-no-repeat bg-fixed">
+  return <div className="min-h-screen bg-dream-background bg-[url('/lovable-uploads/de5a5440-6c74-4a87-af08-110c2e96ffbc.png')] bg-cover bg-center bg-no-repeat bg-fixed">
       <div className="absolute inset-0 bg-dream-background/80 backdrop-blur-sm"></div>
       
       <div className="relative z-10">
