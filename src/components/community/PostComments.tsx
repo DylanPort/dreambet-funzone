@@ -109,11 +109,9 @@ export const PostComments: React.FC<PostCommentsProps> = ({ postId }) => {
           content: newComment.trim()
         });
       
-      // Call the SQL function via a direct SQL query
+      // Call the SQL function via RPC
       await supabase
-        .from('posts')
-        .update({ comments_count: supabase.sql`increment_post_comments(${postId})` })
-        .eq('id', postId);
+        .rpc('increment_post_comments', { post_id: postId });
       
       setNewComment("");
       toast.success('Comment added successfully');
