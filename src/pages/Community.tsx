@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -212,7 +213,7 @@ const CommunityPage = () => {
               
               <div className="space-y-3">
                 <div className="flex justify-between mb-2">
-                  <div className="flex items-center">
+                  <Link to={`/profile/${userProfile.id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
                       <Avatar className="w-full h-full">
                         <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
@@ -222,7 +223,7 @@ const CommunityPage = () => {
                       </Avatar>
                     </div>
                     <span className="font-medium">{userProfile.username || truncateAddress(publicKey?.toString() || '')}</span>
-                  </div>
+                  </Link>
                   <Link to={`/profile/${userProfile.id}`} className="text-xs text-dream-accent1 hover:text-dream-accent2 flex items-center">
                     <ExternalLink className="w-3 h-3 mr-1" />
                     Profile
@@ -266,7 +267,7 @@ const CommunityPage = () => {
             {!topLikedMessages || topLikedMessages.length === 0 ? <p className="text-dream-foreground/50 text-sm text-center py-3">No liked messages yet</p> : <div className="space-y-3">
                 {topLikedMessages.slice(0, 3).map(msg => <Card key={`liked-${msg.id}`} className="p-3 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
                     <div className="flex justify-between items-start mb-1">
-                      <div className="flex items-center">
+                      <Link to={`/profile/${msg.user_id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
                         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
                           <Avatar className="w-full h-full">
                             <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
@@ -276,7 +277,7 @@ const CommunityPage = () => {
                           </Avatar>
                         </div>
                         <span className="text-sm font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
-                      </div>
+                      </Link>
                       <div className="flex items-center text-xs text-dream-foreground/50">
                         <ThumbsUp className="w-3 h-3 mr-1 text-green-500 fill-green-500" />
                         <span>{msg.likes_count || messageReactions[msg.id]?.likes || 0}</span>
@@ -330,16 +331,20 @@ const CommunityPage = () => {
                 {sortedMessages.map((msg, index) => <Card key={msg.id} className="p-4 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
                     <div className="flex justify-between mb-2">
                       <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
-                          <Avatar className="w-full h-full">
-                            <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
-                            <AvatarFallback className="bg-transparent">
-                              <User className="w-4 h-4 text-dream-foreground/70" />
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
+                        <Link to={`/profile/${msg.user_id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
+                            <Avatar className="w-full h-full">
+                              <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
+                              <AvatarFallback className="bg-transparent">
+                                <User className="w-4 h-4 text-dream-foreground/70" />
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                        </Link>
                         <div>
-                          <span className="font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
+                          <Link to={`/profile/${msg.user_id}`} className="font-medium hover:text-dream-accent1 transition-colors">
+                            {msg.username || truncateAddress(msg.user_id)}
+                          </Link>
                           
                           <div className="flex mt-1 space-x-2">
                             <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
@@ -409,7 +414,7 @@ const CommunityPage = () => {
                     {expandedReplies[msg.id] && messageReplies[msg.id]?.length > 0 && <div className="mt-3 pl-4 border-l-2 border-dream-foreground/10 space-y-3">
                         {messageReplies[msg.id].map(reply => <div key={reply.id} className="pt-2">
                             <div className="flex justify-between items-start mb-1">
-                              <div className="flex items-center">
+                              <Link to={`/profile/${reply.user_id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
                                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2 overflow-hidden">
                                   <Avatar className="w-full h-full">
                                     <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
@@ -419,7 +424,7 @@ const CommunityPage = () => {
                                   </Avatar>
                                 </div>
                                 <span className="text-sm font-medium">{reply.username || truncateAddress(reply.user_id)}</span>
-                              </div>
+                              </Link>
                               <span className="text-dream-foreground/50 text-xs">{formatTimeAgo(reply.created_at)}</span>
                             </div>
                             <p className="text-dream-foreground/80 text-sm ml-8">{reply.content}</p>

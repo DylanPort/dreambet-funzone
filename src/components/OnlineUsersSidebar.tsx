@@ -1,9 +1,12 @@
+
 import React from 'react';
 import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 import { Users, User, Signal } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Link } from 'react-router-dom';
+
 export interface OnlineUsersSidebarProps {
   className?: string;
 }
@@ -36,7 +39,12 @@ const OnlineUsersSidebar = ({
             {onlineUsers.length === 0 ? <div className="text-center py-6 text-dream-foreground/50">
                 <User className="w-10 h-10 mx-auto mb-2 opacity-20" />
                 <p className="text-sm">No users online</p>
-              </div> : onlineUsers.map(user => <div key={user.id} className="flex items-center p-2 rounded-md bg-dream-background/30 hover:bg-dream-background/40 transition-colors">
+              </div> : onlineUsers.map(user => (
+                <Link 
+                  key={user.id} 
+                  to={`/profile/${user.id}`} 
+                  className="flex items-center p-2 rounded-md bg-dream-background/30 hover:bg-dream-background/40 transition-colors"
+                >
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center mr-2 overflow-hidden">
                     <Avatar className="w-full h-full">
                       <AvatarImage src="/lovable-uploads/465e1d7b-8647-4ada-a42d-b52fc4e41841.png" alt="User avatar" className="w-full h-full object-cover" />
@@ -51,7 +59,8 @@ const OnlineUsersSidebar = ({
                   <div className="ml-auto">
                     <div className="w-2 h-2 rounded-full bg-green-500"></div>
                   </div>
-                </div>)}
+                </Link>
+              ))}
           </div>
         </>}
     </Card>;
