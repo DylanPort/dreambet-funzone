@@ -92,6 +92,17 @@ export const buyTokensWithPXB = async (
       .eq('tokenid', tokenId)
       .maybeSingle();
     
+    if (portfolioError) {
+      console.error('Error checking portfolio:', portfolioError);
+      // Rollback points
+      await supabase
+        .from('users')
+        .update({ points: userData.points })
+        .eq('id', userId);
+      toast.error('Failed to check portfolio status');
+      return false;
+    }
+    
     // 3. Insert or update portfolio
     const tokenPrice = tokenMarketCap / 1000000;
     
@@ -113,7 +124,7 @@ export const buyTokensWithPXB = async (
         
       if (updatePortfolioError) {
         console.error('Error updating portfolio:', updatePortfolioError);
-        // Rollback points (in a real app, use database transactions)
+        // Rollback points
         await supabase
           .from('users')
           .update({ points: userData.points })
@@ -123,7 +134,17 @@ export const buyTokensWithPXB = async (
       }
     } else {
       // Insert new portfolio entry
-      const { error: insertPortfolioError } = await supabase
+      console.log('Creating new portfolio entry with data:', {
+        userid: userId,
+        tokenid: tokenId,
+        tokenname: tokenName,
+        tokensymbol: tokenSymbol,
+        quantity: estimatedTokenQuantity,
+        averagepurchaseprice: tokenPrice,
+        currentvalue: estimatedTokenQuantity * tokenPrice
+      });
+      
+      const { data, error: insertPortfolioError } = await supabase
         .from('token_portfolios')
         .insert({
           userid: userId,
@@ -133,7 +154,9 @@ export const buyTokensWithPXB = async (
           quantity: estimatedTokenQuantity,
           averagepurchaseprice: tokenPrice,
           currentvalue: estimatedTokenQuantity * tokenPrice
-        });
+        })
+        .select()
+        .single();
         
       if (insertPortfolioError) {
         console.error('Error creating portfolio:', insertPortfolioError);
@@ -142,9 +165,11 @@ export const buyTokensWithPXB = async (
           .from('users')
           .update({ points: userData.points })
           .eq('id', userId);
-        toast.error('Failed to create portfolio');
+        toast.error('Failed to create portfolio: ' + insertPortfolioError.message);
         return false;
       }
+      
+      console.log('Created portfolio entry:', data);
     }
     
     // 4. Record transaction
