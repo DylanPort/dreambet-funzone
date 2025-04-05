@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +18,7 @@ import { Loader2, TrendingUp, TrendingDown, ArrowUpDown, Clock, DollarSign, Info
 import { formatDistanceToNow } from 'date-fns';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { RefreshCw } from 'lucide-react';
+import WalletConnectButton from './WalletConnectButton';
 
 interface TokenTradingProps {
   tokenId?: string; // For backward compatibility
@@ -397,7 +397,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   );
 };
 
-// Simple wallet connect button when not connected
 const WalletButton: React.FC = () => {
   return (
     <div className="flex justify-center">
@@ -405,8 +404,5 @@ const WalletButton: React.FC = () => {
     </div>
   );
 };
-
-// Import at the top of the file
-import { WalletConnectButton } from './WalletConnectButton';
 
 export default TokenTrading;

@@ -9,26 +9,26 @@ export const PXB_VIRTUAL_PRICE = PXB_VIRTUAL_MARKET_CAP / PXB_VIRTUAL_LIQUIDITY;
 
 export interface TokenPortfolio {
   id: string;
-  wallet_address: string;
-  token_mint: string;
-  token_name: string;
-  token_symbol: string;
+  userid: string;
+  tokenid: string;
+  tokenname: string;
+  tokensymbol: string;
   quantity: number;
-  avg_price: number;
-  current_value: number;
-  updated_at: string;
+  averagepurchaseprice: number;
+  currentvalue: number;
+  lastupdated: string;
   created_at: string;
 }
 
 export interface TokenTransaction {
   id: string;
-  wallet_address: string;
-  token_mint: string;
-  token_name: string;
-  token_symbol: string;
+  userid: string;
+  tokenid: string;
+  tokenname: string;
+  tokensymbol: string;
   quantity: number;
   price: number;
-  pxb_amount: number;
+  pxbamount: number;
   type: 'buy' | 'sell';
   created_at: string;
 }
@@ -178,8 +178,8 @@ export const buyTokensWithPXB = async (
     const { data: portfolioData, error: portfolioError } = await supabase
       .from('token_portfolios')
       .select('*')
-      .eq('wallet_address', walletAddress)
-      .eq('token_mint', tokenMint)
+      .eq('userid', userId)
+      .eq('tokenid', tokenMint)
       .maybeSingle();
       
     if (portfolioError && portfolioError.code !== 'PGRST116') {
@@ -194,17 +194,17 @@ export const buyTokensWithPXB = async (
     
     if (portfolioData) {
       // Update existing portfolio
-      const newQuantity = parseFloat(portfolioData.quantity) + estimatedTokenQty;
-      const avgPrice = ((parseFloat(portfolioData.quantity) * parseFloat(portfolioData.avg_price)) + 
+      const newQuantity = parseFloat(portfolioData.quantity.toString()) + estimatedTokenQty;
+      const avgPrice = ((parseFloat(portfolioData.quantity.toString()) * parseFloat(portfolioData.averagepurchaseprice.toString())) + 
                       (estimatedTokenQty * tokenPrice)) / newQuantity;
       
       const { error: updatePortfolioError } = await supabase
         .from('token_portfolios')
         .update({
           quantity: newQuantity,
-          avg_price: avgPrice,
-          current_value: newQuantity * tokenPrice,
-          updated_at: new Date().toISOString()
+          averagepurchaseprice: avgPrice,
+          currentvalue: newQuantity * tokenPrice,
+          lastupdated: new Date().toISOString()
         })
         .eq('id', portfolioData.id);
         
@@ -222,13 +222,13 @@ export const buyTokensWithPXB = async (
       const { error: createPortfolioError } = await supabase
         .from('token_portfolios')
         .insert({
-          wallet_address: walletAddress,
-          token_mint: tokenMint,
-          token_name: tokenName,
-          token_symbol: tokenSymbol,
+          userid: userId,
+          tokenid: tokenMint,
+          tokenname: tokenName,
+          tokensymbol: tokenSymbol,
           quantity: estimatedTokenQty,
-          avg_price: tokenPrice,
-          current_value: estimatedTokenQty * tokenPrice
+          averagepurchaseprice: tokenPrice,
+          currentvalue: estimatedTokenQty * tokenPrice
         });
         
       if (createPortfolioError) {
@@ -246,13 +246,13 @@ export const buyTokensWithPXB = async (
     const { error: txError } = await supabase
       .from('token_transactions')
       .insert({
-        wallet_address: walletAddress,
-        token_mint: tokenMint,
-        token_name: tokenName,
-        token_symbol: tokenSymbol,
+        userid: userId,
+        tokenid: tokenMint,
+        tokenname: tokenName,
+        tokensymbol: tokenSymbol,
         quantity: estimatedTokenQty,
         price: tokenPrice,
-        pxb_amount: pxbAmount,
+        pxbamount: pxbAmount,
         type: 'buy'
       });
       
@@ -292,8 +292,8 @@ export const sellTokensForPXB = async (
     const { data: portfolioData, error: portfolioError } = await supabase
       .from('token_portfolios')
       .select('*')
-      .eq('wallet_address', walletAddress)
-      .eq('token_mint', tokenMint)
+      .eq('userid', userId)
+      .eq('tokenid', tokenMint)
       .maybeSingle();
       
     if (portfolioError) {
@@ -305,12 +305,12 @@ export const sellTokensForPXB = async (
       throw new Error(`You don't own any ${tokenSymbol}`);
     }
     
-    if (parseFloat(portfolioData.quantity) < tokenQuantity) {
+    if (parseFloat(portfolioData.quantity.toString()) < tokenQuantity) {
       throw new Error(`You only have ${portfolioData.quantity} ${tokenSymbol}`);
     }
     
     // Calculate PXB value
-    const tokenPrice = portfolioData.current_value / portfolioData.quantity;
+    const tokenPrice = portfolioData.currentvalue / portfolioData.quantity;
     const tokenValue = tokenQuantity * tokenPrice;
     const pxbAmount = Math.floor(tokenValue / PXB_VIRTUAL_PRICE);
     
@@ -339,7 +339,7 @@ export const sellTokensForPXB = async (
     }
     
     // 2. Update portfolio
-    const newQuantity = parseFloat(portfolioData.quantity) - tokenQuantity;
+    const newQuantity = parseFloat(portfolioData.quantity.toString()) - tokenQuantity;
     
     if (newQuantity > 0.000001) { // Keep small threshold to avoid floating point issues
       // Update portfolio
@@ -347,8 +347,8 @@ export const sellTokensForPXB = async (
         .from('token_portfolios')
         .update({
           quantity: newQuantity,
-          current_value: newQuantity * tokenPrice,
-          updated_at: new Date().toISOString()
+          currentvalue: newQuantity * tokenPrice,
+          lastupdated: new Date().toISOString()
         })
         .eq('id', portfolioData.id);
         
@@ -383,13 +383,13 @@ export const sellTokensForPXB = async (
     const { error: txError } = await supabase
       .from('token_transactions')
       .insert({
-        wallet_address: walletAddress,
-        token_mint: tokenMint,
-        token_name: tokenName,
-        token_symbol: tokenSymbol,
+        userid: userId,
+        tokenid: tokenMint,
+        tokenname: tokenName,
+        tokensymbol: tokenSymbol,
         quantity: tokenQuantity,
         price: tokenPrice,
-        pxb_amount: pxbAmount,
+        pxbamount: pxbAmount,
         type: 'sell'
       });
       
@@ -413,17 +413,29 @@ export const getTokenPortfolio = async (walletAddress?: string): Promise<TokenPo
   try {
     const address = walletAddress || getWalletAddress();
     
+    // Get user ID from wallet address
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet_address', address)
+      .single();
+    
+    if (userError) {
+      console.error('Error finding user:', userError);
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('token_portfolios')
       .select('*')
-      .eq('wallet_address', address);
+      .eq('userid', userData.id);
       
     if (error) {
       console.error('Error fetching portfolio:', error);
       return [];
     }
     
-    return data || [];
+    return data as TokenPortfolio[] || [];
   } catch (error) {
     console.error('Error in getTokenPortfolio:', error);
     return [];
@@ -435,14 +447,26 @@ export const getTradeHistory = async (walletAddress?: string, tokenMint?: string
   try {
     const address = walletAddress || getWalletAddress();
     
+    // Get user ID from wallet address
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet_address', address)
+      .single();
+    
+    if (userError) {
+      console.error('Error finding user:', userError);
+      return [];
+    }
+    
     let query = supabase
       .from('token_transactions')
       .select('*')
-      .eq('wallet_address', address)
+      .eq('userid', userData.id)
       .order('created_at', { ascending: false });
       
     if (tokenMint) {
-      query = query.eq('token_mint', tokenMint);
+      query = query.eq('tokenid', tokenMint);
     }
     
     const { data, error } = await query;
@@ -452,7 +476,7 @@ export const getTradeHistory = async (walletAddress?: string, tokenMint?: string
       return [];
     }
     
-    return data || [];
+    return data as TokenTransaction[] || [];
   } catch (error) {
     console.error('Error in getTradeHistory:', error);
     return [];
