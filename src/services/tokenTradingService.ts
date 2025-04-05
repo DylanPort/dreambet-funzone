@@ -18,6 +18,9 @@ export interface TokenPortfolio {
   currentvalue: number;
   lastupdated: string;
   created_at: string;
+  initialMarketCap?: number;
+  currentMarketCap?: number;
+  percentageChange?: number;
 }
 
 export interface TokenTransaction {
@@ -161,6 +164,22 @@ export const buyTokensWithPXB = async (
     const pxbValue = pxbAmount * PXB_VIRTUAL_PRICE;
     const estimatedTokenQty = pxbValue / (tokenMint.length * 0.01); // Simple formula for token valuation
     const tokenPrice = pxbValue / estimatedTokenQty;
+    
+    // Get token market cap data
+    let initialMarketCap = 0;
+    let currentMarketCap = 0;
+    
+    // Try to get market cap from tokens table
+    const { data: tokenData } = await supabase
+      .from('tokens')
+      .select('initial_market_cap, current_market_cap')
+      .eq('token_mint', tokenMint)
+      .maybeSingle();
+    
+    if (tokenData) {
+      initialMarketCap = tokenData.initial_market_cap || 0;
+      currentMarketCap = tokenData.current_market_cap || 0;
+    }
     
     // Start transaction
     // 1. Deduct points
@@ -435,7 +454,34 @@ export const getTokenPortfolio = async (walletAddress?: string): Promise<TokenPo
       return [];
     }
     
-    return data as TokenPortfolio[] || [];
+    // Enhance with market cap data
+    const enhancedData = await Promise.all((data || []).map(async (item) => {
+      // Try to get market cap data for each token
+      const { data: tokenData } = await supabase
+        .from('tokens')
+        .select('initial_market_cap, current_market_cap')
+        .eq('token_mint', item.tokenid)
+        .maybeSingle();
+        
+      if (tokenData) {
+        const initialMarketCap = tokenData.initial_market_cap || 0;
+        const currentMarketCap = tokenData.current_market_cap || 0;
+        const percentageChange = initialMarketCap > 0 
+          ? ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100 
+          : 0;
+          
+        return {
+          ...item, 
+          initialMarketCap,
+          currentMarketCap,
+          percentageChange
+        };
+      }
+      
+      return item;
+    }));
+    
+    return enhancedData as TokenPortfolio[];
   } catch (error) {
     console.error('Error in getTokenPortfolio:', error);
     return [];
@@ -480,5 +526,38 @@ export const getTradeHistory = async (walletAddress?: string, tokenMint?: string
   } catch (error) {
     console.error('Error in getTradeHistory:', error);
     return [];
+  }
+};
+
+// Get token market cap data
+export const getTokenMarketCapData = async (tokenMint: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('tokens')
+      .select('initial_market_cap, current_market_cap')
+      .eq('token_mint', tokenMint)
+      .maybeSingle();
+      
+    if (error) {
+      console.error('Error fetching token market cap:', error);
+      return null;
+    }
+    
+    if (!data) return null;
+    
+    const initialMarketCap = data.initial_market_cap || 0;
+    const currentMarketCap = data.current_market_cap || 0;
+    const percentageChange = initialMarketCap > 0 
+      ? ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100 
+      : 0;
+      
+    return {
+      initialMarketCap,
+      currentMarketCap,
+      percentageChange
+    };
+  } catch (error) {
+    console.error('Error in getTokenMarketCapData:', error);
+    return null;
   }
 };

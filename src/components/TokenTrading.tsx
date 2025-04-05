@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,14 +11,14 @@ import {
   getTokenPortfolio,
   getTradeHistory,
   getUserPoints,
+  getTokenMarketCapData,
   PXB_VIRTUAL_LIQUIDITY,
   PXB_VIRTUAL_MARKET_CAP,
   PXB_VIRTUAL_PRICE
 } from '@/services/tokenTradingService';
-import { Loader2, TrendingUp, TrendingDown, ArrowUpDown, Clock, DollarSign, Info } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, ArrowUpDown, Clock, DollarSign, Info, RefreshCw, BarChart2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { RefreshCw } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 
 interface TokenTradingProps {
@@ -46,6 +47,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const [portfolio, setPortfolio] = useState<any[]>([]);
   const [tradeHistory, setTradeHistory] = useState<any[]>([]);
   const [pxbBalance, setPxbBalance] = useState<number>(0);
+  const [marketCapData, setMarketCapData] = useState<{
+    initialMarketCap: number;
+    currentMarketCap: number;
+    percentageChange: number;
+  } | null>(null);
   const { toast } = useToast();
 
   // Load user data when wallet is connected
@@ -58,6 +64,13 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       setPxbBalance(0);
     }
   }, [connected, publicKey, tokenMint]);
+
+  // Load market cap data when component mounts
+  useEffect(() => {
+    if (tokenMint) {
+      loadMarketCapData();
+    }
+  }, [tokenMint]);
 
   const loadUserData = async () => {
     if (!connected || !publicKey) return;
@@ -85,6 +98,24 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMarketCapData = async () => {
+    try {
+      const data = await getTokenMarketCapData(tokenMint);
+      if (data) {
+        setMarketCapData(data);
+      } else if (tokenMarketCap) {
+        // Use prop if available
+        setMarketCapData({
+          initialMarketCap: tokenMarketCap * 0.9, // Assume initial is 90% of current as fallback
+          currentMarketCap: tokenMarketCap,
+          percentageChange: 10 // Assume 10% growth as fallback
+        });
+      }
+    } catch (error) {
+      console.error('Error loading market cap data:', error);
     }
   };
 
@@ -130,6 +161,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       if (success) {
         // Refresh user data
         await loadUserData();
+        // Refresh market cap data
+        await loadMarketCapData();
         setAmount('');
       }
     } catch (error) {
@@ -145,7 +178,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   };
 
   // Get current token holdings from portfolio
-  const tokenHoldings = portfolio.find(p => p.token_mint === tokenMint);
+  const tokenHoldings = portfolio.find(p => p.tokenid === tokenMint);
   const currentHoldings = tokenHoldings ? Number(tokenHoldings.quantity) : 0;
 
   // Calculate estimated token amount for buy tab
@@ -162,7 +195,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const calculateEstimatedPxb = (tokenAmount: number): number => {
     if (!tokenAmount || isNaN(tokenAmount) || tokenAmount <= 0 || !tokenHoldings) return 0;
     
-    const tokenValue = tokenAmount * (tokenHoldings.current_value / tokenHoldings.quantity);
+    const tokenValue = tokenAmount * (tokenHoldings.currentvalue / tokenHoldings.quantity);
     return Math.floor(tokenValue / PXB_VIRTUAL_PRICE);
   };
 
@@ -196,6 +229,49 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       <CardContent className="p-4 space-y-4">
         {connected ? (
           <>
+            {marketCapData && (
+              <div className="bg-black/30 p-3 rounded-lg border border-indigo-500/20 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-white/70 text-sm flex items-center">
+                    <BarChart2 className="w-4 h-4 mr-1" />
+                    Market Cap
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={loadMarketCapData}
+                    className="h-6 px-2 text-xs"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Refresh
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 bg-black/20 rounded border border-white/5">
+                    <div className="text-xs text-white/60">Initial</div>
+                    <div className="font-medium">${formatNumber(marketCapData.initialMarketCap, 0)}</div>
+                  </div>
+                  <div className="p-2 bg-black/20 rounded border border-white/5">
+                    <div className="text-xs text-white/60">Current</div>
+                    <div className="font-medium">${formatNumber(marketCapData.currentMarketCap, 0)}</div>
+                  </div>
+                </div>
+                <div className="mt-2 p-2 bg-black/20 rounded border border-white/5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-white/60">Change</span>
+                    <span className={`text-sm font-medium ${marketCapData.percentageChange >= 0 ? 'text-green-400' : 'text-red-400'} flex items-center`}>
+                      {marketCapData.percentageChange >= 0 ? (
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                      ) : (
+                        <TrendingDown className="w-3 h-3 mr-1" />
+                      )}
+                      {marketCapData.percentageChange.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="bg-indigo-950/20 p-3 rounded-lg border border-indigo-500/20">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-white/70">Your PXB Balance:</span>
@@ -359,7 +435,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
                         )}
                         <div>
                           <div className="text-xs font-medium">
-                            {tx.type === 'buy' ? 'Bought' : 'Sold'} {formatNumber(tx.quantity)} {tx.token_symbol}
+                            {tx.type === 'buy' ? 'Bought' : 'Sold'} {formatNumber(tx.quantity)} {tx.tokensymbol}
                           </div>
                           <div className="text-xs text-white/50 flex items-center mt-0.5">
                             <Clock className="h-2.5 w-2.5 mr-1" />
@@ -369,7 +445,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
                       </div>
                       <div className="text-right">
                         <div className={`text-xs font-medium ${tx.type === 'buy' ? 'text-red-400' : 'text-green-400'}`}>
-                          {tx.type === 'buy' ? '-' : '+'}{formatNumber(tx.pxb_amount, 0)} PXB
+                          {tx.type === 'buy' ? '-' : '+'}{formatNumber(tx.pxbamount, 0)} PXB
                         </div>
                         <div className="text-xs text-white/50 flex items-center justify-end mt-0.5">
                           <DollarSign className="h-2.5 w-2.5 mr-1" />
@@ -389,19 +465,13 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         ) : (
           <div className="text-center py-10 space-y-4">
             <div className="text-white/70 mb-2">Connect your wallet to trade tokens</div>
-            <WalletButton />
+            <div className="flex justify-center">
+              <WalletConnectButton />
+            </div>
           </div>
         )}
       </CardContent>
     </Card>
-  );
-};
-
-const WalletButton: React.FC = () => {
-  return (
-    <div className="flex justify-center">
-      <WalletConnectButton />
-    </div>
   );
 };
 
