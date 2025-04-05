@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -261,6 +260,22 @@ const WalletConnectButton = () => {
       console.error("Error disconnecting wallet:", error);
     }
   };
+
+  useEffect(() => {
+    if (connected && publicKey) {
+      // Save wallet information to localStorage
+      const walletAddress = publicKey.toString();
+      localStorage.setItem('wallet_auth_data', JSON.stringify({
+        publicKey: walletAddress,
+        timestamp: Date.now()
+      }));
+      
+      console.log(`Wallet data saved to localStorage: ${walletAddress}`);
+    } else if (!connected) {
+      // Clear wallet information when disconnected
+      localStorage.removeItem('wallet_auth_data');
+    }
+  }, [connected, publicKey]);
 
   return (
     <div className="flex items-center">

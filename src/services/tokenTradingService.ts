@@ -35,59 +35,29 @@ export interface TokenTransaction {
   type: 'buy' | 'sell';
 }
 
-// Helper function to get authenticated user or throw an error
-async function getAuthenticatedUser() {
+// Helper function to get wallet address or throw an error
+async function getWalletAddress(): Promise<string> {
   try {
-    // First check if we have a session
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    // Check if we have wallet data in localStorage
+    const walletAuthData = localStorage.getItem('wallet_auth_data');
     
-    if (sessionError) {
-      console.error('Session error:', sessionError);
-      throw new Error('Authentication error. Please sign in and try again.');
-    }
-
-    if (!sessionData?.session) {
-      // If no session, try to sign in with wallet if possible
-      const walletAuthData = localStorage.getItem('wallet_auth_data');
-      
-      if (walletAuthData) {
-        try {
-          const parsedData = JSON.parse(walletAuthData);
-          const { publicKey, email, password } = parsedData;
-          
-          if (publicKey && password) {
-            console.log(`Attempting to sign in with wallet: ${publicKey}`);
-            
-            const { data, error } = await supabase.auth.signInWithPassword({
-              email: email || `${publicKey}@solana.wallet`,
-              password: password || publicKey,
-            });
-            
-            if (error) {
-              console.error('Failed wallet auto-auth:', error);
-              throw new Error('Authentication error. Please disconnect and reconnect your wallet.');
-            }
-            
-            if (data?.user) {
-              console.log('Successfully authenticated with wallet');
-              return data.user;
-            }
-          }
-        } catch (e) {
-          console.error('Error during wallet authentication:', e);
+    if (walletAuthData) {
+      try {
+        const parsedData = JSON.parse(walletAuthData);
+        const { publicKey } = parsedData;
+        
+        if (publicKey) {
+          console.log(`Using wallet address: ${publicKey}`);
+          return publicKey;
         }
+      } catch (e) {
+        console.error('Error parsing wallet data:', e);
       }
-      
-      throw new Error('Authentication error. Please connect your wallet and sign in.');
     }
     
-    if (!sessionData.session.user) {
-      throw new Error('Authentication error. User data missing.');
-    }
-    
-    return sessionData.session.user;
+    throw new Error('Wallet not connected. Please connect your wallet and try again.');
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('Error getting wallet address:', error);
     throw error;
   }
 }
@@ -109,39 +79,89 @@ export const buyTokensWithPXB = async (
 
     console.log(`Buying tokens: tokenId=${tokenId}, pxbAmount=${pxbAmount}, marketCap=${tokenMarketCap}`);
     
-    // Get current authenticated user
-    const user = await getAuthenticatedUser();
-    const authenticatedUserId = user.id;
-    console.log(`Using authenticated user ID: ${authenticatedUserId}`);
+    // Get current wallet address
+    const walletAddress = await getWalletAddress();
+    console.log(`Using wallet address: ${walletAddress}`);
 
     // Calculate how many tokens the user gets based on PXB and token market cap
     const pxbValue = pxbAmount * PXB_VIRTUAL_PRICE;
     const estimatedTokenQuantity = pxbValue / tokenMarketCap * 1000000; // Adjust for better precision
     
-    // Get user points
+    // Get user's profile
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('points')
-      .eq('id', authenticatedUserId)
-      .single();
+      .select('points, id')
+      .eq('wallet_address', walletAddress)
+      .maybeSingle();
     
-    if (userError || !userData) {
+    if (userError) {
       console.error('Error fetching user data:', userError);
-      toast.error('Could not verify points balance');
-      return false;
-    }
-    
-    if (userData.points < pxbAmount) {
-      toast.error('Insufficient PXB points');
-      return false;
+      // Try to create user if they don't exist
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({
+          wallet_address: walletAddress,
+          username: `User_${walletAddress.substring(0, 8)}`,
+          points: 2500 // Give new users 2500 points to start
+        })
+        .select('id, points')
+        .single();
+      
+      if (createError) {
+        console.error('Error creating user:', createError);
+        toast.error('Could not create user profile');
+        return false;
+      }
+      
+      if (newUser.points < pxbAmount) {
+        toast.error('Insufficient PXB points');
+        return false;
+      }
+      
+      console.log('Created new user profile for wallet:', walletAddress);
+      var userId = newUser.id;
+      var userPoints = newUser.points;
+    } else if (!userData) {
+      // User doesn't exist, create a new profile
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({
+          wallet_address: walletAddress,
+          username: `User_${walletAddress.substring(0, 8)}`,
+          points: 2500 // Give new users 2500 points to start
+        })
+        .select('id, points')
+        .single();
+      
+      if (createError) {
+        console.error('Error creating user:', createError);
+        toast.error('Could not create user profile');
+        return false;
+      }
+      
+      if (newUser.points < pxbAmount) {
+        toast.error('Insufficient PXB points');
+        return false;
+      }
+      
+      console.log('Created new user profile for wallet:', walletAddress);
+      var userId = newUser.id;
+      var userPoints = newUser.points;
+    } else {
+      if (userData.points < pxbAmount) {
+        toast.error('Insufficient PXB points');
+        return false;
+      }
+      var userId = userData.id;
+      var userPoints = userData.points;
     }
     
     // Start a transaction manually using multiple queries
     // 1. Deduct points from user
     const { error: updateError } = await supabase
       .from('users')
-      .update({ points: userData.points - pxbAmount })
-      .eq('id', authenticatedUserId);
+      .update({ points: userPoints - pxbAmount })
+      .eq('id', userId);
       
     if (updateError) {
       console.error('Error updating user points:', updateError);
@@ -153,7 +173,7 @@ export const buyTokensWithPXB = async (
     const { data: portfolioData, error: portfolioError } = await supabase
       .from('token_portfolios')
       .select('*')
-      .eq('userid', authenticatedUserId)
+      .eq('userid', userId)
       .eq('tokenid', tokenId)
       .maybeSingle();
     
@@ -162,8 +182,8 @@ export const buyTokensWithPXB = async (
       // Rollback points
       await supabase
         .from('users')
-        .update({ points: userData.points })
-        .eq('id', authenticatedUserId);
+        .update({ points: userPoints })
+        .eq('id', userId);
       toast.error('Failed to check portfolio status');
       return false;
     }
@@ -192,15 +212,15 @@ export const buyTokensWithPXB = async (
         // Rollback points
         await supabase
           .from('users')
-          .update({ points: userData.points })
-          .eq('id', authenticatedUserId);
+          .update({ points: userPoints })
+          .eq('id', userId);
         toast.error('Failed to update portfolio');
         return false;
       }
     } else {
       // Insert new portfolio entry
       console.log('Creating new portfolio entry with data:', {
-        userid: authenticatedUserId,
+        userid: userId,
         tokenid: tokenId,
         tokenname: tokenName,
         tokensymbol: tokenSymbol,
@@ -212,7 +232,7 @@ export const buyTokensWithPXB = async (
       const { data, error: insertPortfolioError } = await supabase
         .from('token_portfolios')
         .insert({
-          userid: authenticatedUserId,
+          userid: userId,
           tokenid: tokenId,
           tokenname: tokenName,
           tokensymbol: tokenSymbol,
@@ -228,8 +248,8 @@ export const buyTokensWithPXB = async (
         // Rollback points
         await supabase
           .from('users')
-          .update({ points: userData.points })
-          .eq('id', authenticatedUserId);
+          .update({ points: userPoints })
+          .eq('id', userId);
         toast.error('Failed to create portfolio: ' + insertPortfolioError.message);
         return false;
       }
@@ -241,7 +261,7 @@ export const buyTokensWithPXB = async (
     const { error: txError } = await supabase
       .from('token_transactions')
       .insert({
-        userid: authenticatedUserId,
+        userid: userId,
         tokenid: tokenId,
         tokenname: tokenName,
         tokensymbol: tokenSymbol,
@@ -260,7 +280,7 @@ export const buyTokensWithPXB = async (
     const { error: historyError } = await supabase
       .from('points_history')
       .insert({
-        user_id: authenticatedUserId,
+        user_id: userId,
         amount: -pxbAmount,
         action: 'token_purchase',
         reference_id: tokenId
@@ -295,10 +315,24 @@ export const sellTokensForPXB = async (
       return false;
     }
 
-    // Get current authenticated user
-    const user = await getAuthenticatedUser();
-    const authenticatedUserId = user.id;
-    console.log(`Using authenticated user ID: ${authenticatedUserId}`);
+    // Get current wallet address
+    const walletAddress = await getWalletAddress();
+    console.log(`Using wallet address: ${walletAddress}`);
+
+    // Get user's profile
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet_address', walletAddress)
+      .maybeSingle();
+    
+    if (userError || !userData) {
+      console.error('Error fetching user data:', userError);
+      toast.error('Could not find user profile for this wallet');
+      return false;
+    }
+
+    const userId = userData.id;
 
     // Calculate how many PXB points the user gets based on token quantity and market cap
     const tokenValue = tokenQuantity * (tokenMarketCap / 1000000);
@@ -308,7 +342,7 @@ export const sellTokensForPXB = async (
     const { data: portfolioData, error: portfolioError } = await supabase
       .from('token_portfolios')
       .select('*')
-      .eq('userid', authenticatedUserId)
+      .eq('userid', userId)
       .eq('tokenid', tokenId)
       .single();
     
@@ -324,14 +358,14 @@ export const sellTokensForPXB = async (
     }
     
     // Get current user points
-    const { data: userData, error: userError } = await supabase
+    const { data: pointsData, error: pointsError } = await supabase
       .from('users')
       .select('points')
-      .eq('id', authenticatedUserId)
+      .eq('id', userId)
       .single();
     
-    if (userError || !userData) {
-      console.error('Error fetching user data:', userError);
+    if (pointsError || !pointsData) {
+      console.error('Error fetching user points:', pointsError);
       toast.error('Could not verify points balance');
       return false;
     }
@@ -340,8 +374,8 @@ export const sellTokensForPXB = async (
     // 1. Add points to user
     const { error: updateError } = await supabase
       .from('users')
-      .update({ points: userData.points + estimatedPxbAmount })
-      .eq('id', authenticatedUserId);
+      .update({ points: pointsData.points + estimatedPxbAmount })
+      .eq('id', userId);
       
     if (updateError) {
       console.error('Error updating user points:', updateError);
@@ -369,8 +403,8 @@ export const sellTokensForPXB = async (
         // Rollback points
         await supabase
           .from('users')
-          .update({ points: userData.points })
-          .eq('id', authenticatedUserId);
+          .update({ points: pointsData.points })
+          .eq('id', userId);
         toast.error('Failed to update portfolio');
         return false;
       }
@@ -386,8 +420,8 @@ export const sellTokensForPXB = async (
         // Rollback points
         await supabase
           .from('users')
-          .update({ points: userData.points })
-          .eq('id', authenticatedUserId);
+          .update({ points: pointsData.points })
+          .eq('id', userId);
         toast.error('Failed to update portfolio');
         return false;
       }
@@ -397,7 +431,7 @@ export const sellTokensForPXB = async (
     const { error: txError } = await supabase
       .from('token_transactions')
       .insert({
-        userid: authenticatedUserId,
+        userid: userId,
         tokenid: tokenId,
         tokenname: tokenName,
         tokensymbol: tokenSymbol,
@@ -416,7 +450,7 @@ export const sellTokensForPXB = async (
     const { error: historyError } = await supabase
       .from('points_history')
       .insert({
-        user_id: authenticatedUserId,
+        user_id: userId,
         amount: estimatedPxbAmount,
         action: 'token_sale',
         reference_id: tokenId
@@ -439,22 +473,39 @@ export const sellTokensForPXB = async (
 // Get user's token portfolio
 export const getUserPortfolio = async (_userId: string): Promise<TokenPortfolio[]> => {
   try {
-    // Get current authenticated user
-    let authenticatedUserId;
+    // Get wallet address
+    let walletAddress;
     
     try {
-      const user = await getAuthenticatedUser();
-      authenticatedUserId = user.id;
+      walletAddress = await getWalletAddress();
     } catch (error) {
-      console.error('Authentication error:', error);
-      toast.error('Authentication error. Please sign in and try again.');
+      console.error('Wallet not connected:', error);
+      toast.error('Please connect your wallet to view your portfolio');
+      return [];
+    }
+
+    // Get user ID from wallet address
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet_address', walletAddress)
+      .maybeSingle();
+    
+    if (userError) {
+      console.error('Error fetching user profile:', userError);
+      toast.error('Failed to find user profile');
+      return [];
+    }
+    
+    if (!userData) {
+      console.log('No user profile found for this wallet address');
       return [];
     }
 
     const { data, error } = await supabase
       .from('token_portfolios')
       .select('*')
-      .eq('userid', authenticatedUserId);
+      .eq('userid', userData.id);
 
     if (error) {
       console.error('Error fetching portfolio:', error);
@@ -473,22 +524,39 @@ export const getUserPortfolio = async (_userId: string): Promise<TokenPortfolio[
 // Get token trading transactions history
 export const getTokenTransactions = async (_userId: string, tokenId?: string): Promise<TokenTransaction[]> => {
   try {
-    // Get current authenticated user
-    let authenticatedUserId;
+    // Get wallet address
+    let walletAddress;
     
     try {
-      const user = await getAuthenticatedUser();
-      authenticatedUserId = user.id;
+      walletAddress = await getWalletAddress();
     } catch (error) {
-      console.error('Authentication error:', error);
-      toast.error('Authentication error. Please sign in and try again.');
+      console.error('Wallet not connected:', error);
+      toast.error('Please connect your wallet to view your transactions');
+      return [];
+    }
+
+    // Get user ID from wallet address
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet_address', walletAddress)
+      .maybeSingle();
+    
+    if (userError) {
+      console.error('Error fetching user profile:', userError);
+      toast.error('Failed to find user profile');
+      return [];
+    }
+    
+    if (!userData) {
+      console.log('No user profile found for this wallet address');
       return [];
     }
     
     let query = supabase
       .from('token_transactions')
       .select('*')
-      .eq('userid', authenticatedUserId)
+      .eq('userid', userData.id)
       .order('timestamp', { ascending: false });
 
     if (tokenId) {
@@ -513,3 +581,4 @@ export const getTokenTransactions = async (_userId: string, tokenId?: string): P
     return [];
   }
 };
+
