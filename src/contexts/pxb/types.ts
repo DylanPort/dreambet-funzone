@@ -21,6 +21,7 @@ export interface PXBPointsContextType {
   sendPoints: (recipientId: string, amount: number) => Promise<boolean>;
   generatePxbId: () => string;
   fetchUserProfile: () => Promise<void>;
+  refetchUserProfile: () => Promise<void>;
   fetchUserBets: () => Promise<void>;
   fetchLeaderboard: () => Promise<void>;
   fetchWinRateLeaderboard: () => Promise<void>;

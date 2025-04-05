@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -97,6 +98,13 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
   };
 
+  // Add refetchUserProfile function
+  const refetchUserProfile = async () => {
+    if (connected && publicKey) {
+      await fetchUserProfile();
+    }
+  };
+
   return (
     <PXBPointsContext.Provider
       value={{
@@ -111,6 +119,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         sendPoints,
         generatePxbId,
         fetchUserProfile,
+        refetchUserProfile,
         fetchUserBets,
         fetchLeaderboard,
         fetchWinRateLeaderboard,
