@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { PXBBetCard } from '@/components/PXBBetCard';
+import PXBBetCard from '@/components/PXBBetCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -151,7 +152,7 @@ const MyBets = () => {
                       <TableCell>{bet.betAmount} PXB</TableCell>
                       <TableCell>{bet.betType}</TableCell>
                       <TableCell>
-                        {bet.status === 'won' ? <Badge variant="success">Won</Badge> : bet.status === 'lost' ? <Badge variant="destructive">Lost</Badge> : <Badge>{bet.status}</Badge>}
+                        {bet.status === 'won' ? <Badge>Won</Badge> : bet.status === 'lost' ? <Badge variant="destructive">Lost</Badge> : <Badge>{bet.status}</Badge>}
                       </TableCell>
                       <TableCell>{bet.pointsWon}</TableCell>
                       <TableCell className="text-gray-500">

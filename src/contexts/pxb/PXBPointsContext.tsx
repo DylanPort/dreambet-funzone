@@ -81,6 +81,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Wrapper functions to adapt function signatures to match the expected types
   const placeBetWrapper = async (
     tokenMint: string, 
     tokenName: string, 
@@ -92,6 +93,12 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   ): Promise<boolean> => {
     const result = await placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
     return result ? true : false;
+  };
+
+  const addPointsToUserWrapper = async (userId: string, amount: number, action: string, referenceId?: string): Promise<void> => {
+    if (typeof amount === 'number') {
+      await addPointsToUser(userId, amount, action, referenceId);
+    }
   };
 
   const fetchTokenTransactions = async (tokenId: string) => {
@@ -222,6 +229,17 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Ensure checkAndProcessReferral returns a boolean
+  const checkAndProcessReferralWrapper = async (code: string): Promise<boolean> => {
+    try {
+      await checkAndProcessReferral(code);
+      return true;
+    } catch (error) {
+      console.error("Error processing referral:", error);
+      return false;
+    }
+  };
+
   return (
     <PXBPointsContext.Provider
       value={{
@@ -239,21 +257,21 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fetchUserBets,
         fetchLeaderboard,
         fetchWinRateLeaderboard,
-        addPointsToUser,
+        addPointsToUser: addPointsToUserWrapper,
         mintingPoints,
         transferFeature,
         isLeaderboardLoading,
         isLoadingWinRate,
         isLoadingBets,
         generateReferralLink,
-        checkAndProcessReferral,
+        checkAndProcessReferral: checkAndProcessReferralWrapper,
         referralStats: {
-          ...referralStats,
-          referralsCount: referralStats.referralsCount || 0,
-          pointsEarned: referralStats.pointsEarned || 0,
-          totalReferrals: referralStats.totalReferrals || referralStats.referralsCount || 0,
-          referrals_count: referralStats.referralsCount || 0,
-          points_earned: referralStats.pointsEarned || 0
+          referralsCount: referralStats.referrals_count || 0,
+          pointsEarned: referralStats.points_earned || 0,
+          totalReferrals: referralStats.totalReferrals || referralStats.referrals_count || 0,
+          referrals: referralStats.referrals || [],
+          referrals_count: referralStats.referrals_count || 0,
+          points_earned: referralStats.points_earned || 0
         },
         fetchReferralStats,
         isLoadingReferrals,

@@ -1,11 +1,11 @@
 
-import { UserProfile, LeaderboardEntry, WinRateLeaderboardEntry, UserBet } from '@/types/pxb';
+import { UserProfile, LeaderboardEntry, WinRateLeaderboardEntry, PXBBet } from '@/types/pxb';
 
 export interface PXBPointsContextType {
   userProfile: UserProfile | null;
   isLoading: boolean;
-  bets: UserBet[];
-  userBets: UserBet[];
+  bets: PXBBet[];
+  userBets: PXBBet[];
   leaderboard: LeaderboardEntry[];
   winRateLeaderboard: WinRateLeaderboardEntry[];
   mintPoints: (amount?: number) => Promise<void>;
