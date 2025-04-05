@@ -243,20 +243,20 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     const isPositiveChange = transaction.percentageChange >= 0;
     
     return (
-      <div key={transaction.id} className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden hover:border-purple-500/40 transition-all duration-200 transform hover:translate-y-[-2px]">
-        <div className="p-4">
+      <div key={transaction.id} className="bg-black/60 rounded-lg border border-white/10 mb-3 overflow-hidden hover:border-purple-500/40 transition-all duration-200">
+        <div className="p-3">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${isPositiveChange ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-red-500 to-pink-600'}`}>
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${isPositiveChange ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-red-500 to-pink-600'}`}>
                 {transaction.tokenSymbol.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div className="text-base font-semibold text-white">{transaction.tokenSymbol}</div>
+                <div className="text-sm font-semibold text-white">{transaction.tokenSymbol}</div>
                 <div className="text-xs text-purple-400">PumpXBounty</div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-base font-mono font-bold text-purple-400">{transaction.amount} PXB</div>
+              <div className="text-sm font-mono font-bold text-purple-400">{transaction.amount} PXB</div>
               <div className="text-xs text-dream-foreground/70 flex items-center justify-end">
                 <Clock className="w-3 h-3 mr-1" />
                 {formatTimeAgo(transaction.createdAt)}
@@ -264,7 +264,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-2 mt-3">
+          <div className="grid grid-cols-2 gap-2 mt-2">
             <div className="bg-black/40 rounded-md p-2 border border-white/5">
               <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
                 <DollarSign className="w-3 h-3 mr-1" />
@@ -284,11 +284,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <div className="mt-2 bg-black/40 rounded-md p-2 border border-white/5 relative overflow-hidden">
-            <div className="absolute bottom-0 left-0 h-full w-1 bg-gradient-to-t from-transparent to-purple-500/50"></div>
+          <div className="mt-2 bg-black/40 rounded-md p-2 border border-white/5">
             <div className="flex justify-between items-center">
               <div className="text-xs text-dream-foreground/60">Current PXB Value</div>
-              <div className={`font-mono font-bold text-sm ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+              <div className={`font-mono text-sm font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
                 {transaction.currentValue.toFixed(2)} PXB
                 <span className="ml-1 text-xs">
                   ({isPositiveChange ? '+' : ''}{transaction.percentageChange.toFixed(2)}%)
@@ -308,22 +307,15 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
               </div>
             </div>
             
-            <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden relative">
+            <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
               <div 
                 className={`h-full ${isPositiveChange ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-red-500 to-pink-400'}`}
                 style={{ width: `${Math.min(100, Math.abs(transaction.percentageChange))}%` }}
-              >
-                <div className="absolute inset-0 bg-black/10" 
-                     style={{ 
-                       backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px)`,
-                       backgroundSize: '20px 20px',
-                       animation: 'progress-stripe 1s linear infinite'
-                     }}></div>
-              </div>
+              ></div>
             </div>
           </div>
           
-          <div className="mt-2 flex justify-between items-center text-xs bg-black/20 rounded-md p-2">
+          <div className="mt-2 flex justify-between items-center text-xs bg-black/20 rounded-md px-2 py-1">
             <div>
               <span className="text-dream-foreground/60">Initial: </span>
               <span className="text-white">{formatMarketCap(transaction.initialMarketCap)}</span>
@@ -332,13 +324,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             <div>
               <span className="text-dream-foreground/60">Current: </span>
               <span className="text-white">{formatMarketCap(transaction.currentMarketCap)}</span>
-              <span className="text-xs text-dream-foreground/40 ml-1">
-                {formatTimeAgo(transaction.lastUpdated)}
-              </span>
             </div>
           </div>
           
-          <div className="flex items-center justify-between mt-2 mb-2 text-xs">
+          <div className="flex items-center justify-between mt-2 text-xs">
             <div className="flex items-center bg-black/20 rounded-md px-2 py-1">
               <User className="w-3 h-3 mr-1 text-dream-foreground/60" />
               <span className="text-dream-foreground/60 mr-1">Buyer</span>
@@ -359,7 +348,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           <Button 
             variant={isPositiveChange ? "default" : "destructive"} 
             size="sm"
-            className={`w-full text-xs py-1 h-8 ${isPositiveChange ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'}`}
+            className={`w-full text-xs py-1 mt-2 h-7 ${isPositiveChange ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'}`}
           >
             Sell for {transaction.currentValue.toFixed(2)} PXB ({isPositiveChange ? '+' : ''}{transaction.percentageChange.toFixed(2)}%)
           </Button>
@@ -509,8 +498,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
           <p className="text-sm text-dream-foreground/70">View and sell your token holdings</p>
 
-          <ScrollArea className="h-[400px] rounded-md border border-white/10 bg-black/20 p-2">
-            <div className="px-2 py-1">
+          <ScrollArea className="h-[320px] rounded-md border border-white/10 bg-black/20 p-2">
+            <div className="px-1">
               {exampleTransactions.map(transaction => renderExampleTransactionCard(transaction))}
             </div>
           </ScrollArea>
