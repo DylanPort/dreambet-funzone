@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
@@ -28,7 +27,6 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
-  const [tourCompleted, setTourCompleted] = useState(false);
 
   useEffect(() => {
     if (pumpPortal.connected) {
@@ -93,11 +91,6 @@ const Index = () => {
     });
   };
 
-  const handleTourComplete = () => {
-    setTourCompleted(true);
-    console.log("Tour completed!");
-  };
-
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -112,11 +105,7 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
             <div className="flex flex-row-reverse md:flex-row flex-wrap md:flex-nowrap gap-6 w-full">
               <div className="w-full md:w-1/2 flex justify-center">
-                <InteractiveTour 
-                  onComplete={handleTourComplete}
-                  skipButtonText="Skip Tour" 
-                  steps={[]}
-                />
+                <InteractiveTour />
               </div>
               
               <div className="hidden md:flex md:w-1/2 justify-center">

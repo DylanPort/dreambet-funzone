@@ -1,5 +1,5 @@
 
-import { UserProfile, LeaderboardEntry, WinRateLeaderboardEntry, PXBBet } from '@/types/pxb';
+import { PXBBet, UserProfile, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from '@/types/pxb';
 
 export interface PXBPointsContextType {
   userProfile: UserProfile | null;
@@ -10,41 +10,32 @@ export interface PXBPointsContextType {
   winRateLeaderboard: WinRateLeaderboardEntry[];
   mintPoints: (amount?: number) => Promise<void>;
   placeBet: (
-    tokenMint: string, 
-    tokenName: string, 
-    tokenSymbol: string, 
-    betAmount: number, 
-    betType: 'up' | 'down', 
+    tokenMint: string,
+    tokenName: string,
+    tokenSymbol: string,
+    betAmount: number,
+    betType: 'up' | 'down',
     percentageChange: number,
     duration: number
-  ) => Promise<boolean>;
-  sendPoints: (recipientPxbId: string, amount: number) => Promise<boolean>;
+  ) => Promise<PXBBet | void>;
+  sendPoints: (recipientId: string, amount: number) => Promise<boolean>;
   generatePxbId: () => string;
   fetchUserProfile: () => Promise<void>;
   fetchUserBets: () => Promise<void>;
   fetchLeaderboard: () => Promise<void>;
   fetchWinRateLeaderboard: () => Promise<void>;
-  addPointsToUser: (userId: string, amount: number, action: string, referenceId?: string) => Promise<void>;
+  addPointsToUser: (amount: number, reason: string) => Promise<boolean>;
   mintingPoints: boolean;
-  transferFeature: {
-    enabled: boolean;
-    message?: string;
-  };
   isLeaderboardLoading: boolean;
   isLoadingWinRate: boolean;
   isLoadingBets: boolean;
-  generateReferralLink: () => string;
-  checkAndProcessReferral: (code: string) => Promise<boolean>;
-  referralStats: {
-    referralsCount: number;
-    pointsEarned: number;
-    totalReferrals?: number;
-    referrals?: any[];
-    points_earned?: number;
-    referrals_count?: number;
-  };
+  // Referral system
+  generateReferralLink: () => Promise<string>;
+  checkAndProcessReferral: (referralCode: string) => Promise<void>;
+  referralStats: ReferralStats;
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
+  transferFeature?: 'enabled' | 'coming-soon';
+  // Add the function to fetch token transactions
   fetchTokenTransactions: (tokenId: string) => Promise<any[]>;
-  fetchAllTokenTransactions: (tokenId: string) => Promise<any[]>;
 }

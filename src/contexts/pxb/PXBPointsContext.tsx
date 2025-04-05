@@ -8,7 +8,6 @@ import { usePointOperations } from './usePointOperations';
 import { useBetProcessor } from './useBetProcessor';
 import { useReferralSystem } from './useReferralSystem';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { supabase } from '@/integrations/supabase/client';
 
 const PXBPointsContext = createContext<PXBPointsContextType | undefined>(undefined);
 
@@ -81,7 +80,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // Wrapper functions to adapt function signatures to match the expected types
   const placeBetWrapper = async (
     tokenMint: string, 
     tokenName: string, 
@@ -90,15 +88,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     betType: 'up' | 'down', 
     percentageChange: number,
     duration: number
-  ): Promise<boolean> => {
-    const result = await placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
-    return result ? true : false;
-  };
-
-  const addPointsToUserWrapper = async (userId: string, amount: number, action: string, referenceId?: string): Promise<void> => {
-    if (typeof amount === 'number') {
-      await addPointsToUser(userId, amount, action, referenceId);
-    }
+  ) => {
+    return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
   };
 
   const fetchTokenTransactions = async (tokenId: string) => {
@@ -148,98 +139,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const fetchAllTokenTransactions = async (tokenId: string): Promise<any[]> => {
-    try {
-      // Query the token_transactions table for this specific token
-      const { data, error } = await supabase
-        .from('token_transactions')
-        .select('*')
-        .eq('tokenid', tokenId)
-        .order('timestamp', { ascending: false });
-        
-      if (error) {
-        console.error("Error fetching public token transactions:", error);
-        return [];
-      }
-      
-      // If we have data from the token_transactions table, format and return it
-      if (data && data.length > 0) {
-        return data.map(tx => ({
-          id: tx.id,
-          timestamp: tx.timestamp,
-          type: tx.type,
-          tokenAmount: tx.quantity,
-          price: tx.price,
-          pxbAmount: tx.pxbamount,
-          userId: tx.userid,
-          tokenId: tx.tokenid,
-          tokenName: tx.tokenname,
-          tokenSymbol: tx.tokensymbol,
-          buyerAddress: tx.type === 'buy' ? tx.userid : undefined,
-          sellerAddress: tx.type === 'sell' ? tx.userid : undefined,
-        }));
-      }
-      
-      // Fallback to using bets as a data source
-      const { data: allBets, error: betsError } = await supabase
-        .from('bets')
-        .select('*')
-        .eq('token_mint', tokenId)
-        .order('created_at', { ascending: false });
-        
-      if (betsError) {
-        console.error("Error fetching bets for token transactions:", betsError);
-        return [];
-      }
-      
-      if (allBets && allBets.length > 0) {
-        return allBets.map(bet => {
-          // Determine transaction type - "buy" for "up" bets and "sell" for "down" bets
-          const transactionType = bet.prediction_bettor1 === 'up' ? 'buy' : 'sell';
-          
-          let currentValue = bet.sol_amount;
-          if (bet.status === 'won') {
-            currentValue = bet.points_won || bet.sol_amount * 2;
-          } else if (bet.status === 'lost') {
-            currentValue = 0;
-          }
-          
-          return {
-            id: bet.bet_id,
-            timestamp: bet.created_at,
-            type: transactionType,
-            tokenAmount: bet.sol_amount * 10,
-            price: 0.001,
-            pxbAmount: bet.sol_amount,
-            userId: bet.bettor1_id,
-            tokenId: bet.token_mint,
-            tokenName: bet.token_name || '',
-            tokenSymbol: bet.token_symbol || '',
-            buyerAddress: transactionType === 'buy' ? bet.bettor1_id : undefined,
-            sellerAddress: transactionType === 'sell' ? bet.bettor1_id : undefined,
-            currentPxbValue: currentValue
-          };
-        });
-      }
-      
-      return [];
-    } catch (error) {
-      console.error("Error in fetchAllTokenTransactions:", error);
-      return [];
-    }
-  };
-
-  // Ensure checkAndProcessReferral returns a boolean
-  const checkAndProcessReferralWrapper = async (code: string): Promise<boolean> => {
-    try {
-      await checkAndProcessReferral(code);
-      return true;
-    } catch (error) {
-      console.error("Error processing referral:", error);
-      return false;
-    }
-  };
-
   return (
     <PXBPointsContext.Provider
       value={{
@@ -257,26 +156,18 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fetchUserBets,
         fetchLeaderboard,
         fetchWinRateLeaderboard,
-        addPointsToUser: addPointsToUserWrapper,
+        addPointsToUser,
         mintingPoints,
         transferFeature,
         isLeaderboardLoading,
         isLoadingWinRate,
         isLoadingBets,
         generateReferralLink,
-        checkAndProcessReferral: checkAndProcessReferralWrapper,
-        referralStats: {
-          referralsCount: referralStats.referrals_count || 0,
-          pointsEarned: referralStats.points_earned || 0,
-          totalReferrals: referralStats.totalReferrals || referralStats.referrals_count || 0,
-          referrals: referralStats.referrals || [],
-          referrals_count: referralStats.referrals_count || 0,
-          points_earned: referralStats.points_earned || 0
-        },
+        checkAndProcessReferral,
+        referralStats,
         fetchReferralStats,
         isLoadingReferrals,
-        fetchTokenTransactions,
-        fetchAllTokenTransactions
+        fetchTokenTransactions
       }}
     >
       {children}

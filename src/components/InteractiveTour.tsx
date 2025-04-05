@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -18,20 +17,7 @@ interface PXBOnboardingProps {
   onClose: () => void;
 }
 
-interface InteractiveTourProps {
-  onComplete?: () => void;
-  steps?: {
-    title: string;
-    description: string;
-    icon: React.ReactNode;
-    highlight: string | null;
-    action: React.ReactNode;
-    image: string;
-  }[];
-  skipButtonText?: string;
-}
-
-const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete = () => {}, steps = [], skipButtonText = "Skip" }) => {
+const InteractiveTour = () => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
   const [hasClaimedPoints, setHasClaimedPoints] = useState(false);
@@ -41,7 +27,6 @@ const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete = () => {}
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null, null, null]);
-  const [rewardClaimed, setRewardClaimed] = useState(false);
   
   const {
     userProfile,
@@ -133,7 +118,7 @@ const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete = () => {}
   }, [currentStep, videoSources]);
 
   const handleNextStep = () => {
-    if (currentStep < defaultSteps.length - 1) {
+    if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
       localStorage.setItem('pxb-tour-completed', 'true');
@@ -156,26 +141,12 @@ const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete = () => {}
       return;
     }
     try {
-      if (userProfile) {
-        await addPointsToUser(userProfile.id, 2000, "Welcome bonus");
-        setHasClaimedPoints(true);
-        toast.success("You've earned 2000 PXB points! Welcome aboard!");
-      }
+      await addPointsToUser(2000, "Welcome bonus");
+      setHasClaimedPoints(true);
+      toast.success("You've earned 2000 PXB points! Welcome aboard!");
     } catch (error) {
       console.error("Error claiming points:", error);
       toast.error("Failed to claim points. Please try again later.");
-    }
-  };
-
-  const handleRewardClaim = async () => {
-    if (userProfile && !rewardClaimed && currentStep === defaultSteps.length - 1) {
-      try {
-        await addPointsToUser(userProfile.id, 10000, 'tour_completion');
-        setRewardClaimed(true);
-        toast.success("Congratulations! You've earned 10,000 PXB Points for completing the tour!");
-      } catch (error) {
-        console.error("Error awarding tour completion bonus:", error);
-      }
     }
   };
 
@@ -243,9 +214,7 @@ const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete = () => {}
     "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
   ];
   
-  const pxbPoints = usePXBPoints();
-
-  const defaultSteps = [{
+  const steps = [{
     title: "Welcome, Explorer!",
     description: "You've stumbled upon a treasure chest of opportunity in the wild Trenches!",
     icon: <img src="/lovable-uploads/73262649-413c-4ed4-9248-1138e844ace7.png" className="w-8 h-8" alt="Welcome" />,
@@ -311,9 +280,6 @@ const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete = () => {}
       </Link>,
     image: videoSources[4]
   }];
-
-  // Use provided steps or fall back to default steps
-  const activeSteps = steps && steps.length > 0 ? steps : defaultSteps;
 
   const fileInput = <Input ref={fileInputRef} type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />;
 
@@ -607,21 +573,21 @@ const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete = () => {}
                     transformStyle: 'preserve-3d',
                     transform: 'translateZ(20px)'
                   }}>
-                        {activeSteps[currentStep]?.title || ''}
+                        {steps[currentStep].title}
                       </motion.h2>
                       
                       <motion.p className="text-indigo-100/70 text-xs mb-2" style={{
                     transformStyle: 'preserve-3d',
                     transform: 'translateZ(15px)'
                   }}>
-                        {activeSteps[currentStep]?.description || ''}
+                        {steps[currentStep].description}
                       </motion.p>
                       
                       <motion.div style={{
                     transformStyle: 'preserve-3d',
                     transform: 'translateZ(25px)'
                   }}>
-                        {activeSteps[currentStep]?.action}
+                        {steps[currentStep].action}
                       </motion.div>
                     </div>
                   </div>
@@ -659,28 +625,28 @@ const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete = () => {}
                   transformStyle: 'preserve-3d',
                   transform: 'translateZ(20px)'
                 }}>
-                      {activeSteps[currentStep]?.title || ''}
+                      {steps[currentStep].title}
                     </motion.h2>
                     
                     <motion.p className="text-indigo-100/70 text-sm mb-4" style={{
                   transformStyle: 'preserve-3d',
                   transform: 'translateZ(15px)'
                 }}>
-                      {activeSteps[currentStep]?.description || ''}
+                      {steps[currentStep].description}
                     </motion.p>
                     
                     <motion.div style={{
                   transformStyle: 'preserve-3d',
                   transform: 'translateZ(25px)'
                 }}>
-                      {activeSteps[currentStep]?.action}
+                      {steps[currentStep].action}
                     </motion.div>
                   </div>
                   {currentStep === 0 && renderSocialButtons()}
                 </div>}
               
               <div className="mt-3 md:mt-5 flex justify-center space-x-2">
-                {activeSteps.map((_, index) => <motion.button key={index} className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400/80 scale-125' : 'bg-gray-700/50 hover:bg-gray-600/70'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
+                {steps.map((_, index) => <motion.button key={index} className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400/80 scale-125' : 'bg-gray-700/50 hover:bg-gray-600/70'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
                 scale: 1.2
               }} style={{
                 transformStyle: 'preserve-3d',
@@ -696,7 +662,7 @@ const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete = () => {}
                     Back
                   </Button>}
                 
-                {currentStep < activeSteps.length - 1 ? <Button variant="default" size="sm" className="text-xs md:text-sm bg-gradient-to-r from-[#221F26]/90 to-[#403E43]/90 hover:from-[#221F26] hover:to-[#403E43] text-white/80 z-10 px-2 py-1 md:px-4 md:py-2 flex items-center" onClick={handleNextStep} style={{
+                {currentStep < steps.length - 1 ? <Button variant="default" size="sm" className="text-xs md:text-sm bg-gradient-to-r from-[#221F26]/90 to-[#403E43]/90 hover:from-[#221F26] hover:to-[#403E43] text-white/80 z-10 px-2 py-1 md:px-4 md:py-2 flex items-center" onClick={handleNextStep} style={{
                 transformStyle: 'preserve-3d',
                 transform: 'translateZ(20px)'
               }}>

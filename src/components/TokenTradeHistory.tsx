@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowUpRight, ArrowDownRight, ExternalLink, Wallet } from 'lucide-react';
@@ -75,44 +74,32 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
     if (!current || original === 0) return 0;
     return (current - original) / original * 100;
   };
-  
-  return (
-    <div className="space-y-4 max-h-96 overflow-y-auto">
-      {loading && (
-        <div className="text-center py-8 text-dream-foreground/70">
+  return <div className="space-y-4 max-h-96 overflow-y-auto">
+      {loading && <div className="text-center py-8 text-dream-foreground/70">
           <p>Loading PXB transaction history...</p>
-        </div>
-      )}
+        </div>}
       
-      {!loading && transactions.length === 0 ? (
-        <div className="text-center py-8 text-dream-foreground/70">
+      {!loading && transactions.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
           <p>No PXB trade history available for this token yet.</p>
           <p className="text-sm mt-2">Be the first to trade this token with PXB points!</p>
-        </div>
-      ) : (
-        <Card className="glass-panel border border-dream-accent1/20 rounded-lg">
+        </div> : <Card className="glass-panel border border-dream-accent1/20 rounded-lg">
           <CardHeader className="py-3 px-4">
-            <CardTitle className="text-lg">Your PXB Trade History</CardTitle>
+            <CardTitle className="text-lg">PXB Trade History</CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="space-y-3">
-              {transactions.map((trade, index) => (
-                <div key={`${trade.id}-${index}`} className="border-t border-dream-accent1/10 pt-3 first:border-t-0 first:pt-0">
+              {transactions.map((trade, index) => <div key={`${trade.id}-${index}`} className="border-t border-dream-accent1/10 pt-3 first:border-t-0 first:pt-0">
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center">
-                      {trade.type === 'buy' ? (
-                        <ArrowUpRight className="w-4 h-4 text-green-400 mr-2" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 text-red-400 mr-2" />
-                      )}
+                      {trade.type === 'buy' ? <ArrowUpRight className="w-4 h-4 text-green-400 mr-2" /> : <ArrowDownRight className="w-4 h-4 text-red-400 mr-2" />}
                       <span className={`font-semibold ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
                         {trade.isInitialMarketBuy ? 'Initial Market Buy' : trade.type === 'buy' ? 'Buy' : 'Sell'}
                       </span>
                     </div>
                     <span className="text-xs text-dream-foreground/70">
                       {formatDistanceToNow(new Date(trade.timestamp), {
-                        addSuffix: true
-                      })}
+                  addSuffix: true
+                })}
                     </span>
                   </div>
                   
@@ -122,26 +109,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
                       <div className="font-medium">{formatAmount(trade.pxbAmount)} PXB</div>
                     </div>
                     
-                    <div>
-                      <div className="text-dream-foreground/70 text-xs">Tokens Received</div>
-                      <div className="font-medium">{formatAmount(trade.tokenAmount)} {trade.tokenSymbol}</div>
-                    </div>
                   </div>
-                  
-                  {trade.currentPxbValue !== undefined && (
-                    <div className="mb-2">
-                      <div className="text-dream-foreground/70 text-xs">Current PXB Value</div>
-                      <div className="flex items-center">
-                        <span className="font-medium mr-1">{formatAmount(trade.currentPxbValue)} PXB</span>
-                        {trade.currentPxbValue !== trade.pxbAmount && (
-                          <span className={`text-xs ${trade.currentPxbValue > trade.pxbAmount ? 'text-green-400' : 'text-red-400'}`}>
-                            {calculatePercentageChange(trade.pxbAmount, trade.currentPxbValue) > 0 ? '+' : ''}
-                            {calculatePercentageChange(trade.pxbAmount, trade.currentPxbValue).toFixed(2)}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
                   
                   <div className="flex items-center justify-between text-xs bg-black/20 p-2 rounded">
                     <div className="flex items-center">
@@ -155,13 +123,10 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
                       {trade.type.charAt(0).toUpperCase() + trade.type.slice(1)}
                     </div>
                   </div>
-                </div>
-              ))}
+                </div>)}
             </div>
           </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+        </Card>}
+    </div>;
 };
 export default TokenTradeHistory;

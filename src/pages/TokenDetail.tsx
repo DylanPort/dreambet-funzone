@@ -27,7 +27,6 @@ import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
 import TokenTrading from '@/components/TokenTrading';
 import TokenTradeHistory from '@/components/TokenTradeHistory';
-import PublicTokenTradeHistory from '@/components/PublicTokenTradeHistory';
 
 const TokenChart = ({
   tokenId,
@@ -783,8 +782,26 @@ const TokenDetail = () => {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <TokenTradeHistory tokenId={id || ''} />
-                <PublicTokenTradeHistory tokenId={id || ''} />
+                <div className="glass-panel p-6">
+                  <h3 className="text-xl font-display font-bold mb-4">Trade History</h3>
+                  <TokenTradeHistory tokenId={id || ''} />
+                </div>
+                
+                <div className="glass-panel p-6">
+                  <h3 className="text-xl font-display font-bold mb-4">Your PXB Bets</h3>
+                  
+                  {tokenPXBBets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                      <p>You don't have any PXB bets on this token.</p>
+                      <p className="text-sm mt-2">Place a bet to see it here!</p>
+                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {tokenPXBBets.map(bet => <PXBBetCard 
+                        key={bet.id} 
+                        bet={bet} 
+                        marketCapData={marketCapData[bet.id]}
+                        isLoading={loadingMarketCaps[bet.id] || false}
+                      />)}
+                    </div>}
+                </div>
               </div>
               
               <div className="mb-8">
