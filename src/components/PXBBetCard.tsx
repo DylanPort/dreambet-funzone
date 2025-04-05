@@ -1,10 +1,8 @@
 
-// Only making a small change to fix the props interface
-
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
-import { User, ArrowUpRight, Clock, Copy } from 'lucide-react';
+import { User, ArrowUpRight, Clock, Copy, DollarSign, BarChart3, Coins } from 'lucide-react';
 import { PXBBet } from '@/types/pxb';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,7 +15,7 @@ interface PXBBetCardProps {
     initialMarketCap: number | null;
     currentMarketCap: number | null;
   } | undefined;
-  isLoading: boolean;  // Ensure this is required
+  isLoading: boolean;
 }
 
 const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMarketCapData, isLoading }) => {
@@ -26,10 +24,8 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   const [imageError, setImageError] = useState(false);
   const [marketCapData, setMarketCapData] = useState(initialMarketCapData);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [hasReachedTarget, setHasReachedTarget] = useState(false);
-  const [notifiedWin, setNotifiedWin] = useState(false);
-  const [timeProgress, setTimeProgress] = useState(0);
-
+  const [tokenAmount, setTokenAmount] = useState<number>(0);
+  
   useEffect(() => {
     const loadTokenImage = async () => {
       if (!bet.tokenMint) return;
@@ -50,8 +46,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   }, [bet.tokenMint, bet.tokenSymbol]);
 
   useEffect(() => {
-    if (bet.status !== 'pending') return;
-
     const updateMarketCap = async () => {
       try {
         if (!bet.tokenMint) return;
@@ -64,23 +58,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
             currentMarketCap: newMarketCap
           }));
           setLastUpdated(new Date());
-          
-          const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
-          const targetMarketCap = calculateTargetMarketCap();
-          
-          if (initialMarketCap && targetMarketCap) {
-            const targetReached = bet.betType === 'up' 
-              ? newMarketCap >= targetMarketCap 
-              : newMarketCap <= targetMarketCap;
-            
-            if (targetReached && !hasReachedTarget) {
-              setHasReachedTarget(true);
-              if (!notifiedWin) {
-                toast.success(`Your bet on ${bet.tokenSymbol} has reached its target! You won ${bet.betAmount * 2} PXB!`);
-                setNotifiedWin(true);
-              }
-            }
-          }
         }
       } catch (error) {
         console.error("Error updating market cap:", error);
@@ -88,57 +65,21 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     };
 
     updateMarketCap();
-    const intervalId = setInterval(updateMarketCap, 2000);
+    const intervalId = setInterval(updateMarketCap, 30000);
     
     return () => clearInterval(intervalId);
-  }, [bet.tokenMint, bet.initialMarketCap, bet.status, bet.betType, bet.tokenSymbol, bet.betAmount, initialMarketCapData, marketCapData, hasReachedTarget, notifiedWin]);
+  }, [bet.tokenMint, bet.initialMarketCap, initialMarketCapData]);
 
+  // Calculate token amount based on PXB amount and market cap
   useEffect(() => {
-    if (bet.status !== 'pending') return;
-    
-    const checkExpiration = () => {
-      const now = new Date();
-      const expiresAt = new Date(bet.expiresAt);
-      
-      if (now >= expiresAt && !hasReachedTarget) {
-        toast({
-          title: "Bet expired",
-          description: `Your bet on ${bet.tokenSymbol} has expired without reaching its target.`,
-          variant: "destructive",
-        });
-      }
-    };
-    
-    checkExpiration();
-    const intervalId = setInterval(checkExpiration, 60000);
-    
-    return () => clearInterval(intervalId);
-  }, [bet.expiresAt, bet.status, bet.tokenSymbol, hasReachedTarget]);
-
-  useEffect(() => {
-    if (bet.status === 'won' || bet.status === 'lost') {
-      setTimeProgress(bet.status === 'won' ? 100 : 0);
-      return;
+    if (bet.initialMarketCap && bet.betAmount) {
+      // Assuming a total supply of 1 billion tokens for simplicity
+      const totalSupply = 1_000_000_000;
+      const tokenPrice = bet.initialMarketCap / totalSupply;
+      const tokensReceived = bet.betAmount / tokenPrice;
+      setTokenAmount(tokensReceived);
     }
-
-    const updateTimeProgress = () => {
-      const now = new Date();
-      const createdAt = new Date(bet.createdAt);
-      const expiresAt = new Date(bet.expiresAt);
-      
-      const totalDuration = expiresAt.getTime() - createdAt.getTime();
-      const elapsedTime = now.getTime() - createdAt.getTime();
-      
-      const progress = Math.min(100, Math.max(0, (elapsedTime / totalDuration) * 100));
-      setTimeProgress(progress);
-    };
-    
-    updateTimeProgress();
-    
-    const intervalId = setInterval(updateTimeProgress, 1000);
-    
-    return () => clearInterval(intervalId);
-  }, [bet.createdAt, bet.expiresAt, bet.status]);
+  }, [bet.initialMarketCap, bet.betAmount]);
 
   const generateColorFromSymbol = (symbol: string) => {
     const colors = [
@@ -170,28 +111,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     }
   };
 
-  const calculateProgress = () => {
-    if (bet.status !== 'pending' && bet.status !== 'open') {
-      return bet.status === 'won' ? 100 : 0;
-    }
-    
-    const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
-    const currentMarketCap = marketCapData?.currentMarketCap;
-    
-    if (!initialMarketCap || !currentMarketCap) {
-      return 0;
-    }
-    
-    const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
-    
-    if (bet.betType === 'up') {
-      return Math.min(100, (actualChange / 80) * 100);
-    } else {
-      return Math.min(100, (Math.abs(actualChange) / 50) * 100);
-    }
-  };
-
-  const calculateActualPercentageChange = () => {
+  const calculateMarketCapChange = () => {
     const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
     const currentMarketCap = marketCapData?.currentMarketCap;
     
@@ -214,17 +134,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       return `$${(num / 1000).toFixed(2)}K`;
     }
     return `$${num.toFixed(2)}`;
-  };
-
-  const calculateTargetMarketCap = () => {
-    const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
-    if (!initialMarketCap) return null;
-    
-    if (bet.betType === 'up') {
-      return initialMarketCap * 1.8;
-    } else {
-      return initialMarketCap * 0.5;
-    }
   };
 
   const renderTokenImage = () => {
@@ -270,39 +179,10 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   };
 
   const truncatedAddress = bet.userId ? `${bet.userId.substring(0, 4)}...${bet.userId.substring(bet.userId.length - 4)}` : '8efb9f...9547';
-  const targetMarketCap = calculateTargetMarketCap();
-  const progress = calculateProgress();
   const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
   const currentMarketCap = marketCapData?.currentMarketCap || initialMarketCap;
-
-  const isLosing = () => {
-    if (bet.status === 'lost') return true;
-    if (bet.status === 'won') return false;
-    
-    if (!initialMarketCap || !currentMarketCap) return false;
-    
-    const actualChange = (currentMarketCap - initialMarketCap) / initialMarketCap * 100;
-    
-    return (bet.betType === 'up' && actualChange < 0) || 
-           (bet.betType === 'down' && actualChange > 0);
-  };
-
-  const getTimeRemaining = () => {
-    if (bet.status === 'won') return 'Bet won';
-    if (bet.status === 'lost') return 'Bet lost';
-    
-    const now = new Date();
-    const expiresAt = new Date(bet.expiresAt);
-    
-    if (now >= expiresAt) return 'Expired';
-    
-    const timeRemainingMs = expiresAt.getTime() - now.getTime();
-    const hours = Math.floor(timeRemainingMs / (1000 * 60 * 60));
-    const minutes = Math.floor((timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((timeRemainingMs % (1000 * 60)) / 1000);
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
+  const marketCapChange = calculateMarketCapChange();
+  const isPositiveChange = marketCapChange >= 0;
 
   return (
     <div className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden">
@@ -324,47 +204,51 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           <Clock className="w-4 h-4 mr-1 opacity-70" />
           <span>{formatTimeAgo(bet.createdAt)} ago</span>
           <span className="mx-2">•</span>
-          <span>{bet.status === 'won' ? 'won' : bet.status === 'lost' ? 'lost' : bet.status}</span>
+          <span>Purchase</span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="bg-black/40 rounded-md p-2 flex flex-col">
+            <span className="text-xs text-dream-foreground/60 flex items-center mb-1">
+              <DollarSign className="w-3 h-3 mr-1" />
+              PXB Used
+            </span>
+            <span className="font-bold text-purple-400">
+              {bet.betAmount} PXB
+            </span>
+          </div>
+          
+          <div className="bg-black/40 rounded-md p-2 flex flex-col">
+            <span className="text-xs text-dream-foreground/60 flex items-center mb-1">
+              <Coins className="w-3 h-3 mr-1" />
+              Tokens Received
+            </span>
+            <span className="font-bold text-dream-foreground">
+              {tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {bet.tokenSymbol}
+            </span>
+          </div>
         </div>
 
         <div className="mt-4">
           <div className="flex justify-between items-center text-sm mb-1">
-            <span className="text-dream-foreground/70">Time remaining</span>
-            <span className="text-dream-foreground/50 text-xs font-mono">
-              {getTimeRemaining()}
+            <span className="text-dream-foreground/70 flex items-center">
+              <BarChart3 className="w-3 h-3 mr-1" />
+              Market Performance
+            </span>
+            <span className={`text-xs font-mono ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+              {isPositiveChange ? '+' : ''}{marketCapChange.toFixed(2)}%
             </span>
           </div>
           
           <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden mb-1 relative">
             <div 
-              className={`h-full ${hasReachedTarget || bet.status === 'won' ? 'bg-green-500' : bet.status === 'lost' ? 'bg-red-500' : timeProgress > 80 ? 'bg-red-500' : 'bg-purple-500'}`}
-              style={{ width: `${timeProgress}%` }}
+              className={`h-full ${isPositiveChange ? 'bg-green-500' : 'bg-red-500'}`}
+              style={{ width: `${Math.min(100, Math.abs(marketCapChange))}%` }}
             >
               <div className="absolute left-0 top-0 w-full h-full flex">
-                <div className={`h-full w-2 ${timeProgress > 80 ? 'bg-red-600' : 'bg-purple-600'} opacity-50`}></div>
-                <div className={`h-full w-2 ${timeProgress > 80 ? 'bg-red-600' : 'bg-purple-600'} opacity-50 ml-auto`}></div>
+                <div className={`h-full w-2 ${isPositiveChange ? 'bg-green-600' : 'bg-red-600'} opacity-50`}></div>
+                <div className={`h-full w-2 ${isPositiveChange ? 'bg-green-600' : 'bg-red-600'} opacity-50 ml-auto`}></div>
               </div>
-            </div>
-          </div>
-          
-          <div className="flex justify-between items-center text-sm">
-            {hasReachedTarget || bet.status === 'won' ? (
-              <span className="text-green-400">Target reached!</span>
-            ) : bet.status === 'lost' ? (
-              <span className="text-red-400">Bet lost</span>
-            ) : timeProgress > 80 ? (
-              <span className="text-red-400">Running out of time!</span>
-            ) : (
-              <span className="text-dream-foreground/60">
-                {timeProgress.toFixed(0)}% of time elapsed
-              </span>
-            )}
-            
-            <div className="flex items-center gap-1">
-              <span className="text-dream-foreground/60">Market:</span>
-              <span className={`${isLosing() ? 'text-red-400' : 'text-green-400'}`}>
-                {calculateActualPercentageChange() > 0 ? "+" : ""}{Math.abs(calculateActualPercentageChange()).toFixed(2)}%
-              </span>
             </div>
           </div>
         </div>
@@ -376,11 +260,6 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           </div>
           <div className="text-dream-foreground/50">→</div>
           <div>
-            <span className="text-dream-foreground/60">Target: </span>
-            <span>{formatLargeNumber(targetMarketCap)}</span>
-          </div>
-          <div className="text-dream-foreground/50">→</div>
-          <div>
             <span className="text-dream-foreground/60">Current: </span>
             <span>{formatLargeNumber(currentMarketCap)}</span>
           </div>
@@ -389,14 +268,14 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
         <div className="flex items-center justify-between mt-3 text-sm">
           <div className="flex items-center">
             <User className="w-4 h-4 mr-1 text-dream-foreground/60" />
-            <span className="text-dream-foreground/60 mr-1">Bettor</span>
+            <span className="text-dream-foreground/60 mr-1">Buyer</span>
             <span className="font-medium">{truncatedAddress}</span>
           </div>
           
-          <div className="flex items-center text-green-400 font-semibold">
+          <div className={`flex items-center ${isPositiveChange ? 'text-green-400' : 'text-red-400'} font-semibold`}>
             <ArrowUpRight className="w-4 h-4 mr-1" />
-            <span>Prediction</span>
-            <span className="ml-2 font-bold">{bet.betType === 'up' ? 'MOON' : 'DUST'}</span>
+            <span>{isPositiveChange ? 'Profit' : 'Loss'}</span>
+            <span className="ml-2 font-bold">{Math.abs(marketCapChange).toFixed(2)}%</span>
           </div>
         </div>
 
