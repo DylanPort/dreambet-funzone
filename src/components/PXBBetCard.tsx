@@ -197,21 +197,21 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       const percentageChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
       
       const originalPXB = bet.betAmount;
-      const returnAmount = originalPXB + (originalPXB * (percentageChange / 100));
-      const formattedReturnAmount = Math.floor(returnAmount);
+      const returnAmount = originalPXB * (1 + (percentageChange / 100));
+      const displayReturnAmount = returnAmount.toFixed(2);
       
       console.log(`Original PXB: ${originalPXB}`);
       console.log(`Percentage Change: ${percentageChange.toFixed(2)}%`);
       console.log(`Return Amount: ${returnAmount}`);
-      console.log(`Formatted Return Amount: ${formattedReturnAmount}`);
+      console.log(`Display Return Amount: ${displayReturnAmount}`);
       
       const userId = userProfile.id;
-      const success = await addPointsToUser(formattedReturnAmount, userId);
+      const success = await addPointsToUser(returnAmount, userId);
       
       if (success) {
         toast({
           title: "Tokens Sold Successfully",
-          description: `You've received ${formattedReturnAmount} PXB from selling your ${bet.tokenSymbol} tokens (${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(2)}%).`,
+          description: `You've received ${displayReturnAmount} PXB from selling your ${bet.tokenSymbol} tokens (${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(2)}%).`,
           variant: percentageChange >= 0 ? "default" : "destructive",
         });
         
