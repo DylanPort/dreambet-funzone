@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, Percent, Coins, Award, CircleDollarSign, Users } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -130,7 +131,7 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
                 {isLoadingReferrals ? (
                   <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  (referralStats?.totalReferrals || referralStats?.referrals_count || 0)
+                  (referralStats?.totalReferrals || referralStats?.referralsCount || 0)
                 )}
               </div>
               <div className="text-sm text-indigo-300/70">users</div>
@@ -149,7 +150,7 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
                 {isLoadingReferrals ? (
                   <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  (referralStats?.pointsEarned || referralStats?.points_earned || 0).toLocaleString()
+                  (referralStats?.pointsEarned || 0).toLocaleString()
                 )}
               </div>
               <div className="text-sm text-indigo-300/70">PXB</div>

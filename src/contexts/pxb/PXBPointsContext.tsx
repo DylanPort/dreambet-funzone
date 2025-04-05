@@ -89,8 +89,9 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     betType: 'up' | 'down', 
     percentageChange: number,
     duration: number
-  ) => {
-    return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
+  ): Promise<boolean> => {
+    const result = await placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
+    return result ? true : false;
   };
 
   const fetchTokenTransactions = async (tokenId: string) => {
@@ -140,8 +141,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // New function to fetch all token transactions from all users
-  const fetchAllTokenTransactions = async (tokenId: string) => {
+  const fetchAllTokenTransactions = async (tokenId: string): Promise<any[]> => {
     try {
       // Query the token_transactions table for this specific token
       const { data, error } = await supabase
@@ -247,7 +247,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isLoadingBets,
         generateReferralLink,
         checkAndProcessReferral,
-        referralStats,
+        referralStats: {
+          ...referralStats,
+          referralsCount: referralStats.referralsCount || 0,
+          pointsEarned: referralStats.pointsEarned || 0,
+          totalReferrals: referralStats.totalReferrals || referralStats.referralsCount || 0,
+          referrals_count: referralStats.referralsCount || 0,
+          points_earned: referralStats.pointsEarned || 0
+        },
         fetchReferralStats,
         isLoadingReferrals,
         fetchTokenTransactions,

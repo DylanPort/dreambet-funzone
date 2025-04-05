@@ -17,7 +17,20 @@ interface PXBOnboardingProps {
   onClose: () => void;
 }
 
-const InteractiveTour = () => {
+interface InteractiveTourProps {
+  onComplete: () => void;
+  steps: {
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    highlight: string | null;
+    action: React.ReactNode;
+    image: string;
+  }[];
+  skipButtonText: string;
+}
+
+const InteractiveTour: React.FC<InteractiveTourProps> = ({ onComplete, steps, skipButtonText }) => {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
   const [hasClaimedPoints, setHasClaimedPoints] = useState(false);
@@ -150,6 +163,18 @@ const InteractiveTour = () => {
     }
   };
 
+  const handleRewardClaim = async () => {
+    if (pxbPoints && !rewardClaimed && currentStep === steps.length - 1) {
+      try {
+        await pxbPoints.addPointsToUser(pxbPoints.userProfile?.id || '', 10000, 'tour_completion');
+        setRewardClaimed(true);
+        toast.success("Congratulations! You've earned 10,000 PXB Points for completing the tour!");
+      } catch (error) {
+        console.error("Error awarding tour completion bonus:", error);
+      }
+    }
+  };
+
   const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -214,6 +239,9 @@ const InteractiveTour = () => {
     "/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png"
   ];
   
+  const pxbPoints = usePXBPoints();
+  const rewardClaimed = pxbPoints.userProfile?.id && pxbPoints.userProfile?.id === 'admin';
+
   const steps = [{
     title: "Welcome, Explorer!",
     description: "You've stumbled upon a treasure chest of opportunity in the wild Trenches!",

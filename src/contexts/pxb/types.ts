@@ -1,4 +1,5 @@
-import { UserProfile, LeaderboardEntry, WinRateLeaderboardEntry, UserBet } from './types';
+
+import { UserProfile, LeaderboardEntry, WinRateLeaderboardEntry, UserBet } from '@/types/pxb';
 
 export interface PXBPointsContextType {
   userProfile: UserProfile | null;
@@ -37,7 +38,11 @@ export interface PXBPointsContextType {
   referralStats: {
     referralsCount: number;
     pointsEarned: number;
-  } | null;
+    totalReferrals?: number;
+    referrals?: any[];
+    points_earned?: number;
+    referrals_count?: number;
+  };
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
   fetchTokenTransactions: (tokenId: string) => Promise<any[]>;

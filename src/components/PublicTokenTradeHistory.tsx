@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowUpRight, ArrowDownRight, ExternalLink, Wallet } from 'lucide-react';
@@ -53,7 +54,7 @@ const PublicTokenTradeHistory: React.FC<PublicTokenTradeHistoryProps> = ({
 
   // Get the current token price from PumpPortal
   useEffect(() => {
-    if (pumpPortal && pumpPortal.recentTrades && pumpPortal.recentTrades.length > 0) {
+    if (pumpPortal && pumpPortal.recentTrades && Array.isArray(pumpPortal.recentTrades) && pumpPortal.recentTrades.length > 0) {
       // Get the most recent trade's price
       const latestTrade = pumpPortal.recentTrades[0];
       if (latestTrade && latestTrade.price) {

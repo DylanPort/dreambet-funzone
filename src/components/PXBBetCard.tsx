@@ -207,9 +207,9 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       
       const userId = userProfile.id;
       const roundedAmount = Math.round(returnAmount);
-      const success = await addPointsToUser(roundedAmount, userId);
+      const success = await addPointsToUser(userId, roundedAmount, "token_sale", bet.id);
       
-      if (success) {
+      if (success !== undefined) {
         toast({
           title: "Tokens Sold Successfully",
           description: `You've received ${displayReturnAmount} PXB from selling your ${bet.tokenSymbol} tokens (${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(2)}%).`,

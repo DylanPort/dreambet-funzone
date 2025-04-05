@@ -1,247 +1,179 @@
-
-import React, { useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { ArrowLeft, Zap, Coins, Trophy, Users, Activity, Link as LinkIcon, Copy } from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import OrbitingParticles from '@/components/OrbitingParticles';
+import React, { useState, useEffect } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Button } from '@/components/ui/button';
-import PXBPointsBalance from '@/components/PXBPointsBalance';
-import PXBBetsList from '@/components/PXBBetsList';
-import PXBSupplyProgress from '@/components/PXBSupplyProgress';
-import PXBStakingPanel from '@/components/PXBStakingPanel';
-import PXBUserStats from '@/components/PXBUserStats';
-import BetReel from '@/components/BetReel';
+import { PXBBetCard } from '@/components/PXBBetCard';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { formatDistanceToNow } from 'date-fns';
+import { Clock } from 'lucide-react';
+import { fetchDexScreenerData } from '@/services/dexScreenerService';
 
-const PXBSpace = () => {
-  const {
-    connected,
-    publicKey
-  } = useWallet();
-  const {
-    userProfile,
-    isLoading,
-    generateReferralLink,
-    referralStats,
-    fetchReferralStats,
-    isLoadingReferrals,
-    checkAndProcessReferral
-  } = usePXBPoints();
-  
-  const [referralLink, setReferralLink] = React.useState('');
-  const [isGeneratingLink, setIsGeneratingLink] = React.useState(false);
-  const [searchParams] = useSearchParams();
+const MyBets = () => {
+  const { userProfile, bets, isLoadingBets, fetchUserBets, referralStats } = usePXBPoints();
+  const [openBets, setOpenBets] = useState([]);
+  const [completedBets, setCompletedBets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [marketCapData, setMarketCapData] = useState({});
 
-  // Handle referral link generation
-  const handleGenerateReferralLink = async () => {
-    if (!generateReferralLink) return;
-    
-    setIsGeneratingLink(true);
-    try {
-      const link = await generateReferralLink();
-      setReferralLink(link);
-    } catch (error) {
-      console.error('Error generating referral link:', error);
-    } finally {
-      setIsGeneratingLink(false);
-    }
-  };
-
-  // Copy to clipboard function
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
-
-  // Check for referral code in URL
   useEffect(() => {
-    if (connected && userProfile) {
-      const referralCode = searchParams.get('ref');
-      if (referralCode && checkAndProcessReferral) {
-        checkAndProcessReferral(referralCode);
+    const loadBets = async () => {
+      setLoading(true);
+      if (userProfile) {
+        await fetchUserBets();
       }
-    }
-  }, [connected, userProfile, searchParams, checkAndProcessReferral]);
+      setLoading(false);
+    };
 
-  // Fetch referral stats when component mounts
+    loadBets();
+  }, [userProfile, fetchUserBets]);
+
   useEffect(() => {
-    if (connected && userProfile && fetchReferralStats) {
-      fetchReferralStats();
+    if (bets) {
+      setOpenBets(bets.filter(bet => bet.status === 'open' || bet.status === 'pending'));
+      setCompletedBets(bets.filter(bet => bet.status === 'won' || bet.status === 'lost' || bet.status === 'expired'));
     }
-  }, [connected, userProfile, fetchReferralStats]);
+  }, [bets]);
 
-  return <>
-      <OrbitingParticles />
-      <Navbar />
-      
-      <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
-        <div className="max-w-5xl mx-auto">
-          {/* Back button */}
-          <Link to="/betting" className="inline-flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Link>
-          
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-display font-bold">PXB Space</h1>
-          </div>
-          
-          {/* Total Supply Progress Bar - Visible whether connected or not */}
-          <div className="glass-panel p-6 mb-6 overflow-hidden relative">
-            <PXBSupplyProgress />
-          </div>
-          
-          {/* Staking Panel - Just below the Supply Progress */}
-          <div className="glass-panel p-6 mb-6 overflow-hidden relative">
-            <PXBStakingPanel />
-          </div>
-          
-          {/* User Stats Component */}
-          
-          
-          {/* Notice: BetReel actually renders itself as a fixed position bar at the top of the page */}
-          <BetReel />
-          
-          {/* Active Bets Section (Placeholder) */}
-          
-          
-          {!connected ? <div className="glass-panel p-8 text-center">
-              <p className="text-xl text-dream-foreground/70 mb-4">Connect your wallet to access PXB Space</p>
-              <p className="text-dream-foreground/50 mb-6">Mint PXB Points to start participating in the ecosystem</p>
-            </div> : <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Left column - Stats & Balance */}
-              <div className="md:col-span-4 space-y-6">
-                <PXBPointsBalance />
-                
-                <div className="glass-panel p-6">
-                  <h2 className="font-semibold text-lg mb-4 flex items-center">
-                    <Activity className="mr-2 h-5 w-5 text-dream-accent2" />
-                    PXB Stats
-                  </h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
-                      <p className="text-sm text-dream-foreground/60 mb-1">Total Bets</p>
-                      <p className="text-2xl font-display font-bold text-gradient">
-                        {isLoading ? "..." : "0"}
-                      </p>
-                    </div>
-                    <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
-                      <p className="text-sm text-dream-foreground/60 mb-1">Win Rate</p>
-                      <p className="text-2xl font-display font-bold text-gradient">
-                        {isLoading ? "..." : "0%"}
-                      </p>
-                    </div>
-                  </div>
+  useEffect(() => {
+    const fetchMarketCaps = async () => {
+      if (bets && bets.length > 0) {
+        const marketCapPromises = bets.map(bet =>
+          fetchDexScreenerData(bet.tokenMint)
+            .then(data => ({ [bet.tokenMint]: data?.marketCap || null }))
+            .catch(() => ({ [bet.tokenMint]: null }))
+        );
+
+        const marketCapResults = await Promise.all(marketCapPromises);
+
+        const marketCapObject = marketCapResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+        setMarketCapData(marketCapObject);
+      }
+    };
+
+    fetchMarketCaps();
+  }, [bets]);
+
+  const getMarketCap = (tokenMint: string) => {
+    return marketCapData[tokenMint] || null;
+  };
+
+  const formatTimeAgo = (timestamp: string) => {
+    try {
+      const date = new Date(timestamp);
+      return formatDistanceToNow(date, {
+        addSuffix: true
+      });
+    } catch (e) {
+      return 'recently';
+    }
+  };
+
+  const referralsCount = referralStats?.referralsCount || 0;
+
+  return (
+    <div className="container mx-auto py-10">
+      <h1 className="text-3xl font-bold text-white mb-6">My PXB Bets</h1>
+
+      <Tabs defaultValue="open" className="w-full">
+        <TabsList>
+          <TabsTrigger value="open">Open Bets ({openBets.length})</TabsTrigger>
+          <TabsTrigger value="completed">Completed Bets ({completedBets.length})</TabsTrigger>
+        </TabsList>
+        <TabsContent value="open" className="mt-4">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-gray-900/50 rounded-lg border border-gray-800 p-4">
+                  <Skeleton className="w-full h-32 mb-2 rounded-md" />
+                  <Skeleton className="w-1/2 h-6 mb-2" />
+                  <Skeleton className="w-1/4 h-4" />
                 </div>
-                
-                <div className="glass-panel p-6">
-                  <h2 className="font-semibold text-lg mb-4 flex items-center">
-                    <Zap className="mr-2 h-5 w-5 text-dream-accent1" />
-                    Quick Actions
-                  </h2>
-                  <div className="space-y-3">
-                    <Button asChild className="w-full" variant="outline">
-                      <Link to="/betting">
-                        Place New Bet
-                      </Link>
-                    </Button>
-                    
-                    <Button asChild className="w-full" variant="outline">
-                      <Link to="/profile">
-                        View Your Bets
-                      </Link>
-                    </Button>
-                  </div>
+              ))}
+            </div>
+          ) : openBets.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {openBets.map(bet => (
+                <PXBBetCard
+                  key={bet.id}
+                  bet={bet}
+                  marketCapData={{
+                    initialMarketCap: bet.initialMarketCap,
+                    currentMarketCap: getMarketCap(bet.tokenMint)
+                  }}
+                  isLoading={isLoadingBets}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 py-10">
+              No open bets found. Place a bet to get started!
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="completed" className="mt-4">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-gray-900/50 rounded-lg border border-gray-800 p-4">
+                  <Skeleton className="w-full h-32 mb-2 rounded-md" />
+                  <Skeleton className="w-1/2 h-6 mb-2" />
+                  <Skeleton className="w-1/4 h-4" />
                 </div>
-              </div>
-              
-              {/* Right column - Bets & Referrals */}
-              <div className="md:col-span-8 space-y-6">
-                <PXBBetsList />
-                
-                {/* Referral Section */}
-                <div className="glass-panel p-6">
-                  <h2 className="font-semibold text-lg mb-4 flex items-center">
-                    <img src="/lovable-uploads/e1b33d2f-7fd6-471b-802e-f18d0c0b7155.png" alt="Referral" className="mr-2 h-6 w-6" />
-                    <span className="text-dream-success font-bold">Referral Program</span>
-                  </h2>
-                  
-                  <div className="space-y-4">
-                    <p className="text-dream-foreground/70 text-sm">
-                      Invite friends and earn 10,000 PXB points for each person who joins through your referral link!
-                    </p>
-                    
-                    <div className="flex flex-col space-y-3">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-dream-foreground/70">Your Referral Link</span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-dream-accent1 hover:text-dream-accent1/80 px-2"
-                          onClick={handleGenerateReferralLink}
-                          disabled={isGeneratingLink}
-                        >
-                          {isGeneratingLink ? 
-                            <div className="flex items-center">
-                              <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1"></div>
-                              <span>Generating...</span>
-                            </div> : 
-                            <div className="flex items-center">
-                              <LinkIcon className="w-3 h-3 mr-1" />
-                              {referralLink ? 'Refresh' : 'Generate'}
-                            </div>
-                          }
-                        </Button>
-                      </div>
-                      
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={referralLink}
-                          readOnly
-                          placeholder="Generate your referral link"
-                          className="w-full bg-dream-foreground/5 px-3 py-2 rounded-md text-sm text-dream-foreground"
-                        />
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="absolute right-1 top-1/2 -translate-y-1/2"
-                          onClick={() => copyToClipboard(referralLink)}
-                          disabled={!referralLink}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-                      <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
-                        <p className="text-sm text-dream-foreground/60 mb-1">Total Referrals</p>
-                        <p className="text-2xl font-display font-bold text-gradient">
-                          {isLoadingReferrals ? "..." : referralStats?.referrals_count || 0}
-                        </p>
-                      </div>
-                      <div className="bg-dream-foreground/5 rounded-md p-4 text-center">
-                        <p className="text-sm text-dream-foreground/60 mb-1">Points Earned</p>
-                        <p className="text-2xl font-display font-bold text-gradient">
-                          {isLoadingReferrals ? "..." : (referralStats?.pointsEarned || 0).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <Button asChild className="w-full" variant="outline">
-                        <Link to="/profile">
-                          View All Referrals
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>}
-        </div>
-      </main>
-    </>;
+              ))}
+            </div>
+          ) : completedBets.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableCaption>A list of your completed bets.</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Token</TableHead>
+                    <TableHead>Bet Amount</TableHead>
+                    <TableHead>Prediction</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Points Won</TableHead>
+                    <TableHead>Time Ago</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {completedBets.map((bet) => (
+                    <TableRow key={bet.id}>
+                      <TableCell className="font-medium">{bet.tokenSymbol}</TableCell>
+                      <TableCell>{bet.betAmount} PXB</TableCell>
+                      <TableCell>{bet.betType}</TableCell>
+                      <TableCell>
+                        {bet.status === 'won' ? <Badge variant="success">Won</Badge> : bet.status === 'lost' ? <Badge variant="destructive">Lost</Badge> : <Badge>{bet.status}</Badge>}
+                      </TableCell>
+                      <TableCell>{bet.pointsWon}</TableCell>
+                      <TableCell className="text-gray-500">
+                        <div className="flex items-center">
+                          <Clock className="w-4 h-4 mr-1 opacity-70" />
+                          <span>{formatTimeAgo(bet.createdAt)}</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 py-10">
+              No completed bets found. Place a bet to get started!
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 };
-export default PXBSpace;
+
+export default MyBets;

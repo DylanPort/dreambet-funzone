@@ -273,8 +273,6 @@ export const PXBWallet: React.FC = () => {
           <QrCode className="w-4 h-4" />
           Receive
         </button>
-        
-        
         <button className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'activity' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} onClick={() => setActiveTab('activity')}>
           <Clock className="w-4 h-4" />
           Activity
@@ -310,13 +308,13 @@ export const PXBWallet: React.FC = () => {
                 <span className="font-medium text-white">{userProfile.pxbPoints.toLocaleString()} PXB</span>
               </div>
               
-              <Button onClick={transferFeature === 'coming-soon' ? () => toast.info('Send/receive feature coming soon!') : handleSendPoints} disabled={isSending || !recipientId || !amount} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white">
+              <Button onClick={transferFeature.enabled === false ? () => toast.info('Send/receive feature coming soon!') : handleSendPoints} disabled={isSending || !recipientId || !amount} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white">
                 {isSending ? <div className="flex items-center">
                     <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                     <span>Sending...</span>
                   </div> : <div className="flex items-center">
                     <Send className="w-4 h-4 mr-2" />
-                    {transferFeature === 'coming-soon' ? 'Coming Soon!' : 'Send PXB Points'}
+                    {transferFeature.enabled === false ? 'Coming Soon!' : 'Send PXB Points'}
                   </div>}
               </Button>
             </div>
@@ -344,14 +342,14 @@ export const PXBWallet: React.FC = () => {
             
             <div className="text-center mb-6">
               <p className="text-sm text-indigo-300/70">
-                {transferFeature === 'coming-soon' 
+                {transferFeature.enabled === false 
                   ? 'Send/receive feature coming soon! Your PXB ID will be available for sharing once this feature is activated.' 
                   : 'Share your PXB ID with others to receive PXB points'}
               </p>
             </div>
             
-            <Button onClick={handleGenerateId} disabled={transferFeature === 'coming-soon'} className="bg-indigo-500 hover:bg-indigo-600 text-white">
-              {transferFeature === 'coming-soon' 
+            <Button onClick={handleGenerateId} disabled={transferFeature.enabled === false} className="bg-indigo-500 hover:bg-indigo-600 text-white">
+              {transferFeature.enabled === false
                 ? 'Coming Soon!' 
                 : <><RefreshCw className="w-4 h-4 mr-2" />Generate New ID</>}
             </Button>
@@ -445,12 +443,12 @@ export const PXBWallet: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-900/30">
                     <p className="text-sm text-indigo-300/70 mb-1">Total Referrals</p>
-                    <p className="text-2xl font-bold text-white">{referralStats.totalReferrals}</p>
+                    <p className="text-2xl font-bold text-white">{referralStats?.totalReferrals || referralStats?.referralsCount || 0}</p>
                   </div>
                   
                   <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-900/30">
                     <p className="text-sm text-indigo-300/70 mb-1">Points Earned</p>
-                    <p className="text-2xl font-bold text-white">{referralStats.pointsEarned.toLocaleString()} PXB</p>
+                    <p className="text-2xl font-bold text-white">{(referralStats?.pointsEarned || 0).toLocaleString()} PXB</p>
                   </div>
                 </div>
                 
@@ -458,7 +456,7 @@ export const PXBWallet: React.FC = () => {
                 
                 {isLoadingReferrals ? <div className="flex justify-center py-8">
                     <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div> : referralStats.referrals && referralStats.referrals.length > 0 ? <div className="space-y-3">
+                  </div> : referralStats?.referrals && referralStats?.referrals.length > 0 ? <div className="space-y-3">
                     {referralStats.referrals.map(referral => <div key={referral.id} className="flex items-center justify-between p-3 bg-indigo-900/10 rounded-lg hover:bg-indigo-900/20 transition-colors border border-indigo-900/20">
                         <div className="flex items-center">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
