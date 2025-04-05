@@ -36,7 +36,7 @@ export interface TokenTransaction {
 
 // Buy tokens with PXB points
 export const buyTokensWithPXB = async (
-  userId: string,
+  _userId: string, // Keep parameter but don't use it - use wallet instead
   tokenId: string,
   tokenName: string,
   tokenSymbol: string,
@@ -49,28 +49,19 @@ export const buyTokensWithPXB = async (
       return false;
     }
 
-    console.log(`Buying tokens: userId=${userId}, tokenId=${tokenId}, pxbAmount=${pxbAmount}, marketCap=${tokenMarketCap}`);
+    console.log(`Buying tokens: tokenId=${tokenId}, pxbAmount=${pxbAmount}, marketCap=${tokenMarketCap}`);
     
     // Get current authenticated user
     const { data: authData } = await supabase.auth.getUser();
     if (!authData?.user) {
       console.error('No authenticated user found');
-      toast.error('Authentication error. Please sign in and try again.');
+      toast.error('Authentication error. Please connect your wallet and try again.');
       return false;
     }
-    
-    // Compare the authenticated user ID with requested user ID - this is a safer approach
-    // but we'll comment it out for now to allow the operation to proceed
-    /* 
-    if (authData.user.id !== userId) {
-      console.error('Auth mismatch: Authenticated user does not match the requested user ID');
-      toast.error('Authentication error. Please try again.');
-      return false;
-    }
-    */
     
     // Use the authenticated user's ID for all operations to comply with RLS
     const authenticatedUserId = authData.user.id;
+    console.log(`Using authenticated user ID: ${authenticatedUserId}`);
 
     // Calculate how many tokens the user gets based on PXB and token market cap
     const pxbValue = pxbAmount * PXB_VIRTUAL_PRICE;
@@ -158,7 +149,7 @@ export const buyTokensWithPXB = async (
     } else {
       // Insert new portfolio entry
       console.log('Creating new portfolio entry with data:', {
-        userid: authenticatedUserId, // Use authenticated user ID here
+        userid: authenticatedUserId,
         tokenid: tokenId,
         tokenname: tokenName,
         tokensymbol: tokenSymbol,
@@ -170,7 +161,7 @@ export const buyTokensWithPXB = async (
       const { data, error: insertPortfolioError } = await supabase
         .from('token_portfolios')
         .insert({
-          userid: authenticatedUserId, // Use authenticated user ID here
+          userid: authenticatedUserId,
           tokenid: tokenId,
           tokenname: tokenName,
           tokensymbol: tokenSymbol,
@@ -199,7 +190,7 @@ export const buyTokensWithPXB = async (
     const { error: txError } = await supabase
       .from('token_transactions')
       .insert({
-        userid: authenticatedUserId, // Use authenticated user ID here
+        userid: authenticatedUserId,
         tokenid: tokenId,
         tokenname: tokenName,
         tokensymbol: tokenSymbol,
@@ -218,7 +209,7 @@ export const buyTokensWithPXB = async (
     const { error: historyError } = await supabase
       .from('points_history')
       .insert({
-        user_id: authenticatedUserId, // Use authenticated user ID here
+        user_id: authenticatedUserId,
         amount: -pxbAmount,
         action: 'token_purchase',
         reference_id: tokenId
@@ -240,7 +231,7 @@ export const buyTokensWithPXB = async (
 
 // Sell tokens for PXB points
 export const sellTokensForPXB = async (
-  userId: string,
+  _userId: string, // Keep parameter but don't use it - use wallet instead
   tokenId: string,
   tokenName: string,
   tokenSymbol: string,
@@ -257,12 +248,13 @@ export const sellTokensForPXB = async (
     const { data: authData } = await supabase.auth.getUser();
     if (!authData?.user) {
       console.error('No authenticated user found');
-      toast.error('Authentication error. Please sign in and try again.');
+      toast.error('Authentication error. Please connect your wallet and try again.');
       return false;
     }
     
     // Use the authenticated user's ID for all operations to comply with RLS
     const authenticatedUserId = authData.user.id;
+    console.log(`Using authenticated user ID: ${authenticatedUserId}`);
 
     // Calculate how many PXB points the user gets based on token quantity and market cap
     const tokenValue = tokenQuantity * (tokenMarketCap / 1000000);
@@ -361,7 +353,7 @@ export const sellTokensForPXB = async (
     const { error: txError } = await supabase
       .from('token_transactions')
       .insert({
-        userid: authenticatedUserId, // Use authenticated user ID here
+        userid: authenticatedUserId,
         tokenid: tokenId,
         tokenname: tokenName,
         tokensymbol: tokenSymbol,
@@ -380,7 +372,7 @@ export const sellTokensForPXB = async (
     const { error: historyError } = await supabase
       .from('points_history')
       .insert({
-        user_id: authenticatedUserId, // Use authenticated user ID here
+        user_id: authenticatedUserId,
         amount: estimatedPxbAmount,
         action: 'token_sale',
         reference_id: tokenId
@@ -401,7 +393,7 @@ export const sellTokensForPXB = async (
 };
 
 // Get user's token portfolio
-export const getUserPortfolio = async (userId: string): Promise<TokenPortfolio[]> => {
+export const getUserPortfolio = async (_userId: string): Promise<TokenPortfolio[]> => {
   try {
     // Get current authenticated user
     const { data: authData } = await supabase.auth.getUser();
@@ -431,7 +423,7 @@ export const getUserPortfolio = async (userId: string): Promise<TokenPortfolio[]
 };
 
 // Get token trading transactions history
-export const getTokenTransactions = async (userId: string, tokenId?: string): Promise<TokenTransaction[]> => {
+export const getTokenTransactions = async (_userId: string, tokenId?: string): Promise<TokenTransaction[]> => {
   try {
     // Get current authenticated user
     const { data: authData } = await supabase.auth.getUser();

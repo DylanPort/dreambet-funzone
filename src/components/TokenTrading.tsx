@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -47,12 +46,12 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       
       setIsLoading(true);
       try {
-        // Get user's portfolio
+        // Get user's portfolio - pass userProfile.id but the function will use connected wallet
         const portfolio = await getUserPortfolio(userProfile.id);
         const tokenPortfolio = portfolio.find(p => p.tokenid === tokenId) || null;
         setUserPortfolio(tokenPortfolio);
 
-        // Get transaction history
+        // Get transaction history - pass userProfile.id but the function will use connected wallet
         const txHistory = await getTokenTransactions(userProfile.id, tokenId);
         setTransactions(txHistory);
       } catch (error) {
@@ -105,6 +104,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
     setIsProcessing(true);
     try {
+      // Pass userProfile.id but the function will use connected wallet instead
       const success = await buyTokensWithPXB(
         userProfile.id,
         tokenId,
@@ -118,7 +118,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         // Refresh user data
         await refetchUserProfile();
         
-        // Reload portfolio and transactions
+        // Reload portfolio and transactions - pass userProfile.id but functions will use connected wallet
         const portfolio = await getUserPortfolio(userProfile.id);
         const tokenPortfolio = portfolio.find(p => p.tokenid === tokenId) || null;
         setUserPortfolio(tokenPortfolio);
@@ -189,6 +189,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
     setIsProcessing(true);
     try {
+      // Pass userProfile.id but the function will use connected wallet instead
       const success = await sellTokensForPXB(
         userProfile.id,
         tokenId,
@@ -202,7 +203,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         // Refresh user data
         await refetchUserProfile();
         
-        // Reload portfolio and transactions
+        // Reload portfolio and transactions - pass userProfile.id but functions will use connected wallet
         const portfolio = await getUserPortfolio(userProfile.id);
         const tokenPortfolio = portfolio.find(p => p.tokenid === tokenId) || null;
         setUserPortfolio(tokenPortfolio);
