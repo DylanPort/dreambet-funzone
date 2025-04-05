@@ -389,6 +389,35 @@ export const createSupabaseBet = async (
     // Convert duration to seconds for database
     const durationInSeconds = duration * 60;
     
+    // First, check if the token exists in the tokens table
+    const { data: existingToken, error: checkError } = await supabase
+      .from('tokens')
+      .select('token_mint')
+      .eq('token_mint', tokenMint)
+      .maybeSingle();
+    
+    // If token doesn't exist, create it first
+    if (!existingToken) {
+      console.log(`Token ${tokenMint} not found in database, creating it now`);
+      const { error: insertTokenError } = await supabase
+        .from('tokens')
+        .insert({
+          token_mint: tokenMint,
+          token_name: tokenName,
+          token_symbol: tokenSymbol,
+          current_market_cap: 0, // Default value
+          last_trade_price: 0,    // Default value
+          total_supply: 1000000000 // Default supply for PumpFun tokens
+        });
+        
+      if (insertTokenError) {
+        console.error('Error creating token in database:', insertTokenError);
+        throw new Error(`Failed to create token: ${insertTokenError.message}`);
+      }
+      
+      console.log(`Successfully created token ${tokenName} (${tokenMint}) in database`);
+    }
+    
     // Get token data to store initial market cap, or use default if not found
     let initialMarketCap = 0;
     let fetchedTokenName = tokenName;
@@ -407,27 +436,7 @@ export const createSupabaseBet = async (
         fetchedTokenName = tokenData.token_name || tokenName;
         fetchedTokenSymbol = tokenData.token_symbol || tokenSymbol;
       } else {
-        console.log('Token not found in database, using provided data');
-        // Check if we need to add the token to the database
-        const { error: insertError } = await supabase
-          .from('tokens')
-          .insert({
-            token_mint: tokenMint,
-            token_name: tokenName,
-            token_symbol: tokenSymbol,
-            current_market_cap: 0, // Default value
-            last_trade_price: 0,    // Default value
-            total_supply: 1000000000 // Default supply for PumpFun tokens
-          })
-          .select()
-          .single();
-          
-        if (insertError) {
-          console.log('Error inserting new token:', insertError);
-          // Continue anyway with the provided data
-        } else {
-          console.log('Added new token to database');
-        }
+        console.log('Token still not found after insertion, using provided data');
       }
     } catch (tokenError) {
       console.log('Error fetching token data:', tokenError);
