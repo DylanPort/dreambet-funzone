@@ -699,21 +699,27 @@ const TokenDetail = () => {
     const index = Math.abs(hash) % colors.length;
     return colors[index];
   };
-  return <>
+  return (
+    <>
       <OrbitingParticles />
       <Navbar />
       
       <main className="pt-24 min-h-screen px-4 pb-16">
         <div className="max-w-7xl mx-auto">
-          {loading && !token ? <div className="flex justify-center py-16">
+          {loading && !token ? (
+            <div className="flex justify-center py-16">
               <div className="w-12 h-12 border-4 border-dream-accent2 border-t-transparent rounded-full animate-spin"></div>
-            </div> : !token ? <div className="glass-panel p-8 text-center">
+            </div>
+          ) : !token ? (
+            <div className="glass-panel p-8 text-center">
               <h2 className="text-2xl font-display font-bold mb-2">Token Not Found</h2>
               <p className="text-dream-foreground/70 mb-4">
                 The token you're looking for could not be found or has been removed.
               </p>
               <Button onClick={() => window.history.back()}>Go Back</Button>
-            </div> : <>
+            </div>
+          ) : (
+            <>
               <Link to="/betting" className="flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
                 <ChevronLeft size={20} />
                 <span>Back to Tokens</span>
@@ -728,18 +734,196 @@ const TokenDetail = () => {
                   <div className="ml-4">
                     <h1 className="text-2xl font-display font-bold flex items-center">
                       {token.name}
-                      {isLive && <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full flex items-center">
+                      {isLive && (
+                        <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full flex items-center">
                           <span className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1 animate-pulse"></span>
                           LIVE
-                        </span>}
+                        </span>
+                      )}
                     </h1>
                     <div className="flex items-center text-dream-foreground/70">
                       <span className="mr-2">{token.symbol}</span>
-                      <button onClick={() => {
-                    navigator.clipboard.writeText(token.id);
-                    toast({
-                      title: "Copied!",
-                      description: "Token address copied to clipboard"
-                    });
-                  }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
-                        {token.
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(token.id);
+                          toast({
+                            title: "Copied!",
+                            description: "Token address copied to clipboard"
+                          });
+                        }} 
+                        className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center"
+                      >
+                        <Copy size={12} className="mr-1" />
+                        {token.id.substring(0, 4)}...{token.id.substring(token.id.length - 4)}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-end">
+                  <div className="text-3xl font-bold font-display flex items-center">
+                    ${formatPrice(token.currentPrice)}
+                    <span className={`ml-2 text-sm ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="text-dream-foreground/50 text-sm">
+                    Last updated: {lastPriceUpdateRef.current ? formatDistanceToNow(new Date(lastPriceUpdateRef.current), { addSuffix: true }) : 'just now'}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+                <TokenMarketCap tokenId={token.id} />
+                <TokenVolume tokenId={token.id} />
+                <div className="glass-panel p-4 flex-1 relative overflow-hidden transition-all duration-300 hover:scale-105 animate-fade-in">
+                  <div className="absolute inset-0 bg-gradient-to-r from-dream-accent3/30 to-dream-accent1/30 animate-gradient-move"></div>
+                  <div className="flex items-center text-white mb-2 relative z-10">
+                    <Users size={18} className="mr-2 text-dream-accent3 animate-pulse-glow" />
+                    <span className="text-sm font-semibold">Holders</span>
+                  </div>
+                  <div className="text-2xl font-extrabold relative z-10 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">
+                    {tokenMetrics.holders ? tokenMetrics.holders.toLocaleString() : 'N/A'}
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 overflow-hidden h-1">
+                    <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-dream-accent3 via-dream-accent1 to-dream-accent3 animate-pulse-glow"></div>
+                    <div className="absolute bottom-0 left-0 h-1 w-1/3 bg-white/30 backdrop-blur-sm transform -skew-x-45 animate-shine"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <TokenChart 
+                tokenId={token.id}
+                tokenName={token.name}
+                refreshData={refreshData}
+                loading={loading}
+                onPriceUpdate={handleChartPriceUpdate}
+                setShowCreateBet={setShowCreateBet}
+              />
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="glass-panel p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-display font-bold flex items-center">
+                        <ArrowUpRight className="w-5 h-5 mr-2 text-green-400" />
+                        <ArrowDownRight className="w-5 h-5 mr-2 text-red-400" />
+                        Trade History
+                      </h2>
+                      <a 
+                        href={`https://solscan.io/token/${token.id}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-dream-accent2 hover:underline flex items-center text-sm"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        View on Solscan
+                      </a>
+                    </div>
+                    <TokenTradeHistory tokenId={token.id} />
+                  </div>
+                  
+                  <TokenComments tokenId={token.id} tokenName={token.name || 'Unknown Token'} />
+                </div>
+                
+                <div className="space-y-6">
+                  <TokenTrading tokenId={token.id} />
+                  
+                  {userProfile && (
+                    <div className="glass-panel p-6">
+                      <h2 className="text-xl font-display font-bold mb-4">Your PXB Bets</h2>
+                      {tokenPXBBets.length === 0 ? (
+                        <div className="text-center py-8 text-dream-foreground/50">
+                          <p>You don't have any active bets on this token.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {tokenPXBBets.map(bet => (
+                            <div key={bet.id} className="border border-dream-foreground/10 rounded-lg p-4">
+                              <div className="flex justify-between items-center mb-2">
+                                <div className={`flex items-center ${bet.betType === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                                  {bet.betType === 'up' ? (
+                                    <ArrowUp size={16} className="mr-1" />
+                                  ) : (
+                                    <ArrowDown size={16} className="mr-1" />
+                                  )}
+                                  <span>{bet.betType === 'up' ? 'Up' : 'Down'} {bet.percentageChange}%</span>
+                                </div>
+                                <div className="text-dream-foreground/50 text-sm">
+                                  {formatDistanceToNow(new Date(bet.createdAt), { addSuffix: true })}
+                                </div>
+                              </div>
+                              
+                              <div className="mb-2">
+                                <div className="text-sm text-dream-foreground/70 mb-1">Progress</div>
+                                <div className="flex items-center">
+                                  <Progress value={calculateProgress(bet)} className="h-2 flex-1" />
+                                  <span className="ml-2 text-sm">{calculateProgress(bet).toFixed(0)}%</span>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-4 mb-3">
+                                <div>
+                                  <div className="text-xs text-dream-foreground/50">Amount</div>
+                                  <div className="font-medium">{bet.amount} PXB</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-dream-foreground/50">Status</div>
+                                  <div className="flex items-center">
+                                    {bet.status === 'pending' ? (
+                                      <HelpCircle size={14} className="text-yellow-400 mr-1" />
+                                    ) : bet.status === 'won' ? (
+                                      <CheckCircle size={14} className="text-green-400 mr-1" />
+                                    ) : (
+                                      <XCircle size={14} className="text-red-400 mr-1" />
+                                    )}
+                                    <span className={`
+                                      ${bet.status === 'pending' ? 'text-yellow-400' : 
+                                        bet.status === 'won' ? 'text-green-400' : 'text-red-400'}
+                                    `}>
+                                      {bet.status.charAt(0).toUpperCase() + bet.status.slice(1)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="text-xs grid grid-cols-2 gap-4">
+                                <div>
+                                  <div className="text-dream-foreground/50">Initial Market Cap</div>
+                                  <div>{formatLargeNumber(bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap || 0)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-dream-foreground/50">Current Market Cap</div>
+                                  <div>{formatLargeNumber(marketCapData[bet.id]?.currentMarketCap || 0)}</div>
+                                </div>
+                                <div className="col-span-2">
+                                  <div className="text-dream-foreground/50">Target</div>
+                                  <div>{formatLargeNumber(calculateTargetMarketCap(bet))}</div>
+                                </div>
+                              </div>
+                              
+                              {calculateMarketCapChange(bet) !== null && (
+                                <div className="mt-2 text-xs">
+                                  <span className="text-dream-foreground/50">Change: </span>
+                                  <span className={calculateMarketCapChange(bet) >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                    {calculateMarketCapChange(bet) >= 0 ? '+' : ''}{calculateMarketCapChange(bet).toFixed(2)}%
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </>
+  );
+};
+
+export default TokenDetail;
