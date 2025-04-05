@@ -231,7 +231,7 @@ const pollAllActiveTokens = async () => {
 export const startDexScreenerPolling = (
   tokenAddress: string, 
   onData: (data: ReturnType<typeof fetchDexScreenerData> extends Promise<infer T> ? T : never) => void,
-  interval = 30000
+  interval = 10000 // Changed from 30000 to 10000 (10 seconds)
 ) => {
   tokenCallbacks.set(tokenAddress, onData);
   
@@ -258,7 +258,7 @@ export const startDexScreenerPolling = (
   };
 };
 
-export const subscribeToMarketCap = (tokenId: string, callback: (marketCap: number) => void, refreshInterval = 30000) => {
+export const subscribeToMarketCap = (tokenId: string, callback: (marketCap: number) => void, refreshInterval = 10000) => {
   let isActive = true;
   
   const fetchData = async () => {
@@ -285,7 +285,7 @@ export const subscribeToMarketCap = (tokenId: string, callback: (marketCap: numb
   };
 };
 
-export const subscribeToVolume = (tokenId: string, callback: (volume: number) => void, refreshInterval = 30000) => {
+export const subscribeToVolume = (tokenId: string, callback: (volume: number) => void, refreshInterval = 10000) => {
   let isActive = true;
   
   const fetchData = async () => {

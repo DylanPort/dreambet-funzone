@@ -75,7 +75,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     };
 
     updateMarketCap();
-    const intervalId = setInterval(updateMarketCap, 30000);
+    const intervalId = setInterval(updateMarketCap, 10000);
     
     return () => clearInterval(intervalId);
   }, [bet.tokenMint, bet.initialMarketCap, bet.betAmount, initialMarketCapData]);
@@ -246,6 +246,14 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     return Math.floor(returnAmount);
   };
 
+  const [pulseAnimate, setPulseAnimate] = useState(false);
+  
+  useEffect(() => {
+    setPulseAnimate(true);
+    const timeout = setTimeout(() => setPulseAnimate(false), 1000);
+    return () => clearTimeout(timeout);
+  }, [livePxbValue]);
+
   return (
     <div className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden">
       <div className="px-4 py-3">
@@ -291,15 +299,18 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           </div>
         </div>
 
-        <div className="mt-4 bg-black/40 rounded-md p-2 flex justify-between items-center">
+        <div className="mt-4 bg-black/40 rounded-md p-2 flex justify-between items-center relative overflow-hidden">
           <span className="text-xs text-dream-foreground/60">
             Current PXB Value
           </span>
-          <div className={`font-mono font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+          <div className={`font-mono font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'} ${pulseAnimate ? 'animate-pulse' : ''}`}>
             {livePxbValue} PXB 
             <span className="ml-1 text-xs">
               ({isPositiveChange ? '+' : ''}{marketCapChange.toFixed(2)}%)
             </span>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-0.5">
+            <div className="w-full h-full bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse opacity-50"></div>
           </div>
         </div>
 
@@ -336,6 +347,9 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           <div>
             <span className="text-dream-foreground/60">Current: </span>
             <span>{formatLargeNumber(currentMarketCap)}</span>
+            <span className="text-xs text-dream-foreground/40 ml-1">
+              {lastUpdated ? getLastUpdatedText() : ''}
+            </span>
           </div>
         </div>
 
