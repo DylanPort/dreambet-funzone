@@ -190,8 +190,13 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       const percentageChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
       
       const originalPXB = bet.betAmount;
-      const returnAmount = originalPXB * (1 + (percentageChange / 100));
+      const returnAmount = originalPXB + (originalPXB * (percentageChange / 100));
       const formattedReturnAmount = Math.floor(returnAmount);
+      
+      console.log(`Original PXB: ${originalPXB}`);
+      console.log(`Percentage Change: ${percentageChange.toFixed(2)}%`);
+      console.log(`Return Amount: ${returnAmount}`);
+      console.log(`Formatted Return Amount: ${formattedReturnAmount}`);
       
       const userId = userProfile.id;
       const success = await addPointsToUser(formattedReturnAmount, userId);
@@ -199,7 +204,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       if (success) {
         toast({
           title: "Tokens Sold Successfully",
-          description: `You've received ${formattedReturnAmount} PXB from selling your ${bet.tokenSymbol} tokens.`,
+          description: `You've received ${formattedReturnAmount} PXB from selling your ${bet.tokenSymbol} tokens (${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(2)}%).`,
           variant: percentageChange >= 0 ? "default" : "destructive",
         });
         
@@ -226,6 +231,13 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   const marketCapChange = calculateMarketCapChange();
   const isPositiveChange = marketCapChange >= 0;
   const isSold = localStorage.getItem(`sold_${bet.id}`) === 'true';
+
+  const calculateReturnAmount = () => {
+    if (!bet.betAmount) return 0;
+    
+    const returnAmount = bet.betAmount + (bet.betAmount * (marketCapChange / 100));
+    return Math.floor(returnAmount);
+  };
 
   return (
     <div className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden">
@@ -330,7 +342,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
               onClick={handleSellToken}
               disabled={isSelling}
             >
-              {isSelling ? "Processing..." : `Sell for ${Math.floor(bet.betAmount * (1 + (marketCapChange / 100)))} PXB (${isPositiveChange ? '+' : ''}${marketCapChange.toFixed(2)}%)`}
+              {isSelling ? "Processing..." : `Sell for ${calculateReturnAmount()} PXB (${isPositiveChange ? '+' : ''}${marketCapChange.toFixed(2)}%)`}
             </Button>
           </div>
         )}
