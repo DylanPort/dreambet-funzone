@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
@@ -74,10 +73,8 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     return () => clearInterval(intervalId);
   }, [bet.tokenMint, bet.initialMarketCap, initialMarketCapData]);
 
-  // Calculate token amount based on PXB amount and market cap
   useEffect(() => {
     if (bet.initialMarketCap && bet.betAmount) {
-      // Assuming a total supply of 1 billion tokens for simplicity
       const totalSupply = 1_000_000_000;
       const tokenPrice = bet.initialMarketCap / totalSupply;
       const tokensReceived = bet.betAmount / tokenPrice;
@@ -188,18 +185,16 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     try {
       setIsSelling(true);
       
-      // Calculate value based on current market cap
       const initialMarketCap = bet.initialMarketCap || marketCapData.initialMarketCap || 0;
       const currentMarketCap = marketCapData.currentMarketCap;
       const percentageChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
       
-      // Calculate PXB to return to user based on market cap change
       const originalPXB = bet.betAmount;
       const returnAmount = originalPXB * (1 + (percentageChange / 100));
-      const formattedReturnAmount = Math.floor(returnAmount); // Round down to be safe
+      const formattedReturnAmount = Math.floor(returnAmount);
       
-      // Add PXB back to user
-      const success = await addPointsToUser(formattedReturnAmount);
+      const userId = userProfile.id;
+      const success = await addPointsToUser(formattedReturnAmount, userId);
       
       if (success) {
         toast({
@@ -208,10 +203,8 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           variant: percentageChange >= 0 ? "default" : "destructive",
         });
         
-        // Mark this bet as sold/completed
-        // In a real app, you'd update the database here
         localStorage.setItem(`sold_${bet.id}`, 'true');
-        window.location.reload(); // Refresh to update UI
+        window.location.reload();
       } else {
         throw new Error("Failed to complete the sale");
       }
