@@ -218,11 +218,13 @@ export const usePointOperations = (
           throw new Error('Failed to create bet');
         }
 
-        // Update user points in Supabase
+        console.log('Created bet in Supabase:', newBet);
+
+        // Update user points in Supabase - important for deducting points
         const { error: updateError } = await supabase
           .from('users')
           .update({ points: userProfile.pxbPoints - betAmount })
-          .eq('wallet_address', walletAddress);
+          .eq('id', userProfile.id);
 
         if (updateError) {
           console.error('Error updating user points after bet:', updateError);
@@ -244,6 +246,7 @@ export const usePointOperations = (
         const pxbBet: PXBBet = {
           id: newBet.id,
           userId: userProfile.id,
+          creator: walletAddress,
           tokenMint: newBet.tokenMint,
           tokenName: newBet.tokenName,
           tokenSymbol: newBet.tokenSymbol,
@@ -385,7 +388,7 @@ export const usePointOperations = (
     placeBet,
     sendPoints,
     generatePxbId: useCallback(() => generatePxbId(userProfile), [userProfile]),
-    mintingPoints, // Expose the mintingPoints state
-    transferFeature // Expose the transferFeature state
+    mintingPoints,
+    transferFeature
   };
 };

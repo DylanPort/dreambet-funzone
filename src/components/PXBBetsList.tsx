@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -8,21 +9,21 @@ import PXBBetCard from '@/components/PXBBetCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { useToast } from '@/hooks/use-toast';
+
 const PXBBetsList = () => {
-  const {
-    publicKey
-  } = useWallet();
-  const {
-    userProfile
-  } = usePXBPoints();
+  const { publicKey } = useWallet();
+  const { userProfile, fetchUserBets } = usePXBPoints();
   const [bets, setBets] = useState<PXBBet[]>([]);
   const [loading, setLoading] = useState(true);
   const [marketCapData, setMarketCapData] = useState<Record<string, {
     initialMarketCap: number | null;
     currentMarketCap: number | null;
   }>>({});
+  const { toast } = useToast();
+  
   useEffect(() => {
-    const fetchUserBets = async () => {
+    const fetchBets = async () => {
       if (!publicKey && !userProfile) {
         setLoading(false);
         return;
@@ -46,9 +47,10 @@ const PXBBetsList = () => {
               token_name,
               token_symbol
             )
-          `).eq('creator', userId).order('created_at', {
-          ascending: false
-        }).limit(10);
+          `).or(`creator.eq.${publicKey?.toString()},bettor1_id.eq.${userId}`)
+          .order('created_at', { ascending: false })
+          .limit(10);
+          
         if (error) {
           console.error('Error fetching PXB bets:', error);
           setLoading(false);
@@ -84,9 +86,11 @@ const PXBBetsList = () => {
             } else if (bet.outcome === 'loss') {
               status = 'lost';
             }
+            
             return {
               id: bet.bet_id,
               userId: bet.bettor1_id,
+              creator: bet.creator,
               tokenMint: bet.token_mint,
               tokenName,
               tokenSymbol,
@@ -127,12 +131,21 @@ const PXBBetsList = () => {
         }
       } catch (error) {
         console.error('Error in fetchUserBets:', error);
+        toast({
+          title: "Error fetching bets",
+          description: "Failed to fetch your bets. Please try again.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
-    fetchUserBets();
+    
+    if (userProfile || publicKey) {
+      fetchBets();
+    }
   }, [publicKey, userProfile]);
+
   if (loading) {
     return <div className="glass-panel p-6">
         <h2 className="font-semibold text-xl mb-4">Your PXB Bets</h2>
@@ -157,6 +170,35 @@ const PXBBetsList = () => {
         </div>
       </div>;
   }
-  return;
+
+  return (
+    <div className="glass-panel p-6">
+      <h2 className="font-semibold text-xl mb-4">Your PXB Bets</h2>
+      <div className="space-y-4">
+        {bets.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-dream-foreground/70 mb-3">You haven't placed any bets yet</p>
+            <Button asChild variant="outline">
+              <Link to="/betting">Place your first bet</Link>
+            </Button>
+          </div>
+        ) : (
+          <>
+            {bets.map((bet) => (
+              <PXBBetCard 
+                key={bet.id} 
+                bet={bet} 
+                marketCapData={marketCapData[bet.tokenMint]} 
+              />
+            ))}
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/betting">Place a new bet</Link>
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
 };
+
 export default PXBBetsList;
