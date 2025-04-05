@@ -26,6 +26,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
 import TokenTrading from '@/components/TokenTrading';
+import TokenTradeHistory from '@/components/TokenTradeHistory';
 
 const TokenChart = ({
   tokenId,
@@ -812,14 +813,8 @@ const TokenDetail = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 <div className="glass-panel p-6">
-                  <h3 className="text-xl font-display font-bold mb-4">Token Bets</h3>
-                  
-                  {bets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
-                      <p>No bets available for this token yet.</p>
-                      <p className="text-sm mt-2">Be the first to create a bet!</p>
-                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey?.toString() || null} onAcceptBet={handleAcceptBet} />)}
-                    </div>}
+                  <h3 className="text-xl font-display font-bold mb-4">Trade History</h3>
+                  <TokenTradeHistory tokenId={id || ''} />
                 </div>
                 
                 <div className="glass-panel p-6">
