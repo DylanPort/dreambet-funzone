@@ -76,6 +76,12 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
     return () => clearInterval(interval);
   }, [tokenId, pxbContext.fetchTokenTransactions]);
 
+  // Calculate percentage change from original PXB amount to current value
+  const calculatePercentageChange = (original: number, current: number | undefined): number => {
+    if (!current || original === 0) return 0;
+    return ((current - original) / original) * 100;
+  };
+
   return <div className="space-y-4 max-h-96 overflow-y-auto">
       {loading && <div className="text-center py-8 text-dream-foreground/70">
           <p>Loading PXB transaction history...</p>
@@ -101,12 +107,26 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
             
             <div className="grid grid-cols-2 gap-2 text-sm mb-2">
               <div>
-                <div className="text-dream-foreground/70">PXB Spent</div>
+                <div className="text-dream-foreground/70 text-xs">PXB Spent</div>
                 <div className="font-medium">{formatAmount(trade.pxbAmount)} PXB</div>
               </div>
               <div>
-                <div className="text-dream-foreground/70">Current PXB Value</div>
-                <div className="font-medium">{formatAmount(trade.currentPxbValue || trade.pxbAmount)} PXB</div>
+                <div className="text-dream-foreground/70 text-xs">Current PXB Value</div>
+                <div className="font-medium">
+                  {formatAmount(trade.currentPxbValue || 0)} PXB
+                  {trade.currentPxbValue !== undefined && (
+                    <span className={`ml-1 text-xs ${
+                      calculatePercentageChange(trade.pxbAmount, trade.currentPxbValue) > 0 
+                        ? 'text-green-400' 
+                        : calculatePercentageChange(trade.pxbAmount, trade.currentPxbValue) < 0 
+                          ? 'text-red-400' 
+                          : 'text-dream-foreground/70'
+                    }`}>
+                      ({calculatePercentageChange(trade.pxbAmount, trade.currentPxbValue) > 0 ? '+' : ''}
+                      {calculatePercentageChange(trade.pxbAmount, trade.currentPxbValue).toFixed(2)}%)
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             
