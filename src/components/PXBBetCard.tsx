@@ -27,6 +27,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [tokenAmount, setTokenAmount] = useState<number>(0);
   const [isSelling, setIsSelling] = useState(false);
+  const [livePxbValue, setLivePxbValue] = useState<number>(bet.betAmount || 0);
   const { addPointsToUser, userProfile } = usePXBPoints();
   
   useEffect(() => {
@@ -61,6 +62,12 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
             currentMarketCap: newMarketCap
           }));
           setLastUpdated(new Date());
+          
+          if (bet.betAmount && bet.initialMarketCap) {
+            const percentageChange = ((newMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
+            const updatedPxbValue = bet.betAmount + (bet.betAmount * (percentageChange / 100));
+            setLivePxbValue(Math.floor(updatedPxbValue));
+          }
         }
       } catch (error) {
         console.error("Error updating market cap:", error);
@@ -71,7 +78,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     const intervalId = setInterval(updateMarketCap, 30000);
     
     return () => clearInterval(intervalId);
-  }, [bet.tokenMint, bet.initialMarketCap, initialMarketCapData]);
+  }, [bet.tokenMint, bet.initialMarketCap, bet.betAmount, initialMarketCapData]);
 
   useEffect(() => {
     if (bet.initialMarketCap && bet.betAmount) {
@@ -280,6 +287,18 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
             </span>
             <span className="font-bold text-dream-foreground">
               {tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {bet.tokenSymbol}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 bg-black/40 rounded-md p-2 flex justify-between items-center">
+          <span className="text-xs text-dream-foreground/60">
+            Current PXB Value
+          </span>
+          <div className={`font-mono font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+            {livePxbValue} PXB 
+            <span className="ml-1 text-xs">
+              ({isPositiveChange ? '+' : ''}{marketCapChange.toFixed(2)}%)
             </span>
           </div>
         </div>
