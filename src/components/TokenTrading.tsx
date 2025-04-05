@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, LineChart, RefreshCw, ArrowDown, ArrowUp, ShoppingCart, Trash2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, LineChart, RefreshCw, ArrowDown, ArrowUp, ShoppingCart, Trash2, User, Clock, Copy } from 'lucide-react';
 import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 
 interface TokenTradingProps {
   tokenId: string;
@@ -251,7 +252,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
               </div>
               <div>
                 <span className="text-purple-400 font-semibold">PumpXBounty</span>
-                <span className="text-dream-foreground/60 ml-1">POINTS</span>
+                <span className="text-dream-foreground/60 ml-1">{transaction.tokenSymbol}</span>
               </div>
             </div>
             <div className="text-purple-400 font-mono font-bold text-lg">
@@ -260,7 +261,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           </div>
 
           <div className="flex items-center text-sm text-dream-foreground/70 mt-1">
-            <Loader2 className="w-4 h-4 mr-1 opacity-70" />
+            <Clock className="w-4 h-4 mr-1 opacity-70" />
             <span>{formatTimeAgo(transaction.createdAt)}</span>
             <span className="mx-2">•</span>
             <span>Purchase</span>
@@ -344,7 +345,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
           <div className="flex items-center justify-between mt-3 text-sm">
             <div className="flex items-center">
-              <ShoppingCart className="w-4 h-4 mr-1 text-dream-foreground/60" />
+              <User className="w-4 h-4 mr-1 text-dream-foreground/60" />
               <span className="text-dream-foreground/60 mr-1">Buyer</span>
               <span className="font-medium">{transaction.userId}</span>
             </div>
@@ -383,7 +384,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="buy" className="space-y-4">
+        <TabsContent value="buy">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold">Buy {tokenSymbol} Tokens</h3>
             <Button variant="ghost" size="sm" onClick={refreshMarketCap}>

@@ -2,7 +2,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createQueryClient } from "./services/queryClient";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SolanaWalletProvider from "./providers/SolanaWalletProvider";
 import { PXBPointsProvider } from "./contexts/pxb/PXBPointsContext";
@@ -17,16 +18,8 @@ import BetDetails from "./pages/BetDetails";
 import UserProfile from "./pages/UserProfile";
 import Community from "./pages/Community";
 
-// Configure Query Client with retry options for better error handling
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 2,
-      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
+// Use the createQueryClient function for better error handling
+const queryClient = createQueryClient();
 
 function App() {
   console.log("App rendering");
