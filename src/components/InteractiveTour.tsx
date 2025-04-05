@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, HTMLMotionProps, AnimationProps } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -453,80 +453,231 @@ const InteractiveTour = () => {
   return (
     <div className={`flex justify-center items-center w-full my-4 md:my-8 mx-auto ${isMobile ? 'max-w-[300px]' : 'max-w-[600px]'}`}>
       {fileInput}
-      <motion.div 
-        className={`relative ${isMobile ? 'w-[300px] h-[350px]' : 'w-[400px] md:w-[600px] h-[250px] md:h-[330px]'} flex items-center justify-center rounded-2xl overflow-hidden`} 
-        style={{ perspective: '1000px' }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
-        <motion.div 
-          className="absolute inset-0 w-full h-full [transform-style:preserve-3d]" 
-          style={{ 
-            transform: isHovering ? 'rotateX(0deg) rotateY(0deg)' : 'rotateX(10deg) rotateY(5deg)',
-            transition: 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-          }} 
-          onMouseEnter={() => setIsHovering(true)} 
-          onMouseLeave={() => setIsHovering(false)}
-        >
-          <div 
-            className="absolute inset-0 bg-gradient-to-r from-[#06050b]/95 to-[#0c0a15]/95 
-                    backdrop-blur-md rounded-2xl border border-indigo-500/20 shadow-[0_0_15px_rgba(79,70,229,0.2)]
-                    overflow-hidden z-0" 
-            style={{
-              boxShadow: isHovering ? '0 0 25px rgba(125, 97, 229, 0.5)' : '0 0 15px rgba(79, 70, 229, 0.2)',
-              borderColor: isHovering ? 'rgba(125, 97, 229, 0.4)' : 'rgba(79, 70, 229, 0.2)',
-              transition: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-            }}
-          >
-            <motion.div 
-              className="absolute h-[2px] w-full bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"
-              animate={{ top: ['0%', '100%'] }}
-              transition={{
-                duration: 10,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-              style={{ 
-                top: 0,
-                left: 0
-              }}
-            />
+      <motion.div className={`relative ${isMobile ? 'w-[300px] h-[350px]' : 'w-[400px] md:w-[600px] h-[250px] md:h-[330px]'} flex items-center justify-center rounded-2xl overflow-hidden`} style={{
+      perspective: '1000px',
+      transformStyle: 'preserve-3d'
+    }} initial={{
+      opacity: 0
+    }} animate={{
+      opacity: 1
+    }} transition={{
+      duration: 0.8
+    }}>
+        <motion.div className="absolute inset-0 w-full h-full" style={{
+        transform: isHovering ? 'rotateX(0deg) rotateY(0deg)' : 'rotateX(10deg) rotateY(5deg)',
+        transformStyle: 'preserve-3d',
+        transition: 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+      }} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#06050b]/95 to-[#0c0a15]/95 
+                        backdrop-blur-md rounded-2xl border border-indigo-500/20 shadow-[0_0_15px_rgba(79,70,229,0.2)]
+                        overflow-hidden z-0" style={{
+          boxShadow: isHovering ? '0 0 25px rgba(125, 97, 229, 0.5)' : '0 0 15px rgba(79, 70, 229, 0.2)',
+          borderColor: isHovering ? 'rgba(125, 97, 229, 0.4)' : 'rgba(79, 70, 229, 0.2)',
+          transition: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+        }}>
+            
+            <div className="absolute inset-0 opacity-10">
+              <div className="h-full w-full" style={{
+              backgroundImage: 'linear-gradient(to right, #4f46e5 1px, transparent 1px), linear-gradient(to bottom, #4f46e5 1px, transparent 1px)',
+              backgroundSize: '25px 25px',
+              transform: 'perspective(500px) rotateX(10deg) translateZ(0px)'
+            }}></div>
+            </div>
+            
+            <motion.div className="absolute h-[2px] w-full bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" style={{
+            top: '0%',
+            left: 0
+          }} animate={{
+            top: ['0%', '100%']
+          }} transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "linear"
+          }} />
             
             <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan-400/40 rounded-tl-lg"></div>
             <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-indigo-400/40 rounded-tr-lg"></div>
             <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-indigo-400/40 rounded-bl-lg"></div>
             <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-cyan-400/40 rounded-br-lg"></div>
             
-            {[...Array(10)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full bg-[#33C3F0]"
-                animate={{
-                  opacity: [0.2, 0.4, 0.2],
-                  scale: [1, 1.2, 1]
-                }}
-                transition={{
-                  duration: 4 + Math.random() * 4,
-                  repeat: Infinity,
-                  repeatType: "reverse",
-                  ease: "easeInOut",
-                  delay: i * 0.3
-                }}
-                style={{
-                  width: `${Math.random() * 8 + 2}px`,
-                  height: `${Math.random() * 8 + 2}px`,
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  filter: "blur(20px)",
-                  opacity: 0.4,
-                  zIndex: Math.random() > 0.5 ? 1 : -1
-                }}
-              />
-            ))}
+            {[...Array(10)].map((_, i) => <motion.div key={i} className="absolute rounded-full" style={{
+            width: Math.random() * 80 + 30,
+            height: Math.random() * 80 + 30,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            background: `radial-gradient(circle, rgba(79,70,229,0.2) 0%, rgba(79,70,229,0) 70%)`,
+            filter: "blur(20px)",
+            opacity: 0.4
+          }} animate={{
+            opacity: [0.2, 0.4, 0.2],
+            scale: [1, 1.2, 1]
+          }} transition={{
+            duration: 4 + Math.random() * 4,
+            repeat: Infinity,
+            repeatType: "reverse",
+            ease: "easeInOut",
+            delay: i * 0.3
+          }} />)}
           </div>
           
-          <motion.div className="absolute inset-0 rounded-2xl pointer-events-none overflow-hidden">
+          <div className="absolute top-3 left-3 z-20">
+            <motion.div className="h-4 w-4 rounded-full bg-cyan-400/60" animate={{
+            opacity: [0.4, 0.8, 0.4]
+          }} transition={{
+            duration: 2,
+            repeat: Infinity
+          }} />
+          </div>
+          <div className="absolute top-3 right-3 z-20">
+            <motion.div className="flex items-center justify-center h-6 w-6 rounded-full bg-[#1A1F2C]/80 border border-indigo-500/40" animate={{
+            borderColor: ['rgba(99, 102, 241, 0.2)', 'rgba(99, 102, 241, 0.5)', 'rgba(99, 102, 241, 0.2)']
+          }} transition={{
+            duration: 3,
+            repeat: Infinity
+          }}>
+              <Cpu className="h-3 w-3 text-indigo-300/80" />
+            </motion.div>
+          </div>
+          
+          <AnimatePresence mode="wait">
+            <motion.div key={currentStep} style={{
+            transformStyle: 'preserve-3d',
+            transform: 'translateZ(20px)'
+          }} initial={{
+            opacity: 0
+          }} animate={{
+            opacity: 1
+          }} exit={{
+            opacity: 0
+          }} transition={{
+            duration: 0.3,
+            ease: "easeInOut"
+          }} className="relative z-10 text-center p-4 sm:p-6 w-full h-full flex flex-col justify-center bg-gradient-to-b from-[#06050b]/95 to-[#0c0a15]/95 backdrop-blur-lg">
+              {isMobile ? <ScrollArea className="h-full pr-2">
+                  <div className="flex flex-col items-center justify-start py-2">
+                    <div className="w-full w-[120px] flex justify-center items-center mb-4 relative">
+                      {renderVideo(currentStep, 'small')}
+                      
+                      <motion.div className="absolute -bottom-1 -right-1 h-3 w-3 bg-cyan-400/80 rounded-full" animate={{
+                    opacity: [0.5, 1, 0.5]
+                  }} transition={{
+                    duration: 1.5,
+                    repeat: Infinity
+                  }} />
+                    </div>
+                    
+                    <div className="w-full mt-2 flex flex-col items-center">
+                      
+                      
+                      <motion.h2 className="text-lg font-bold mb-2 text-white/90" style={{
+                    transformStyle: 'preserve-3d',
+                    transform: 'translateZ(20px)'
+                  }}>
+                        {steps[currentStep].title}
+                      </motion.h2>
+                      
+                      <motion.p className="text-indigo-100/70 text-xs mb-2" style={{
+                    transformStyle: 'preserve-3d',
+                    transform: 'translateZ(15px)'
+                  }}>
+                        {steps[currentStep].description}
+                      </motion.p>
+                      
+                      <motion.div style={{
+                    transformStyle: 'preserve-3d',
+                    transform: 'translateZ(25px)'
+                  }}>
+                        {steps[currentStep].action}
+                      </motion.div>
+                    </div>
+                  </div>
+                  {currentStep === 0 && renderSocialButtons()}
+                </ScrollArea> : <div className="flex flex-row items-center justify-center gap-6">
+                  <motion.div className="w-1/2 flex justify-center items-center mb-0 relative" style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(40px)'
+              }}>
+                    {renderVideo(currentStep, 'large')}
+                    
+                    
+                    <motion.div className="absolute -top-1 -left-1 h-2 w-8 bg-gradient-to-r from-cyan-400/70 to-transparent rounded-full" animate={{
+                  opacity: [0.3, 0.7, 0.3]
+                }} transition={{
+                  duration: 2,
+                  repeat: Infinity
+                }} />
+                    <motion.div className="absolute -bottom-1 -right-1 h-8 w-2 bg-gradient-to-t from-indigo-400/70 to-transparent rounded-full" animate={{
+                  opacity: [0.3, 0.7, 0.3]
+                }} transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: 0.5
+                }} />
+                  </motion.div>
+                  
+                  <div className="w-1/2 flex flex-col items-start">
+                    <div className="mb-4 flex items-center justify-start">
+                      
+                      <div className="h-[1px] w-12 bg-gradient-to-r from-indigo-500/50 to-transparent"></div>
+                    </div>
+                    
+                    <motion.h2 className="text-2xl font-bold mb-2 text-white/90" style={{
+                  transformStyle: 'preserve-3d',
+                  transform: 'translateZ(20px)'
+                }}>
+                      {steps[currentStep].title}
+                    </motion.h2>
+                    
+                    <motion.p className="text-indigo-100/70 text-sm mb-4" style={{
+                  transformStyle: 'preserve-3d',
+                  transform: 'translateZ(15px)'
+                }}>
+                      {steps[currentStep].description}
+                    </motion.p>
+                    
+                    <motion.div style={{
+                  transformStyle: 'preserve-3d',
+                  transform: 'translateZ(25px)'
+                }}>
+                      {steps[currentStep].action}
+                    </motion.div>
+                  </div>
+                  {currentStep === 0 && renderSocialButtons()}
+                </div>}
+              
+              <div className="mt-3 md:mt-5 flex justify-center space-x-2">
+                {steps.map((_, index) => <motion.button key={index} className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full transition-all ${currentStep === index ? 'bg-indigo-400/80 scale-125' : 'bg-gray-700/50 hover:bg-gray-600/70'}`} onClick={() => setCurrentStep(index)} aria-label={`Go to step ${index + 1}`} whileHover={{
+                scale: 1.2
+              }} style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(20px)'
+              }} />)}
+              </div>
+              
+              <div className="absolute bottom-2 md:bottom-4 right-2 md:right-4 flex space-x-2">
+                {currentStep > 0 && <Button variant="ghost" size="sm" className="text-xs md:text-sm text-white/50 hover:text-white/80 hover:bg-[#1A1F2C]/70 z-10 px-2 py-1 md:px-4 md:py-2" onClick={handlePrevStep} style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(20px)'
+              }}>
+                    Back
+                  </Button>}
+                
+                {currentStep < steps.length - 1 ? <Button variant="default" size="sm" className="text-xs md:text-sm bg-gradient-to-r from-[#221F26]/90 to-[#403E43]/90 hover:from-[#221F26] hover:to-[#403E43] text-white/80 z-10 px-2 py-1 md:px-4 md:py-2 flex items-center" onClick={handleNextStep} style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(20px)'
+              }}>
+                    Next <ChevronRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
+                  </Button> : <Button variant="default" size="sm" className="text-xs md:text-sm bg-gradient-to-r from-[#222]/90 to-[#333]/90 hover:from-[#222] hover:to-[#333] text-white/80 z-10 px-2 py-1 md:px-4 md:py-2" onClick={handleNextStep} style={{
+                transformStyle: 'preserve-3d',
+                transform: 'translateZ(20px)'
+              }}>
+                    Finish
+                  </Button>}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+          
+          <div className="absolute inset-0 rounded-2xl pointer-events-none overflow-hidden">
             <div className="absolute inset-0 rounded-2xl border border-indigo-400/10"></div>
             <div className="absolute inset-0 rounded-2xl border-2 border-indigo-400/5 blur-[1px]"></div>
             <div className="absolute -inset-[1px] rounded-2xl border border-indigo-300/5 blur-[2px]"></div>
@@ -539,7 +690,7 @@ const InteractiveTour = () => {
             <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-indigo-400/40"></div>
             <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-indigo-400/40"></div>
             <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-cyan-400/40"></div>
-          </motion.div>
+          </div>
         </motion.div>
       </motion.div>
     </div>
