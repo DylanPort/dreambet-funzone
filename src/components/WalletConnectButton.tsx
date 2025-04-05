@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase, isAuthRateLimited, checkSupabaseTables } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const globalAuthState = {
   lastAttemptTime: 0,
@@ -40,9 +42,11 @@ const WalletConnectButton = () => {
       const walletAddress = publicKey.toString();
       console.log(`Authenticating wallet ${walletAddress} with Supabase...`);
       
+      // Store wallet information in localStorage for recovery
       localStorage.setItem('wallet_auth_data', JSON.stringify({
         publicKey: walletAddress,
         email: `${walletAddress}@solana.wallet`,
+        password: walletAddress,
         timestamp: Date.now()
       }));
       
@@ -180,6 +184,9 @@ const WalletConnectButton = () => {
                 connected
               } 
             }));
+            
+            // Ensure we also attempt Supabase authentication
+            authenticateWithSupabase();
           } else {
             console.warn("❌ Wallet connection issue: missing public key");
             setIsFullyConnected(false);
@@ -201,7 +208,7 @@ const WalletConnectButton = () => {
     }, 1200);
 
     return () => clearTimeout(timeoutId);
-  }, [connected, publicKey, wallet]);
+  }, [connected, publicKey, wallet, authenticateWithSupabase]);
 
   useEffect(() => {
     if (connected && !isFullyConnected) {
@@ -222,12 +229,15 @@ const WalletConnectButton = () => {
               connected
             } 
           }));
+          
+          // Ensure we also attempt Supabase authentication here as well
+          authenticateWithSupabase();
         }
       }, 3000);
       
       return () => clearTimeout(secondCheck);
     }
-  }, [connected, publicKey, wallet, isFullyConnected]);
+  }, [connected, publicKey, wallet, isFullyConnected, authenticateWithSupabase]);
 
   const handleForceReconnect = async () => {
     try {

@@ -37,53 +37,59 @@ export interface TokenTransaction {
 
 // Helper function to get authenticated user or throw an error
 async function getAuthenticatedUser() {
-  // First check if we have a session
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  
-  if (sessionError) {
-    console.error('Session error:', sessionError);
-    throw new Error('Authentication error. Please sign in and try again.');
-  }
-
-  if (!sessionData?.session) {
-    // If no session, try to sign in with wallet if possible
-    const walletAuthData = localStorage.getItem('wallet_auth_data');
+  try {
+    // First check if we have a session
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    if (walletAuthData) {
-      try {
-        const { publicKey, email } = JSON.parse(walletAuthData);
-        
-        if (publicKey) {
-          console.log(`Attempting to sign in with wallet: ${publicKey}`);
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      throw new Error('Authentication error. Please sign in and try again.');
+    }
+
+    if (!sessionData?.session) {
+      // If no session, try to sign in with wallet if possible
+      const walletAuthData = localStorage.getItem('wallet_auth_data');
+      
+      if (walletAuthData) {
+        try {
+          const parsedData = JSON.parse(walletAuthData);
+          const { publicKey, email, password } = parsedData;
           
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: `${publicKey}@solana.wallet`,
-            password: publicKey,
-          });
-          
-          if (error) {
-            console.error('Failed wallet auto-auth:', error);
-            throw new Error('Authentication error. Please sign in again.');
+          if (publicKey && password) {
+            console.log(`Attempting to sign in with wallet: ${publicKey}`);
+            
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: email || `${publicKey}@solana.wallet`,
+              password: password || publicKey,
+            });
+            
+            if (error) {
+              console.error('Failed wallet auto-auth:', error);
+              throw new Error('Authentication error. Please disconnect and reconnect your wallet.');
+            }
+            
+            if (data?.user) {
+              console.log('Successfully authenticated with wallet');
+              return data.user;
+            }
           }
-          
-          if (data?.user) {
-            console.log('Successfully authenticated with wallet');
-            return data.user;
-          }
+        } catch (e) {
+          console.error('Error during wallet authentication:', e);
         }
-      } catch (e) {
-        console.error('Error during wallet authentication:', e);
       }
+      
+      throw new Error('Authentication error. Please connect your wallet and sign in.');
     }
     
-    throw new Error('Authentication error. Please connect your wallet and sign in.');
+    if (!sessionData.session.user) {
+      throw new Error('Authentication error. User data missing.');
+    }
+    
+    return sessionData.session.user;
+  } catch (error) {
+    console.error('Authentication error:', error);
+    throw error;
   }
-  
-  if (!sessionData.session.user) {
-    throw new Error('Authentication error. User data missing.');
-  }
-  
-  return sessionData.session.user;
 }
 
 // Buy tokens with PXB points
