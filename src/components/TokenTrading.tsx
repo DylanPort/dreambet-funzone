@@ -39,7 +39,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
   const { toast } = useToast();
   const { userProfile, placeBet, mintPoints } = usePXBPoints();
-  const pumpPortalService = usePumpPortalWebSocket();
+  const { pumpPortal } = usePumpPortalWebSocket();
 
   useEffect(() => {
     if (currentMarketCap) {
@@ -101,8 +101,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         tokenAmount: tokenAmount
       });
 
-      if (pumpPortalService.connected) {
-        pumpPortalService.subscribeToToken(tokenId);
+      if (pumpPortal.connected) {
+        pumpPortal.subscribeToToken(tokenId);
       }
 
       toast({
