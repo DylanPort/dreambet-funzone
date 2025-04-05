@@ -8,6 +8,8 @@ import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
 import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 
 interface PXBBetCardProps {
   bet: PXBBet;
@@ -25,6 +27,8 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   const [marketCapData, setMarketCapData] = useState(initialMarketCapData);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [tokenAmount, setTokenAmount] = useState<number>(0);
+  const [isSelling, setIsSelling] = useState(false);
+  const { addPointsToUser, userProfile } = usePXBPoints();
   
   useEffect(() => {
     const loadTokenImage = async () => {
@@ -178,11 +182,57 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
     });
   };
 
+  const handleSellToken = async () => {
+    if (!userProfile || !marketCapData?.currentMarketCap) return;
+    
+    try {
+      setIsSelling(true);
+      
+      // Calculate value based on current market cap
+      const initialMarketCap = bet.initialMarketCap || marketCapData.initialMarketCap || 0;
+      const currentMarketCap = marketCapData.currentMarketCap;
+      const percentageChange = ((currentMarketCap - initialMarketCap) / initialMarketCap) * 100;
+      
+      // Calculate PXB to return to user based on market cap change
+      const originalPXB = bet.betAmount;
+      const returnAmount = originalPXB * (1 + (percentageChange / 100));
+      const formattedReturnAmount = Math.floor(returnAmount); // Round down to be safe
+      
+      // Add PXB back to user
+      const success = await addPointsToUser(formattedReturnAmount);
+      
+      if (success) {
+        toast({
+          title: "Tokens Sold Successfully",
+          description: `You've received ${formattedReturnAmount} PXB from selling your ${bet.tokenSymbol} tokens.`,
+          variant: percentageChange >= 0 ? "default" : "destructive",
+        });
+        
+        // Mark this bet as sold/completed
+        // In a real app, you'd update the database here
+        localStorage.setItem(`sold_${bet.id}`, 'true');
+        window.location.reload(); // Refresh to update UI
+      } else {
+        throw new Error("Failed to complete the sale");
+      }
+    } catch (error) {
+      console.error("Error selling tokens:", error);
+      toast({
+        title: "Error Selling Tokens",
+        description: "There was a problem selling your tokens. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSelling(false);
+    }
+  };
+
   const truncatedAddress = bet.userId ? `${bet.userId.substring(0, 4)}...${bet.userId.substring(bet.userId.length - 4)}` : '8efb9f...9547';
   const initialMarketCap = bet.initialMarketCap || marketCapData?.initialMarketCap;
   const currentMarketCap = marketCapData?.currentMarketCap || initialMarketCap;
   const marketCapChange = calculateMarketCapChange();
   const isPositiveChange = marketCapChange >= 0;
+  const isSold = localStorage.getItem(`sold_${bet.id}`) === 'true';
 
   return (
     <div className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden">
@@ -278,6 +328,25 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
             <span className="ml-2 font-bold">{Math.abs(marketCapChange).toFixed(2)}%</span>
           </div>
         </div>
+
+        {!isSold && (
+          <div className="mt-4">
+            <Button 
+              variant={isPositiveChange ? "default" : "destructive"} 
+              className="w-full" 
+              onClick={handleSellToken}
+              disabled={isSelling}
+            >
+              {isSelling ? "Processing..." : `Sell for ${Math.floor(bet.betAmount * (1 + (marketCapChange / 100)))} PXB (${isPositiveChange ? '+' : ''}${marketCapChange.toFixed(2)}%)`}
+            </Button>
+          </div>
+        )}
+
+        {isSold && (
+          <div className="mt-4 text-center p-2 bg-black/30 rounded-md border border-green-500/20 text-green-400">
+            Sold successfully
+          </div>
+        )}
 
         <div className="mt-2 text-xs text-dream-foreground/40">
           <div className="cursor-pointer hover:text-dream-foreground/60 transition-colors truncate" 
