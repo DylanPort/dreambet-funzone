@@ -8,6 +8,7 @@ import { usePointOperations } from './usePointOperations';
 import { useBetProcessor } from './useBetProcessor';
 import { useReferralSystem } from './useReferralSystem';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const PXBPointsContext = createContext<PXBPointsContextType | undefined>(undefined);
 
@@ -139,6 +140,88 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // New function to fetch all token transactions from all users
+  const fetchAllTokenTransactions = async (tokenId: string) => {
+    try {
+      // Query the token_transactions table for this specific token
+      const { data, error } = await supabase
+        .from('token_transactions')
+        .select('*')
+        .eq('tokenid', tokenId)
+        .order('timestamp', { ascending: false });
+        
+      if (error) {
+        console.error("Error fetching public token transactions:", error);
+        return [];
+      }
+      
+      // If we have data from the token_transactions table, format and return it
+      if (data && data.length > 0) {
+        return data.map(tx => ({
+          id: tx.id,
+          timestamp: tx.timestamp,
+          type: tx.type,
+          tokenAmount: tx.quantity,
+          price: tx.price,
+          pxbAmount: tx.pxbamount,
+          userId: tx.userid,
+          tokenId: tx.tokenid,
+          tokenName: tx.tokenname,
+          tokenSymbol: tx.tokensymbol,
+          buyerAddress: tx.type === 'buy' ? tx.userid : undefined,
+          sellerAddress: tx.type === 'sell' ? tx.userid : undefined,
+        }));
+      }
+      
+      // Fallback to using bets as a data source
+      const { data: allBets, error: betsError } = await supabase
+        .from('bets')
+        .select('*')
+        .eq('token_mint', tokenId)
+        .order('created_at', { ascending: false });
+        
+      if (betsError) {
+        console.error("Error fetching bets for token transactions:", betsError);
+        return [];
+      }
+      
+      if (allBets && allBets.length > 0) {
+        return allBets.map(bet => {
+          // Determine transaction type - "buy" for "up" bets and "sell" for "down" bets
+          const transactionType = bet.prediction_bettor1 === 'up' ? 'buy' : 'sell';
+          
+          let currentValue = bet.sol_amount;
+          if (bet.status === 'won') {
+            currentValue = bet.points_won || bet.sol_amount * 2;
+          } else if (bet.status === 'lost') {
+            currentValue = 0;
+          }
+          
+          return {
+            id: bet.bet_id,
+            timestamp: bet.created_at,
+            type: transactionType,
+            tokenAmount: bet.sol_amount * 10,
+            price: 0.001,
+            pxbAmount: bet.sol_amount,
+            userId: bet.bettor1_id,
+            tokenId: bet.token_mint,
+            tokenName: bet.token_name || '',
+            tokenSymbol: bet.token_symbol || '',
+            buyerAddress: transactionType === 'buy' ? bet.bettor1_id : undefined,
+            sellerAddress: transactionType === 'sell' ? bet.bettor1_id : undefined,
+            currentPxbValue: currentValue
+          };
+        });
+      }
+      
+      return [];
+    } catch (error) {
+      console.error("Error in fetchAllTokenTransactions:", error);
+      return [];
+    }
+  };
+
   return (
     <PXBPointsContext.Provider
       value={{
@@ -167,7 +250,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         referralStats,
         fetchReferralStats,
         isLoadingReferrals,
-        fetchTokenTransactions
+        fetchTokenTransactions,
+        fetchAllTokenTransactions
       }}
     >
       {children}
