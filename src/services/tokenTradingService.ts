@@ -52,22 +52,133 @@ export const buyTokensWithPXB = async (
     // Calculate how many tokens the user gets based on PXB and token market cap
     const pxbValue = pxbAmount * PXB_VIRTUAL_PRICE;
     const estimatedTokenQuantity = pxbValue / tokenMarketCap * 1000000; // Adjust for better precision
-
-    // Call RPC function to handle the transaction
-    const { data, error } = await supabase.rpc('buy_token_with_pxb', {
-      user_id: userId,
-      token_id: tokenId,
-      token_name: tokenName,
-      token_symbol: tokenSymbol,
-      pxb_amount: pxbAmount,
-      token_quantity: estimatedTokenQuantity,
-      token_price: tokenMarketCap / 1000000 // Price per token
-    });
-
-    if (error) {
-      console.error('Error buying tokens:', error);
-      toast.error(`Failed to buy tokens: ${error.message}`);
+    
+    // Get user points
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('points')
+      .eq('id', userId)
+      .single();
+    
+    if (userError || !userData) {
+      console.error('Error fetching user data:', userError);
+      toast.error('Could not verify points balance');
       return false;
+    }
+    
+    if (userData.points < pxbAmount) {
+      toast.error('Insufficient PXB points');
+      return false;
+    }
+    
+    // Start a transaction manually using multiple queries
+    // 1. Deduct points from user
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ points: userData.points - pxbAmount })
+      .eq('id', userId);
+      
+    if (updateError) {
+      console.error('Error updating user points:', updateError);
+      toast.error('Failed to process transaction');
+      return false;
+    }
+    
+    // 2. Check if portfolio entry exists
+    const { data: portfolioData, error: portfolioError } = await supabase
+      .from('token_portfolios')
+      .select('*')
+      .eq('userid', userId)
+      .eq('tokenid', tokenId)
+      .maybeSingle();
+    
+    // 3. Insert or update portfolio
+    const tokenPrice = tokenMarketCap / 1000000;
+    
+    if (portfolioData) {
+      // Update existing portfolio
+      const newQuantity = portfolioData.quantity + estimatedTokenQuantity;
+      const newAvgPrice = (portfolioData.quantity * portfolioData.averagepurchaseprice + 
+                         estimatedTokenQuantity * tokenPrice) / newQuantity;
+      
+      const { error: updatePortfolioError } = await supabase
+        .from('token_portfolios')
+        .update({ 
+          quantity: newQuantity,
+          averagepurchaseprice: newAvgPrice,
+          currentvalue: newQuantity * tokenPrice,
+          lastupdated: new Date().toISOString()
+        })
+        .eq('id', portfolioData.id);
+        
+      if (updatePortfolioError) {
+        console.error('Error updating portfolio:', updatePortfolioError);
+        // Rollback points (in a real app, use database transactions)
+        await supabase
+          .from('users')
+          .update({ points: userData.points })
+          .eq('id', userId);
+        toast.error('Failed to update portfolio');
+        return false;
+      }
+    } else {
+      // Insert new portfolio entry
+      const { error: insertPortfolioError } = await supabase
+        .from('token_portfolios')
+        .insert({
+          userid: userId,
+          tokenid: tokenId,
+          tokenname: tokenName,
+          tokensymbol: tokenSymbol,
+          quantity: estimatedTokenQuantity,
+          averagepurchaseprice: tokenPrice,
+          currentvalue: estimatedTokenQuantity * tokenPrice
+        });
+        
+      if (insertPortfolioError) {
+        console.error('Error creating portfolio:', insertPortfolioError);
+        // Rollback points
+        await supabase
+          .from('users')
+          .update({ points: userData.points })
+          .eq('id', userId);
+        toast.error('Failed to create portfolio');
+        return false;
+      }
+    }
+    
+    // 4. Record transaction
+    const { error: txError } = await supabase
+      .from('token_transactions')
+      .insert({
+        userid: userId,
+        tokenid: tokenId,
+        tokenname: tokenName,
+        tokensymbol: tokenSymbol,
+        quantity: estimatedTokenQuantity,
+        price: tokenPrice,
+        pxbamount: pxbAmount,
+        type: 'buy'
+      });
+      
+    if (txError) {
+      console.error('Error recording transaction:', txError);
+      // Note: We don't rollback here as the purchase succeeded
+    }
+    
+    // 5. Record points history
+    const { error: historyError } = await supabase
+      .from('points_history')
+      .insert({
+        user_id: userId,
+        amount: -pxbAmount,
+        action: 'token_purchase',
+        reference_id: tokenId
+      });
+
+    if (historyError) {
+      console.error('Error recording points history:', historyError);
+      // Note: We don't rollback here as the purchase succeeded
     }
 
     toast.success(`Successfully bought ${estimatedTokenQuantity.toFixed(6)} ${tokenSymbol}`);
@@ -97,22 +208,128 @@ export const sellTokensForPXB = async (
     // Calculate how many PXB points the user gets based on token quantity and market cap
     const tokenValue = tokenQuantity * (tokenMarketCap / 1000000);
     const estimatedPxbAmount = Math.floor(tokenValue / PXB_VIRTUAL_PRICE);
-
-    // Call RPC function to handle the transaction
-    const { data, error } = await supabase.rpc('sell_token_for_pxb', {
-      user_id: userId,
-      token_id: tokenId,
-      token_name: tokenName,
-      token_symbol: tokenSymbol,
-      pxb_amount: estimatedPxbAmount,
-      token_quantity: tokenQuantity,
-      token_price: tokenMarketCap / 1000000 // Price per token
-    });
-
-    if (error) {
-      console.error('Error selling tokens:', error);
-      toast.error(`Failed to sell tokens: ${error.message}`);
+    
+    // Check if user has enough tokens
+    const { data: portfolioData, error: portfolioError } = await supabase
+      .from('token_portfolios')
+      .select('*')
+      .eq('userid', userId)
+      .eq('tokenid', tokenId)
+      .single();
+    
+    if (portfolioError || !portfolioData) {
+      console.error('Error fetching portfolio:', portfolioError);
+      toast.error('Could not find your token holdings');
       return false;
+    }
+    
+    if (portfolioData.quantity < tokenQuantity) {
+      toast.error(`You only have ${portfolioData.quantity} ${tokenSymbol}`);
+      return false;
+    }
+    
+    // Get current user points
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('points')
+      .eq('id', userId)
+      .single();
+    
+    if (userError || !userData) {
+      console.error('Error fetching user data:', userError);
+      toast.error('Could not verify points balance');
+      return false;
+    }
+    
+    // Start manual transaction
+    // 1. Add points to user
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ points: userData.points + estimatedPxbAmount })
+      .eq('id', userId);
+      
+    if (updateError) {
+      console.error('Error updating user points:', updateError);
+      toast.error('Failed to process transaction');
+      return false;
+    }
+    
+    // 2. Update portfolio
+    const newQuantity = portfolioData.quantity - tokenQuantity;
+    const tokenPrice = tokenMarketCap / 1000000;
+    
+    if (newQuantity > 0) {
+      // Update existing portfolio
+      const { error: updatePortfolioError } = await supabase
+        .from('token_portfolios')
+        .update({ 
+          quantity: newQuantity,
+          currentvalue: newQuantity * tokenPrice,
+          lastupdated: new Date().toISOString()
+        })
+        .eq('id', portfolioData.id);
+        
+      if (updatePortfolioError) {
+        console.error('Error updating portfolio:', updatePortfolioError);
+        // Rollback points
+        await supabase
+          .from('users')
+          .update({ points: userData.points })
+          .eq('id', userId);
+        toast.error('Failed to update portfolio');
+        return false;
+      }
+    } else {
+      // Delete portfolio entry if quantity is 0
+      const { error: deletePortfolioError } = await supabase
+        .from('token_portfolios')
+        .delete()
+        .eq('id', portfolioData.id);
+        
+      if (deletePortfolioError) {
+        console.error('Error deleting portfolio:', deletePortfolioError);
+        // Rollback points
+        await supabase
+          .from('users')
+          .update({ points: userData.points })
+          .eq('id', userId);
+        toast.error('Failed to update portfolio');
+        return false;
+      }
+    }
+    
+    // 3. Record transaction
+    const { error: txError } = await supabase
+      .from('token_transactions')
+      .insert({
+        userid: userId,
+        tokenid: tokenId,
+        tokenname: tokenName,
+        tokensymbol: tokenSymbol,
+        quantity: tokenQuantity,
+        price: tokenPrice,
+        pxbamount: estimatedPxbAmount,
+        type: 'sell'
+      });
+      
+    if (txError) {
+      console.error('Error recording transaction:', txError);
+      // Note: We don't rollback here as the sale succeeded
+    }
+    
+    // 4. Record points history
+    const { error: historyError } = await supabase
+      .from('points_history')
+      .insert({
+        user_id: userId,
+        amount: estimatedPxbAmount,
+        action: 'token_sale',
+        reference_id: tokenId
+      });
+
+    if (historyError) {
+      console.error('Error recording points history:', historyError);
+      // Note: We don't rollback here as the sale succeeded
     }
 
     toast.success(`Successfully sold ${tokenQuantity} ${tokenSymbol} for ${estimatedPxbAmount} PXB`);
