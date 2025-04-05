@@ -247,16 +247,16 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         <div className="p-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${isPositiveChange ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-red-500 to-pink-600'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${isPositiveChange ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-red-500 to-pink-600'}`}>
                 {transaction.tokenSymbol.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div className="text-lg font-semibold text-white">{transaction.tokenSymbol}</div>
-                <div className="text-sm text-purple-400">PumpXBounty</div>
+                <div className="text-base font-semibold text-white">{transaction.tokenSymbol}</div>
+                <div className="text-xs text-purple-400">PumpXBounty</div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xl font-mono font-bold text-purple-400">{transaction.amount} PXB</div>
+              <div className="text-base font-mono font-bold text-purple-400">{transaction.amount} PXB</div>
               <div className="text-xs text-dream-foreground/70 flex items-center justify-end">
                 <Clock className="w-3 h-3 mr-1" />
                 {formatTimeAgo(transaction.createdAt)}
@@ -264,31 +264,31 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            <div className="bg-black/40 rounded-md p-3 border border-white/5">
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            <div className="bg-black/40 rounded-md p-2 border border-white/5">
               <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
                 <DollarSign className="w-3 h-3 mr-1" />
                 PXB Used
               </div>
-              <div className="font-bold text-white text-lg">{transaction.amount} PXB</div>
+              <div className="font-bold text-white text-sm">{transaction.amount} PXB</div>
             </div>
             
-            <div className="bg-black/40 rounded-md p-3 border border-white/5">
+            <div className="bg-black/40 rounded-md p-2 border border-white/5">
               <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
                 <ShoppingCart className="w-3 h-3 mr-1" />
                 Tokens Received
               </div>
-              <div className="font-bold text-white text-lg">
+              <div className="font-bold text-white text-sm">
                 {transaction.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </div>
             </div>
           </div>
           
-          <div className="mt-3 bg-black/40 rounded-md p-3 border border-white/5 relative overflow-hidden">
+          <div className="mt-2 bg-black/40 rounded-md p-2 border border-white/5 relative overflow-hidden">
             <div className="absolute bottom-0 left-0 h-full w-1 bg-gradient-to-t from-transparent to-purple-500/50"></div>
             <div className="flex justify-between items-center">
               <div className="text-xs text-dream-foreground/60">Current PXB Value</div>
-              <div className={`font-mono font-bold text-lg ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+              <div className={`font-mono font-bold text-sm ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
                 {transaction.currentValue.toFixed(2)} PXB
                 <span className="ml-1 text-xs">
                   ({isPositiveChange ? '+' : ''}{transaction.percentageChange.toFixed(2)}%)
@@ -297,8 +297,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <div className="mt-3">
-            <div className="flex justify-between items-center text-sm mb-1">
+          <div className="mt-2">
+            <div className="flex justify-between items-center text-xs mb-1">
               <div className="text-dream-foreground/70 flex items-center">
                 <BarChart3 className="w-3 h-3 mr-1" />
                 Market Performance
@@ -308,7 +308,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
               </div>
             </div>
             
-            <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden relative">
+            <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden relative">
               <div 
                 className={`h-full ${isPositiveChange ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-red-500 to-pink-400'}`}
                 style={{ width: `${Math.min(100, Math.abs(transaction.percentageChange))}%` }}
@@ -323,7 +323,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <div className="mt-3 flex justify-between items-center text-xs bg-black/20 rounded-md p-2">
+          <div className="mt-2 flex justify-between items-center text-xs bg-black/20 rounded-md p-2">
             <div>
               <span className="text-dream-foreground/60">Initial: </span>
               <span className="text-white">{formatMarketCap(transaction.initialMarketCap)}</span>
@@ -338,30 +338,28 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <div className="flex items-center justify-between mt-3 mb-3 text-sm">
+          <div className="flex items-center justify-between mt-2 mb-2 text-xs">
             <div className="flex items-center bg-black/20 rounded-md px-2 py-1">
-              <User className="w-4 h-4 mr-1 text-dream-foreground/60" />
+              <User className="w-3 h-3 mr-1 text-dream-foreground/60" />
               <span className="text-dream-foreground/60 mr-1">Buyer</span>
               <span className="font-medium text-white">{transaction.userId}</span>
             </div>
             
             <div className={`flex items-center px-2 py-1 rounded-md ${isPositiveChange ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
               {isPositiveChange ? 
-                <TrendingUp className={`w-4 h-4 mr-1 text-green-400`} /> : 
-                <TrendingDown className={`w-4 h-4 mr-1 text-red-400`} />
+                <TrendingUp className={`w-3 h-3 mr-1 text-green-400`} /> : 
+                <TrendingDown className={`w-3 h-3 mr-1 text-red-400`} />
               }
               <span className={`font-semibold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
                 {isPositiveChange ? 'Profit' : 'Loss'}
-              </span>
-              <span className={`ml-2 font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
-                {Math.abs(transaction.percentageChange).toFixed(2)}%
               </span>
             </div>
           </div>
           
           <Button 
             variant={isPositiveChange ? "default" : "destructive"} 
-            className={`w-full ${isPositiveChange ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'}`}
+            size="sm"
+            className={`w-full text-xs py-1 h-8 ${isPositiveChange ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'}`}
           >
             Sell for {transaction.currentValue.toFixed(2)} PXB ({isPositiveChange ? '+' : ''}{transaction.percentageChange.toFixed(2)}%)
           </Button>
@@ -511,8 +509,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
           <p className="text-sm text-dream-foreground/70">View and sell your token holdings</p>
 
-          <ScrollArea className="h-[500px] rounded-md border border-white/10 bg-black/20 p-1">
-            <div className="p-3">
+          <ScrollArea className="h-[400px] rounded-md border border-white/10 bg-black/20 p-2">
+            <div className="px-2 py-1">
               {exampleTransactions.map(transaction => renderExampleTransactionCard(transaction))}
             </div>
           </ScrollArea>
