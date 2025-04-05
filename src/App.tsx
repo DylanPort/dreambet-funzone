@@ -2,7 +2,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClientProvider, createQueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SolanaWalletProvider from "./providers/SolanaWalletProvider";
 import { PXBPointsProvider } from "./contexts/pxb/PXBPointsContext";
@@ -18,7 +18,7 @@ import UserProfile from "./pages/UserProfile";
 import Community from "./pages/Community";
 
 // Configure Query Client with retry options for better error handling
-const queryClient = createQueryClient({
+const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
