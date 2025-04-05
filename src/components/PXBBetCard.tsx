@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
@@ -207,7 +206,8 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       console.log(`Display Return Amount: ${displayReturnAmount}`);
       
       const userId = userProfile.id;
-      const success = await addPointsToUser(returnAmount, userId);
+      const roundedAmount = Math.round(returnAmount);
+      const success = await addPointsToUser(roundedAmount, userId);
       
       if (success) {
         toast({
@@ -399,4 +399,3 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
 };
 
 export default PXBBetCard;
-
