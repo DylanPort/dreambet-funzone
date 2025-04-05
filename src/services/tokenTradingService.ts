@@ -50,22 +50,82 @@ export const buyTokenWithPXB = async (
   tokenQuantity: number
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('buy_token_with_pxb', {
-      user_id: (await supabase.auth.getUser()).data.user?.id,
-      token_id: tokenId,
-      token_name: tokenName,
-      token_symbol: tokenSymbol,
-      pxb_amount: pxbAmount,
-      token_price: tokenPrice,
-      token_quantity: tokenQuantity
-    });
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) return false;
+    
+    const { data, error } = await supabase.from('token_transactions')
+      .insert({
+        userid: userId,
+        tokenid: tokenId,
+        tokenname: tokenName,
+        tokensymbol: tokenSymbol,
+        type: 'buy',
+        quantity: tokenQuantity,
+        price: tokenPrice,
+        pxbamount: pxbAmount
+      })
+      .select();
 
     if (error) {
       console.error('Error buying token:', error);
       return false;
     }
 
-    return data || false;
+    // Update user's points
+    const { error: pointsError } = await supabase.from('users')
+      .update({ points: supabase.rpc('decrement', { x: pxbAmount }) })
+      .eq('id', userId);
+    
+    if (pointsError) {
+      console.error('Error updating points:', pointsError);
+      return false;
+    }
+
+    // Update or create portfolio entry
+    const existingEntry = await getUserTokenInPortfolio(tokenId);
+    
+    if (existingEntry) {
+      // Calculate new average purchase price
+      const newQuantity = existingEntry.quantity + tokenQuantity;
+      const newAvgPrice = (
+        (existingEntry.quantity * existingEntry.averagepurchaseprice) + 
+        (tokenQuantity * tokenPrice)
+      ) / newQuantity;
+      
+      const { error: portfolioError } = await supabase.from('token_portfolios')
+        .update({
+          quantity: newQuantity,
+          averagepurchaseprice: newAvgPrice,
+          currentvalue: newQuantity * tokenPrice,
+          lastupdated: new Date().toISOString()
+        })
+        .eq('userid', userId)
+        .eq('tokenid', tokenId);
+      
+      if (portfolioError) {
+        console.error('Error updating portfolio:', portfolioError);
+        return false;
+      }
+    } else {
+      // Create new portfolio entry
+      const { error: portfolioError } = await supabase.from('token_portfolios')
+        .insert({
+          userid: userId,
+          tokenid: tokenId,
+          tokenname: tokenName,
+          tokensymbol: tokenSymbol,
+          quantity: tokenQuantity,
+          averagepurchaseprice: tokenPrice,
+          currentvalue: tokenQuantity * tokenPrice
+        });
+      
+      if (portfolioError) {
+        console.error('Error creating portfolio entry:', portfolioError);
+        return false;
+      }
+    }
+
+    return true;
   } catch (error) {
     console.error('Exception when buying token:', error);
     return false;
@@ -82,22 +142,75 @@ export const sellTokenForPXB = async (
   pxbAmount: number
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('sell_token_for_pxb', {
-      user_id: (await supabase.auth.getUser()).data.user?.id,
-      token_id: tokenId,
-      token_name: tokenName,
-      token_symbol: tokenSymbol,
-      token_quantity: tokenQuantity,
-      token_price: tokenPrice,
-      pxb_amount: pxbAmount
-    });
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) return false;
+    
+    // Check if user has enough tokens
+    const portfolioEntry = await getUserTokenInPortfolio(tokenId);
+    if (!portfolioEntry || portfolioEntry.quantity < tokenQuantity) {
+      return false;
+    }
+    
+    // Record transaction
+    const { error } = await supabase.from('token_transactions')
+      .insert({
+        userid: userId,
+        tokenid: tokenId,
+        tokenname: tokenName,
+        tokensymbol: tokenSymbol,
+        type: 'sell',
+        quantity: tokenQuantity,
+        price: tokenPrice,
+        pxbamount: pxbAmount
+      });
 
     if (error) {
-      console.error('Error selling token:', error);
+      console.error('Error recording sale transaction:', error);
       return false;
     }
 
-    return data || false;
+    // Update user's points
+    const { error: pointsError } = await supabase.from('users')
+      .update({ points: supabase.rpc('increment', { x: pxbAmount }) })
+      .eq('id', userId);
+    
+    if (pointsError) {
+      console.error('Error updating points:', pointsError);
+      return false;
+    }
+
+    // Update portfolio
+    const newQuantity = portfolioEntry.quantity - tokenQuantity;
+    
+    if (newQuantity <= 0) {
+      // Delete the portfolio entry if no tokens left
+      const { error: deleteError } = await supabase.from('token_portfolios')
+        .delete()
+        .eq('userid', userId)
+        .eq('tokenid', tokenId);
+      
+      if (deleteError) {
+        console.error('Error deleting portfolio entry:', deleteError);
+        return false;
+      }
+    } else {
+      // Update the portfolio entry
+      const { error: updateError } = await supabase.from('token_portfolios')
+        .update({
+          quantity: newQuantity,
+          currentvalue: newQuantity * tokenPrice,
+          lastupdated: new Date().toISOString()
+        })
+        .eq('userid', userId)
+        .eq('tokenid', tokenId);
+      
+      if (updateError) {
+        console.error('Error updating portfolio after sale:', updateError);
+        return false;
+      }
+    }
+
+    return true;
   } catch (error) {
     console.error('Exception when selling token:', error);
     return false;
@@ -117,7 +230,7 @@ export const getUserTokenPortfolio = async (): Promise<TokenPortfolio[]> => {
       return [];
     }
 
-    return data || [];
+    return data as TokenPortfolio[] || [];
   } catch (error) {
     console.error('Exception when fetching portfolio:', error);
     return [];
@@ -140,7 +253,7 @@ export const getUserTokenInPortfolio = async (tokenId: string): Promise<TokenPor
       return null;
     }
 
-    return data;
+    return data as TokenPortfolio;
   } catch (error) {
     console.error('Exception when fetching token from portfolio:', error);
     return null;
@@ -166,7 +279,10 @@ export const getUserTokenTransactions = async (tokenId?: string): Promise<TokenT
       return [];
     }
 
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      type: item.type as 'buy' | 'sell'
+    }));
   } catch (error) {
     console.error('Exception when fetching transactions:', error);
     return [];
