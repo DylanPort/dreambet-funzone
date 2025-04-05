@@ -49,6 +49,16 @@ export const buyTokensWithPXB = async (
       return false;
     }
 
+    console.log(`Buying tokens: userId=${userId}, tokenId=${tokenId}, pxbAmount=${pxbAmount}, marketCap=${tokenMarketCap}`);
+    
+    // Verify the current authenticated user matches the requested userId
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user || authData.user.id !== userId) {
+      console.error('Auth mismatch: Authenticated user does not match the requested user ID');
+      toast.error('Authentication error. Please try again.');
+      return false;
+    }
+
     // Calculate how many tokens the user gets based on PXB and token market cap
     const pxbValue = pxbAmount * PXB_VIRTUAL_PRICE;
     const estimatedTokenQuantity = pxbValue / tokenMarketCap * 1000000; // Adjust for better precision
@@ -230,6 +240,14 @@ export const sellTokensForPXB = async (
       return false;
     }
 
+    // Verify the current authenticated user matches the requested userId
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user || authData.user.id !== userId) {
+      console.error('Auth mismatch: Authenticated user does not match the requested user ID');
+      toast.error('Authentication error. Please try again.');
+      return false;
+    }
+
     // Calculate how many PXB points the user gets based on token quantity and market cap
     const tokenValue = tokenQuantity * (tokenMarketCap / 1000000);
     const estimatedPxbAmount = Math.floor(tokenValue / PXB_VIRTUAL_PRICE);
@@ -369,6 +387,13 @@ export const sellTokensForPXB = async (
 // Get user's token portfolio
 export const getUserPortfolio = async (userId: string): Promise<TokenPortfolio[]> => {
   try {
+    // Verify the current authenticated user matches the requested userId
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user || authData.user.id !== userId) {
+      console.error('Auth mismatch: Authenticated user does not match the requested user ID');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('token_portfolios')
       .select('*')
@@ -389,6 +414,13 @@ export const getUserPortfolio = async (userId: string): Promise<TokenPortfolio[]
 // Get token trading transactions history
 export const getTokenTransactions = async (userId: string, tokenId?: string): Promise<TokenTransaction[]> => {
   try {
+    // Verify the current authenticated user matches the requested userId
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user || authData.user.id !== userId) {
+      console.error('Auth mismatch: Authenticated user does not match the requested user ID');
+      return [];
+    }
+    
     let query = supabase
       .from('token_transactions')
       .select('*')
