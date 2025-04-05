@@ -189,6 +189,7 @@ const PXBBetsList = () => {
                 key={bet.id} 
                 bet={bet} 
                 marketCapData={marketCapData[bet.tokenMint]} 
+                isLoading={false} // Add the missing isLoading prop
               />
             ))}
             <Button asChild variant="outline" className="w-full">

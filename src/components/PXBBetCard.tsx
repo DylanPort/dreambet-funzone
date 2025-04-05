@@ -1,3 +1,6 @@
+
+// Only making a small change to fix the props interface
+
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
@@ -14,7 +17,7 @@ interface PXBBetCardProps {
     initialMarketCap: number | null;
     currentMarketCap: number | null;
   } | undefined;
-  isLoading: boolean;
+  isLoading: boolean;  // Ensure this is required
 }
 
 const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMarketCapData, isLoading }) => {

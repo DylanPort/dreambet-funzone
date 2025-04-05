@@ -7,7 +7,9 @@ export interface OnlineUser {
   id: string;
   username: string | null;
   lastSeen: string;
-  wallet_address?: string; // Added this property to fix the type error
+  wallet_address?: string;
+  avatar?: string;     // Added this property
+  points?: number;     // Added this property
 }
 
 export function useOnlineUsers() {
@@ -33,7 +35,9 @@ export function useOnlineUsers() {
             id: presence.user_id,
             username: presence.username || presence.user_id.substring(0, 6) + '...',
             lastSeen: presence.online_at,
-            wallet_address: presence.user_id // Add wallet address (which is the user_id in this case)
+            wallet_address: presence.user_id,
+            avatar: presence.avatar || null,  // Include avatar property
+            points: presence.points || 0      // Include points property
           }));
         
         setOnlineUsers(users);
@@ -41,11 +45,25 @@ export function useOnlineUsers() {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED' && publicKey) {
+          // Get user profile data if available to include avatar and points
+          let userProfile = null;
+          try {
+            const { data } = await supabase
+              .from('users')
+              .select('points, username')
+              .eq('wallet_address', publicKey.toString())
+              .single();
+            userProfile = data;
+          } catch (error) {
+            console.error('Error fetching user profile for presence:', error);
+          }
+          
           // Track the current user's presence
           await channel.track({
             user_id: publicKey.toString(),
-            username: publicKey.toString().substring(0, 6) + '...',
+            username: userProfile?.username || publicKey.toString().substring(0, 6) + '...',
             online_at: new Date().toISOString(),
+            points: userProfile?.points || 0,
             presence_ref: publicKey.toString() // Required unique identifier
           });
         }
