@@ -1,6 +1,7 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isAuthRateLimited } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 // Constants for PXB token
 const PXB_VIRTUAL_LIQUIDITY = 50000; // 50k liquidity
@@ -36,18 +37,53 @@ export interface TokenTransaction {
 
 // Helper function to get authenticated user or throw an error
 async function getAuthenticatedUser() {
-  const { data: authData, error: authError } = await supabase.auth.getUser();
+  // First check if we have a session
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   
-  if (authError) {
-    console.error('Authentication error:', authError);
+  if (sessionError) {
+    console.error('Session error:', sessionError);
     throw new Error('Authentication error. Please sign in and try again.');
   }
 
-  if (!authData?.user) {
-    throw new Error('Authentication error. Please sign in and try again.');
+  if (!sessionData?.session) {
+    // If no session, try to sign in with wallet if possible
+    const walletAuthData = localStorage.getItem('wallet_auth_data');
+    
+    if (walletAuthData) {
+      try {
+        const { publicKey, email } = JSON.parse(walletAuthData);
+        
+        if (publicKey) {
+          console.log(`Attempting to sign in with wallet: ${publicKey}`);
+          
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: `${publicKey}@solana.wallet`,
+            password: publicKey,
+          });
+          
+          if (error) {
+            console.error('Failed wallet auto-auth:', error);
+            throw new Error('Authentication error. Please sign in again.');
+          }
+          
+          if (data?.user) {
+            console.log('Successfully authenticated with wallet');
+            return data.user;
+          }
+        }
+      } catch (e) {
+        console.error('Error during wallet authentication:', e);
+      }
+    }
+    
+    throw new Error('Authentication error. Please connect your wallet and sign in.');
   }
   
-  return authData.user;
+  if (!sessionData.session.user) {
+    throw new Error('Authentication error. User data missing.');
+  }
+  
+  return sessionData.session.user;
 }
 
 // Buy tokens with PXB points
@@ -398,22 +434,16 @@ export const sellTokensForPXB = async (
 export const getUserPortfolio = async (_userId: string): Promise<TokenPortfolio[]> => {
   try {
     // Get current authenticated user
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    let authenticatedUserId;
     
-    if (authError) {
-      console.error('Authentication error:', authError);
+    try {
+      const user = await getAuthenticatedUser();
+      authenticatedUserId = user.id;
+    } catch (error) {
+      console.error('Authentication error:', error);
       toast.error('Authentication error. Please sign in and try again.');
       return [];
     }
-
-    if (!authData?.user) {
-      console.error('No authenticated user found');
-      toast.error('Authentication error. Please sign in and try again.');
-      return [];
-    }
-    
-    // Use the authenticated user's ID for all operations to comply with RLS
-    const authenticatedUserId = authData.user.id;
 
     const { data, error } = await supabase
       .from('token_portfolios')
@@ -438,22 +468,16 @@ export const getUserPortfolio = async (_userId: string): Promise<TokenPortfolio[
 export const getTokenTransactions = async (_userId: string, tokenId?: string): Promise<TokenTransaction[]> => {
   try {
     // Get current authenticated user
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    let authenticatedUserId;
     
-    if (authError) {
-      console.error('Authentication error:', authError);
+    try {
+      const user = await getAuthenticatedUser();
+      authenticatedUserId = user.id;
+    } catch (error) {
+      console.error('Authentication error:', error);
       toast.error('Authentication error. Please sign in and try again.');
       return [];
     }
-
-    if (!authData?.user) {
-      console.error('No authenticated user found');
-      toast.error('Authentication error. Please sign in and try again.');
-      return [];
-    }
-    
-    // Use the authenticated user's ID for all operations to comply with RLS
-    const authenticatedUserId = authData.user.id;
     
     let query = supabase
       .from('token_transactions')

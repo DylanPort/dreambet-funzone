@@ -40,6 +40,12 @@ const WalletConnectButton = () => {
       const walletAddress = publicKey.toString();
       console.log(`Authenticating wallet ${walletAddress} with Supabase...`);
       
+      localStorage.setItem('wallet_auth_data', JSON.stringify({
+        publicKey: walletAddress,
+        email: `${walletAddress}@solana.wallet`,
+        timestamp: Date.now()
+      }));
+      
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (sessionData.session) {
@@ -228,6 +234,7 @@ const WalletConnectButton = () => {
       console.log("Force reconnecting wallet...");
       
       await supabase.auth.signOut();
+      localStorage.removeItem('wallet_auth_data');
       
       if (disconnect) {
         await disconnect();
