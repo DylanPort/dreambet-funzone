@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -95,86 +94,26 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const fetchTokenTransactions = async (tokenId: string) => {
     try {
       if (bets && bets.length > 0) {
-        const tokenBets = bets.filter(bet => bet.tokenMint === tokenId);
-        
-        const firstBet = tokenBets.length > 0 ? tokenBets.reduce((earliest, current) => 
-          new Date(current.createdAt) < new Date(earliest.createdAt) ? current : earliest
-        , tokenBets[0]) : null;
-        
-        return tokenBets.map((bet, index) => {
-          const isFirst = bet.id === firstBet?.id;
-          
-          let currentValue = bet.betAmount;
-          if (bet.status === 'won') {
-            currentValue = bet.pointsWon || bet.betAmount * 2;
-          } else if (bet.status === 'lost') {
-            currentValue = 0;
-          }
-          
-          // Determine transaction type - "buy" for "up" bets and "sell" for "down" bets
-          const transactionType = bet.betType === 'up' ? 'buy' : 'sell';
-          
-          return {
+        return bets
+          .filter(bet => bet.tokenMint === tokenId)
+          .map(bet => ({
             id: bet.id,
             timestamp: bet.createdAt,
-            type: transactionType,
+            type: 'buy',
             tokenAmount: bet.betAmount * 10,
             price: 0.001,
             pxbAmount: bet.betAmount,
             userId: bet.userId,
             tokenId: bet.tokenMint,
             tokenName: bet.tokenName || '',
-            tokenSymbol: bet.tokenSymbol || '',
-            isInitialMarketBuy: isFirst,
-            buyerAddress: transactionType === 'buy' ? bet.userId : undefined,
-            sellerAddress: transactionType === 'sell' ? bet.userId : undefined,
-            currentPxbValue: currentValue
-          };
-        });
+            tokenSymbol: bet.tokenSymbol || ''
+          }));
       }
       return [];
     } catch (error) {
       console.error("Error fetching token transactions:", error);
       return [];
     }
-  };
-
-  // Create a wrapper for addPointsToUser to match the expected signature in PXBPointsContextType
-  const addPointsToUserWrapper = async (amount: number, reason: string): Promise<boolean> => {
-    try {
-      await addPointsToUser(amount, reason);
-      return true;
-    } catch (error) {
-      console.error("Error adding points to user:", error);
-      return false;
-    }
-  };
-
-  // Create feature object for transferFeature
-  const transferFeatureWrapper = transferFeature ? 
-    { enabled: transferFeature === 'enabled', message: transferFeature === 'coming-soon' ? 'Coming soon' : undefined } : 
-    { enabled: false, message: 'Coming soon' };
-
-  // Create a wrapper for generateReferralLink to match the expected signature
-  const generateReferralLinkWrapper = () => {
-    return generateReferralLink();
-  };
-
-  // Create a wrapper for checkAndProcessReferral to match the expected signature
-  const checkAndProcessReferralWrapper = async (code: string): Promise<boolean> => {
-    try {
-      await checkAndProcessReferral(code);
-      return true;
-    } catch (error) {
-      console.error("Error processing referral:", error);
-      return false;
-    }
-  };
-
-  // Adapt referralStats to match the expected interface
-  const adaptedReferralStats = {
-    referralsCount: referralStats.referrals_count || 0,
-    pointsEarned: referralStats.points_earned || 0
   };
 
   return (
@@ -194,15 +133,15 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fetchUserBets,
         fetchLeaderboard,
         fetchWinRateLeaderboard,
-        addPointsToUser: addPointsToUserWrapper,
+        addPointsToUser,
         mintingPoints,
-        transferFeature: transferFeatureWrapper,
+        transferFeature,
         isLeaderboardLoading,
         isLoadingWinRate,
         isLoadingBets,
-        generateReferralLink: generateReferralLinkWrapper,
-        checkAndProcessReferral: checkAndProcessReferralWrapper,
-        referralStats: adaptedReferralStats,
+        generateReferralLink,
+        checkAndProcessReferral,
+        referralStats,
         fetchReferralStats,
         isLoadingReferrals,
         fetchTokenTransactions

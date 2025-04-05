@@ -1,4 +1,3 @@
-
 import { PXBBet, UserProfile, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from '@/types/pxb';
 
 export interface PXBPointsContextType {
@@ -31,11 +30,11 @@ export interface PXBPointsContextType {
   isLoadingBets: boolean;
   // Referral system
   generateReferralLink: () => Promise<string>;
-  checkAndProcessReferral: (code: string) => Promise<boolean>;
-  referralStats: { referralsCount: number; pointsEarned: number; };
+  checkAndProcessReferral: (referralCode: string) => Promise<void>;
+  referralStats: ReferralStats;
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
-  transferFeature: { enabled: boolean; message?: string; };
+  transferFeature?: 'enabled' | 'coming-soon';
   // Add the function to fetch token transactions
-  fetchTokenTransactions: (tokenId: string) => Promise<any[]>;
+  fetchTokenTransactions?: (tokenId: string) => Promise<any[]>;
 }
