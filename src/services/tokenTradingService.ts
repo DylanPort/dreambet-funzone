@@ -34,6 +34,22 @@ export interface TokenTransaction {
   type: 'buy' | 'sell';
 }
 
+// Helper function to get authenticated user or throw an error
+async function getAuthenticatedUser() {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  
+  if (authError) {
+    console.error('Authentication error:', authError);
+    throw new Error('Authentication error. Please sign in and try again.');
+  }
+
+  if (!authData?.user) {
+    throw new Error('Authentication error. Please sign in and try again.');
+  }
+  
+  return authData.user;
+}
+
 // Buy tokens with PXB points
 export const buyTokensWithPXB = async (
   _userId: string, // Keep parameter but don't use it - use wallet instead
@@ -52,15 +68,8 @@ export const buyTokensWithPXB = async (
     console.log(`Buying tokens: tokenId=${tokenId}, pxbAmount=${pxbAmount}, marketCap=${tokenMarketCap}`);
     
     // Get current authenticated user
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) {
-      console.error('No authenticated user found');
-      toast.error('Authentication error. Please connect your wallet and try again.');
-      return false;
-    }
-    
-    // Use the authenticated user's ID for all operations to comply with RLS
-    const authenticatedUserId = authData.user.id;
+    const user = await getAuthenticatedUser();
+    const authenticatedUserId = user.id;
     console.log(`Using authenticated user ID: ${authenticatedUserId}`);
 
     // Calculate how many tokens the user gets based on PXB and token market cap
@@ -224,7 +233,7 @@ export const buyTokensWithPXB = async (
     return true;
   } catch (error) {
     console.error('Error in buyTokensWithPXB:', error);
-    toast.error('Failed to process transaction');
+    toast.error(error.message || 'Failed to process transaction');
     return false;
   }
 };
@@ -245,15 +254,8 @@ export const sellTokensForPXB = async (
     }
 
     // Get current authenticated user
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) {
-      console.error('No authenticated user found');
-      toast.error('Authentication error. Please connect your wallet and try again.');
-      return false;
-    }
-    
-    // Use the authenticated user's ID for all operations to comply with RLS
-    const authenticatedUserId = authData.user.id;
+    const user = await getAuthenticatedUser();
+    const authenticatedUserId = user.id;
     console.log(`Using authenticated user ID: ${authenticatedUserId}`);
 
     // Calculate how many PXB points the user gets based on token quantity and market cap
@@ -387,7 +389,7 @@ export const sellTokensForPXB = async (
     return true;
   } catch (error) {
     console.error('Error in sellTokensForPXB:', error);
-    toast.error('Failed to process transaction');
+    toast.error(error.message || 'Failed to process transaction');
     return false;
   }
 };
@@ -396,9 +398,17 @@ export const sellTokensForPXB = async (
 export const getUserPortfolio = async (_userId: string): Promise<TokenPortfolio[]> => {
   try {
     // Get current authenticated user
-    const { data: authData } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Authentication error:', authError);
+      toast.error('Authentication error. Please sign in and try again.');
+      return [];
+    }
+
     if (!authData?.user) {
       console.error('No authenticated user found');
+      toast.error('Authentication error. Please sign in and try again.');
       return [];
     }
     
@@ -412,12 +422,14 @@ export const getUserPortfolio = async (_userId: string): Promise<TokenPortfolio[
 
     if (error) {
       console.error('Error fetching portfolio:', error);
+      toast.error('Failed to fetch your portfolio');
       return [];
     }
 
     return data as TokenPortfolio[];
   } catch (error) {
     console.error('Error in getUserPortfolio:', error);
+    toast.error(error.message || 'Failed to fetch your portfolio');
     return [];
   }
 };
@@ -426,9 +438,17 @@ export const getUserPortfolio = async (_userId: string): Promise<TokenPortfolio[
 export const getTokenTransactions = async (_userId: string, tokenId?: string): Promise<TokenTransaction[]> => {
   try {
     // Get current authenticated user
-    const { data: authData } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Authentication error:', authError);
+      toast.error('Authentication error. Please sign in and try again.');
+      return [];
+    }
+
     if (!authData?.user) {
       console.error('No authenticated user found');
+      toast.error('Authentication error. Please sign in and try again.');
       return [];
     }
     
@@ -449,6 +469,7 @@ export const getTokenTransactions = async (_userId: string, tokenId?: string): P
 
     if (error) {
       console.error('Error fetching transactions:', error);
+      toast.error('Failed to fetch your transaction history');
       return [];
     }
 
@@ -458,6 +479,7 @@ export const getTokenTransactions = async (_userId: string, tokenId?: string): P
     }));
   } catch (error) {
     console.error('Error in getTokenTransactions:', error);
+    toast.error(error.message || 'Failed to fetch your transaction history');
     return [];
   }
 };
