@@ -1,11 +1,15 @@
+
 import React, { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowUpRight, ArrowDownRight, ExternalLink, Wallet } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePumpPortal } from '@/hooks/usePumpPortal';
+
 interface TokenTradeHistoryProps {
   tokenId: string;
 }
+
 const formatAmount = (amount: number) => {
   if (amount >= 1000000) {
     return `${(amount / 1000000).toFixed(2)}M`;
@@ -14,6 +18,7 @@ const formatAmount = (amount: number) => {
   }
   return amount.toLocaleString();
 };
+
 const formatPrice = (price: number) => {
   if (price < 0.000001) return price.toExponential(2);
   if (price < 0.001) return price.toFixed(9);
@@ -21,6 +26,7 @@ const formatPrice = (price: number) => {
   if (price < 1) return price.toFixed(4);
   return price.toFixed(2);
 };
+
 interface PXBTransaction {
   id: string;
   timestamp: string;
@@ -36,24 +42,29 @@ interface PXBTransaction {
   buyerAddress?: string;
   sellerAddress?: string;
   currentPxbValue?: number;
+  currentTokenValue?: number;
 }
+
 const shortenAddress = (address: string) => {
   if (!address) return '';
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
 };
+
 const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
   tokenId
 }) => {
   const pxbContext = usePXBPoints();
+  const pumpPortal = usePumpPortal(tokenId);
   const [transactions, setTransactions] = useState<PXBTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const loadTransactions = async () => {
       setLoading(true);
       try {
-        if (pxbContext.fetchTokenTransactions) {
-          // Fetch PXB transactions for this token
-          const txs = await pxbContext.fetchTokenTransactions(tokenId);
+        if (pxbContext.fetchAllTokenTransactions) {
+          // Fetch PXB transactions for this token from all users
+          const txs = await pxbContext.fetchAllTokenTransactions(tokenId);
           setTransactions(txs || []);
         }
       } catch (error) {
@@ -67,13 +78,34 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
     // Refresh transactions every 30 seconds
     const interval = setInterval(loadTransactions, 30000);
     return () => clearInterval(interval);
-  }, [tokenId, pxbContext.fetchTokenTransactions]);
+  }, [tokenId, pxbContext.fetchAllTokenTransactions]);
 
   // Calculate percentage change from original PXB amount to current value
   const calculatePercentageChange = (original: number, current: number | undefined): number => {
     if (!current || original === 0) return 0;
     return (current - original) / original * 100;
   };
+
+  // Get current token price from PumpPortal if available
+  const getCurrentTokenPrice = () => {
+    if (pumpPortal.tokenMetrics && pumpPortal.tokenMetrics.market_cap && pumpPortal.tokenMetrics.market_cap > 0) {
+      return pumpPortal.tokenMetrics.market_cap / 1000000000; // Assuming standard 10^9 supply
+    }
+    return null;
+  };
+
+  // Update transactions with current value
+  useEffect(() => {
+    const currentPrice = getCurrentTokenPrice();
+    if (currentPrice && transactions.length > 0) {
+      const updatedTransactions = transactions.map(tx => ({
+        ...tx,
+        currentTokenValue: tx.tokenAmount * currentPrice
+      }));
+      setTransactions(updatedTransactions);
+    }
+  }, [pumpPortal.tokenMetrics]);
+
   return <div className="space-y-4 max-h-96 overflow-y-auto">
       {loading && <div className="text-center py-8 text-dream-foreground/70">
           <p>Loading PXB transaction history...</p>
@@ -84,7 +116,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
           <p className="text-sm mt-2">Be the first to trade this token with PXB points!</p>
         </div> : <Card className="glass-panel border border-dream-accent1/20 rounded-lg">
           <CardHeader className="py-3 px-4">
-            <CardTitle className="text-lg">PXB Trade History</CardTitle>
+            <CardTitle className="text-lg">Public PXB Trade History</CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="space-y-3">
@@ -108,8 +140,34 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
                       <div className="text-dream-foreground/70 text-xs">PXB Spent</div>
                       <div className="font-medium">{formatAmount(trade.pxbAmount)} PXB</div>
                     </div>
-                    
+                    <div>
+                      <div className="text-dream-foreground/70 text-xs">Tokens {trade.type === 'buy' ? 'Received' : 'Sold'}</div>
+                      <div className="font-medium">{formatAmount(trade.tokenAmount)} {trade.tokenSymbol}</div>
+                    </div>
                   </div>
+                  
+                  {trade.currentPxbValue !== undefined && (
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                      <div>
+                        <div className="text-dream-foreground/70 text-xs">Current PXB Value</div>
+                        <div className="font-medium flex items-center">
+                          {formatAmount(trade.currentPxbValue)} PXB
+                          {trade.currentPxbValue !== trade.pxbAmount && (
+                            <span className={`ml-1 text-xs ${trade.currentPxbValue > trade.pxbAmount ? 'text-green-400' : 'text-red-400'}`}>
+                              ({trade.currentPxbValue > trade.pxbAmount ? '+' : ''}
+                              {calculatePercentageChange(trade.pxbAmount, trade.currentPxbValue).toFixed(2)}%)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {trade.currentTokenValue !== undefined && (
+                        <div>
+                          <div className="text-dream-foreground/70 text-xs">Current Token Value</div>
+                          <div className="font-medium">{formatAmount(trade.currentTokenValue)} PXB</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   <div className="flex items-center justify-between text-xs bg-black/20 p-2 rounded">
                     <div className="flex items-center">
@@ -129,4 +187,5 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
         </Card>}
     </div>;
 };
+
 export default TokenTradeHistory;
