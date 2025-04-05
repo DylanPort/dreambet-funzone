@@ -727,57 +727,18 @@ const TokenDetail = () => {
                 
                 <div className="space-y-8">
                   <div className="glass-panel p-6">
-                    <h3 className="text-xl font-display font-bold mb-4">Token Metrics</h3>
-                    
-                    <div className="space-y-4">
-                      <div className="flex flex-row gap-4 overflow-x-auto pb-2">
-                        <TokenMarketCap tokenId={id || ''} />
-                        <TokenVolume tokenId={id || ''} />
-                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1 min-w-[150px]">
-                          <div className="text-dream-foreground/70 text-xs flex items-center">
-                            <Users className="w-3 h-3 mr-1" />
-                            Holders
-                          </div>
-                          <div className="font-bold">{tokenMetrics.holders || 'N/A'}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="glass-panel border border-dream-accent1/20 p-4">
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="text-dream-foreground/70 text-xs">Create a bet</div>
-                          <div className="text-dream-foreground/70 text-xs">
-                            {connected ? 'Wallet connected' : 'Connect wallet'}
-                          </div>
-                        </div>
-                        
-                        <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
-                          Place a Bet
-                        </Button>
-                      </div>
-                      
-                      <div>
-                        <a href={`https://dexscreener.com/solana/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm justify-end">
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          View on DexScreener
-                        </a>
-                      </div>
-                    </div>
+                    <h3 className="text-xl font-display font-bold mb-4">Buy {token.symbol} Tokens</h3>
+                    <TokenTrading 
+                      tokenId={token.id} 
+                      tokenName={token.name} 
+                      tokenSymbol={token.symbol}
+                      marketCap={tokenMetrics.marketCap}
+                      onSuccess={() => {
+                        refreshData();
+                      }}
+                      onCancel={() => {}}
+                    />
                   </div>
-                  
-                  {showCreateBet && <div className="glass-panel p-6">
-                      <h3 className="text-xl font-display font-bold mb-4">Buy {token.symbol} Tokens</h3>
-                      <TokenTrading 
-                        tokenId={token.id} 
-                        tokenName={token.name} 
-                        tokenSymbol={token.symbol}
-                        marketCap={tokenMetrics.marketCap}
-                        onSuccess={() => {
-                          refreshData();
-                          setShowCreateBet(false);
-                        }} 
-                        onCancel={() => setShowCreateBet(false)}
-                      />
-                    </div>}
                 </div>
               </div>
               
