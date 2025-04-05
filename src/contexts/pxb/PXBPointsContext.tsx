@@ -94,9 +94,23 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const fetchTokenTransactions = async (tokenId: string) => {
     try {
       if (bets && bets.length > 0) {
-        return bets
-          .filter(bet => bet.tokenMint === tokenId)
-          .map(bet => ({
+        const tokenBets = bets.filter(bet => bet.tokenMint === tokenId);
+        
+        const firstBet = tokenBets.length > 0 ? tokenBets.reduce((earliest, current) => 
+          new Date(current.createdAt) < new Date(earliest.createdAt) ? current : earliest
+        , tokenBets[0]) : null;
+        
+        return tokenBets.map((bet, index) => {
+          const isFirst = bet.id === firstBet?.id;
+          
+          let currentValue = bet.betAmount;
+          if (bet.status === 'won') {
+            currentValue = bet.pointsWon || bet.betAmount * 2;
+          } else if (bet.status === 'lost') {
+            currentValue = 0;
+          }
+          
+          return {
             id: bet.id,
             timestamp: bet.createdAt,
             type: 'buy',
@@ -106,8 +120,12 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             userId: bet.userId,
             tokenId: bet.tokenMint,
             tokenName: bet.tokenName || '',
-            tokenSymbol: bet.tokenSymbol || ''
-          }));
+            tokenSymbol: bet.tokenSymbol || '',
+            isInitialMarketBuy: isFirst,
+            buyerAddress: bet.userId,
+            currentPxbValue: currentValue
+          };
+        });
       }
       return [];
     } catch (error) {

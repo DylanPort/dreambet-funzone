@@ -1,10 +1,13 @@
+
 import React, { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowUpRight, ArrowDownRight, ExternalLink } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ExternalLink, Wallet } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
+
 interface TokenTradeHistoryProps {
   tokenId: string;
 }
+
 const formatAmount = (amount: number) => {
   if (amount >= 1000000) {
     return `${(amount / 1000000).toFixed(2)}M`;
@@ -13,6 +16,7 @@ const formatAmount = (amount: number) => {
   }
   return amount.toLocaleString();
 };
+
 const formatPrice = (price: number) => {
   if (price < 0.000001) return price.toExponential(2);
   if (price < 0.001) return price.toFixed(9);
@@ -20,6 +24,7 @@ const formatPrice = (price: number) => {
   if (price < 1) return price.toFixed(4);
   return price.toFixed(2);
 };
+
 interface PXBTransaction {
   id: string;
   timestamp: string;
@@ -31,13 +36,23 @@ interface PXBTransaction {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
+  isInitialMarketBuy?: boolean;
+  buyerAddress?: string;
+  currentPxbValue?: number;
 }
+
+const shortenAddress = (address: string) => {
+  if (!address) return '';
+  return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+};
+
 const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
   tokenId
 }) => {
   const pxbContext = usePXBPoints();
   const [transactions, setTransactions] = useState<PXBTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const loadTransactions = async () => {
       setLoading(true);
@@ -59,6 +74,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
     const interval = setInterval(loadTransactions, 30000);
     return () => clearInterval(interval);
   }, [tokenId, pxbContext.fetchTokenTransactions]);
+
   return <div className="space-y-4 max-h-96 overflow-y-auto">
       {loading && <div className="text-center py-8 text-dream-foreground/70">
           <p>Loading PXB transaction history...</p>
@@ -72,31 +88,40 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
               <div className="flex items-center">
                 {trade.type === 'buy' ? <ArrowUpRight className="w-4 h-4 text-green-400 mr-2" /> : <ArrowDownRight className="w-4 h-4 text-red-400 mr-2" />}
                 <span className={`font-semibold ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                  {trade.type === 'buy' ? 'Buy' : 'Sell'}
+                  {trade.isInitialMarketBuy ? 'Initial Market Buy' : trade.type === 'buy' ? 'Buy' : 'Sell'}
                 </span>
               </div>
               <span className="text-xs text-dream-foreground/70">
                 {formatDistanceToNow(new Date(trade.timestamp), {
-            addSuffix: true
-          })}
+                  addSuffix: true
+                })}
               </span>
             </div>
             
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              
-              
+            <div className="grid grid-cols-2 gap-2 text-sm mb-2">
               <div>
                 <div className="text-dream-foreground/70">PXB Spent</div>
                 <div className="font-medium">{formatAmount(trade.pxbAmount)} PXB</div>
               </div>
               <div>
-                <div className="text-dream-foreground/70">Transaction Type</div>
-                <div className={`font-medium ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                  {trade.type.charAt(0).toUpperCase() + trade.type.slice(1)}
-                </div>
+                <div className="text-dream-foreground/70">Current PXB Value</div>
+                <div className="font-medium">{formatAmount(trade.currentPxbValue || trade.pxbAmount)} PXB</div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between text-xs bg-black/20 p-2 rounded">
+              <div className="flex items-center">
+                <Wallet className="w-3 h-3 mr-1 text-dream-foreground/60" />
+                <span className="text-dream-foreground/70">
+                  Buyer: {shortenAddress(trade.buyerAddress || trade.userId)}
+                </span>
+              </div>
+              <div className={`font-medium ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                {trade.type.charAt(0).toUpperCase() + trade.type.slice(1)}
               </div>
             </div>
           </div>)}
     </div>;
 };
+
 export default TokenTradeHistory;
