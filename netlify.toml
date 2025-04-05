@@ -5,6 +5,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  NPM_FLAGS = "--legacy-peer-deps"
 
 # Configure asset optimization
 [build.processing]
@@ -15,3 +16,4 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
