@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
@@ -65,8 +66,8 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
           
           if (bet.betAmount && bet.initialMarketCap) {
             const percentageChange = ((newMarketCap - bet.initialMarketCap) / bet.initialMarketCap) * 100;
-            const updatedPxbValue = bet.betAmount + (bet.betAmount * (percentageChange / 100));
-            setLivePxbValue(Math.floor(updatedPxbValue));
+            const updatedPxbValue = bet.betAmount * (1 + (percentageChange / 100));
+            setLivePxbValue(updatedPxbValue);
           }
         }
       } catch (error) {
@@ -242,8 +243,8 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
   const calculateReturnAmount = () => {
     if (!bet.betAmount) return 0;
     
-    const returnAmount = bet.betAmount + (bet.betAmount * (marketCapChange / 100));
-    return Math.floor(returnAmount);
+    const returnAmount = bet.betAmount * (1 + (marketCapChange / 100));
+    return returnAmount.toFixed(2);
   };
 
   const [pulseAnimate, setPulseAnimate] = useState(false);
@@ -304,7 +305,7 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
             Current PXB Value
           </span>
           <div className={`font-mono font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'} ${pulseAnimate ? 'animate-pulse' : ''}`}>
-            {livePxbValue} PXB 
+            {livePxbValue.toFixed(2)} PXB 
             <span className="ml-1 text-xs">
               ({isPositiveChange ? '+' : ''}{marketCapChange.toFixed(2)}%)
             </span>
@@ -398,3 +399,4 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
 };
 
 export default PXBBetCard;
+
