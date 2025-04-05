@@ -223,7 +223,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
                 )}
                 <div className="flex items-center justify-center gap-1 relative z-10">
                   {selectedPrediction === 'moon' ? <Sparkles className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />}
-                  <span>Moon</span>
+                  <span>Buy</span>
                 </div>
               </button>
             </DialogTrigger>
@@ -249,10 +249,11 @@ const TokenCard: React.FC<TokenCardProps> = ({
                 
                 {/* Content wrapper */}
                 <div className="relative z-30 p-1">
-                  <CreateBetForm 
+                  <TokenTrading 
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
+                    marketCap={marketCap}
                     onCancel={handleDialogClose}
                     onSuccess={handleDialogClose}
                   />
@@ -274,7 +275,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
                 )}
                 <div className="flex items-center justify-center gap-1 relative z-10">
                   {selectedPrediction === 'die' ? <Moon className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
-                  <span>Die</span>
+                  <span>Short</span>
                 </div>
               </button>
             </DialogTrigger>
@@ -300,10 +301,11 @@ const TokenCard: React.FC<TokenCardProps> = ({
                 
                 {/* Content wrapper */}
                 <div className="relative z-30 p-1">
-                  <CreateBetForm 
+                  <TokenTrading 
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
+                    marketCap={marketCap}
                     onCancel={handleDialogClose}
                     onSuccess={handleDialogClose}
                   />
