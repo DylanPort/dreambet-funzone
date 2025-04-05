@@ -38,7 +38,7 @@ interface PXBTransaction {
 }
 
 const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
-  const { fetchTokenTransactions } = usePXBPoints();
+  const pxbContext = usePXBPoints();
   const [transactions, setTransactions] = useState<PXBTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,9 +46,9 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
     const loadTransactions = async () => {
       setLoading(true);
       try {
-        if (fetchTokenTransactions) {
+        if (pxbContext.fetchTokenTransactions) {
           // Fetch PXB transactions for this token
-          const txs = await fetchTokenTransactions(tokenId);
+          const txs = await pxbContext.fetchTokenTransactions(tokenId);
           setTransactions(txs || []);
         }
       } catch (error) {
@@ -63,7 +63,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
     // Refresh transactions every 30 seconds
     const interval = setInterval(loadTransactions, 30000);
     return () => clearInterval(interval);
-  }, [tokenId, fetchTokenTransactions]);
+  }, [tokenId, pxbContext.fetchTokenTransactions]);
 
   return (
     <div className="space-y-4 max-h-96 overflow-y-auto">
