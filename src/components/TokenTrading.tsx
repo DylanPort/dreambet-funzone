@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, LineChart, RefreshCw } from 'lucide-react';
+import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
 
 interface TokenTradingProps {
   tokenId: string;
@@ -39,17 +39,15 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
   const { toast } = useToast();
   const { userProfile, placeBet, mintPoints } = usePXBPoints();
+  const { pumpPortal } = usePumpPortalWebSocket();
 
-  // Calculate token price and amount based on market cap
   useEffect(() => {
     if (currentMarketCap) {
-      // Assuming a simple token supply of 1 billion for calculation purposes
       const totalSupply = 1_000_000_000;
       const calculatedPrice = currentMarketCap / totalSupply;
       setTokenPrice(calculatedPrice);
       
       if (amount > 0) {
-        // Calculate how many tokens the user will receive for their PXB
         const tokensReceived = amount / calculatedPrice;
         setTokenAmount(tokensReceived);
       }
@@ -86,19 +84,16 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
     setIsLoading(true);
     try {
-      // For now, we'll repurpose the placeBet function to record the transaction
-      // This will be updated later with a proper token purchase function
       await placeBet(
         tokenId,
         tokenName,
         tokenSymbol,
         amount,
-        'up', // Betting up for a purchase
-        0,    // We're not using percentage for purchases
-        0     // No duration for purchases
+        'up',
+        0,
+        0
       );
 
-      // Store the purchase data for display
       setInitialPurchaseData({
         marketCap: currentMarketCap,
         price: tokenPrice,
@@ -106,8 +101,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         tokenAmount: tokenAmount
       });
 
-      // Make sure we're subscribed to this token's trades
-      const pumpPortal = usePumpPortalWebSocket.getState();
       if (pumpPortal.connected) {
         pumpPortal.subscribeToToken(tokenId);
       }
@@ -146,7 +139,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     }
   };
 
-  // Calculate percentage gain/loss from initial purchase
   const calculatePercentageChange = () => {
     if (!initialPurchaseData || !currentMarketCap || initialPurchaseData.marketCap === null) {
       return 0;
@@ -157,8 +149,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   };
 
   const refreshMarketCap = async () => {
-    // In a real application, this would fetch the latest market cap data
-    // For now, we'll simulate a small change
     if (currentMarketCap) {
       const change = Math.random() > 0.5 ? 1 + Math.random() * 0.05 : 1 - Math.random() * 0.03;
       setCurrentMarketCap(currentMarketCap * change);
@@ -175,7 +165,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         </Button>
       </div>
 
-      {/* Market Cap Information */}
       <Card className="bg-black/20 border border-dream-accent1/20">
         <CardContent className="p-4">
           <div className="grid grid-cols-2 gap-4">
@@ -233,7 +222,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         </CardContent>
       </Card>
 
-      {/* Purchase Form */}
       <div className="space-y-4">
         <div>
           <div className="flex justify-between mb-2">

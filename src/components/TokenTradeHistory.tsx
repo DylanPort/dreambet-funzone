@@ -1,8 +1,7 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowUpRight, ArrowDownRight, ExternalLink } from 'lucide-react';
-import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 
 interface TokenTradeHistoryProps {
   tokenId: string;
@@ -25,29 +24,72 @@ const formatPrice = (price: number) => {
   return price.toFixed(2);
 };
 
+interface PXBTransaction {
+  id: string;
+  timestamp: string;
+  type: string;
+  tokenAmount: number;
+  price: number;
+  pxbAmount: number;
+  userId: string;
+  tokenId: string;
+  tokenName: string;
+  tokenSymbol: string;
+}
+
 const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
-  const pumpPortal = usePumpPortalWebSocket();
-  const trades = pumpPortal.recentTrades[tokenId] || [];
+  const { fetchTokenTransactions } = usePXBPoints();
+  const [transactions, setTransactions] = useState<PXBTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTransactions = async () => {
+      setLoading(true);
+      try {
+        if (fetchTokenTransactions) {
+          // Fetch PXB transactions for this token
+          const txs = await fetchTokenTransactions(tokenId);
+          setTransactions(txs || []);
+        }
+      } catch (error) {
+        console.error("Error fetching PXB token trades:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTransactions();
+    
+    // Refresh transactions every 30 seconds
+    const interval = setInterval(loadTransactions, 30000);
+    return () => clearInterval(interval);
+  }, [tokenId, fetchTokenTransactions]);
 
   return (
     <div className="space-y-4 max-h-96 overflow-y-auto">
-      {trades.length === 0 ? (
+      {loading && (
         <div className="text-center py-8 text-dream-foreground/70">
-          <p>No trade history available for this token yet.</p>
-          <p className="text-sm mt-2">Trades will appear here in real-time as they happen.</p>
+          <p>Loading PXB transaction history...</p>
+        </div>
+      )}
+      
+      {!loading && transactions.length === 0 ? (
+        <div className="text-center py-8 text-dream-foreground/70">
+          <p>No PXB trade history available for this token yet.</p>
+          <p className="text-sm mt-2">Be the first to trade this token with PXB points!</p>
         </div>
       ) : (
-        trades.map((trade, index) => (
-          <div key={`${trade.timestamp}-${index}`} className="glass-panel border border-dream-accent1/20 p-4 rounded-lg">
+        transactions.map((trade, index) => (
+          <div key={`${trade.id}-${index}`} className="glass-panel border border-dream-accent1/20 p-4 rounded-lg">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center">
-                {trade.side === 'buy' ? (
+                {trade.type === 'buy' ? (
                   <ArrowUpRight className="w-4 h-4 text-green-400 mr-2" />
                 ) : (
                   <ArrowDownRight className="w-4 h-4 text-red-400 mr-2" />
                 )}
-                <span className={`font-semibold ${trade.side === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                  {trade.side === 'buy' ? 'Buy' : 'Sell'}
+                <span className={`font-semibold ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                  {trade.type === 'buy' ? 'Buy' : 'Sell'}
                 </span>
               </div>
               <span className="text-xs text-dream-foreground/70">
@@ -58,42 +100,22 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <div className="text-dream-foreground/70">Amount</div>
-                <div className="font-medium">{formatAmount(trade.amount)}</div>
+                <div className="font-medium">{formatAmount(trade.tokenAmount)}</div>
               </div>
               <div>
                 <div className="text-dream-foreground/70">Price</div>
                 <div className="font-medium">${formatPrice(trade.price)}</div>
               </div>
               <div>
-                <div className="text-dream-foreground/70">Value</div>
-                <div className="font-medium">${formatPrice(trade.price * trade.amount)}</div>
+                <div className="text-dream-foreground/70">PXB Spent</div>
+                <div className="font-medium">{formatAmount(trade.pxbAmount)} PXB</div>
               </div>
               <div>
-                <div className="text-dream-foreground/70">Trader</div>
-                <div className="font-medium truncate">
-                  {trade.side === 'buy' 
-                    ? (trade.buyer ? `${trade.buyer.substring(0, 4)}...${trade.buyer.substring(trade.buyer.length - 4)}` : 'Unknown')
-                    : (trade.seller ? `${trade.seller.substring(0, 4)}...${trade.seller.substring(trade.seller.length - 4)}` : 'Unknown')
-                  }
+                <div className="text-dream-foreground/70">Transaction Type</div>
+                <div className={`font-medium ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                  {trade.type.charAt(0).toUpperCase() + trade.type.slice(1)}
                 </div>
               </div>
-            </div>
-            
-            <div className="mt-2 text-right">
-              {/* Only show Solscan link if we have transaction signature (from raw events) */}
-              {trade.signature ? (
-                <a 
-                  href={`https://solscan.io/tx/${trade.signature}`}
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-dream-accent2 hover:underline text-xs flex items-center justify-end"
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  View on Solscan
-                </a>
-              ) : (
-                <span className="text-dream-foreground/40 text-xs">Transaction details not available</span>
-              )}
             </div>
           </div>
         ))
