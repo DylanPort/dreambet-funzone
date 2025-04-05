@@ -106,6 +106,12 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         tokenAmount: tokenAmount
       });
 
+      // Make sure we're subscribed to this token's trades
+      const pumpPortal = usePumpPortalWebSocket.getState();
+      if (pumpPortal.connected) {
+        pumpPortal.subscribeToToken(tokenId);
+      }
+
       toast({
         title: "Purchase successful!",
         description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,

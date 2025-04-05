@@ -80,15 +80,20 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
             </div>
             
             <div className="mt-2 text-right">
-              <a 
-                href={`https://solscan.io/tx/${trade.signature || ''}`}
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-dream-accent2 hover:underline text-xs flex items-center justify-end"
-              >
-                <ExternalLink className="w-3 h-3 mr-1" />
-                View on Solscan
-              </a>
+              {/* Only show Solscan link if we have transaction signature (from raw events) */}
+              {trade.signature ? (
+                <a 
+                  href={`https://solscan.io/tx/${trade.signature}`}
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-dream-accent2 hover:underline text-xs flex items-center justify-end"
+                >
+                  <ExternalLink className="w-3 h-3 mr-1" />
+                  View on Solscan
+                </a>
+              ) : (
+                <span className="text-dream-foreground/40 text-xs">Transaction details not available</span>
+              )}
             </div>
           </div>
         ))

@@ -213,6 +213,13 @@ const TokenDetail = () => {
           }
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(id);
+            
+            // Force refresh token metrics
+            pumpPortal.fetchTokenMetrics(id);
+            
+            // Add console log to debug
+            const currentTrades = pumpPortal.recentTrades[id] || [];
+            console.log(`Current trades for ${id}:`, currentTrades);
           }
           const now = new Date();
           const initialData = [];
@@ -360,46 +367,9 @@ const TokenDetail = () => {
   }, []);
   useEffect(() => {
     if (id && pumpPortal.recentTrades[id]) {
-      const trades = pumpPortal.recentTrades[id];
-      if (trades.length > 0) {
-        const latestPrice = getLatestPriceFromTrades(trades);
-        const currentPrice = token?.currentPrice || 0;
-        if (Math.abs(latestPrice - currentPrice) / (currentPrice || 1) > 0.001) {
-          const priceChange = currentPrice > 0 ? (latestPrice - currentPrice) / currentPrice * 100 : 0;
-          updateTokenPrice(latestPrice, priceChange);
-          setPriceData(current => {
-            const newPoint = {
-              time: new Date().toISOString(),
-              price: latestPrice
-            };
-            return [...current, newPoint].slice(-60);
-          });
-        }
-        if (Date.now() - lastMetricsUpdateRef.current > 5000) {
-          if (pumpPortal.tokenMetrics[id]) {
-            const metrics = pumpPortal.tokenMetrics[id];
-            updateTokenMetrics({
-              marketCap: metrics.market_cap,
-              volume24h: metrics.volume_24h,
-              liquidity: metrics.liquidity,
-              holders: metrics.holders
-            });
-          }
-        }
-        const lastPrice = priceData[priceData.length - 1]?.price || 0;
-        if (lastPrice > 0) {
-          const percentChange = (latestPrice - lastPrice) / lastPrice * 100;
-          if (Math.abs(percentChange) > 5) {
-            toast({
-              title: `Price ${percentChange > 0 ? 'up' : 'down'} ${Math.abs(percentChange).toFixed(1)}%`,
-              description: `${token?.symbol || 'Token'} is now $${formatPrice(latestPrice)}`,
-              variant: percentChange > 0 ? "default" : "destructive"
-            });
-          }
-        }
-      }
+      console.log(`Trades updated for ${id}:`, pumpPortal.recentTrades[id]);
     }
-  }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
+  }, [id, pumpPortal.recentTrades]);
   useEffect(() => {
     if (id && pumpPortal.tokenMetrics[id]) {
       const metrics = pumpPortal.tokenMetrics[id];
