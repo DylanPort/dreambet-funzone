@@ -38,6 +38,7 @@ interface PXBTransaction {
   tokenSymbol: string;
   isInitialMarketBuy?: boolean;
   buyerAddress?: string;
+  sellerAddress?: string;  // Added seller address field
   currentPxbValue?: number;
 }
 
@@ -113,7 +114,10 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({
               <div className="flex items-center">
                 <Wallet className="w-3 h-3 mr-1 text-dream-foreground/60" />
                 <span className="text-dream-foreground/70">
-                  Buyer: {shortenAddress(trade.buyerAddress || trade.userId)}
+                  {trade.type === 'buy' ? 'Buyer: ' : 'Seller: '}
+                  {shortenAddress(trade.type === 'buy' ? 
+                    (trade.buyerAddress || trade.userId) : 
+                    (trade.sellerAddress || trade.userId))}
                 </span>
               </div>
               <div className={`font-medium ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>

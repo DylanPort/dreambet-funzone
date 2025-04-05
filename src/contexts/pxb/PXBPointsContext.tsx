@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -110,10 +111,13 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             currentValue = 0;
           }
           
+          // Determine transaction type - "buy" for "up" bets and "sell" for "down" bets
+          const transactionType = bet.betType === 'up' ? 'buy' : 'sell';
+          
           return {
             id: bet.id,
             timestamp: bet.createdAt,
-            type: 'buy',
+            type: transactionType,
             tokenAmount: bet.betAmount * 10,
             price: 0.001,
             pxbAmount: bet.betAmount,
@@ -122,7 +126,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             tokenName: bet.tokenName || '',
             tokenSymbol: bet.tokenSymbol || '',
             isInitialMarketBuy: isFirst,
-            buyerAddress: bet.userId,
+            buyerAddress: transactionType === 'buy' ? bet.userId : undefined,
+            sellerAddress: transactionType === 'sell' ? bet.userId : undefined,
             currentPxbValue: currentValue
           };
         });
