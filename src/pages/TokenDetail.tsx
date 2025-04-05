@@ -8,10 +8,11 @@ import { Bet, BetStatus } from '@/types/bet';
 import { ArrowUp, ArrowDown, RefreshCw, ExternalLink, ChevronLeft, BarChart3, Users, DollarSign, ArrowUpRight, ArrowDownRight, HelpCircle, CheckCircle, XCircle, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CreateBetForm from '@/components/CreateBetForm';
 import BetCard from '@/components/BetCard';
 import PXBBetCard from '@/components/PXBBetCard';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { usePumpPortalWebSocket, getLatestPriceFromTrades, formatRawTrade, RawTokenTradeEvent } from '@/services/pumpPortalWebSocketService';
 import OrbitingParticles from '@/components/OrbitingParticles';
 import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
@@ -25,6 +26,9 @@ import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
+import TokenTrading from '@/components/TokenTrading';
+import TokenPortfolio from '@/components/TokenPortfolio';
+import TransactionHistory from '@/components/TransactionHistory';
 
 const TokenChart = ({
   tokenId,
@@ -112,7 +116,7 @@ const TokenDetail = () => {
   const [activeBetsCount, setActiveBetsCount] = useState(0);
   const {
     toast
-  } = useToast();
+  } = toast;
   const pumpPortal = usePumpPortalWebSocket();
   const {
     connected,
@@ -770,18 +774,44 @@ const TokenDetail = () => {
                         </div>
                       </div>
                       
-                      <div className="glass-panel border border-dream-accent1/20 p-4">
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="text-dream-foreground/70 text-xs">Create a bet</div>
-                          <div className="text-dream-foreground/70 text-xs">
-                            {connected ? 'Wallet connected' : 'Connect wallet'}
-                          </div>
-                        </div>
+                      <Tabs defaultValue="bet" className="w-full">
+                        <TabsList className="grid grid-cols-2 mb-4">
+                          <TabsTrigger value="bet">
+                            <ArrowUp className="w-4 h-4 mr-1" />
+                            Bet
+                          </TabsTrigger>
+                          <TabsTrigger value="trade">
+                            <DollarSign className="w-4 h-4 mr-1" />
+                            Trade
+                          </TabsTrigger>
+                        </TabsList>
                         
-                        <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
-                          Place a Bet
-                        </Button>
-                      </div>
+                        <TabsContent value="bet">
+                          <div className="glass-panel border border-dream-accent1/20 p-4">
+                            <div className="flex justify-between items-center mb-1">
+                              <div className="text-dream-foreground/70 text-xs">Create a bet</div>
+                              <div className="text-dream-foreground/70 text-xs">
+                                {connected ? 'Wallet connected' : 'Connect wallet'}
+                              </div>
+                            </div>
+                            
+                            <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
+                              Place a Bet
+                            </Button>
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="trade">
+                          <TokenTrading 
+                            tokenId={token.id}
+                            tokenName={token.name}
+                            tokenSymbol={token.symbol}
+                            tokenPrice={token.currentPrice || 0}
+                            marketCap={tokenMetrics.marketCap}
+                            onTradeComplete={refreshData}
+                          />
+                        </TabsContent>
+                      </Tabs>
                       
                       <div>
                         <a href={`https://dexscreener.com/solana/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm justify-end">
@@ -799,6 +829,16 @@ const TokenDetail = () => {
                   setShowCreateBet(false);
                 }} onCancel={() => setShowCreateBet(false)} />
                     </div>}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                <div className="lg:col-span-1">
+                  <TokenPortfolio tokenId={id} />
+                </div>
+                
+                <div className="lg:col-span-2">
+                  <TransactionHistory tokenId={id} />
                 </div>
               </div>
               
