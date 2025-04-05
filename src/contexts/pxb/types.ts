@@ -31,11 +31,11 @@ export interface PXBPointsContextType {
   isLoadingBets: boolean;
   // Referral system
   generateReferralLink: () => Promise<string>;
-  checkAndProcessReferral: (referralCode: string) => Promise<void>;
-  referralStats: ReferralStats;
+  checkAndProcessReferral: (code: string) => Promise<boolean>;
+  referralStats: { referralsCount: number; pointsEarned: number; };
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
-  transferFeature?: 'enabled' | 'coming-soon';
+  transferFeature: { enabled: boolean; message?: string; };
   // Add the function to fetch token transactions
   fetchTokenTransactions: (tokenId: string) => Promise<any[]>;
 }

@@ -139,6 +139,44 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Create a wrapper for addPointsToUser to match the expected signature in PXBPointsContextType
+  const addPointsToUserWrapper = async (amount: number, reason: string): Promise<boolean> => {
+    try {
+      await addPointsToUser(amount, reason);
+      return true;
+    } catch (error) {
+      console.error("Error adding points to user:", error);
+      return false;
+    }
+  };
+
+  // Create feature object for transferFeature
+  const transferFeatureWrapper = transferFeature ? 
+    { enabled: transferFeature === 'enabled', message: transferFeature === 'coming-soon' ? 'Coming soon' : undefined } : 
+    { enabled: false, message: 'Coming soon' };
+
+  // Create a wrapper for generateReferralLink to match the expected signature
+  const generateReferralLinkWrapper = () => {
+    return generateReferralLink();
+  };
+
+  // Create a wrapper for checkAndProcessReferral to match the expected signature
+  const checkAndProcessReferralWrapper = async (code: string): Promise<boolean> => {
+    try {
+      await checkAndProcessReferral(code);
+      return true;
+    } catch (error) {
+      console.error("Error processing referral:", error);
+      return false;
+    }
+  };
+
+  // Adapt referralStats to match the expected interface
+  const adaptedReferralStats = {
+    referralsCount: referralStats.referrals_count || 0,
+    pointsEarned: referralStats.points_earned || 0
+  };
+
   return (
     <PXBPointsContext.Provider
       value={{
@@ -156,15 +194,15 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fetchUserBets,
         fetchLeaderboard,
         fetchWinRateLeaderboard,
-        addPointsToUser,
+        addPointsToUser: addPointsToUserWrapper,
         mintingPoints,
-        transferFeature,
+        transferFeature: transferFeatureWrapper,
         isLeaderboardLoading,
         isLoadingWinRate,
         isLoadingBets,
-        generateReferralLink,
-        checkAndProcessReferral,
-        referralStats,
+        generateReferralLink: generateReferralLinkWrapper,
+        checkAndProcessReferral: checkAndProcessReferralWrapper,
+        referralStats: adaptedReferralStats,
         fetchReferralStats,
         isLoadingReferrals,
         fetchTokenTransactions
