@@ -1,4 +1,3 @@
-
 import { PXBBet, UserProfile, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from '@/types/pxb';
 
 export interface PXBPointsContextType {
@@ -36,4 +35,6 @@ export interface PXBPointsContextType {
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
   transferFeature?: 'enabled' | 'coming-soon';
+  // Add the function to fetch token transactions
+  fetchTokenTransactions?: (tokenId: string) => Promise<any[]>;
 }
