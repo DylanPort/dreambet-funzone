@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,6 +14,7 @@ interface TokenTradingProps {
   tokenName: string;
   tokenSymbol: string;
   marketCap?: number | null;
+  volume24h?: number | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -22,6 +24,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   tokenName, 
   tokenSymbol, 
   marketCap,
+  volume24h,
   onSuccess,
   onCancel
 }) => {
@@ -29,9 +32,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [tokenAmount, setTokenAmount] = useState<number>(0);
   const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(marketCap || null);
+  const [currentVolume, setCurrentVolume] = useState<number | null>(volume24h || null);
   const [tokenPrice, setTokenPrice] = useState<number>(0);
   const [initialPurchaseData, setInitialPurchaseData] = useState<{
     marketCap: number | null;
+    volume: number | null;
     price: number;
     amount: number;
     tokenAmount: number;
@@ -96,6 +101,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
       setInitialPurchaseData({
         marketCap: currentMarketCap,
+        volume: currentVolume,
         price: tokenPrice,
         amount: amount,
         tokenAmount: tokenAmount
@@ -152,6 +158,12 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     if (currentMarketCap) {
       const change = Math.random() > 0.5 ? 1 + Math.random() * 0.05 : 1 - Math.random() * 0.03;
       setCurrentMarketCap(currentMarketCap * change);
+      
+      // Also refresh volume data with some random change
+      if (currentVolume) {
+        const volumeChange = Math.random() > 0.5 ? 1 + Math.random() * 0.08 : 1 - Math.random() * 0.04;
+        setCurrentVolume(currentVolume * volumeChange);
+      }
     }
   };
 
@@ -177,11 +189,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
             <div className="space-y-1">
               <p className="text-sm text-dream-foreground/70 flex items-center">
-                <DollarSign className="w-4 h-4 mr-1" />
-                Token Price
+                <BarChart3 className="w-4 h-4 mr-1" />
+                24h Volume
               </p>
               <p className="text-lg font-bold">
-                ${tokenPrice.toFixed(8)}
+                {formatMarketCap(currentVolume)}
               </p>
             </div>
           </div>

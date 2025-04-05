@@ -733,6 +733,7 @@ const TokenDetail = () => {
                       tokenName={token.name} 
                       tokenSymbol={token.symbol}
                       marketCap={tokenMetrics.marketCap}
+                      volume24h={tokenMetrics.volume24h}
                       onSuccess={() => {
                         refreshData();
                       }}
