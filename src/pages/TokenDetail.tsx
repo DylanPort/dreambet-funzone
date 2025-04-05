@@ -26,6 +26,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
 import TokenTrading from '@/components/TokenTrading';
+import TokenTradeHistory from '@/components/TokenTradeHistory';
 
 const TokenChart = ({
   tokenId,
@@ -741,111 +742,4 @@ const TokenDetail = () => {
                       description: "Token address copied to clipboard"
                     });
                   }} className="text-xs text-dream-accent2 hover:text-dream-accent1 flex items-center">
-                        {token.id.substring(0, 4)}...{token.id.substring(token.id.length - 4)}
-                        <Copy className="w-3 h-3 ml-1" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                <div className="lg:col-span-2">
-                  <TokenChart tokenId={id} tokenName={token.name} refreshData={refreshData} loading={loading} onPriceUpdate={handleChartPriceUpdate} setShowCreateBet={setShowCreateBet} />
-                </div>
-                
-                <div className="space-y-8">
-                  <div className="glass-panel p-6">
-                    <h3 className="text-xl font-display font-bold mb-4">Token Metrics</h3>
-                    
-                    <div className="space-y-4">
-                      <div className="flex flex-row gap-4 overflow-x-auto pb-2">
-                        <TokenMarketCap tokenId={id || ''} />
-                        <TokenVolume tokenId={id || ''} />
-                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1 min-w-[150px]">
-                          <div className="text-dream-foreground/70 text-xs flex items-center">
-                            <Users className="w-3 h-3 mr-1" />
-                            Holders
-                          </div>
-                          <div className="font-bold">{tokenMetrics.holders || 'N/A'}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="glass-panel border border-dream-accent1/20 p-4">
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="text-dream-foreground/70 text-xs">Create a bet</div>
-                          <div className="text-dream-foreground/70 text-xs">
-                            {connected ? 'Wallet connected' : 'Connect wallet'}
-                          </div>
-                        </div>
-                        
-                        <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
-                          Place a Bet
-                        </Button>
-                      </div>
-                      
-                      <div>
-                        <a href={`https://dexscreener.com/solana/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm justify-end">
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          View on DexScreener
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {showCreateBet && <div className="glass-panel p-6">
-                      <h3 className="text-xl font-display font-bold mb-4">Buy {token.symbol} Tokens</h3>
-                      <TokenTrading 
-                        tokenId={token.id} 
-                        tokenName={token.name} 
-                        tokenSymbol={token.symbol}
-                        marketCap={tokenMetrics.marketCap}
-                        onSuccess={() => {
-                          refreshData();
-                          setShowCreateBet(false);
-                        }} 
-                        onCancel={() => setShowCreateBet(false)}
-                      />
-                    </div>}
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div className="glass-panel p-6">
-                  <h3 className="text-xl font-display font-bold mb-4">Token Bets</h3>
-                  
-                  {bets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
-                      <p>No bets available for this token yet.</p>
-                      <p className="text-sm mt-2">Be the first to create a bet!</p>
-                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey?.toString() || null} onAcceptBet={handleAcceptBet} />)}
-                    </div>}
-                </div>
-                
-                <div className="glass-panel p-6">
-                  <h3 className="text-xl font-display font-bold mb-4">Your PXB Bets</h3>
-                  
-                  {tokenPXBBets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
-                      <p>You don't have any PXB bets on this token.</p>
-                      <p className="text-sm mt-2">Place a bet to see it here!</p>
-                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {tokenPXBBets.map(bet => <PXBBetCard 
-                        key={bet.id} 
-                        bet={bet} 
-                        marketCapData={marketCapData[bet.id]}
-                        isLoading={loadingMarketCaps[bet.id] || false}
-                      />)}
-                    </div>}
-                </div>
-              </div>
-              
-              <div className="mb-8">
-                <TokenComments tokenId={id} tokenName={token.name} />
-              </div>
-            </>}
-        </div>
-      </main>
-    </>;
-};
-
-export default TokenDetail;
+                        {token.
