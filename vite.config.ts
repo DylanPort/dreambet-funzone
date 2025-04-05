@@ -27,7 +27,11 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     host: "::",
-    port: 8080
+    port: 8080,
+    fs: {
+      // Allow serving files from one level up (the project root)
+      allow: ['..']
+    }
   },
   // Add optimizeDeps section to improve dependency handling
   optimizeDeps: {
