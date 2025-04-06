@@ -1,5 +1,5 @@
 
-import { UserProfile, PXBTrade, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from '@/types/pxb';
+import { UserProfile, PXBTrade, LeaderboardEntry, WinRateLeaderboardEntry } from '@/types/pxb';
 
 export interface PXBPointsContextType {
   userProfile: UserProfile | null;
@@ -42,4 +42,12 @@ export interface PXBPointsContextType {
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
   fetchTokenTransactions: (tokenId: string) => Promise<any[]>;
+}
+
+export interface ReferralStats {
+  totalReferrals: number;
+  pointsEarned: number;
+  referrals_count?: number; // Added for backward compatibility
+  points_earned?: number; // Added for backward compatibility
+  referrals?: number; // Added to fix errors in PXBWallet
 }

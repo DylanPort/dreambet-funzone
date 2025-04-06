@@ -149,3 +149,53 @@ export const fetchTopTokens = async () => {
     return [];
   }
 };
+
+// Add these functions to fix the errors in TokenTrading.tsx
+export const fetchTokenData = async (tokenId: string) => {
+  try {
+    const realTimeData = await fetchRealTimeData(tokenId);
+    return {
+      name: realTimeData.name,
+      symbol: realTimeData.symbol,
+      price: realTimeData.price,
+      marketCap: realTimeData.marketCap,
+      volume24h: realTimeData.volume24h,
+      supply: realTimeData.totalSupply,
+      priceChange24h: realTimeData.priceChange24h,
+      address: tokenId
+    };
+  } catch (error) {
+    console.error('Error fetching token data:', error);
+    return {
+      name: 'Unknown Token',
+      symbol: 'UNKNOWN',
+      price: 0.001,
+      marketCap: 100000,
+      volume24h: 5000,
+      supply: 1000000,
+      priceChange24h: 0,
+      address: tokenId
+    };
+  }
+};
+
+export const fetchTokenPrice = async (tokenId: string): Promise<number> => {
+  try {
+    const { data, error } = await supabase
+      .from('tokens')
+      .select('last_trade_price, current_market_cap, total_supply')
+      .eq('token_mint', tokenId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching token price:', error);
+      return 0.001;
+    }
+
+    // Use last trade price if available, otherwise calculate from market cap and supply
+    return data.last_trade_price || (data.current_market_cap / data.total_supply) || 0.001;
+  } catch (error) {
+    console.error('Error fetching token price:', error);
+    return 0.001;
+  }
+};

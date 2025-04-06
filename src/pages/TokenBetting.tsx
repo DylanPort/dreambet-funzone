@@ -7,24 +7,19 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import VolumeFilteredTokens from '@/components/VolumeFilteredTokens';
 import PumpFunTokens from '@/components/PumpFunTokens';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchTopTokens } from '@/services/tokenDataService';
 
 const TokenBetting = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [tokens, setTokens] = useState([]);
   
   useEffect(() => {
     const fetchTokenData = async () => {
       try {
         setIsLoading(true);
         // Fetch top tokens by volume
-        const { data, error } = await supabase
-          .from('tokens')
-          .select('*')
-          .order('volume_24h', { ascending: false })
-          .limit(20);
-          
-        if (error) {
-          console.error('Error fetching token data:', error);
-        }
+        const data = await fetchTopTokens();
+        setTokens(data || []);
       } catch (error) {
         console.error('Error fetching token data:', error);
       } finally {

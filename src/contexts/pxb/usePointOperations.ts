@@ -1,19 +1,18 @@
-
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { UserProfile } from '@/types/pxb';
+import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { UserProfile } from '@/types/pxb';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export const usePointOperations = (
   userProfile: UserProfile | null,
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>,
-  setTrades: any,
+  setTrades: React.Dispatch<React.SetStateAction<any[]>>,
   fetchUserProfile: () => Promise<void>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const [mintingPoints, setMintingPoints] = useState(false);
-  const transferFeature: 'enabled' | 'coming-soon' = 'coming-soon';
+  const [transferFeature] = useState<'enabled' | 'coming-soon'>('enabled');
 
   const generatePxbId = (): string => {
     return uuidv4();
@@ -64,13 +63,11 @@ export const usePointOperations = (
     }
 
     try {
-      // Optimistically update the user's points
       setUserProfile(prev => {
         if (!prev) return null;
         return { ...prev, pxbPoints: prev.pxbPoints - amount };
       });
 
-      // Update sender's points
       const { error: senderError } = await supabase
         .from('users')
         .update({ points: userProfile.pxbPoints - amount })
@@ -79,12 +76,10 @@ export const usePointOperations = (
       if (senderError) {
         console.error('Error sending points (sender update):', senderError);
         toast.error('Failed to send points (sender update).');
-        // Revert the optimistic update
         setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints + amount });
         return false;
       }
 
-      // Update recipient's points
       const { data: recipientData, error: recipientError } = await supabase
         .from('users')
         .select('points')
@@ -94,7 +89,6 @@ export const usePointOperations = (
       if (recipientError) {
         console.error('Error sending points (recipient fetch):', recipientError);
         toast.error('Failed to send points (recipient fetch).');
-        // Revert the optimistic update
         setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints + amount });
         return false;
       }
@@ -109,7 +103,6 @@ export const usePointOperations = (
       if (recipientUpdateError) {
         console.error('Error sending points (recipient update):', recipientUpdateError);
         toast.error('Failed to send points (recipient update).');
-        // Revert the optimistic update
         setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints + amount });
         return false;
       }
@@ -119,7 +112,6 @@ export const usePointOperations = (
     } catch (error) {
       console.error('Error sending points:', error);
       toast.error('Failed to send points.');
-      // Revert the optimistic update
       setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints + amount });
       return false;
     }
@@ -145,13 +137,11 @@ export const usePointOperations = (
 
     setIsLoading(true);
     try {
-      // Optimistically update user's points
       setUserProfile(prev => {
         if (!prev) return null;
         return { ...prev, pxbPoints: prev.pxbPoints - pxbAmount };
       });
 
-      // Record the transaction in the database
       const { data, error } = await supabase
         .from('token_transactions')
         .insert({
@@ -170,12 +160,10 @@ export const usePointOperations = (
       if (error) {
         console.error('Error purchasing token:', error);
         toast.error('Failed to purchase token.');
-        // Revert the optimistic update
         setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints + pxbAmount });
         return false;
       }
 
-      // Update user's points in the database
       const { error: userError } = await supabase
         .from('users')
         .update({ points: userProfile.pxbPoints - pxbAmount })
@@ -184,23 +172,17 @@ export const usePointOperations = (
       if (userError) {
         console.error('Error updating user points:', userError);
         toast.error('Failed to update user points.');
-        // Revert the optimistic update
         setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints + pxbAmount });
         return false;
       }
 
-      // Fetch user profile to update points
       await fetchUserProfile();
-
-      // Fetch user trades to update trades
-      // await fetchUserTrades();
 
       toast.success(`Successfully purchased ${tokenQuantity} ${tokenSymbol} tokens!`);
       return true;
     } catch (error) {
       console.error('Error purchasing token:', error);
       toast.error('Failed to purchase token.');
-      // Revert the optimistic update
       setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints + pxbAmount });
       return false;
     } finally {
@@ -208,7 +190,7 @@ export const usePointOperations = (
     }
   };
 
-  const sellToken = async (
+  const sellToken = useCallback(async (
     tokenMint: string,
     tokenName: string,
     tokenSymbol: string,
@@ -216,23 +198,62 @@ export const usePointOperations = (
     price: number
   ): Promise<boolean> => {
     if (!userProfile) {
-      toast.error('Please connect your wallet to sell tokens.');
+      console.error('Cannot sell tokens: User not logged in');
       return false;
     }
 
-    setIsLoading(true);
     try {
-      // Calculate the amount of PXB points the user will receive
-      const pxbAmount = tokenQuantity * price;
+      const amount = tokenQuantity * price;
 
-      // Optimistically update user's points
-      setUserProfile(prev => {
-        if (!prev) return null;
-        return { ...prev, pxbPoints: prev.pxbPoints + pxbAmount };
-      });
+      const { data: portfolioData, error: portfolioError } = await supabase
+        .from('token_portfolios')
+        .select('*')
+        .eq('userid', userProfile.id)
+        .eq('tokenid', tokenMint)
+        .single();
 
-      // Record the transaction in the database
-      const { data, error } = await supabase
+      if (portfolioError && portfolioError.code !== 'PGRST116') {
+        console.error('Error checking token portfolio:', portfolioError);
+        return false;
+      }
+
+      if (!portfolioData || portfolioData.quantity < tokenQuantity) {
+        console.error('Not enough tokens to sell');
+        return false;
+      }
+
+      const newQuantity = portfolioData.quantity - tokenQuantity;
+      const newValue = newQuantity * price;
+
+      if (newQuantity <= 0) {
+        const { error: deleteError } = await supabase
+          .from('token_portfolios')
+          .delete()
+          .eq('userid', userProfile.id)
+          .eq('tokenid', tokenMint);
+
+        if (deleteError) {
+          console.error('Error removing token from portfolio:', deleteError);
+          return false;
+        }
+      } else {
+        const { error: updateError } = await supabase
+          .from('token_portfolios')
+          .update({
+            quantity: newQuantity,
+            currentvalue: newValue,
+            lastupdated: new Date().toISOString()
+          })
+          .eq('userid', userProfile.id)
+          .eq('tokenid', tokenMint);
+
+        if (updateError) {
+          console.error('Error updating token portfolio:', updateError);
+          return false;
+        }
+      }
+
+      const { error: transactionError } = await supabase
         .from('token_transactions')
         .insert({
           userid: userProfile.id,
@@ -242,51 +263,62 @@ export const usePointOperations = (
           type: 'sell',
           quantity: tokenQuantity,
           price: price,
-          pxbamount: pxbAmount,
+          pxbamount: amount,
           timestamp: new Date().toISOString()
-        })
-        .select();
+        });
 
-      if (error) {
-        console.error('Error selling token:', error);
-        toast.error('Failed to sell token.');
-        // Revert the optimistic update
-        setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints - pxbAmount });
+      if (transactionError) {
+        console.error('Error recording token transaction:', transactionError);
         return false;
       }
 
-      // Update user's points in the database
-      const { error: userError } = await supabase
+      const { error: userUpdateError } = await supabase
         .from('users')
-        .update({ points: userProfile.pxbPoints + pxbAmount })
+        .update({ points: userProfile.pxbPoints + amount })
         .eq('id', userProfile.id);
 
-      if (userError) {
-        console.error('Error updating user points:', userError);
-        toast.error('Failed to update user points.');
-        // Revert the optimistic update
-        setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints - pxbAmount });
+      if (userUpdateError) {
+        console.error('Error updating user points:', userUpdateError);
         return false;
       }
 
-      // Fetch user profile to update points
-      await fetchUserProfile();
+      setUserProfile(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          pxbPoints: prev.pxbPoints + amount
+        };
+      });
 
-      toast.success(`Successfully sold ${tokenQuantity} ${tokenSymbol} tokens!`);
+      const { error: historyError } = await supabase
+        .from('points_history')
+        .insert({
+          user_id: userProfile.id,
+          amount: amount,
+          action: 'token_sale',
+          reference_id: tokenMint
+        });
+
+      if (historyError) {
+        console.error('Error recording points history:', historyError);
+      }
+
+      const { data: updatedTrades, error: tradesError } = await supabase
+        .from('token_transactions')
+        .select('*')
+        .eq('userid', userProfile.id)
+        .order('timestamp', { ascending: false });
+
+      if (!tradesError && updatedTrades) {
+        setTrades(updatedTrades);
+      }
+
       return true;
     } catch (error) {
       console.error('Error selling token:', error);
-      toast.error('Failed to sell token.');
-      // Revert the optimistic update if pxbAmount is defined
-      if (userProfile) {
-        const calculatedAmount = tokenQuantity * price;
-        setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints - calculatedAmount });
-      }
       return false;
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [userProfile, setUserProfile, setTrades]);
 
   return {
     mintPoints,

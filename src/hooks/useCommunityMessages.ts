@@ -13,6 +13,7 @@ export interface CommunityMessage {
   user_pxb_points?: number;
   user_win_rate?: number;
   user_rank?: number;
+  avatar_url?: string; // Added this property
 }
 
 export const useCommunityMessages = () => {
@@ -64,6 +65,7 @@ export const useCommunityMessages = () => {
             username: msg.username || 'Anonymous',
             created_at: msg.created_at,
             user_avatar: userAvatar,
+            avatar_url: userAvatar, // Added avatar_url for consistency
             user_pxb_points: userPxbPoints,
             // Add mock data for win rate and rank for UI
             user_win_rate: Math.floor(Math.random() * 100),
@@ -79,6 +81,33 @@ export const useCommunityMessages = () => {
       setLoading(false);
     }
   }, []);
+
+  // Add postMessage function
+  const postMessage = async (content: string): Promise<boolean> => {
+    if (!userProfile || !content.trim()) {
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('community_messages')
+        .insert({
+          content: content.trim(),
+          user_id: userProfile.id,
+          username: userProfile.username
+        });
+
+      if (error) {
+        console.error('Error posting message:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in postMessage:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     fetchMessages();
@@ -125,6 +154,7 @@ export const useCommunityMessages = () => {
                         ? { 
                             ...msg, 
                             user_avatar: data.avatar_url,
+                            avatar_url: data.avatar_url, // Added avatar_url for consistency
                             user_pxb_points: data.points
                           }
                         : msg
@@ -132,7 +162,7 @@ export const useCommunityMessages = () => {
                   );
                 }
               })
-              .catch(err => console.error('Error fetching user for new message:', err));
+              .catch(error => console.error('Error fetching user for new message:', error));
             
             return [messageToAdd, ...prevMessages];
           });
@@ -145,5 +175,5 @@ export const useCommunityMessages = () => {
     };
   }, [fetchMessages]);
 
-  return { messages, loading };
+  return { messages, loading, postMessage };
 };

@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   id: string;
   username: string;
@@ -10,6 +9,7 @@ export interface UserProfile {
   bio?: string;
   referralCode?: string;
   points?: number; // Alternative field name used in some cases
+  isTemporary?: boolean; // Added this property to fix type errors
 }
 
 export interface PXBTrade {
