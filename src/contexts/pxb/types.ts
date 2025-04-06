@@ -1,14 +1,23 @@
 
-import { UserProfile, PXBTrade, LeaderboardEntry, WinRateLeaderboardEntry } from '@/types/pxb';
+import { UserProfile, PXBBet, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from '@/types/pxb';
 
 export interface PXBPointsContextType {
   userProfile: UserProfile | null;
   isLoading: boolean;
-  trades: PXBTrade[];
-  userTrades: PXBTrade[];
+  bets: PXBBet[];
+  userBets: PXBBet[];
   leaderboard: LeaderboardEntry[];
   winRateLeaderboard: WinRateLeaderboardEntry[];
   mintPoints: (amount?: number) => Promise<void>;
+  placeBet: (
+    tokenMint: string, 
+    tokenName: string, 
+    tokenSymbol: string, 
+    betAmount: number, 
+    betType: 'up' | 'down', 
+    percentageChange: number,
+    duration: number
+  ) => Promise<PXBBet | void>;
   sendPoints: (recipientId: string, amount: number) => Promise<boolean>;
   purchaseToken: (
     tokenMint: string,
@@ -27,7 +36,7 @@ export interface PXBPointsContextType {
   ) => Promise<boolean>;
   generatePxbId: () => string;
   fetchUserProfile: () => Promise<void>;
-  fetchUserTrades: () => Promise<void>;
+  fetchUserBets: () => Promise<void>;
   fetchLeaderboard: () => Promise<void>;
   fetchWinRateLeaderboard: () => Promise<void>;
   addPointsToUser: (amount: number) => Promise<void>;
@@ -35,19 +44,11 @@ export interface PXBPointsContextType {
   transferFeature: 'enabled' | 'coming-soon';
   isLeaderboardLoading: boolean;
   isLoadingWinRate: boolean;
-  isLoadingTrades: boolean;
+  isLoadingBets: boolean;
   generateReferralLink: () => Promise<string>;
   checkAndProcessReferral: (referralCode: string) => Promise<boolean>;
   referralStats: ReferralStats;
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
   fetchTokenTransactions: (tokenId: string) => Promise<any[]>;
-}
-
-export interface ReferralStats {
-  totalReferrals: number;
-  pointsEarned: number;
-  referrals_count?: number; // Added for backward compatibility
-  points_earned?: number; // Added for backward compatibility
-  referrals?: number; // Added to fix errors in PXBWallet
 }

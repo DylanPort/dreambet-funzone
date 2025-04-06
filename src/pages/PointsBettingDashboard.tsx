@@ -6,7 +6,7 @@ import PumpFunTokens from '@/components/PumpFunTokens';
 import VolumeFilteredTokens from '@/components/VolumeFilteredTokens';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
 import PXBLeaderboard from '@/components/PXBLeaderboard';
-import TradeHistoryList from '@/components/TradeHistoryList';
+import PXBBetsList from '@/components/PXBBetsList';
 import PXBOnboarding from '@/components/PXBOnboarding';
 import PXBSupplyProgress from '@/components/PXBSupplyProgress';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -62,7 +62,7 @@ const PointsBettingDashboard: React.FC = () => {
             {userProfile ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <PXBPointsBalance />
-                <TradeHistoryList />
+                <PXBBetsList />
                 <PXBLeaderboard />
               </div>
             ) : (

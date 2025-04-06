@@ -1,266 +1,758 @@
 
-import React, { useState } from 'react';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
+import React, { useState, useEffect, useRef } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from '@/hooks/use-toast';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, LineChart, ShoppingCart, Trash2, User, Clock, Download, Camera } from 'lucide-react';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { fetchGMGNTokenData } from '@/services/gmgnService';
+import html2canvas from 'html2canvas';
 
 interface TokenTradingProps {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  tokenPrice?: number; 
-  marketCap?: number;
-  volume24h?: number;
-  onCancel?: () => void;
+  marketCap?: number | null;
+  volume24h?: number | null;
   onSuccess?: () => void;
-  onTradeComplete?: () => void;
+  onCancel?: () => void;
 }
 
-const TokenTrading: React.FC<TokenTradingProps> = ({
-  tokenId,
-  tokenName,
-  tokenSymbol,
-  tokenPrice = 0.01,
+interface TokenHolding {
+  id: number;
+  tokenSymbol: string;
+  amount: number;
+  tokenAmount: number;
+  createdAt: string;
+  userId: string;
+  percentageChange: number;
+  initialMarketCap: number;
+  currentMarketCap: number;
+  currentValue: number;
+  lastUpdated: string;
+}
+
+const TokenTrading: React.FC<TokenTradingProps> = ({ 
+  tokenId, 
+  tokenName, 
+  tokenSymbol, 
   marketCap,
   volume24h,
-  onCancel,
   onSuccess,
-  onTradeComplete
+  onCancel
 }) => {
-  const { userProfile, purchaseToken, sellToken } = usePXBPoints();
-  const [tab, setTab] = useState('buy');
-  const [amount, setAmount] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [amount, setAmount] = useState<number>(10);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSelling, setIsSelling] = useState(false);
+  const [sellLoading, setSellLoading] = useState<Record<number, boolean>>({});
+  const [tokenAmount, setTokenAmount] = useState<number>(0);
+  const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(marketCap || null);
+  const [currentVolume, setCurrentVolume] = useState<number | null>(volume24h || null);
+  const [tokenPrice, setTokenPrice] = useState<number>(0);
+  const [initialPurchaseData, setInitialPurchaseData] = useState<{
+    marketCap: number | null;
+    volume: number | null;
+    price: number;
+    amount: number;
+    tokenAmount: number;
+  } | null>(null);
+  const [userTokenHoldings, setUserTokenHoldings] = useState<TokenHolding[]>([]);
+  const userTokenHoldingsRef = useRef<TokenHolding[]>([]);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isScreenshotting, setIsScreenshotting] = useState(false);
 
-  // Calculate the other field when one is changed
-  const handleAmountChange = (value: string) => {
-    setAmount(value);
-    const numAmount = parseFloat(value);
-    if (!isNaN(numAmount) && tokenPrice > 0) {
-      setQuantity((numAmount / tokenPrice).toFixed(6));
-    } else {
-      setQuantity('');
-    }
-  };
+  const { toast } = useToast();
+  const { userProfile, placeBet, purchaseToken, sellToken } = usePXBPoints();
 
-  const handleQuantityChange = (value: string) => {
-    setQuantity(value);
-    const numQuantity = parseFloat(value);
-    if (!isNaN(numQuantity)) {
-      setAmount((numQuantity * tokenPrice).toFixed(6));
-    } else {
-      setAmount('');
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!userProfile) {
-      toast.error('Please connect your wallet to trade');
-      return;
+  // Add auto-refresh for market cap and volume data using real API data
+  useEffect(() => {
+    // Initial setup
+    if (marketCap) {
+      setCurrentMarketCap(marketCap);
     }
     
-    const numAmount = parseFloat(amount);
-    const numQuantity = parseFloat(quantity);
-    
-    if (isNaN(numAmount) || numAmount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
+    if (volume24h) {
+      setCurrentVolume(volume24h);
     }
     
-    if (isNaN(numQuantity) || numQuantity <= 0) {
-      toast.error('Please enter a valid quantity');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      let success = false;
-      
-      if (tab === 'buy') {
-        // Check if user has enough points
-        if (numAmount > userProfile.pxbPoints) {
-          toast.error('Insufficient PXB points');
-          setIsSubmitting(false);
+    const fetchRealMarketData = async () => {
+      try {
+        // Try DexScreener first
+        const dexData = await fetchDexScreenerData(tokenId);
+        if (dexData && dexData.marketCap) {
+          setCurrentMarketCap(dexData.marketCap);
+          setCurrentVolume(dexData.volume24h);
+          console.log("Updated market data from DexScreener:", dexData);
           return;
         }
         
-        success = await purchaseToken(
-          tokenId,
-          tokenName,
-          tokenSymbol,
-          numAmount,
-          numQuantity,
-          tokenPrice
-        );
+        // Fallback to GMGN if DexScreener failed
+        const gmgnData = await fetchGMGNTokenData(tokenId);
+        if (gmgnData && gmgnData.marketCap) {
+          setCurrentMarketCap(gmgnData.marketCap);
+          setCurrentVolume(gmgnData.volume24h);
+          console.log("Updated market data from GMGN:", gmgnData);
+        }
+      } catch (error) {
+        console.error("Error fetching market data:", error);
+      }
+    };
+    
+    // Fetch immediately
+    fetchRealMarketData();
+    
+    // Set up automatic refresh interval
+    const intervalId = setInterval(fetchRealMarketData, 5000); // Update every 5 seconds
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [tokenId, marketCap, volume24h]);
+
+  // Load holdings from localStorage on mount
+  useEffect(() => {
+    if (userProfile && tokenId) {
+      try {
+        const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+        const storedHoldings = localStorage.getItem(storageKey);
         
-        if (success) {
-          toast.success(`Successfully purchased ${numQuantity.toLocaleString()} ${tokenSymbol} tokens!`);
-          setAmount('');
-          setQuantity('');
-          if (onTradeComplete) onTradeComplete();
-          if (onSuccess) onSuccess();
-        } else {
-          toast.error('Failed to purchase tokens');
+        if (storedHoldings) {
+          const holdings = JSON.parse(storedHoldings);
+          setUserTokenHoldings(holdings);
+          userTokenHoldingsRef.current = holdings;
+        }
+      } catch (error) {
+        console.error("Error loading token holdings from localStorage:", error);
+      }
+    }
+  }, [userProfile, tokenId]);
+
+  // Updated to only show consolidated user holdings
+  useEffect(() => {
+    // Check if we already have a holding for this token
+    if (initialPurchaseData) {
+      const existingHoldingIndex = userTokenHoldingsRef.current.findIndex(
+        holding => holding.tokenSymbol === tokenSymbol
+      );
+      
+      if (existingHoldingIndex >= 0) {
+        // Update existing holding
+        const updatedHoldings = [...userTokenHoldingsRef.current];
+        const existingHolding = updatedHoldings[existingHoldingIndex];
+        
+        updatedHoldings[existingHoldingIndex] = {
+          ...existingHolding,
+          amount: existingHolding.amount + initialPurchaseData.amount,
+          tokenAmount: existingHolding.tokenAmount + initialPurchaseData.tokenAmount,
+          lastUpdated: new Date().toISOString(),
+          currentMarketCap: currentMarketCap || existingHolding.currentMarketCap,
+          percentageChange: currentMarketCap && existingHolding.initialMarketCap 
+            ? ((currentMarketCap - existingHolding.initialMarketCap) / existingHolding.initialMarketCap) * 100
+            : existingHolding.percentageChange,
+          currentValue: (existingHolding.tokenAmount + initialPurchaseData.tokenAmount) * tokenPrice
+        };
+        
+        setUserTokenHoldings(updatedHoldings);
+        userTokenHoldingsRef.current = updatedHoldings;
+        
+        // Save to localStorage
+        if (userProfile) {
+          try {
+            const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+            localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
+          } catch (error) {
+            console.error("Error saving token holdings to localStorage:", error);
+          }
         }
       } else {
-        success = await sellToken(
-          tokenId,
-          tokenName,
-          tokenSymbol,
-          numQuantity,
-          tokenPrice
-        );
-        
-        if (success) {
-          toast.success(`Successfully sold ${numQuantity.toLocaleString()} ${tokenSymbol} tokens!`);
-          setAmount('');
-          setQuantity('');
-          if (onTradeComplete) onTradeComplete();
-          if (onSuccess) onSuccess();
-        } else {
-          toast.error('Failed to sell tokens');
+        // Create new holding
+        if (currentMarketCap) {
+          const newHolding: TokenHolding = {
+            id: Date.now(),
+            tokenSymbol,
+            amount: initialPurchaseData.amount,
+            tokenAmount: initialPurchaseData.tokenAmount,
+            createdAt: new Date().toISOString(),
+            userId: userProfile?.id || "unknown",
+            percentageChange: initialPurchaseData.marketCap 
+              ? ((currentMarketCap - initialPurchaseData.marketCap) / initialPurchaseData.marketCap) * 100
+              : 0,
+            initialMarketCap: initialPurchaseData.marketCap || 0,
+            currentMarketCap: currentMarketCap,
+            currentValue: initialPurchaseData.tokenAmount * tokenPrice,
+            lastUpdated: new Date().toISOString()
+          };
+          
+          const newHoldings = [...userTokenHoldingsRef.current, newHolding];
+          setUserTokenHoldings(newHoldings);
+          userTokenHoldingsRef.current = newHoldings;
+          
+          // Save to localStorage
+          if (userProfile) {
+            try {
+              const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+              localStorage.setItem(storageKey, JSON.stringify(newHoldings));
+            } catch (error) {
+              console.error("Error saving token holdings to localStorage:", error);
+            }
+          }
         }
       }
+      
+      // Clear the initial purchase data to prevent duplicate additions
+      setInitialPurchaseData(null);
+      
+      // Also add to token_transactions table in Supabase if needed
+      if (userProfile) {
+        // Add a custom event to allow PriceChart to add a marker
+        window.dispatchEvent(new CustomEvent('tokenPurchase', { 
+          detail: {
+            tokenId,
+            price: tokenPrice,
+            timestamp: new Date().toISOString(),
+            amount: initialPurchaseData.amount
+          }
+        }));
+      }
+    }
+  }, [initialPurchaseData, currentMarketCap, tokenPrice, tokenId, tokenName, tokenSymbol, userProfile]);
+
+  // Update current values periodically
+  useEffect(() => {
+    if (currentMarketCap && userTokenHoldings.length > 0) {
+      const updatedHoldings = userTokenHoldings.map(holding => ({
+        ...holding,
+        currentMarketCap: currentMarketCap,
+        percentageChange: holding.initialMarketCap 
+          ? ((currentMarketCap - holding.initialMarketCap) / holding.initialMarketCap) * 100
+          : holding.percentageChange,
+        currentValue: holding.tokenAmount * tokenPrice,
+        lastUpdated: new Date().toISOString()
+      }));
+      
+      setUserTokenHoldings(updatedHoldings);
+      userTokenHoldingsRef.current = updatedHoldings;
+      
+      // Save updated holdings to localStorage
+      if (userProfile) {
+        try {
+          const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+          localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
+        } catch (error) {
+          console.error("Error saving updated token holdings to localStorage:", error);
+        }
+      }
+    }
+  }, [currentMarketCap, tokenPrice, userProfile, tokenId]);
+
+  useEffect(() => {
+    if (currentMarketCap) {
+      const totalSupply = 1_000_000_000;
+      const calculatedPrice = currentMarketCap / totalSupply;
+      setTokenPrice(calculatedPrice);
+      
+      if (amount > 0) {
+        const tokensReceived = amount / calculatedPrice;
+        setTokenAmount(tokensReceived);
+      }
+    }
+  }, [currentMarketCap, amount]);
+
+  const takeScreenshot = async (holdingId: number) => {
+    if (!cardRef.current) return;
+    
+    try {
+      setIsScreenshotting(true);
+      
+      // Find the card element with the matching holding ID
+      const cardElement = document.getElementById(`token-holding-${holdingId}`);
+      if (!cardElement) {
+        console.error("Could not find card element to screenshot");
+        return;
+      }
+      
+      // Add a temporary class for screenshot styling if needed
+      cardElement.classList.add('screenshot-mode');
+      
+      const canvas = await html2canvas(cardElement, {
+        backgroundColor: null,
+        scale: 2, // Higher quality
+        logging: false,
+      });
+      
+      // Remove temporary class
+      cardElement.classList.remove('screenshot-mode');
+      
+      // Convert to data URL and download
+      const image = canvas.toDataURL('image/jpeg', 0.95);
+      const link = document.createElement('a');
+      link.download = `${tokenSymbol}-profit-${new Date().getTime()}.jpg`;
+      link.href = image;
+      link.click();
+      
+      toast({
+        title: "Screenshot Captured!",
+        description: "Your profit card has been saved as a JPG image.",
+      });
     } catch (error) {
-      console.error('Error during token trade:', error);
-      toast.error('An error occurred during the trade');
+      console.error("Error taking screenshot:", error);
+      toast({
+        title: "Screenshot Failed",
+        description: "There was an error capturing your profit card.",
+        variant: "destructive",
+      });
     } finally {
-      setIsSubmitting(false);
+      setIsScreenshotting(false);
     }
   };
 
+  const handleBuyTokens = async () => {
+    if (!userProfile) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to buy tokens",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (userProfile.pxbPoints < amount) {
+      toast({
+        title: "Insufficient PXB points",
+        description: `You need at least ${amount} PXB points for this purchase`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentMarketCap) {
+      toast({
+        title: "Market cap unavailable",
+        description: "Cannot calculate token price without market cap data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Using purchaseToken instead of placeBet for proper PXB accounting
+      const success = await purchaseToken(
+        tokenId,
+        tokenName,
+        tokenSymbol,
+        amount,
+        tokenAmount,
+        tokenPrice
+      );
+
+      if (success) {
+        setInitialPurchaseData({
+          marketCap: currentMarketCap,
+          volume: currentVolume,
+          price: tokenPrice,
+          amount: amount,
+          tokenAmount: tokenAmount
+        });
+
+        toast({
+          title: "Purchase successful!",
+          description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
+        });
+
+        // Add a custom event to allow PriceChart to add a marker
+        window.dispatchEvent(new CustomEvent('tokenPurchase', { 
+          detail: {
+            tokenId,
+            price: tokenPrice,
+            timestamp: new Date().toISOString(),
+            amount: amount
+          }
+        }));
+
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        throw new Error("Purchase failed");
+      }
+    } catch (error) {
+      console.error("Error purchasing tokens:", error);
+      toast({
+        title: "Purchase failed",
+        description: "There was an error processing your purchase",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSellTokens = async (holding: TokenHolding) => {
+    if (!userProfile) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to sell tokens",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSellLoading(prev => ({ ...prev, [holding.id]: true }));
+    
+    try {
+      const isPositiveChange = holding.percentageChange >= 0;
+      
+      // Use the sellToken function from the context
+      const success = await sellToken(
+        tokenId,
+        tokenName,
+        tokenSymbol,
+        holding.tokenAmount,
+        tokenPrice
+      );
+      
+      if (success) {
+        toast({
+          title: "Tokens sold successfully!",
+          description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${holding.currentValue.toFixed(2)} PXB`,
+          variant: isPositiveChange ? "default" : "destructive",
+        });
+        
+        // Remove holding from list
+        const updatedHoldings = userTokenHoldings.filter(h => h.id !== holding.id);
+        setUserTokenHoldings(updatedHoldings);
+        userTokenHoldingsRef.current = updatedHoldings;
+        
+        // Update localStorage
+        if (userProfile) {
+          try {
+            const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+            localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
+          } catch (error) {
+            console.error("Error updating token holdings in localStorage:", error);
+          }
+        }
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        throw new Error("Failed to sell tokens");
+      }
+    } catch (error) {
+      console.error("Error selling tokens:", error);
+      toast({
+        title: "Sale failed",
+        description: "There was an error processing your sale",
+        variant: "destructive",
+      });
+    } finally {
+      setSellLoading(prev => ({ ...prev, [holding.id]: false }));
+    }
+  };
+
+  const formatMarketCap = (value: number | null) => {
+    if (value === null) return "N/A";
+    
+    if (value >= 1_000_000_000) {
+      return `$${(value / 1_000_000_000).toFixed(2)}B`;
+    } else if (value >= 1_000_000) {
+      return `$${(value / 1_000_000).toFixed(2)}M`;
+    } else if (value >= 1_000) {
+      return `$${(value / 1_000).toFixed(2)}K`;
+    } else {
+      return `$${value.toFixed(2)}`;
+    }
+  };
+
+  const formatTimeAgo = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const diffMs = Date.now() - date.getTime();
+    
+    const diffSecs = Math.floor(diffMs / 1000);
+    if (diffSecs < 60) return `${diffSecs}s ago`;
+    
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    if (diffMins < 60) return `${diffMins}m ago`;
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours < 24) return `${diffHours}h ago`;
+    
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    return `${diffDays}d ago`;
+  };
+
+  const renderTokenHoldingCard = (holding: TokenHolding) => {
+    const isPositiveChange = holding.percentageChange >= 0;
+    const isSellingThisHolding = sellLoading[holding.id] || false;
+    
+    return (
+      <div 
+        id={`token-holding-${holding.id}`}
+        key={holding.id} 
+        className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden hover:border-purple-500/40 transition-all duration-200"
+        ref={cardRef}
+      >
+        <div className="p-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ${isPositiveChange ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-red-500 to-pink-600'}`}>
+                {holding.tokenSymbol.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-white">{holding.tokenSymbol}</div>
+                <div className="text-xs text-purple-400">PumpXBounty</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-mono font-bold text-purple-400">{holding.amount} PXB</div>
+              <div className="text-xs text-dream-foreground/70 flex items-center justify-end">
+                <Clock className="w-3 h-3 mr-1" />
+                {formatTimeAgo(holding.createdAt)}
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="bg-black/40 rounded-md p-3 border border-white/5">
+              <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
+                <DollarSign className="w-3 h-3 mr-1" />
+                PXB Used
+              </div>
+              <div className="font-bold text-white text-sm">{holding.amount} PXB</div>
+            </div>
+            
+            <div className="bg-black/40 rounded-md p-3 border border-white/5">
+              <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
+                <ShoppingCart className="w-3 h-3 mr-1" />
+                Tokens Received
+              </div>
+              <div className="font-bold text-white text-sm">
+                {holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4 bg-black/40 rounded-md p-3 border border-white/5">
+            <div className="flex justify-between items-center">
+              <div className="text-xs text-dream-foreground/60">Current PXB Value</div>
+              <div className={`font-mono text-sm font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+                {holding.currentValue.toFixed(2)} PXB
+                <span className="ml-1 text-xs">
+                  ({isPositiveChange ? '+' : ''}{holding.percentageChange.toFixed(2)}%)
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4">
+            <div className="flex justify-between items-center text-xs mb-2">
+              <div className="text-dream-foreground/70 flex items-center">
+                <BarChart3 className="w-3 h-3 mr-1" />
+                Market Performance
+              </div>
+              <div className={`text-xs font-mono font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+                {isPositiveChange ? '+' : ''}{holding.percentageChange.toFixed(2)}%
+              </div>
+            </div>
+            
+            <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${isPositiveChange ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-red-500 to-pink-400'}`}
+                style={{ width: `${Math.min(100, Math.abs(holding.percentageChange))}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex justify-between items-center text-xs bg-black/20 rounded-md px-3 py-2">
+            <div>
+              <span className="text-dream-foreground/60">Initial: </span>
+              <span className="text-white">{formatMarketCap(holding.initialMarketCap)}</span>
+            </div>
+            <div className="text-dream-foreground/40">→</div>
+            <div>
+              <span className="text-dream-foreground/60">Current: </span>
+              <span className="text-white">{formatMarketCap(holding.currentMarketCap)}</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between mt-4 text-xs">
+            <div className="flex items-center bg-black/20 rounded-md px-2 py-1">
+              <User className="w-3 h-3 mr-1 text-dream-foreground/60" />
+              <span className="text-dream-foreground/60 mr-1">You</span>
+            </div>
+            
+            <div className={`flex items-center px-2 py-1 rounded-md ${isPositiveChange ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+              {isPositiveChange ? 
+                <TrendingUp className={`w-3 h-3 mr-1 text-green-400`} /> : 
+                <TrendingDown className={`w-3 h-3 mr-1 text-red-400`} />
+              }
+              <span className={`font-semibold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+                {isPositiveChange ? 'Profit' : 'Loss'}
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 mt-4">
+            <Button 
+              variant={isPositiveChange ? "default" : "destructive"} 
+              className={`flex-grow ${isPositiveChange ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'}`}
+              onClick={() => handleSellTokens(holding)}
+              disabled={isSellingThisHolding}
+            >
+              {isSellingThisHolding ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>Sell for {holding.currentValue.toFixed(2)} PXB</>
+              )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-black/30 border-white/10 hover:bg-black/50"
+              onClick={() => takeScreenshot(holding.id)}
+              disabled={isScreenshotting}
+            >
+              {isScreenshotting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <Card className="border-dream-accent1/30 shadow-lg shadow-dream-accent1/5 backdrop-blur-lg bg-black/60">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-xl font-display">Trade {tokenSymbol} Token</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="buy" value={tab} onValueChange={setTab} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-6">
-            <TabsTrigger value="buy" className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Buy</TabsTrigger>
-            <TabsTrigger value="sell" className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400">Sell</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="buy" className="mt-0">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount (PXB)</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.000001"
-                  min="0"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  className="bg-dream-accent1/10 border-dream-accent1/30"
-                />
-                <div className="text-xs text-dream-foreground/60 flex justify-between">
-                  <span>Available: {userProfile ? userProfile.pxbPoints.toLocaleString() : '0'} PXB</span>
-                  <button 
-                    type="button" 
-                    className="text-dream-accent2 hover:text-dream-accent1 transition-colors" 
-                    onClick={() => userProfile && handleAmountChange(userProfile.pxbPoints.toString())}
-                  >
-                    Max
-                  </button>
+    <div className="glass-panel p-4 space-y-4">
+      <Tabs defaultValue="buy" className="w-full">
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="buy" className="text-base">
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Buy Tokens
+          </TabsTrigger>
+          <TabsTrigger value="sell" className="text-base">
+            <Trash2 className="w-4 h-4 mr-2" />
+            Sell Tokens
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="buy">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold">Buy {tokenSymbol} Tokens</h3>
+            <div className="px-2 py-1 bg-black/20 rounded-md border border-white/10 text-xs flex items-center">
+              <span className="mr-1">Auto-updating</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            </div>
+          </div>
+
+          <Card className="bg-black/20 border border-dream-accent1/20">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-dream-foreground/70 flex items-center">
+                    <BarChart3 className="w-4 h-4 mr-1" />
+                    Current Market Cap
+                  </p>
+                  <p className="text-lg font-bold">{formatMarketCap(currentMarketCap)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-dream-foreground/70 flex items-center">
+                    <BarChart3 className="w-4 h-4 mr-1" />
+                    24h Volume
+                  </p>
+                  <p className="text-lg font-bold">
+                    {formatMarketCap(currentVolume)}
+                  </p>
                 </div>
               </div>
-              
-              <div className="flex items-center justify-center my-2">
-                <ArrowRight className="text-dream-foreground/40" />
+            </CardContent>
+          </Card>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="block text-sm font-medium">PXB Amount</label>
+                <span className="text-sm text-dream-foreground/70">
+                  Balance: {userProfile?.pxbPoints || 0} PXB
+                </span>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity ({tokenSymbol})</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  step="0.000001"
-                  min="0"
-                  placeholder="0.00"
-                  value={quantity}
-                  onChange={(e) => handleQuantityChange(e.target.value)}
-                  className="bg-dream-accent1/10 border-dream-accent1/30"
-                />
-                <div className="text-xs text-dream-foreground/60">
-                  Price: {tokenPrice.toFixed(6)} PXB per {tokenSymbol}
-                </div>
-              </div>
-              
+              <Input
+                type="number"
+                min={1}
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                className="w-full"
+              />
+              <p className="mt-2 text-sm text-dream-foreground/70">
+                You will receive approximately {tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {tokenSymbol} tokens
+              </p>
+            </div>
+
+            <div className="flex gap-4">
               <Button 
-                type="submit" 
-                className="w-full bg-green-500/80 hover:bg-green-500 text-white"
-                disabled={isSubmitting || !amount || parseFloat(amount) <= 0}
+                className="w-1/2" 
+                variant="outline" 
+                onClick={onCancel}
+                disabled={isLoading}
               >
-                {isSubmitting ? 'Processing...' : `Buy ${tokenSymbol}`}
+                Cancel
               </Button>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="sell" className="mt-0">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="sell-quantity">Quantity ({tokenSymbol})</Label>
-                <Input
-                  id="sell-quantity"
-                  type="number"
-                  step="0.000001"
-                  min="0"
-                  placeholder="0.00"
-                  value={quantity}
-                  onChange={(e) => handleQuantityChange(e.target.value)}
-                  className="bg-dream-accent1/10 border-dream-accent1/30"
-                />
-                <div className="text-xs text-dream-foreground/60">
-                  {/* In a real app, you would show the user's token balance here */}
-                  <span>Your portfolio balance will be shown here</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-center my-2">
-                <ArrowRight className="text-dream-foreground/40" />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="sell-amount">Amount (PXB)</Label>
-                <Input
-                  id="sell-amount"
-                  type="number"
-                  step="0.000001"
-                  min="0"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  className="bg-dream-accent1/10 border-dream-accent1/30"
-                  readOnly
-                />
-                <div className="text-xs text-dream-foreground/60">
-                  Price: {tokenPrice.toFixed(6)} PXB per {tokenSymbol}
-                </div>
-              </div>
-              
               <Button 
-                type="submit" 
-                className="w-full bg-red-500/80 hover:bg-red-500 text-white"
-                disabled={isSubmitting || !quantity || parseFloat(quantity) <= 0}
+                className="w-1/2" 
+                onClick={handleBuyTokens}
+                disabled={isLoading || amount <= 0 || (userProfile && userProfile.pxbPoints < amount)}
               >
-                {isSubmitting ? 'Processing...' : `Sell ${tokenSymbol}`}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Buy Tokens
+                  </>
+                )}
               </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="sell" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold">Sell {tokenSymbol} Tokens</h3>
+            <div className="px-2 py-1 bg-black/20 rounded-md border border-white/10 text-xs flex items-center">
+              <span className="mr-1">Auto-updating</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            </div>
+          </div>
+
+          {userTokenHoldings.length > 0 ? (
+            <>
+              <div>
+                {userTokenHoldings
+                  .filter(holding => holding.tokenSymbol === tokenSymbol)
+                  .map(renderTokenHoldingCard)}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8 text-dream-foreground/50">
+              <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>You don't have any {tokenSymbol} tokens yet.</p>
+              <p className="text-sm mt-1">Purchase some tokens in the "Buy" tab to see them here.</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

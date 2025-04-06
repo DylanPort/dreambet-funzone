@@ -11,9 +11,10 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import TokenDetail from "./pages/TokenDetail";
-import TradingDashboard from "./pages/TradingDashboard";
-import TokenTrading from "./pages/TokenTrading";
-import Portfolio from "./pages/Portfolio";
+import BettingDashboard from "./pages/BettingDashboard";
+import TokenBetting from "./pages/TokenBetting";
+import PXBSpace from "./pages/MyBets";
+import BetDetails from "./pages/BetDetails";
 import UserProfile from "./pages/UserProfile";
 import Community from "./pages/Community";
 
@@ -36,9 +37,10 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/profile/:userId" element={<UserProfile />} />
                 <Route path="/token/:id" element={<TokenDetail />} />
-                <Route path="/trading" element={<TradingDashboard />} />
-                <Route path="/trading/token/:id" element={<TokenTrading />} />
-                <Route path="/portfolio" element={<Portfolio />} />
+                <Route path="/betting" element={<BettingDashboard />} />
+                <Route path="/betting/token/:id" element={<TokenBetting />} />
+                <Route path="/betting/my-bets" element={<PXBSpace />} />
+                <Route path="/betting/bet/:id" element={<BetDetails />} />
                 <Route path="/community" element={<Community />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

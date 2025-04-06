@@ -1,82 +1,169 @@
-
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowUp, ArrowDown, Activity, TrendingUp, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowUp, Percent, Coins, Award, CircleDollarSign, Users } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { UserProfile } from '@/types/pxb';
 
-export interface PXBStatsPanelProps {
-  userProfile: UserProfile;
+interface PXBStatsPanelProps {
+  userProfile: UserProfile | null;
 }
 
 const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
-  // Since we're transitioning from bets to trades, let's show trade stats
-  const [tradeStats, setTradeStats] = React.useState({
-    totalTrades: Math.floor(Math.random() * 50),
-    winningTrades: Math.floor(Math.random() * 30),
-    losingTrades: Math.floor(Math.random() * 20),
-    totalProfit: Math.floor(Math.random() * 10000),
-  });
+  const { bets, isLoadingBets, fetchUserBets, fetchReferralStats, referralStats, isLoadingReferrals } = usePXBPoints();
+  const [winRate, setWinRate] = useState(0);
+  const [totalBets, setTotalBets] = useState(0);
+  const [totalPointsWon, setTotalPointsWon] = useState(0);
+  const [avgBetAmount, setAvgBetAmount] = useState(0);
 
-  const winRate = tradeStats.totalTrades > 0
-    ? Math.round((tradeStats.winningTrades / tradeStats.totalTrades) * 100)
-    : 0;
+  useEffect(() => {
+    if (userProfile) {
+      fetchUserBets();
+      fetchReferralStats();
+    }
+  }, [userProfile, fetchUserBets, fetchReferralStats]);
+
+  useEffect(() => {
+    if (bets && bets.length > 0) {
+      const completedBets = bets.filter(bet => bet.status === 'won' || bet.status === 'lost');
+      const wonBets = bets.filter(bet => bet.status === 'won');
+      
+      setTotalBets(bets.length);
+      setWinRate(completedBets.length > 0 ? (wonBets.length / completedBets.length) * 100 : 0);
+      
+      const totalWon = wonBets.reduce((sum, bet) => sum + (bet.pointsWon || 0), 0);
+      setTotalPointsWon(totalWon);
+      
+      const avgAmount = bets.reduce((sum, bet) => sum + bet.betAmount, 0) / bets.length;
+      setAvgBetAmount(avgAmount);
+    }
+  }, [bets]);
 
   return (
-    <Card className="bg-black/60 border-dream-accent1/30">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Activity className="w-5 h-5 mr-2 text-dream-accent1" />
-          Trading Stats
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-dream-foreground/5 rounded-lg">
-              <div className="text-xs text-dream-foreground/60 mb-1">Total Trades</div>
-              <div className="text-xl font-semibold">{tradeStats.totalTrades}</div>
+    <div>
+      <h2 className="text-xl font-bold mb-5 text-white">Your PXB Stats</h2>
+      <div className="glass-panel p-6 rounded-lg bg-gray-900/50 border border-gray-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+            <div className="flex items-center mb-3">
+              <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
+                <Percent className="h-4 w-4 text-indigo-400" />
+              </div>
+              <span className="text-indigo-200 font-medium">Win Rate</span>
             </div>
-            
-            <div className="p-3 bg-dream-foreground/5 rounded-lg">
-              <div className="text-xs text-dream-foreground/60 mb-1">Win Rate</div>
-              <div className="text-xl font-semibold">{winRate}%</div>
+            <div className="flex items-end justify-between">
+              <div className="text-2xl font-bold text-white">{winRate.toFixed(1)}%</div>
+              {isLoadingBets ? (
+                <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
+              ) : (
+                <div className="text-sm text-indigo-300/70">{totalBets} bets</div>
+              )}
+            </div>
+            <Progress value={winRate} className="h-1 mt-2" />
+          </div>
+          
+          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+            <div className="flex items-center mb-3">
+              <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
+                <Coins className="h-4 w-4 text-indigo-400" />
+              </div>
+              <span className="text-indigo-200 font-medium">Avg Bet</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div className="text-2xl font-bold text-white">{avgBetAmount.toFixed(0)}</div>
+              {isLoadingBets ? (
+                <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
+              ) : (
+                <div className="text-sm text-indigo-300/70">PXB</div>
+              )}
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-dream-foreground/5 rounded-lg">
-              <div className="flex items-center text-xs text-dream-foreground/60 mb-1">
-                <ArrowUp className="w-3 h-3 mr-1 text-green-400" />
-                Winning Trades
+          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+            <div className="flex items-center mb-3">
+              <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
+                <Award className="h-4 w-4 text-indigo-400" />
               </div>
-              <div className="text-xl font-semibold text-green-400">
-                {tradeStats.winningTrades}
-              </div>
+              <span className="text-indigo-200 font-medium">Points Won</span>
             </div>
-            
-            <div className="p-3 bg-dream-foreground/5 rounded-lg">
-              <div className="flex items-center text-xs text-dream-foreground/60 mb-1">
-                <ArrowDown className="w-3 h-3 mr-1 text-red-400" />
-                Losing Trades
-              </div>
-              <div className="text-xl font-semibold text-red-400">
-                {tradeStats.losingTrades}
-              </div>
+            <div className="flex items-end justify-between">
+              <div className="text-2xl font-bold text-white">{totalPointsWon.toLocaleString()}</div>
+              {isLoadingBets ? (
+                <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
+              ) : (
+                <div className="text-sm text-indigo-300/70">PXB</div>
+              )}
             </div>
           </div>
           
-          <div className="p-3 bg-dream-foreground/5 rounded-lg">
-            <div className="flex items-center text-xs text-dream-foreground/60 mb-1">
-              <TrendingUp className="w-3 h-3 mr-1 text-blue-400" />
-              Total Profit/Loss
+          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+            <div className="flex items-center mb-3">
+              <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
+                <CircleDollarSign className="h-4 w-4 text-indigo-400" />
+              </div>
+              <span className="text-indigo-200 font-medium">Total Bets</span>
             </div>
-            <div className="text-xl font-semibold text-blue-400">
-              {tradeStats.totalProfit > 0 ? '+' : ''}{tradeStats.totalProfit.toLocaleString()} PXB
+            <div className="flex items-end justify-between">
+              <div className="text-2xl font-bold text-white">{totalBets}</div>
+              {isLoadingBets ? (
+                <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
+              ) : (
+                <div className="text-sm text-indigo-300/70">Bets</div>
+              )}
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Referral Stats Section */}
+      <h2 className="text-xl font-bold mb-5 mt-8 text-white">Your Referral Stats</h2>
+      <div className="glass-panel p-6 rounded-lg bg-gray-900/50 border border-gray-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+            <div className="flex items-center mb-3">
+              <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
+                <Users className="h-4 w-4 text-indigo-400" />
+              </div>
+              <span className="text-indigo-200 font-medium">Total Referrals</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div className="text-2xl font-bold text-white">
+                {isLoadingReferrals ? (
+                  <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  (referralStats?.totalReferrals || referralStats?.referrals_count || 0)
+                )}
+              </div>
+              <div className="text-sm text-indigo-300/70">users</div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+            <div className="flex items-center mb-3">
+              <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
+                <Coins className="h-4 w-4 text-indigo-400" />
+              </div>
+              <span className="text-indigo-200 font-medium">Points Earned</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div className="text-2xl font-bold text-white">
+                {isLoadingReferrals ? (
+                  <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  (referralStats?.pointsEarned || referralStats?.points_earned || 0).toLocaleString()
+                )}
+              </div>
+              <div className="text-sm text-indigo-300/70">PXB</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-4 text-center">
+          <p className="text-indigo-300/70 text-sm">
+            Invite friends using your referral code to earn 10,000 PXB points per referral
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -7,7 +8,7 @@ import OrbitingParticles from '@/components/OrbitingParticles';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Button } from '@/components/ui/button';
 import PXBPointsBalance from '@/components/PXBPointsBalance';
-import TradeHistoryList from '@/components/TradeHistoryList';
+import PXBBetsList from '@/components/PXBBetsList';
 import PXBSupplyProgress from '@/components/PXBSupplyProgress';
 import PXBStakingPanel from '@/components/PXBStakingPanel';
 import PXBUserStats from '@/components/PXBUserStats';
@@ -32,6 +33,7 @@ const PXBSpace = () => {
   const [isGeneratingLink, setIsGeneratingLink] = React.useState(false);
   const [searchParams] = useSearchParams();
 
+  // Handle referral link generation
   const handleGenerateReferralLink = async () => {
     if (!generateReferralLink) return;
     
@@ -46,10 +48,12 @@ const PXBSpace = () => {
     }
   };
 
+  // Copy to clipboard function
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
+  // Check for referral code in URL
   useEffect(() => {
     if (connected && userProfile) {
       const referralCode = searchParams.get('ref');
@@ -59,6 +63,7 @@ const PXBSpace = () => {
     }
   }, [connected, userProfile, searchParams, checkAndProcessReferral]);
 
+  // Fetch referral stats when component mounts
   useEffect(() => {
     if (connected && userProfile && fetchReferralStats) {
       fetchReferralStats();
@@ -71,6 +76,7 @@ const PXBSpace = () => {
       
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-5xl mx-auto">
+          {/* Back button */}
           <Link to="/betting" className="inline-flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -80,24 +86,30 @@ const PXBSpace = () => {
             <h1 className="text-3xl font-display font-bold">PXB Space</h1>
           </div>
           
+          {/* Total Supply Progress Bar - Visible whether connected or not */}
           <div className="glass-panel p-6 mb-6 overflow-hidden relative">
             <PXBSupplyProgress />
           </div>
           
+          {/* Staking Panel - Just below the Supply Progress */}
           <div className="glass-panel p-6 mb-6 overflow-hidden relative">
             <PXBStakingPanel />
           </div>
           
-          <div className="glass-panel p-6 mb-6 overflow-hidden relative">
-            <PXBUserStats />
-          </div>
+          {/* User Stats Component */}
           
+          
+          {/* Notice: BetReel actually renders itself as a fixed position bar at the top of the page */}
           <BetReel />
+          
+          {/* Active Bets Section (Placeholder) */}
+          
           
           {!connected ? <div className="glass-panel p-8 text-center">
               <p className="text-xl text-dream-foreground/70 mb-4">Connect your wallet to access PXB Space</p>
               <p className="text-dream-foreground/50 mb-6">Mint PXB Points to start participating in the ecosystem</p>
             </div> : <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* Left column - Stats & Balance */}
               <div className="md:col-span-4 space-y-6">
                 <PXBPointsBalance />
                 
@@ -143,9 +155,11 @@ const PXBSpace = () => {
                 </div>
               </div>
               
+              {/* Right column - Bets & Referrals */}
               <div className="md:col-span-8 space-y-6">
-                <TradeHistoryList />
+                <PXBBetsList />
                 
+                {/* Referral Section */}
                 <div className="glass-panel p-6">
                   <h2 className="font-semibold text-lg mb-4 flex items-center">
                     <img src="/lovable-uploads/e1b33d2f-7fd6-471b-802e-f18d0c0b7155.png" alt="Referral" className="mr-2 h-6 w-6" />
