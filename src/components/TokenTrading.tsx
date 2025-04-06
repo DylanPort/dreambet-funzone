@@ -98,7 +98,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             amount: initialPurchaseData.amount,
             tokenAmount: initialPurchaseData.tokenAmount,
             createdAt: new Date().toISOString(),
-            userId: userProfile?.wallet || "unknown",
+            userId: userProfile?.id || "unknown", // Fix: Changed from wallet to id
             percentageChange: initialPurchaseData.marketCap 
               ? ((currentMarketCap - initialPurchaseData.marketCap) / initialPurchaseData.marketCap) * 100
               : 0,
