@@ -1,9 +1,7 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowUpRight, ArrowDownRight, ExternalLink } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 
 interface TokenTradeHistoryProps {
   tokenId: string;
@@ -37,68 +35,47 @@ interface PXBTransaction {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  username?: string;
 }
 
 const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
-  const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['tokenTradeHistory', tokenId],
-    queryFn: async () => {
-      // Fetch all transactions for this token from Supabase
-      const { data: tokenTxs, error } = await supabase
-        .from('token_transactions')
-        .select(`
-          id, 
-          type, 
-          price, 
-          timestamp, 
-          quantity, 
-          pxbamount, 
-          userid, 
-          tokenid, 
-          tokenname, 
-          tokensymbol,
-          users (username)
-        `)
-        .eq('tokenid', tokenId)
-        .order('timestamp', { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching token transactions:", error);
-        throw error;
+  const pxbContext = usePXBPoints();
+  const [transactions, setTransactions] = useState<PXBTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTransactions = async () => {
+      setLoading(true);
+      try {
+        if (pxbContext.fetchTokenTransactions) {
+          // Fetch PXB transactions for this token
+          const txs = await pxbContext.fetchTokenTransactions(tokenId);
+          setTransactions(txs || []);
+        }
+      } catch (error) {
+        console.error("Error fetching PXB token trades:", error);
+      } finally {
+        setLoading(false);
       }
-      
-      // Transform to the format needed by the component
-      const txs = tokenTxs.map(tx => ({
-        id: tx.id,
-        timestamp: tx.timestamp,
-        type: tx.type,
-        tokenAmount: tx.quantity,
-        price: tx.price,
-        pxbAmount: tx.pxbamount,
-        userId: tx.userid,
-        tokenId: tx.tokenid,
-        tokenName: tx.tokenname,
-        tokenSymbol: tx.tokensymbol,
-        username: tx.users?.username
-      }));
-      
-      return txs;
-    },
-    refetchInterval: 5000, // Refresh every 5 seconds
-  });
+    };
+
+    loadTransactions();
+    
+    // Refresh transactions every 30 seconds
+    const interval = setInterval(loadTransactions, 30000);
+    return () => clearInterval(interval);
+  }, [tokenId, pxbContext.fetchTokenTransactions]);
 
   return (
     <div className="space-y-4 max-h-96 overflow-y-auto">
-      {isLoading && (
+      {loading && (
         <div className="text-center py-8 text-dream-foreground/70">
-          <p>Loading transaction history...</p>
+          <p>Loading PXB transaction history...</p>
         </div>
       )}
       
-      {!isLoading && transactions.length === 0 ? (
+      {!loading && transactions.length === 0 ? (
         <div className="text-center py-8 text-dream-foreground/70">
-          <p>No trade history available for this token yet.</p>
+          <p>No PXB trade history available for this token yet.</p>
           <p className="text-sm mt-2">Be the first to trade this token with PXB points!</p>
         </div>
       ) : (
@@ -134,9 +111,9 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
                 <div className="font-medium">{formatAmount(trade.pxbAmount)} PXB</div>
               </div>
               <div>
-                <div className="text-dream-foreground/70">Trader</div>
-                <div className="font-medium truncate">
-                  {trade.username || trade.userId.substring(0, 6) + '...'}
+                <div className="text-dream-foreground/70">Transaction Type</div>
+                <div className={`font-medium ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                  {trade.type.charAt(0).toUpperCase() + trade.type.slice(1)}
                 </div>
               </div>
             </div>

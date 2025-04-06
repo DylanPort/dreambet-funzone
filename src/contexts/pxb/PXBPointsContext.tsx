@@ -44,8 +44,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     mintPoints, 
     placeBet, 
     sendPoints, 
-    purchaseToken,
-    sellToken,
     generatePxbId,
     mintingPoints,
     transferFeature
@@ -93,27 +91,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
   };
 
-  const purchaseTokenWrapper = async (
-    tokenMint: string,
-    tokenName: string,
-    tokenSymbol: string,
-    pxbAmount: number,
-    tokenQuantity: number,
-    price: number
-  ) => {
-    return purchaseToken(tokenMint, tokenName, tokenSymbol, pxbAmount, tokenQuantity, price);
-  };
-
-  const sellTokenWrapper = async (
-    tokenMint: string,
-    tokenName: string,
-    tokenSymbol: string,
-    tokenQuantity: number,
-    price: number
-  ) => {
-    return sellToken(tokenMint, tokenName, tokenSymbol, tokenQuantity, price);
-  };
-
   const fetchTokenTransactions = async (tokenId: string) => {
     try {
       if (bets && bets.length > 0) {
@@ -151,8 +128,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         mintPoints: mintPointsWrapper,
         placeBet: placeBetWrapper,
         sendPoints,
-        purchaseToken: purchaseTokenWrapper,
-        sellToken: sellTokenWrapper,
         generatePxbId,
         fetchUserProfile,
         fetchUserBets,
