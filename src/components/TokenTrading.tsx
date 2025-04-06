@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, LineChart, RefreshCw, ArrowDown, ArrowUp, ShoppingCart, Trash2, User, Clock, Copy } from 'lucide-react';
+import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, LineChart, ArrowDown, ArrowUp, ShoppingCart, Trash2, User, Clock, Copy } from 'lucide-react';
 import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
@@ -62,6 +61,35 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const { toast } = useToast();
   const { userProfile, placeBet, mintPoints } = usePXBPoints();
   const pumpPortalService = usePumpPortalWebSocket();
+
+  // Add auto-refresh for market cap and volume data
+  useEffect(() => {
+    // Initial setup
+    if (currentMarketCap) {
+      setCurrentMarketCap(currentMarketCap);
+    }
+    
+    if (currentVolume) {
+      setCurrentVolume(currentVolume);
+    }
+    
+    // Set up automatic refresh interval
+    const intervalId = setInterval(() => {
+      if (currentMarketCap) {
+        const change = Math.random() > 0.5 ? 1 + Math.random() * 0.03 : 1 - Math.random() * 0.02;
+        setCurrentMarketCap(prev => prev ? prev * change : null);
+      }
+      
+      if (currentVolume) {
+        const volumeChange = Math.random() > 0.5 ? 1 + Math.random() * 0.04 : 1 - Math.random() * 0.03;
+        setCurrentVolume(prev => prev ? prev * volumeChange : null);
+      }
+    }, 1000); // Update every second
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
 
   // Updated to only show consolidated user holdings
   useEffect(() => {
@@ -242,18 +270,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     return percentChange;
   };
 
-  const refreshMarketCap = async () => {
-    if (currentMarketCap) {
-      const change = Math.random() > 0.5 ? 1 + Math.random() * 0.05 : 1 - Math.random() * 0.03;
-      setCurrentMarketCap(currentMarketCap * change);
-      
-      if (currentVolume) {
-        const volumeChange = Math.random() > 0.5 ? 1 + Math.random() * 0.08 : 1 - Math.random() * 0.04;
-        setCurrentVolume(currentVolume * volumeChange);
-      }
-    }
-  };
-
   const formatTimeAgo = (timestamp: string) => {
     const date = new Date(timestamp);
     const diffMs = Date.now() - date.getTime();
@@ -405,10 +421,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         <TabsContent value="buy">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold">Buy {tokenSymbol} Tokens</h3>
-            <Button variant="ghost" size="sm" onClick={refreshMarketCap}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
+            {/* Removed manual refresh button */}
+            <div className="px-2 py-1 bg-black/20 rounded-md border border-white/10 text-xs flex items-center">
+              <span className="mr-1">Auto-updating</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            </div>
           </div>
 
           <Card className="bg-black/20 border border-dream-accent1/20">
@@ -521,10 +538,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         <TabsContent value="sell" className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold">Sell {tokenSymbol} Tokens</h3>
-            <Button variant="ghost" size="sm" onClick={refreshMarketCap}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh Data
-            </Button>
+            {/* Removed manual refresh button, added auto-update indicator */}
+            <div className="px-2 py-1 bg-black/20 rounded-md border border-white/10 text-xs flex items-center">
+              <span className="mr-1">Auto-updating</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            </div>
           </div>
 
           {userTokenHoldings.length > 0 ? (
