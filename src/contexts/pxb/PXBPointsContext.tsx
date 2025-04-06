@@ -114,23 +114,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return sellToken(tokenMint, tokenName, tokenSymbol, tokenQuantity, price);
   };
 
-  const addPointsToUserWrapper = async (amount: number) => {
-    try {
-      await addPointsToUser(amount);
-    } catch (error) {
-      console.error("Error adding points to user:", error);
-    }
-  };
-
-  const checkAndProcessReferralWrapper = async (referralCode: string) => {
-    try {
-      return await checkAndProcessReferral(referralCode);
-    } catch (error) {
-      console.error("Error processing referral:", error);
-      return false;
-    }
-  };
-
   const fetchTokenTransactions = async (tokenId: string) => {
     try {
       if (bets && bets.length > 0) {
@@ -175,14 +158,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fetchUserBets,
         fetchLeaderboard,
         fetchWinRateLeaderboard,
-        addPointsToUser: addPointsToUserWrapper,
+        addPointsToUser,
         mintingPoints,
         transferFeature,
         isLeaderboardLoading,
         isLoadingWinRate,
         isLoadingBets,
         generateReferralLink,
-        checkAndProcessReferral: checkAndProcessReferralWrapper,
+        checkAndProcessReferral,
         referralStats,
         fetchReferralStats,
         isLoadingReferrals,
