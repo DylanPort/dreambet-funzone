@@ -1,10 +1,10 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
-import { useBetsData } from './useBetsData';
+import { useTradeData } from './useTradeData';
 import { useLeaderboardData } from './useLeaderboardData';
 import { usePointOperations } from './usePointOperations';
-import { useBetProcessor } from './useBetProcessor';
 import { useReferralSystem } from './useReferralSystem';
 import { useWallet } from '@solana/wallet-adapter-react';
 
@@ -30,7 +30,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     addPointsToUser
   } = useProfileData();
   
-  const { bets, setBets, fetchUserBets, isLoading: isLoadingBets } = useBetsData(userProfile);
+  const { trades, setTrades, fetchUserTrades, isLoading: isLoadingTrades } = useTradeData(userProfile);
   const { 
     leaderboard, 
     winRateLeaderboard,
@@ -42,7 +42,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   
   const { 
     mintPoints, 
-    placeBet, 
     sendPoints, 
     purchaseToken,
     sellToken,
@@ -52,7 +51,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   } = usePointOperations(
     userProfile,
     setUserProfile,
-    setBets,
+    setTrades,
     fetchUserProfile,
     setIsLoading
   );
@@ -64,8 +63,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     fetchReferralStats,
     isLoadingReferrals
   } = useReferralSystem(userProfile, fetchUserProfile);
-  
-  useBetProcessor(bets, userProfile, setUserProfile, setBets);
   
   useEffect(() => {
     if (connected && publicKey) {
@@ -79,18 +76,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (amount) {
       await mintPoints(amount);
     }
-  };
-
-  const placeBetWrapper = async (
-    tokenMint: string, 
-    tokenName: string, 
-    tokenSymbol: string, 
-    betAmount: number, 
-    betType: 'up' | 'down', 
-    percentageChange: number,
-    duration: number
-  ) => {
-    return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
   };
 
   const purchaseTokenWrapper = async (
@@ -124,7 +109,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const checkAndProcessReferralWrapper = async (referralCode: string) => {
     try {
-      return await checkAndProcessReferral(referralCode);
+      const result = await checkAndProcessReferral(referralCode);
+      return result === undefined ? false : result;
     } catch (error) {
       console.error("Error processing referral:", error);
       return false;
@@ -133,20 +119,20 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const fetchTokenTransactions = async (tokenId: string) => {
     try {
-      if (bets && bets.length > 0) {
-        return bets
-          .filter(bet => bet.tokenMint === tokenId)
-          .map(bet => ({
-            id: bet.id,
-            timestamp: bet.createdAt,
+      if (trades && trades.length > 0) {
+        return trades
+          .filter(trade => trade.tokenMint === tokenId)
+          .map(trade => ({
+            id: trade.id,
+            timestamp: trade.createdAt,
             type: 'buy',
-            tokenAmount: bet.betAmount * 10,
+            tokenAmount: trade.amount * 10,
             price: 0.001,
-            pxbAmount: bet.betAmount,
-            userId: bet.userId,
-            tokenId: bet.tokenMint,
-            tokenName: bet.tokenName || '',
-            tokenSymbol: bet.tokenSymbol || ''
+            pxbAmount: trade.amount,
+            userId: trade.userId,
+            tokenId: trade.tokenMint,
+            tokenName: trade.tokenName || '',
+            tokenSymbol: trade.tokenSymbol || ''
           }));
       }
       return [];
@@ -161,18 +147,17 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       value={{
         userProfile,
         isLoading,
-        bets,
-        userBets: bets,
+        trades,
+        userTrades: trades,
         leaderboard,
         winRateLeaderboard,
         mintPoints: mintPointsWrapper,
-        placeBet: placeBetWrapper,
         sendPoints,
         purchaseToken: purchaseTokenWrapper,
         sellToken: sellTokenWrapper,
         generatePxbId,
         fetchUserProfile,
-        fetchUserBets,
+        fetchUserTrades,
         fetchLeaderboard,
         fetchWinRateLeaderboard,
         addPointsToUser: addPointsToUserWrapper,
@@ -180,7 +165,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         transferFeature,
         isLeaderboardLoading,
         isLoadingWinRate,
-        isLoadingBets,
+        isLoadingTrades,
         generateReferralLink,
         checkAndProcessReferral: checkAndProcessReferralWrapper,
         referralStats,
