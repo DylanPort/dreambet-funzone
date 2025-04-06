@@ -4,8 +4,10 @@ import { QueryClient } from '@tanstack/react-query';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60, // 1 minute (reduced from 5 minutes for more frequent updates)
+      refetchOnWindowFocus: true, // Enable refetching when window regains focus
+      refetchInterval: 30000, // Refetch every 30 seconds in the background
+      retry: 3, // Retry failed requests 3 times
     },
   },
 });
@@ -15,9 +17,42 @@ export const createQueryClient = () => {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        refetchOnWindowFocus: false,
+        staleTime: 1000 * 60, // 1 minute
+        refetchOnWindowFocus: true,
+        refetchInterval: 30000, // Refetch every 30 seconds
+        retry: 3,
       },
     },
   });
+};
+
+// Helper function to invalidate token data
+export const invalidateTokenData = (tokenId: string) => {
+  queryClient.invalidateQueries({ queryKey: ['token', tokenId] });
+  queryClient.invalidateQueries({ queryKey: ['tokenMetrics', tokenId] });
+  queryClient.invalidateQueries({ queryKey: ['tokenTradeHistory', tokenId] });
+};
+
+// Helper function to prefetch token data
+export const prefetchTokenData = async (tokenId: string) => {
+  try {
+    await Promise.all([
+      queryClient.prefetchQuery({
+        queryKey: ['token', tokenId],
+        queryFn: async () => {
+          // Implement token fetching logic here or import from services
+          return null;
+        }
+      }),
+      queryClient.prefetchQuery({
+        queryKey: ['tokenMetrics', tokenId],
+        queryFn: async () => {
+          // Implement token metrics fetching logic here or import from services
+          return null;
+        }
+      })
+    ]);
+  } catch (error) {
+    console.error('Error prefetching token data:', error);
+  }
 };
