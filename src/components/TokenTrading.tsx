@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +10,8 @@ import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, LineChart, Ar
 import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import { fetchDexScreenerData } from '@/services/dexScreenerService';
+import { fetchGMGNTokenData } from '@/services/gmgnService';
 
 interface TokenTradingProps {
   tokenId: string;
@@ -45,6 +48,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 }) => {
   const [amount, setAmount] = useState<number>(10);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSelling, setIsSelling] = useState(false);
+  const [sellLoading, setSellLoading] = useState<Record<number, boolean>>({});
   const [tokenAmount, setTokenAmount] = useState<number>(0);
   const [currentMarketCap, setCurrentMarketCap] = useState<number | null>(marketCap || null);
   const [currentVolume, setCurrentVolume] = useState<number | null>(volume24h || null);
@@ -57,51 +62,86 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     tokenAmount: number;
   } | null>(null);
   const [userTokenHoldings, setUserTokenHoldings] = useState<TokenHolding[]>([]);
+  const userTokenHoldingsRef = useRef<TokenHolding[]>([]);
 
   const { toast } = useToast();
-  const { userProfile, placeBet, mintPoints } = usePXBPoints();
+  const { userProfile, placeBet, mintPoints, addPointsToUser } = usePXBPoints();
   const pumpPortalService = usePumpPortalWebSocket();
 
-  // Add auto-refresh for market cap and volume data
+  // Add auto-refresh for market cap and volume data using real API data
   useEffect(() => {
     // Initial setup
-    if (currentMarketCap) {
-      setCurrentMarketCap(currentMarketCap);
+    if (marketCap) {
+      setCurrentMarketCap(marketCap);
     }
     
-    if (currentVolume) {
-      setCurrentVolume(currentVolume);
+    if (volume24h) {
+      setCurrentVolume(volume24h);
     }
+    
+    const fetchRealMarketData = async () => {
+      try {
+        // Try DexScreener first
+        const dexData = await fetchDexScreenerData(tokenId);
+        if (dexData && dexData.marketCap) {
+          setCurrentMarketCap(dexData.marketCap);
+          setCurrentVolume(dexData.volume24h);
+          console.log("Updated market data from DexScreener:", dexData);
+          return;
+        }
+        
+        // Fallback to GMGN if DexScreener failed
+        const gmgnData = await fetchGMGNTokenData(tokenId);
+        if (gmgnData && gmgnData.marketCap) {
+          setCurrentMarketCap(gmgnData.marketCap);
+          setCurrentVolume(gmgnData.volume24h);
+          console.log("Updated market data from GMGN:", gmgnData);
+        }
+      } catch (error) {
+        console.error("Error fetching market data:", error);
+      }
+    };
+    
+    // Fetch immediately
+    fetchRealMarketData();
     
     // Set up automatic refresh interval
-    const intervalId = setInterval(() => {
-      if (currentMarketCap) {
-        const change = Math.random() > 0.5 ? 1 + Math.random() * 0.03 : 1 - Math.random() * 0.02;
-        setCurrentMarketCap(prev => prev ? prev * change : null);
-      }
-      
-      if (currentVolume) {
-        const volumeChange = Math.random() > 0.5 ? 1 + Math.random() * 0.04 : 1 - Math.random() * 0.03;
-        setCurrentVolume(prev => prev ? prev * volumeChange : null);
-      }
-    }, 1000); // Update every second
+    const intervalId = setInterval(fetchRealMarketData, 5000); // Update every 5 seconds
     
     return () => {
       clearInterval(intervalId);
     };
-  }, []);
+  }, [tokenId, marketCap, volume24h]);
+
+  // Load holdings from localStorage on mount
+  useEffect(() => {
+    if (userProfile && tokenId) {
+      try {
+        const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+        const storedHoldings = localStorage.getItem(storageKey);
+        
+        if (storedHoldings) {
+          const holdings = JSON.parse(storedHoldings);
+          setUserTokenHoldings(holdings);
+          userTokenHoldingsRef.current = holdings;
+        }
+      } catch (error) {
+        console.error("Error loading token holdings from localStorage:", error);
+      }
+    }
+  }, [userProfile, tokenId]);
 
   // Updated to only show consolidated user holdings
   useEffect(() => {
     // Check if we already have a holding for this token
     if (initialPurchaseData) {
-      const existingHoldingIndex = userTokenHoldings.findIndex(
+      const existingHoldingIndex = userTokenHoldingsRef.current.findIndex(
         holding => holding.tokenSymbol === tokenSymbol
       );
       
       if (existingHoldingIndex >= 0) {
         // Update existing holding
-        const updatedHoldings = [...userTokenHoldings];
+        const updatedHoldings = [...userTokenHoldingsRef.current];
         const existingHolding = updatedHoldings[existingHoldingIndex];
         
         updatedHoldings[existingHoldingIndex] = {
@@ -117,6 +157,17 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         };
         
         setUserTokenHoldings(updatedHoldings);
+        userTokenHoldingsRef.current = updatedHoldings;
+        
+        // Save to localStorage
+        if (userProfile) {
+          try {
+            const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+            localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
+          } catch (error) {
+            console.error("Error saving token holdings to localStorage:", error);
+          }
+        }
       } else {
         // Create new holding
         if (currentMarketCap) {
@@ -126,7 +177,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             amount: initialPurchaseData.amount,
             tokenAmount: initialPurchaseData.tokenAmount,
             createdAt: new Date().toISOString(),
-            userId: userProfile?.id || "unknown", // Fix: Changed from wallet to id
+            userId: userProfile?.id || "unknown",
             percentageChange: initialPurchaseData.marketCap 
               ? ((currentMarketCap - initialPurchaseData.marketCap) / initialPurchaseData.marketCap) * 100
               : 0,
@@ -136,14 +187,50 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             lastUpdated: new Date().toISOString()
           };
           
-          setUserTokenHoldings([...userTokenHoldings, newHolding]);
+          const newHoldings = [...userTokenHoldingsRef.current, newHolding];
+          setUserTokenHoldings(newHoldings);
+          userTokenHoldingsRef.current = newHoldings;
+          
+          // Save to localStorage
+          if (userProfile) {
+            try {
+              const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+              localStorage.setItem(storageKey, JSON.stringify(newHoldings));
+            } catch (error) {
+              console.error("Error saving token holdings to localStorage:", error);
+            }
+          }
         }
       }
       
       // Clear the initial purchase data to prevent duplicate additions
       setInitialPurchaseData(null);
+      
+      // Also add to token_transactions table in Supabase if needed
+      if (userProfile) {
+        const newTransaction = {
+          tokenid: tokenId,
+          tokensymbol: tokenSymbol,
+          tokenname: tokenName,
+          quantity: initialPurchaseData.tokenAmount,
+          pxbamount: initialPurchaseData.amount,
+          price: tokenPrice,
+          type: 'buy',
+          userid: userProfile.id
+        };
+        
+        // Add a custom event to allow PriceChart to add a marker
+        window.dispatchEvent(new CustomEvent('tokenPurchase', { 
+          detail: {
+            tokenId,
+            price: tokenPrice,
+            timestamp: new Date().toISOString(),
+            amount: initialPurchaseData.amount
+          }
+        }));
+      }
     }
-  }, [initialPurchaseData, currentMarketCap, tokenPrice]);
+  }, [initialPurchaseData, currentMarketCap, tokenPrice, tokenId, tokenName, tokenSymbol, userProfile]);
 
   // Update current values periodically
   useEffect(() => {
@@ -159,8 +246,19 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       }));
       
       setUserTokenHoldings(updatedHoldings);
+      userTokenHoldingsRef.current = updatedHoldings;
+      
+      // Save updated holdings to localStorage
+      if (userProfile) {
+        try {
+          const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+          localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
+        } catch (error) {
+          console.error("Error saving updated token holdings to localStorage:", error);
+        }
+      }
     }
-  }, [currentMarketCap, tokenPrice]);
+  }, [currentMarketCap, tokenPrice, userProfile, tokenId]);
 
   useEffect(() => {
     if (currentMarketCap) {
@@ -232,6 +330,16 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
       });
 
+      // Add a custom event to allow PriceChart to add a marker
+      window.dispatchEvent(new CustomEvent('tokenPurchase', { 
+        detail: {
+          tokenId,
+          price: tokenPrice,
+          timestamp: new Date().toISOString(),
+          amount: amount
+        }
+      }));
+
       if (onSuccess) {
         onSuccess();
       }
@@ -244,6 +352,82 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSellTokens = async (holding: TokenHolding) => {
+    if (!userProfile) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to sell tokens",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSellLoading(prev => ({ ...prev, [holding.id]: true }));
+    
+    try {
+      const isPositiveChange = holding.percentageChange >= 0;
+      const returnAmount = Math.max(0, holding.currentValue);
+      
+      console.log(`Selling tokens: ${holding.tokenAmount} ${holding.tokenSymbol}`);
+      console.log(`Return amount: ${returnAmount} PXB`);
+      
+      // Add points to user
+      const success = await addPointsToUser(Math.round(returnAmount), userProfile.id);
+      
+      if (success) {
+        toast({
+          title: "Tokens sold successfully!",
+          description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`,
+          variant: isPositiveChange ? "default" : "destructive",
+        });
+        
+        // Remove holding from list
+        const updatedHoldings = userTokenHoldings.filter(h => h.id !== holding.id);
+        setUserTokenHoldings(updatedHoldings);
+        userTokenHoldingsRef.current = updatedHoldings;
+        
+        // Update localStorage
+        if (userProfile) {
+          try {
+            const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+            localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
+          } catch (error) {
+            console.error("Error updating token holdings in localStorage:", error);
+          }
+        }
+        
+        // Also add to token_transactions table in Supabase if needed
+        const newTransaction = {
+          tokenid: tokenId,
+          tokensymbol: holding.tokenSymbol,
+          tokenname: tokenName,
+          quantity: holding.tokenAmount,
+          pxbamount: returnAmount,
+          price: tokenPrice,
+          type: 'sell',
+          userid: userProfile.id
+        };
+        
+        // We can add Supabase code here if needed
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        throw new Error("Failed to add points to user account");
+      }
+    } catch (error) {
+      console.error("Error selling tokens:", error);
+      toast({
+        title: "Sale failed",
+        description: "There was an error processing your sale",
+        variant: "destructive",
+      });
+    } finally {
+      setSellLoading(prev => ({ ...prev, [holding.id]: false }));
     }
   };
 
@@ -289,6 +473,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
   const renderTokenHoldingCard = (holding: TokenHolding) => {
     const isPositiveChange = holding.percentageChange >= 0;
+    const isSellingThisHolding = sellLoading[holding.id] || false;
     
     return (
       <div key={holding.id} className="bg-black/60 rounded-lg border border-white/10 mb-2 overflow-hidden hover:border-purple-500/40 transition-all duration-200">
@@ -396,8 +581,17 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             variant={isPositiveChange ? "default" : "destructive"} 
             size="sm"
             className={`w-full text-[9px] py-0 mt-0.5 h-4 ${isPositiveChange ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'}`}
+            onClick={() => handleSellTokens(holding)}
+            disabled={isSellingThisHolding}
           >
-            Sell for {holding.currentValue.toFixed(2)} PXB ({isPositiveChange ? '+' : ''}{holding.percentageChange.toFixed(2)}%)
+            {isSellingThisHolding ? (
+              <>
+                <Loader2 className="w-2 h-2 mr-1 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>Sell for {holding.currentValue.toFixed(2)} PXB ({isPositiveChange ? '+' : ''}{holding.percentageChange.toFixed(2)}%)</>
+            )}
           </Button>
         </div>
       </div>
@@ -421,7 +615,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         <TabsContent value="buy">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold">Buy {tokenSymbol} Tokens</h3>
-            {/* Removed manual refresh button */}
             <div className="px-2 py-1 bg-black/20 rounded-md border border-white/10 text-xs flex items-center">
               <span className="mr-1">Auto-updating</span>
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -538,7 +731,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         <TabsContent value="sell" className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold">Sell {tokenSymbol} Tokens</h3>
-            {/* Removed manual refresh button, added auto-update indicator */}
             <div className="px-2 py-1 bg-black/20 rounded-md border border-white/10 text-xs flex items-center">
               <span className="mr-1">Auto-updating</span>
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
