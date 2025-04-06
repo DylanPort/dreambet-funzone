@@ -29,12 +29,12 @@ export async function fetchTokenData(tokenId: string) {
     
     if (dexData) {
       return {
-        name: dexData.name || 'Unknown Token',
-        symbol: dexData.symbol || 'UNKNOWN',
-        price: dexData.price || 0.001,
+        name: dexData.tokenName || 'Unknown Token',
+        symbol: dexData.tokenSymbol || 'UNKNOWN',
+        price: dexData.priceUsd || 0.001,
         marketCap: dexData.marketCap || 0,
         volume24h: dexData.volume24h || 0,
-        supply: dexData.totalSupply || 1000000000,
+        supply: dexData.supply || 1000000000,
         priceChange24h: dexData.priceChange24h || 0,
         address: tokenId
       };
@@ -84,8 +84,8 @@ export async function fetchTokenPrice(tokenId: string) {
     // If not in our database, fetch from DexScreener
     const dexData = await fetchDexScreenerData(tokenId);
     
-    if (dexData && dexData.price) {
-      return dexData.price;
+    if (dexData && dexData.priceUsd) {
+      return dexData.priceUsd;
     }
     
     // Fallback to default

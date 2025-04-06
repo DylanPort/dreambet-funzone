@@ -9,6 +9,7 @@ export interface UserProfile {
   avatar?: string;
   bio?: string;
   referralCode?: string;
+  isTemporary?: boolean;
 }
 
 export interface PXBTrade {
@@ -51,6 +52,18 @@ export interface ReferralStats {
   points_earned?: number;
 }
 
+export interface SupabaseUserProfile {
+  id: string;
+  username?: string;
+  display_name?: string;
+  wallet_address: string;
+  points: number;
+  created_at: string;
+  avatar_url?: string;
+  bio?: string;
+  referral_code?: string;
+}
+
 export interface SupabaseTradeRow {
   id: string;
   userid: string;
@@ -61,5 +74,18 @@ export interface SupabaseTradeRow {
   price: number;
   quantity: number;
   type: 'buy' | 'sell';
+  timestamp: string;
+}
+
+export interface TradeHistory {
+  id: string;
+  userId: string;
+  tokenId: string;
+  tokenName: string;
+  tokenSymbol: string;
+  type: 'buy' | 'sell';
+  quantity: number;
+  price: number;
+  pxbAmount: number;
   timestamp: string;
 }

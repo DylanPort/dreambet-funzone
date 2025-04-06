@@ -107,10 +107,10 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const checkAndProcessReferralWrapper = async (referralCode: string) => {
+  const checkAndProcessReferralWrapper = async (referralCode: string): Promise<boolean> => {
     try {
       const result = await checkAndProcessReferral(referralCode);
-      return result === undefined ? false : result;
+      return result;
     } catch (error) {
       console.error("Error processing referral:", error);
       return false;
@@ -125,9 +125,9 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           .map(trade => ({
             id: trade.id,
             timestamp: trade.createdAt,
-            type: 'buy',
+            type: trade.type,
             tokenAmount: trade.amount * 10,
-            price: 0.001,
+            price: trade.price,
             pxbAmount: trade.amount,
             userId: trade.userId,
             tokenId: trade.tokenMint,

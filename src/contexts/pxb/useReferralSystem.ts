@@ -1,7 +1,8 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { UserProfile, ReferralStats, Referral } from '@/types/pxb';
+import { UserProfile, ReferralStats } from '@/types/pxb';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useReferralSystem = (
   userProfile: UserProfile | null,
@@ -9,184 +10,178 @@ export const useReferralSystem = (
 ) => {
   const [referralStats, setReferralStats] = useState<ReferralStats>({
     totalReferrals: 0,
-    activeReferrals: 0,
-    pointsEarned: 0,
-    totalPointsEarned: 0, // Added for compatibility
-    referrals_count: 0,
-    points_earned: 0,
-    referral_code: null,
-    referrals: []
+    pointsEarned: 0
   });
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
 
-  // Generate a referral link based on user's referral code
   const generateReferralLink = useCallback(async (): Promise<string> => {
-    if (!userProfile) return Promise.resolve('');
-    
+    if (!userProfile) return '';
+
     try {
-      const { data, error } = await supabase
+      // Check if user already has a referral code
+      if (userProfile.referralCode) {
+        return `${window.location.origin}/?ref=${userProfile.referralCode}`;
+      }
+
+      // Generate a new referral code
+      const referralCode = `${userProfile.username?.substring(0, 4) || 'pxb'}-${uuidv4().substring(0, 6)}`.toLowerCase();
+
+      // Update user with referral code
+      const { error } = await supabase
         .from('users')
-        .select('referral_code')
-        .eq('id', userProfile.id)
-        .single();
-        
+        .update({ referral_code: referralCode })
+        .eq('id', userProfile.id);
+
       if (error) {
-        console.error('Error fetching referral code:', error);
-        return Promise.resolve('');
+        console.error('Error generating referral code:', error);
+        return '';
       }
-      
-      if (data && data.referral_code) {
-        // Use pumpxbounty.fun domain for referrals
-        return `https://pumpxbounty.fun?ref=${data.referral_code}`;
-      }
-      
-      return Promise.resolve('');
+
+      // Update local user profile
+      await fetchUserProfile();
+
+      return `${window.location.origin}/?ref=${referralCode}`;
     } catch (error) {
       console.error('Error in generateReferralLink:', error);
-      return Promise.resolve('');
-    }
-  }, [userProfile]);
-
-  // Check if a referral code is valid and process the referral
-  const checkAndProcessReferral = useCallback(async (referralCode: string) => {
-    if (!userProfile) {
-      console.error('Please connect your wallet to use referral links');
-      return;
-    }
-
-    try {
-      // First, check if user has already been referred
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('referred_by')
-        .eq('id', userProfile.id)
-        .single();
-      
-      if (userError) {
-        console.error('Error checking if user was already referred:', userError);
-        return;
-      }
-      
-      // If user has already been referred, don't process again
-      if (userData && userData.referred_by) {
-        console.log('User was already referred, not processing again');
-        return;
-      }
-      
-      // Find the referrer by the referral code
-      const { data: referrerData, error: referrerError } = await supabase
-        .from('users')
-        .select('id, referral_code')
-        .eq('referral_code', referralCode)
-        .single();
-      
-      if (referrerError || !referrerData) {
-        console.error('Invalid referral code or error finding referrer:', referrerError);
-        return;
-      }
-      
-      // Don't allow self-referrals
-      if (referrerData.id === userProfile.id) {
-        console.error("You can't refer yourself");
-        return;
-      }
-      
-      // Update the user to mark them as referred
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ referred_by: referralCode })
-        .eq('id', userProfile.id);
-      
-      if (updateError) {
-        console.error('Error updating user with referral:', updateError);
-        return;
-      }
-      
-      // Call the database function to process the referral reward
-      const { data: processResult, error: processError } = await supabase
-        .rpc('process_referral_reward', {
-          referrer_id: referrerData.id,
-          referred_id: userProfile.id
-        });
-      
-      if (processError) {
-        console.error('Error processing referral reward:', processError);
-        return;
-      }
-      
-      if (processResult) {
-        console.log('Referral successfully processed! Your friend will receive 10,000 PXB points.');
-        fetchUserProfile(); // Refresh user data
-      } else {
-        console.log('Referral was not processed, possibly already processed');
-      }
-    } catch (error) {
-      console.error('Error in checkAndProcessReferral:', error);
+      return '';
     }
   }, [userProfile, fetchUserProfile]);
 
-  // Fetch referral stats for the current user
+  const checkAndProcessReferral = useCallback(async (referralCode: string): Promise<boolean> => {
+    if (!userProfile || !referralCode) return false;
+
+    try {
+      setIsLoadingReferrals(true);
+
+      // Don't allow self-referrals
+      if (userProfile.referralCode === referralCode) {
+        console.log('Cannot refer yourself');
+        return false;
+      }
+
+      // Check if this user was already referred
+      const { data: existingReferrals, error: referralCheckError } = await supabase
+        .from('referrals')
+        .select('*')
+        .eq('referred_id', userProfile.id);
+
+      if (referralCheckError) {
+        console.error('Error checking referral status:', referralCheckError);
+        return false;
+      }
+
+      if (existingReferrals && existingReferrals.length > 0) {
+        console.log('User already referred');
+        return false;
+      }
+
+      // Find the referrer with this code
+      const { data: referrerData, error: referrerError } = await supabase
+        .from('users')
+        .select('id, points')
+        .eq('referral_code', referralCode)
+        .single();
+
+      if (referrerError || !referrerData) {
+        console.error('Referrer not found:', referrerError);
+        return false;
+      }
+
+      // Create the referral record
+      const { error: createReferralError } = await supabase
+        .from('referrals')
+        .insert({
+          referrer_id: referrerData.id,
+          referred_id: userProfile.id,
+          status: 'completed',
+          points_awarded: 5000 // Bonus points for referral
+        });
+
+      if (createReferralError) {
+        console.error('Error creating referral:', createReferralError);
+        return false;
+      }
+
+      // Add points to referrer
+      const newReferrerPoints = (referrerData.points || 0) + 5000;
+      const { error: updateReferrerError } = await supabase
+        .from('users')
+        .update({ points: newReferrerPoints })
+        .eq('id', referrerData.id);
+
+      if (updateReferrerError) {
+        console.error('Error updating referrer points:', updateReferrerError);
+        return false;
+      }
+
+      // Record points history for referrer
+      await supabase.from('points_history').insert({
+        user_id: referrerData.id,
+        amount: 5000,
+        action: 'referral_bonus',
+        reference_id: userProfile.id
+      });
+
+      // Add points to referred user (the current user)
+      const newUserPoints = userProfile.pxbPoints + 5000;
+      const { error: updateUserError } = await supabase
+        .from('users')
+        .update({ points: newUserPoints, referred_by: referralCode })
+        .eq('id', userProfile.id);
+
+      if (updateUserError) {
+        console.error('Error updating user points:', updateUserError);
+        return false;
+      }
+
+      // Record points history for referred user
+      await supabase.from('points_history').insert({
+        user_id: userProfile.id,
+        amount: 5000,
+        action: 'referred_bonus',
+        reference_id: referrerData.id
+      });
+
+      // Update user profile
+      await fetchUserProfile();
+
+      setReferralStats({
+        totalReferrals: referralStats.totalReferrals,
+        pointsEarned: referralStats.pointsEarned + 5000
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error processing referral:', error);
+      return false;
+    } finally {
+      setIsLoadingReferrals(false);
+    }
+  }, [userProfile, fetchUserProfile, referralStats]);
+
   const fetchReferralStats = useCallback(async () => {
     if (!userProfile) return;
-    
-    setIsLoadingReferrals(true);
+
     try {
-      // Get user's referral code
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('referral_code')
-        .eq('id', userProfile.id)
-        .single();
-      
-      if (userError) {
-        console.error('Error fetching user referral code:', userError);
-        return;
-      }
-      
-      // Get referrals made by this user
+      setIsLoadingReferrals(true);
+
+      // Count referrals made by this user
       const { data: referralsData, error: referralsError } = await supabase
         .from('referrals')
-        .select(`
-          id,
-          points_awarded,
-          created_at,
-          referred_id,
-          users!referred_id(username)
-        `)
-        .eq('referrer_id', userProfile.id)
-        .order('created_at', { ascending: false });
-      
+        .select('*')
+        .eq('referrer_id', userProfile.id);
+
       if (referralsError) {
         console.error('Error fetching referrals:', referralsError);
         return;
       }
-      
-      // Calculate total points earned from referrals
-      const totalPointsEarned = referralsData.reduce((sum, r) => sum + r.points_awarded, 0);
-      
-      // Format referrals data with all required fields for the component
-      const formattedReferrals: Referral[] = referralsData.map(r => ({
-        id: r.id, // Added id field
-        referrer: userProfile.id,
-        referee: r.referred_id,
-        referred_id: r.referred_id, // For backend compatibility
-        date: r.created_at,
-        createdAt: r.created_at, // Added for component compatibility
-        status: 'active',
-        pointsEarned: r.points_awarded,
-        pointsAwarded: r.points_awarded, // Added alias for component compatibility
-        referredUsername: r.users?.username || 'Anonymous User' // Added for display in component
-      }));
-      
+
+      // Calculate points earned from referrals
+      const pointsEarned = referralsData?.reduce((total, ref) => total + (ref.points_awarded || 0), 0) || 0;
+
       setReferralStats({
-        totalReferrals: referralsData.length,
-        activeReferrals: referralsData.length,
-        pointsEarned: totalPointsEarned,
-        totalPointsEarned: totalPointsEarned, // Added for component compatibility
-        referrals_count: referralsData.length,
-        points_earned: totalPointsEarned,
-        referral_code: userData?.referral_code || null,
-        referrals: formattedReferrals
+        totalReferrals: referralsData?.length || 0,
+        pointsEarned: pointsEarned
       });
     } catch (error) {
       console.error('Error in fetchReferralStats:', error);
@@ -194,13 +189,6 @@ export const useReferralSystem = (
       setIsLoadingReferrals(false);
     }
   }, [userProfile]);
-
-  // Fetch referral stats when the user profile changes
-  useEffect(() => {
-    if (userProfile) {
-      fetchReferralStats();
-    }
-  }, [userProfile, fetchReferralStats]);
 
   return {
     generateReferralLink,
