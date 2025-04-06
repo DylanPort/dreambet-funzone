@@ -1,3 +1,4 @@
+
 export interface UserProfile {
   id: string;
   username: string;
@@ -8,7 +9,7 @@ export interface UserProfile {
   avatar?: string;
   bio?: string;
   referralCode?: string;
-  isTemporary?: boolean;
+  points?: number; // Alternative field name used in some cases
 }
 
 export interface PXBTrade {
@@ -49,7 +50,6 @@ export interface ReferralStats {
   pointsEarned: number;
   referrals_count?: number;
   points_earned?: number;
-  referrals?: number;
 }
 
 export interface SupabaseUserProfile {
@@ -90,4 +90,19 @@ export interface TradeHistory {
   timestamp: string;
   username?: string;
   avatar?: string;
+}
+
+// Add tables for follow/favorite in Supabase
+export interface FollowToken {
+  id: string;
+  user_id: string;
+  token_id: string;
+  created_at: string;
+}
+
+export interface FavoriteToken {
+  id: string;
+  user_id: string;
+  token_id: string;
+  created_at: string;
 }

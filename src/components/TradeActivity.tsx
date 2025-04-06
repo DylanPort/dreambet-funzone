@@ -55,7 +55,9 @@ const TradeActivity: React.FC<TradeActivityProps> = ({ userId, limit = 10 }) => 
             quantity: trade.quantity,
             price: trade.price,
             pxbAmount: trade.pxbamount,
-            timestamp: trade.timestamp
+            timestamp: trade.timestamp,
+            username: undefined,
+            avatar: undefined
           }));
           
           setTrades(formattedTrades);

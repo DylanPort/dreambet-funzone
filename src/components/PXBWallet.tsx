@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
@@ -44,8 +45,14 @@ const PXBWallet = () => {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  // Update this function to accept a React MouseEvent instead of a string
+  const copyToClipboard = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // Get the input element's value
+    const inputEl = event.currentTarget.previousElementSibling as HTMLInputElement;
+    if (inputEl && inputEl.value) {
+      navigator.clipboard.writeText(inputEl.value);
+      toast.success('Copied to clipboard!');
+    }
   };
 
   if (isLoading) {

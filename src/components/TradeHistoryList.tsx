@@ -7,7 +7,7 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { Clock, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, Clock, Zap } from 'lucide-react';
 import { TradeHistory } from '@/types/pxb';
 
 const TradeHistoryList = () => {
@@ -77,7 +77,7 @@ const TradeHistoryList = () => {
                   } font-medium`}>
                     {trade.type === 'buy' ? '+' : '-'}{trade.quantity.toLocaleString()}
                   </div>
-                  <div className="text-xs text-dream-foreground/60">{trade.pxbAmount.toLocaleString()} PXB</div>
+                  <div className="text-xs text-dream-foreground/60">{trade.amount.toLocaleString()} PXB</div>
                 </div>
               </div>
               <div className="flex justify-between text-xs text-dream-foreground/40">

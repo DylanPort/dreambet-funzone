@@ -1,36 +1,52 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Wallet } from 'lucide-react';
+import { ArrowLeft, Wallet, Clock } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import OrbitingParticles from '@/components/OrbitingParticles';
-import { supabase } from '@/integrations/supabase/client';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
 import { TradeHistory } from '@/types/pxb';
 import Loading from '@/components/Loading';
+import TradeActivity from '@/components/TradeActivity';
 
 const Portfolio = () => {
   const { userProfile } = usePXBPoints();
-  const [tradeHistory, setTradeHistory] = useState<TradeHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [tradeHistory, setTradeHistory] = useState<TradeHistory[]>([]);
+  const [portfolioSummary, setPortfolioSummary] = useState<{
+    totalValue: number;
+    totalProfitLoss: number;
+    totalTokens: number;
+  }>({
+    totalValue: 0,
+    totalProfitLoss: 0,
+    totalTokens: 0,
+  });
 
   useEffect(() => {
-    const fetchTransactions = async () => {
+    const fetchPortfolioData = async () => {
+      if (!userProfile) return;
+      
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        const { data, error } = await supabase
+        // Fetch user's token transactions
+        const { data: transactions, error: txError } = await supabase
           .from('token_transactions')
           .select('*')
-          .eq('userid', userProfile?.id || '')
+          .eq('userid', userProfile.id)
           .order('timestamp', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching trade history:', error);
-        } else {
-          // Transform the data to match TradeHistory interface
-          const formattedData: TradeHistory[] = data.map(tx => ({
+          
+        if (txError) {
+          console.error('Error fetching token transactions:', txError);
+          return;
+        }
+        
+        if (transactions) {
+          // Convert to the TradeHistory format
+          const history: TradeHistory[] = transactions.map(tx => ({
             id: tx.id,
             userId: tx.userid,
             tokenId: tx.tokenid,
@@ -42,100 +58,153 @@ const Portfolio = () => {
             pxbAmount: tx.pxbamount,
             timestamp: tx.timestamp
           }));
-          setTradeHistory(formattedData);
+          
+          setTradeHistory(history);
+          
+          // Calculate portfolio summary (simplified for this demo)
+          const buyTransactions = transactions.filter(tx => tx.type === 'buy');
+          const totalTokens = buyTransactions.length;
+          const totalValue = buyTransactions.reduce((sum, tx) => sum + tx.pxbamount, 0);
+          
+          // Random profit/loss for demo
+          const profitLossPercent = (Math.random() * 40) - 20; // Between -20% and +20%
+          const totalProfitLoss = totalValue * (profitLossPercent / 100);
+          
+          setPortfolioSummary({
+            totalValue,
+            totalProfitLoss,
+            totalTokens
+          });
         }
-      } catch (err) {
-        console.error('Error in fetchTransactions:', err);
+      } catch (error) {
+        console.error('Error in fetchPortfolioData:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
-    if (userProfile) {
-      fetchTransactions();
-    }
+    
+    fetchPortfolioData();
   }, [userProfile]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  };
+  if (!userProfile) {
+    return (
+      <>
+        <OrbitingParticles />
+        <Navbar />
+        <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
+          <div className="max-w-3xl mx-auto text-center py-10">
+            <Wallet className="w-12 h-12 mx-auto text-dream-foreground/30 mb-4" />
+            <h1 className="text-2xl font-bold mb-2">Connect Your Wallet</h1>
+            <p className="text-dream-foreground/60 mb-6">
+              Connect your wallet to view your portfolio and trading history
+            </p>
+            <Link 
+              to="/" 
+              className="inline-flex items-center px-4 py-2 bg-dream-accent1/20 hover:bg-dream-accent1/30 rounded-md text-dream-accent1"
+            >
+              Go to Homepage
+            </Link>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <>
+        <OrbitingParticles />
+        <Navbar />
+        <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
+          <Loading message="Loading your portfolio data..." />
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
       <OrbitingParticles />
       <Navbar />
-
+      
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-5xl mx-auto">
-          <Link to="/betting" className="inline-flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
+          <Link to="/" className="inline-flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Link>
-
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-display font-bold">Portfolio</h1>
+          
+          <h1 className="text-3xl font-display font-bold mb-6">Your Portfolio</h1>
+          
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <Card className="bg-black/60 border-dream-accent1/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-dream-foreground/70">Portfolio Value</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{portfolioSummary.totalValue.toLocaleString()} PXB</div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-black/60 border-dream-accent1/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-dream-foreground/70">Profit/Loss</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${
+                  portfolioSummary.totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {portfolioSummary.totalProfitLoss >= 0 ? '+' : ''}
+                  {portfolioSummary.totalProfitLoss.toLocaleString()} PXB
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-black/60 border-dream-accent1/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-dream-foreground/70">Total Tokens</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{portfolioSummary.totalTokens}</div>
+              </CardContent>
+            </Card>
           </div>
-
-          {userProfile ? (
-            <div className="grid md:grid-cols-1 gap-6">
+          
+          <Tabs defaultValue="activity" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsTrigger value="activity">Activity</TabsTrigger>
+              <TabsTrigger value="holdings">Holdings</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="activity">
+              <TradeActivity userId={userProfile.id} limit={20} />
+            </TabsContent>
+            
+            <TabsContent value="holdings">
               <Card className="bg-black/60 border-dream-accent1/30">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Wallet className="mr-2 h-5 w-5 text-dream-accent1" />
-                    Trade History
-                  </CardTitle>
+                  <CardTitle>Your Holdings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isLoading ? (
-                    <Loading />
-                  ) : tradeHistory.length > 0 ? (
-                    <ScrollArea className="h-[400px] w-full">
-                      <div className="space-y-4">
-                        {tradeHistory.map((trade) => (
-                          <div key={trade.id} className="p-4 rounded-lg bg-dream-foreground/5 border border-dream-foreground/10">
-                            <div className="flex justify-between items-center mb-2">
-                              <div>
-                                <div className="font-medium">{trade.tokenName}</div>
-                                <div className="text-xs text-dream-foreground/60">{trade.tokenSymbol}</div>
-                              </div>
-                              <div className="text-right">
-                                <div className={`${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'} font-medium`}>
-                                  {trade.type === 'buy' ? '+' : '-'}{trade.quantity.toLocaleString()}
-                                </div>
-                                <div className="text-xs text-dream-foreground/60">{trade.pxbAmount.toLocaleString()} PXB</div>
-                              </div>
-                            </div>
-                            <div className="flex justify-between text-xs text-dream-foreground/40">
-                              <div>{formatDate(trade.timestamp)}</div>
-                              <div>Price: {trade.price.toFixed(6)} PXB</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
+                  {tradeHistory.length === 0 ? (
+                    <div className="text-center py-6">
+                      <Clock className="w-12 h-12 mx-auto text-dream-foreground/30 mb-4" />
+                      <p className="text-dream-foreground/60">No token holdings yet</p>
+                      <p className="text-sm text-dream-foreground/40 mt-1">
+                        Start trading tokens to build your portfolio
+                      </p>
+                    </div>
                   ) : (
-                    <div className="text-center py-12">
-                      <p className="text-dream-foreground/60">No trade history yet</p>
-                      <p className="text-sm text-dream-foreground/40 mt-1">Start trading tokens to see your history here</p>
+                    <div className="space-y-4">
+                      <p className="text-dream-foreground/60 text-center">
+                        Portfolio tracking is under development. Check back soon!
+                      </p>
                     </div>
                   )}
                 </CardContent>
               </Card>
-            </div>
-          ) : (
-            <div className="glass-panel p-8 text-center">
-              <p className="text-xl text-dream-foreground/70 mb-4">Connect your wallet to view your portfolio</p>
-              <p className="text-dream-foreground/50 mb-6">Your trade history and token balances will be displayed here</p>
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </>

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -271,16 +272,16 @@ export const usePointOperations = (
       // Fetch user profile to update points
       await fetchUserProfile();
 
-      // Fetch user trades to update trades
-      // await fetchUserTrades();
-
       toast.success(`Successfully sold ${tokenQuantity} ${tokenSymbol} tokens!`);
       return true;
     } catch (error) {
       console.error('Error selling token:', error);
       toast.error('Failed to sell token.');
-      // Revert the optimistic update
-      setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints - pxbAmount });
+      // Revert the optimistic update if pxbAmount is defined
+      if (userProfile) {
+        const calculatedAmount = tokenQuantity * price;
+        setUserProfile({ ...userProfile, pxbPoints: userProfile.pxbPoints - calculatedAmount });
+      }
       return false;
     } finally {
       setIsLoading(false);

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -9,14 +10,11 @@ import PXBStatsPanel from '@/components/PXBStatsPanel';
 import PXBWallet from '@/components/PXBWallet';
 import TradeActivity from '@/components/TradeActivity';
 import PXBOnboardingNotice from '@/components/PXBOnboardingNotice';
-import { toast } from 'sonner';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const Profile = () => {
   const { userProfile } = usePXBPoints();
-  
-  useEffect(() => {
-    // No need to fetch user bets in trade-focused app
-  }, []);
+  const { publicKey } = useWallet();
   
   if (!userProfile) {
     return (
@@ -37,7 +35,7 @@ const Profile = () => {
       
       <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
         <div className="max-w-5xl mx-auto">
-          <Link to="/betting" className="inline-flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
+          <Link to="/" className="inline-flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Link>
@@ -45,8 +43,11 @@ const Profile = () => {
           <div className="grid md:grid-cols-12 gap-6">
             {/* Left Column - Profile & Stats */}
             <div className="md:col-span-4 space-y-6">
-              <PXBProfilePanel />
-              <PXBStatsPanel />
+              <PXBProfilePanel 
+                userProfile={userProfile} 
+                publicKey={publicKey}
+              />
+              <PXBStatsPanel userProfile={userProfile} />
             </div>
             
             {/* Right Column - Wallet & Activity */}
