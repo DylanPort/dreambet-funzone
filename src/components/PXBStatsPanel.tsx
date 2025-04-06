@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, Percent, Coins, Award, CircleDollarSign, Users } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -9,34 +10,55 @@ interface PXBStatsPanelProps {
 }
 
 const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
-  const { bets, isLoadingBets, fetchUserBets, fetchReferralStats, referralStats, isLoadingReferrals } = usePXBPoints();
+  const { fetchReferralStats, referralStats, isLoadingReferrals, fetchTokenTransactions } = usePXBPoints();
   const [winRate, setWinRate] = useState(0);
-  const [totalBets, setTotalBets] = useState(0);
-  const [totalPointsWon, setTotalPointsWon] = useState(0);
-  const [avgBetAmount, setAvgBetAmount] = useState(0);
+  const [totalTrades, setTotalTrades] = useState(0);
+  const [totalProfits, setTotalProfits] = useState(0);
+  const [avgTradeAmount, setAvgTradeAmount] = useState(0);
+  const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
   useEffect(() => {
     if (userProfile) {
-      fetchUserBets();
       fetchReferralStats();
+      loadTradeStats();
     }
-  }, [userProfile, fetchUserBets, fetchReferralStats]);
+  }, [userProfile, fetchReferralStats]);
 
-  useEffect(() => {
-    if (bets && bets.length > 0) {
-      const completedBets = bets.filter(bet => bet.status === 'won' || bet.status === 'lost');
-      const wonBets = bets.filter(bet => bet.status === 'won');
+  const loadTradeStats = async () => {
+    setIsLoadingTrades(true);
+    try {
+      // This will be all trades for all tokens
+      const allTokenTransactions = await fetchTokenTransactions('all');
       
-      setTotalBets(bets.length);
-      setWinRate(completedBets.length > 0 ? (wonBets.length / completedBets.length) * 100 : 0);
-      
-      const totalWon = wonBets.reduce((sum, bet) => sum + (bet.pointsWon || 0), 0);
-      setTotalPointsWon(totalWon);
-      
-      const avgAmount = bets.reduce((sum, bet) => sum + bet.betAmount, 0) / bets.length;
-      setAvgBetAmount(avgAmount);
+      if (allTokenTransactions && allTokenTransactions.length > 0) {
+        const buyTrades = allTokenTransactions.filter(trade => trade.type === 'buy');
+        const sellTrades = allTokenTransactions.filter(trade => trade.type === 'sell');
+        
+        setTotalTrades(allTokenTransactions.length);
+        
+        // Calculate success rate (profitable trades)
+        // In a real app, this would be more sophisticated - comparing buy/sell prices
+        // For now we'll use a simple ratio of sells to buys as a proxy for "success"
+        const successRate = sellTrades.length > 0 ? 
+          (sellTrades.length / allTokenTransactions.length) * 100 : 0;
+        setWinRate(successRate);
+        
+        // Calculate total profits (in a real app this would be more complex)
+        // For simplicity, we'll just sum all sell amounts
+        const profits = sellTrades.reduce((sum, trade) => sum + trade.pxbAmount, 0);
+        setTotalProfits(profits);
+        
+        // Calculate average trade amount
+        const avgAmount = allTokenTransactions.reduce((sum, trade) => sum + trade.pxbAmount, 0) / 
+          (allTokenTransactions.length || 1);
+        setAvgTradeAmount(avgAmount);
+      }
+    } catch (error) {
+      console.error("Error loading trade stats:", error);
+    } finally {
+      setIsLoadingTrades(false);
     }
-  }, [bets]);
+  };
 
   return (
     <div>
@@ -48,14 +70,14 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
               <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
                 <Percent className="h-4 w-4 text-indigo-400" />
               </div>
-              <span className="text-indigo-200 font-medium">Win Rate</span>
+              <span className="text-indigo-200 font-medium">Success Rate</span>
             </div>
             <div className="flex items-end justify-between">
               <div className="text-2xl font-bold text-white">{winRate.toFixed(1)}%</div>
-              {isLoadingBets ? (
+              {isLoadingTrades ? (
                 <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
               ) : (
-                <div className="text-sm text-indigo-300/70">{totalBets} bets</div>
+                <div className="text-sm text-indigo-300/70">{totalTrades} trades</div>
               )}
             </div>
             <Progress value={winRate} className="h-1 mt-2" />
@@ -66,11 +88,11 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
               <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
                 <Coins className="h-4 w-4 text-indigo-400" />
               </div>
-              <span className="text-indigo-200 font-medium">Avg Bet</span>
+              <span className="text-indigo-200 font-medium">Avg Trade</span>
             </div>
             <div className="flex items-end justify-between">
-              <div className="text-2xl font-bold text-white">{avgBetAmount.toFixed(0)}</div>
-              {isLoadingBets ? (
+              <div className="text-2xl font-bold text-white">{avgTradeAmount.toFixed(0)}</div>
+              {isLoadingTrades ? (
                 <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
               ) : (
                 <div className="text-sm text-indigo-300/70">PXB</div>
@@ -83,11 +105,11 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
               <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
                 <Award className="h-4 w-4 text-indigo-400" />
               </div>
-              <span className="text-indigo-200 font-medium">Points Won</span>
+              <span className="text-indigo-200 font-medium">Total Profits</span>
             </div>
             <div className="flex items-end justify-between">
-              <div className="text-2xl font-bold text-white">{totalPointsWon.toLocaleString()}</div>
-              {isLoadingBets ? (
+              <div className="text-2xl font-bold text-white">{totalProfits.toLocaleString()}</div>
+              {isLoadingTrades ? (
                 <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
               ) : (
                 <div className="text-sm text-indigo-300/70">PXB</div>
@@ -100,14 +122,14 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
               <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
                 <CircleDollarSign className="h-4 w-4 text-indigo-400" />
               </div>
-              <span className="text-indigo-200 font-medium">Total Bets</span>
+              <span className="text-indigo-200 font-medium">Total Trades</span>
             </div>
             <div className="flex items-end justify-between">
-              <div className="text-2xl font-bold text-white">{totalBets}</div>
-              {isLoadingBets ? (
+              <div className="text-2xl font-bold text-white">{totalTrades}</div>
+              {isLoadingTrades ? (
                 <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
               ) : (
-                <div className="text-sm text-indigo-300/70">Bets</div>
+                <div className="text-sm text-indigo-300/70">Trades</div>
               )}
             </div>
           </div>

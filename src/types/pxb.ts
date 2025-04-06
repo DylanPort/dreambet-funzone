@@ -88,4 +88,6 @@ export interface TradeHistory {
   price: number;
   pxbAmount: number;
   timestamp: string;
+  username?: string;
+  avatar?: string;
 }

@@ -62,7 +62,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     referralStats,
     fetchReferralStats,
     isLoadingReferrals
-  } = useReferralSystem(userProfile, fetchUserProfile);
+  } = useReferralSystem(userProfile);
   
   useEffect(() => {
     if (connected && publicKey) {
@@ -109,8 +109,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const checkAndProcessReferralWrapper = async (referralCode: string): Promise<boolean> => {
     try {
-      const result = await checkAndProcessReferral(referralCode);
-      return result;
+      return await checkAndProcessReferral(referralCode);
     } catch (error) {
       console.error("Error processing referral:", error);
       return false;
@@ -119,6 +118,23 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const fetchTokenTransactions = async (tokenId: string) => {
     try {
+      if (tokenId === 'all') {
+        // Return all trades
+        return trades.map(trade => ({
+          id: trade.id,
+          timestamp: trade.createdAt,
+          type: trade.type,
+          tokenAmount: trade.amount * 10,
+          price: trade.price,
+          pxbAmount: trade.amount,
+          userId: trade.userId,
+          tokenId: trade.tokenMint,
+          tokenName: trade.tokenName || '',
+          tokenSymbol: trade.tokenSymbol || ''
+        }));
+      }
+      
+      // Filter trades for specific token
       if (trades && trades.length > 0) {
         return trades
           .filter(trade => trade.tokenMint === tokenId)

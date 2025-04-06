@@ -4,16 +4,15 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { formatTimeRemaining } from '@/utils/betUtils';
 import { supabase } from '@/integrations/supabase/client';
 import PXBProfilePanel from '@/components/PXBProfilePanel';
 import PXBStatsPanel from '@/components/PXBStatsPanel';
-import PXBBetsHistory from '@/components/PXBBetsHistory';
+import TradeActivity from '@/components/TradeActivity';
 import { PXBWallet } from '@/components/PXBWallet';
 
 const Profile = () => {
   const { connected, publicKey } = useWallet();
-  const { userProfile, isLoading, fetchUserProfile, fetchUserBets } = usePXBPoints();
+  const { userProfile, isLoading, fetchUserProfile } = usePXBPoints();
   const [localPxbPoints, setLocalPxbPoints] = useState<number | null>(null);
 
   useEffect(() => {
@@ -119,12 +118,13 @@ const Profile = () => {
           <div className="w-full">
             <div className="overflow-hidden rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
               <div className="p-6 border-b border-indigo-900/30 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-white">Your Betting History</h2>
+                <h2 className="text-2xl font-bold text-white">Your Trading History</h2>
               </div>
               <div className="p-6">
-                <PXBBetsHistory 
+                <TradeActivity 
                   userId={userProfile?.id} 
                   walletAddress={publicKey.toString()}
+                  title=""
                 />
               </div>
             </div>

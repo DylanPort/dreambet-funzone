@@ -50,7 +50,7 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
     
     // Find the user in the leaderboard by matching ID
     const userEntry = leaderboard.find(entry => {
-      const entryId = entry.id || entry.user_id;
+      const entryId = entry.id;
       const userId = userProfile.id;
       
       console.log(`Comparing entry ID: ${entryId} with user ID: ${userId}`);
@@ -66,7 +66,7 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
       // If user not found in leaderboard, try to calculate rank based on points
       const userPoints = localPxbPoints || userProfile.pxbPoints || 0;
       const higherRankedUsers = leaderboard.filter(entry => {
-        const entryPoints = entry.points || entry.pxbPoints || 0;
+        const entryPoints = entry.points || 0;
         return entryPoints > userPoints;
       });
       

@@ -445,7 +445,7 @@ export const PXBWallet: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-900/30">
                     <p className="text-sm text-indigo-300/70 mb-1">Total Referrals</p>
-                    <p className="text-2xl font-bold text-white">{referralStats.totalReferrals}</p>
+                    <p className="text-2xl font-bold text-white">{referralStats?.totalReferrals || referralStats?.referrals_count || 0}</p>
                   </div>
                   
                   <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-900/30">
