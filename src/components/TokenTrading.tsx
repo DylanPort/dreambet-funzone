@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,11 @@ interface TokenTradingProps {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  tokenPrice: number; 
+  tokenPrice?: number; 
+  marketCap?: number;
+  volume24h?: number;
+  onCancel?: () => void;
+  onSuccess?: () => void;
   onTradeComplete?: () => void;
 }
 
@@ -20,7 +25,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   tokenId,
   tokenName,
   tokenSymbol,
-  tokenPrice,
+  tokenPrice = 0.01,
+  marketCap,
+  volume24h,
+  onCancel,
+  onSuccess,
   onTradeComplete
 }) => {
   const { userProfile, purchaseToken, sellToken } = usePXBPoints();
@@ -98,6 +107,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           setAmount('');
           setQuantity('');
           if (onTradeComplete) onTradeComplete();
+          if (onSuccess) onSuccess();
         } else {
           toast.error('Failed to purchase tokens');
         }
@@ -115,6 +125,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           setAmount('');
           setQuantity('');
           if (onTradeComplete) onTradeComplete();
+          if (onSuccess) onSuccess();
         } else {
           toast.error('Failed to sell tokens');
         }

@@ -1,159 +1,139 @@
-import React, { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import Navbar from '@/components/Navbar';
-import { supabase } from '@/integrations/supabase/client';
-import { TradeHistory } from '@/types/pxb';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Link as LinkIcon } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { ArrowLeft, Wallet } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import OrbitingParticles from '@/components/OrbitingParticles';
+import { supabase } from '@/integrations/supabase/client';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { TradeHistory } from '@/types/pxb';
+import Loading from '@/components/Loading';
 
 const Portfolio = () => {
-  const { connected, publicKey } = useWallet();
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { userProfile } = usePXBPoints();
+  const [tradeHistory, setTradeHistory] = useState<TradeHistory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchTransactions = async () => {
-      if (!connected || !publicKey) {
-        setTransactions([]);
-        setLoading(false);
-        return;
-      }
-
       try {
-        setLoading(true);
-        const userId = publicKey.toString();
-
+        setIsLoading(true);
         const { data, error } = await supabase
           .from('token_transactions')
           .select('*')
-          .eq('userid', userId)
+          .eq('userid', userProfile?.id || '')
           .order('timestamp', { ascending: false });
 
         if (error) {
-          console.error('Error fetching transactions:', error);
-          setLoading(false);
-          return;
-        }
-
-        if (data) {
-          const formattedTrades: TradeHistory[] = data.map(tx => ({
-            ...tx,
-            type: tx.type as 'buy' | 'sell'
-          }));
-          setTransactions(formattedTrades);
+          console.error('Error fetching trade history:', error);
         } else {
-          setTransactions([]);
+          // Transform the data to match TradeHistory interface
+          const formattedData: TradeHistory[] = data.map(tx => ({
+            id: tx.id,
+            userId: tx.userid,
+            tokenId: tx.tokenid,
+            tokenName: tx.tokenname,
+            tokenSymbol: tx.tokensymbol,
+            type: tx.type as 'buy' | 'sell',
+            quantity: tx.quantity,
+            price: tx.price,
+            pxbAmount: tx.pxbamount,
+            timestamp: tx.timestamp
+          }));
+          setTradeHistory(formattedData);
         }
-      } catch (error) {
-        console.error('Error:', error);
+      } catch (err) {
+        console.error('Error in fetchTransactions:', err);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
-    fetchTransactions();
-  }, [connected, publicKey]);
-
-  const getTradeStatusClass = (trade: TradeHistory) => {
-    if (trade.type === 'buy') {
-      return 'bg-green-500/20 text-green-400';
-    } else {
-      return 'bg-red-500/20 text-red-400';
+    if (userProfile) {
+      fetchTransactions();
     }
+  }, [userProfile]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
   };
-
-  if (!connected || !publicKey) {
-    return (
-      <>
-        <Navbar />
-        <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 flex justify-center items-center min-h-[80vh]">
-            <div className="w-full max-w-md p-8 rounded-2xl bg-[#0f1628]/80 backdrop-blur-lg border border-indigo-900/30 text-center">
-              <div className="w-20 h-20 mb-6 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto">
-                <img src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" alt="Portfolio" className="w-12 h-12" />
-              </div>
-              <h2 className="text-2xl font-display font-bold mb-4 text-white">Connect Your Wallet</h2>
-              <p className="text-indigo-300/70 mb-6">You need to connect your wallet to view your portfolio.</p>
-              <button
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-md transition-colors"
-              >
-                Connect Wallet
-              </button>
-            </div>
-          </div>
-        </main>
-      </>
-    );
-  }
-
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 flex justify-center items-center min-h-[80vh]">
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 border-4 border-t-transparent border-indigo-500 rounded-full animate-spin mb-4"></div>
-              <p className="text-indigo-300/70">Loading portfolio...</p>
-            </div>
-          </div>
-        </main>
-      </>
-    );
-  }
 
   return (
     <>
+      <OrbitingParticles />
       <Navbar />
-      <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16">
-          <h1 className="text-3xl font-bold text-white mb-8">Your Portfolio</h1>
 
-          {transactions.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-indigo-300/70">No transactions found in your portfolio.</p>
+      <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
+        <div className="max-w-5xl mx-auto">
+          <Link to="/betting" className="inline-flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-display font-bold">Portfolio</h1>
+          </div>
+
+          {userProfile ? (
+            <div className="grid md:grid-cols-1 gap-6">
+              <Card className="bg-black/60 border-dream-accent1/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Wallet className="mr-2 h-5 w-5 text-dream-accent1" />
+                    Trade History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
+                    <Loading />
+                  ) : tradeHistory.length > 0 ? (
+                    <ScrollArea className="h-[400px] w-full">
+                      <div className="space-y-4">
+                        {tradeHistory.map((trade) => (
+                          <div key={trade.id} className="p-4 rounded-lg bg-dream-foreground/5 border border-dream-foreground/10">
+                            <div className="flex justify-between items-center mb-2">
+                              <div>
+                                <div className="font-medium">{trade.tokenName}</div>
+                                <div className="text-xs text-dream-foreground/60">{trade.tokenSymbol}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className={`${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'} font-medium`}>
+                                  {trade.type === 'buy' ? '+' : '-'}{trade.quantity.toLocaleString()}
+                                </div>
+                                <div className="text-xs text-dream-foreground/60">{trade.pxbAmount.toLocaleString()} PXB</div>
+                              </div>
+                            </div>
+                            <div className="flex justify-between text-xs text-dream-foreground/40">
+                              <div>{formatDate(trade.timestamp)}</div>
+                              <div>Price: {trade.price.toFixed(6)} PXB</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-dream-foreground/60">No trade history yet</p>
+                      <p className="text-sm text-dream-foreground/40 mt-1">Start trading tokens to see your history here</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           ) : (
-            <div className="space-y-4">
-              {transactions.map((trade) => (
-                <div key={trade.id} className="p-4 hover:bg-dream-accent1/5 transition-colors border border-dream-foreground/10 rounded-md backdrop-blur-lg bg-black/20 hover:border-dream-accent1/30">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${getTradeStatusClass(trade)}`}>
-                        {trade.type === 'buy' ? <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-up-right"><path d="M7 17 17 7M7 7h10v10"/></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-down-right"><path d="M7 7 17 17M7 17h10V7"/></svg>}
-                      </div>
-                      <span className="font-semibold">
-                        {trade.pxbamount} PXB
-                      </span>
-                    </div>
-                    <div className={`text-xs px-2 py-0.5 rounded-full ${getTradeStatusClass(trade)}`}>
-                      {trade.type === 'buy' ? 'Buy' : 'Sell'}
-                    </div>
-                  </div>
-
-                  <div className="mb-1 hover:underline text-dream-accent2">
-                    <div className="text-sm flex items-center">
-                      <LinkIcon className="w-3 h-3 mr-1" />
-                      {trade.tokenname} ({trade.tokensymbol})
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-dream-foreground/70 mb-1">
-                    {trade.type === 'buy'
-                      ? `Purchased ${trade.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} tokens @ ${trade.price.toFixed(6)}`
-                      : `Sold ${trade.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} tokens @ ${trade.price.toFixed(6)}`
-                    }
-                  </div>
-
-                  <div className="text-xs text-dream-foreground/60 mb-2">
-                    <div className="flex items-center">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {formatDistanceToNow(new Date(trade.timestamp), { addSuffix: true })}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="glass-panel p-8 text-center">
+              <p className="text-xl text-dream-foreground/70 mb-4">Connect your wallet to view your portfolio</p>
+              <p className="text-dream-foreground/50 mb-6">Your trade history and token balances will be displayed here</p>
             </div>
           )}
         </div>

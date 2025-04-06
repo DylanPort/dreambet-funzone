@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   id: string;
   username: string;
@@ -50,6 +49,7 @@ export interface ReferralStats {
   pointsEarned: number;
   referrals_count?: number;
   points_earned?: number;
+  referrals?: number;
 }
 
 export interface SupabaseUserProfile {

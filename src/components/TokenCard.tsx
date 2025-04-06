@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import CreateBetForm from './CreateBetForm';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import TokenTrading from './TokenTrading';
@@ -87,18 +86,6 @@ const TokenCard: React.FC<TokenCardProps> = ({
 
   const handleBetSelection = (type: 'moon' | 'die') => {
     setSelectedPrediction(type);
-    
-    const eventData = {
-      prediction: type,
-      percentageChange: type === 'moon' ? 80 : 50,
-      defaultBetAmount: 10,
-      defaultDuration: 30
-    };
-    
-    window.dispatchEvent(
-      new CustomEvent('predictionSelected', { detail: eventData })
-    );
-    
     setDialogOpen(true);
   };
 
@@ -235,6 +222,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
+                    tokenPrice={price}
                     marketCap={marketCap}
                     onCancel={handleDialogClose}
                     onSuccess={handleDialogClose}
@@ -278,6 +266,7 @@ const TokenCard: React.FC<TokenCardProps> = ({
                     tokenId={id}
                     tokenName={name}
                     tokenSymbol={symbol}
+                    tokenPrice={price}
                     marketCap={marketCap}
                     onCancel={handleDialogClose}
                     onSuccess={handleDialogClose}

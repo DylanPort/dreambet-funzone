@@ -1,62 +1,60 @@
-
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
-import { supabase } from '@/integrations/supabase/client';
-import { UserProfile } from '@/types/pxb';
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import Navbar from '@/components/Navbar';
+import OrbitingParticles from '@/components/OrbitingParticles';
+import { supabase } from '@/integrations/supabase/client';
+import type { UserProfile as UserProfileType } from '@/types/pxb';
 import TradeActivity from '@/components/TradeActivity';
+import Loading from '@/components/Loading';
+import TradePerformance from '@/components/TradePerformance';
 
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfileType | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!userId) return;
+    const fetchUserProfile = async (userId: string) => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
       
-      try {
-        setLoading(true);
-        
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .single();
-          
-        if (error) {
-          console.error('Error fetching user profile:', error);
-          return;
-        }
-        
-        if (data) {
-          setProfile({
-            id: data.id,
-            username: data.username || `User-${data.id.substring(0, 6)}`,
-            displayName: data.display_name,
-            walletAddress: data.wallet_address || 'Unknown',
-            pxbPoints: data.points || 0,
-            createdAt: data.created_at,
-            avatar: data.avatar_url,
-            bio: data.bio
-          });
-        }
-      } catch (error) {
-        console.error('Unexpected error fetching user profile:', error);
-      } finally {
-        setLoading(false);
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
       }
+      
+      if (data) {
+        return {
+          id: data.id,
+          username: data.username || 'Anonymous',
+          displayName: data.display_name,
+          walletAddress: data.wallet_address,
+          pxbPoints: data.points || 0,
+          createdAt: data.created_at,
+          avatar: data.avatar_url,
+          bio: data.bio
+        } as UserProfileType;
+      }
+      
+      return null;
     };
     
-    fetchUserProfile();
+    fetchUserProfile(userId).then((data) => {
+      if (data) {
+        setProfile(data);
+      }
+    });
   }, [userId]);
   
   if (loading) {
     return (
       <>
         <Navbar />
+        <OrbitingParticles />
         <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
           <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16">
             <div className="flex justify-center items-center min-h-[50vh]">
@@ -72,6 +70,7 @@ const UserProfile: React.FC = () => {
     return (
       <>
         <Navbar />
+        <OrbitingParticles />
         <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
           <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16">
             <div className="flex flex-col justify-center items-center min-h-[50vh]">
@@ -91,6 +90,7 @@ const UserProfile: React.FC = () => {
   return (
     <>
       <Navbar />
+      <OrbitingParticles />
       <main className="min-h-screen bg-[#080b16] bg-gradient-to-b from-[#0a0e1c] to-[#070a14]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16">
           <div className="mb-8">
