@@ -5,13 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, LineChart, ArrowDown, ArrowUp, ShoppingCart, Trash2, User, Clock, Copy } from 'lucide-react';
-import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, LineChart, ShoppingCart, Trash2, User, Clock, Download, Camera } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Progress } from "@/components/ui/progress";
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
 import { fetchGMGNTokenData } from '@/services/gmgnService';
+import html2canvas from 'html2canvas';
 
 interface TokenTradingProps {
   tokenId: string;
@@ -63,10 +62,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   } | null>(null);
   const [userTokenHoldings, setUserTokenHoldings] = useState<TokenHolding[]>([]);
   const userTokenHoldingsRef = useRef<TokenHolding[]>([]);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isScreenshotting, setIsScreenshotting] = useState(false);
 
   const { toast } = useToast();
-  const { userProfile, placeBet, mintPoints, addPointsToUser } = usePXBPoints();
-  const pumpPortalService = usePumpPortalWebSocket();
+  const { userProfile, placeBet, purchaseToken, sellToken } = usePXBPoints();
 
   // Add auto-refresh for market cap and volume data using real API data
   useEffect(() => {
@@ -208,17 +208,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       
       // Also add to token_transactions table in Supabase if needed
       if (userProfile) {
-        const newTransaction = {
-          tokenid: tokenId,
-          tokensymbol: tokenSymbol,
-          tokenname: tokenName,
-          quantity: initialPurchaseData.tokenAmount,
-          pxbamount: initialPurchaseData.amount,
-          price: tokenPrice,
-          type: 'buy',
-          userid: userProfile.id
-        };
-        
         // Add a custom event to allow PriceChart to add a marker
         window.dispatchEvent(new CustomEvent('tokenPurchase', { 
           detail: {
@@ -273,6 +262,54 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     }
   }, [currentMarketCap, amount]);
 
+  const takeScreenshot = async (holdingId: number) => {
+    if (!cardRef.current) return;
+    
+    try {
+      setIsScreenshotting(true);
+      
+      // Find the card element with the matching holding ID
+      const cardElement = document.getElementById(`token-holding-${holdingId}`);
+      if (!cardElement) {
+        console.error("Could not find card element to screenshot");
+        return;
+      }
+      
+      // Add a temporary class for screenshot styling if needed
+      cardElement.classList.add('screenshot-mode');
+      
+      const canvas = await html2canvas(cardElement, {
+        backgroundColor: null,
+        scale: 2, // Higher quality
+        logging: false,
+      });
+      
+      // Remove temporary class
+      cardElement.classList.remove('screenshot-mode');
+      
+      // Convert to data URL and download
+      const image = canvas.toDataURL('image/jpeg', 0.95);
+      const link = document.createElement('a');
+      link.download = `${tokenSymbol}-profit-${new Date().getTime()}.jpg`;
+      link.href = image;
+      link.click();
+      
+      toast({
+        title: "Screenshot Captured!",
+        description: "Your profit card has been saved as a JPG image.",
+      });
+    } catch (error) {
+      console.error("Error taking screenshot:", error);
+      toast({
+        title: "Screenshot Failed",
+        description: "There was an error capturing your profit card.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsScreenshotting(false);
+    }
+  };
+
   const handleBuyTokens = async () => {
     if (!userProfile) {
       toast({
@@ -303,45 +340,45 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
     setIsLoading(true);
     try {
-      await placeBet(
+      // Using purchaseToken instead of placeBet for proper PXB accounting
+      const success = await purchaseToken(
         tokenId,
         tokenName,
         tokenSymbol,
         amount,
-        'up',
-        0,
-        0
+        tokenAmount,
+        tokenPrice
       );
 
-      setInitialPurchaseData({
-        marketCap: currentMarketCap,
-        volume: currentVolume,
-        price: tokenPrice,
-        amount: amount,
-        tokenAmount: tokenAmount
-      });
-
-      if (pumpPortalService.connected) {
-        pumpPortalService.subscribeToToken(tokenId);
-      }
-
-      toast({
-        title: "Purchase successful!",
-        description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
-      });
-
-      // Add a custom event to allow PriceChart to add a marker
-      window.dispatchEvent(new CustomEvent('tokenPurchase', { 
-        detail: {
-          tokenId,
+      if (success) {
+        setInitialPurchaseData({
+          marketCap: currentMarketCap,
+          volume: currentVolume,
           price: tokenPrice,
-          timestamp: new Date().toISOString(),
-          amount: amount
-        }
-      }));
+          amount: amount,
+          tokenAmount: tokenAmount
+        });
 
-      if (onSuccess) {
-        onSuccess();
+        toast({
+          title: "Purchase successful!",
+          description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
+        });
+
+        // Add a custom event to allow PriceChart to add a marker
+        window.dispatchEvent(new CustomEvent('tokenPurchase', { 
+          detail: {
+            tokenId,
+            price: tokenPrice,
+            timestamp: new Date().toISOString(),
+            amount: amount
+          }
+        }));
+
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        throw new Error("Purchase failed");
       }
     } catch (error) {
       console.error("Error purchasing tokens:", error);
@@ -369,18 +406,20 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     
     try {
       const isPositiveChange = holding.percentageChange >= 0;
-      const returnAmount = Math.max(0, holding.currentValue);
       
-      console.log(`Selling tokens: ${holding.tokenAmount} ${holding.tokenSymbol}`);
-      console.log(`Return amount: ${returnAmount} PXB`);
-      
-      // Add points to user
-      const success = await addPointsToUser(Math.round(returnAmount), userProfile.id);
+      // Use the sellToken function from the context
+      const success = await sellToken(
+        tokenId,
+        tokenName,
+        tokenSymbol,
+        holding.tokenAmount,
+        tokenPrice
+      );
       
       if (success) {
         toast({
           title: "Tokens sold successfully!",
-          description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`,
+          description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${holding.currentValue.toFixed(2)} PXB`,
           variant: isPositiveChange ? "default" : "destructive",
         });
         
@@ -399,25 +438,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           }
         }
         
-        // Also add to token_transactions table in Supabase if needed
-        const newTransaction = {
-          tokenid: tokenId,
-          tokensymbol: holding.tokenSymbol,
-          tokenname: tokenName,
-          quantity: holding.tokenAmount,
-          pxbamount: returnAmount,
-          price: tokenPrice,
-          type: 'sell',
-          userid: userProfile.id
-        };
-        
-        // We can add Supabase code here if needed
-        
         if (onSuccess) {
           onSuccess();
         }
       } else {
-        throw new Error("Failed to add points to user account");
+        throw new Error("Failed to sell tokens");
       }
     } catch (error) {
       console.error("Error selling tokens:", error);
@@ -445,15 +470,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     }
   };
 
-  const calculatePercentageChange = () => {
-    if (!initialPurchaseData || !currentMarketCap || initialPurchaseData.marketCap === null) {
-      return 0;
-    }
-    
-    const percentChange = ((currentMarketCap - initialPurchaseData.marketCap) / initialPurchaseData.marketCap) * 100;
-    return percentChange;
-  };
-
   const formatTimeAgo = (timestamp: string) => {
     const date = new Date(timestamp);
     const diffMs = Date.now() - date.getTime();
@@ -476,71 +492,76 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     const isSellingThisHolding = sellLoading[holding.id] || false;
     
     return (
-      <div key={holding.id} className="bg-black/60 rounded-lg border border-white/10 mb-2 overflow-hidden hover:border-purple-500/40 transition-all duration-200">
-        <div className="p-1.5">
+      <div 
+        id={`token-holding-${holding.id}`}
+        key={holding.id} 
+        className="bg-black/60 rounded-lg border border-white/10 mb-4 overflow-hidden hover:border-purple-500/40 transition-all duration-200"
+        ref={cardRef}
+      >
+        <div className="p-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-1">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold ${isPositiveChange ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-red-500 to-pink-600'}`}>
+            <div className="flex items-center gap-2">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ${isPositiveChange ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-red-500 to-pink-600'}`}>
                 {holding.tokenSymbol.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div className="text-xs font-semibold text-white">{holding.tokenSymbol}</div>
-                <div className="text-[9px] text-purple-400">PumpXBounty</div>
+                <div className="text-sm font-semibold text-white">{holding.tokenSymbol}</div>
+                <div className="text-xs text-purple-400">PumpXBounty</div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs font-mono font-bold text-purple-400">{holding.amount} PXB</div>
-              <div className="text-[9px] text-dream-foreground/70 flex items-center justify-end">
-                <Clock className="w-2 h-2 mr-0.5" />
+              <div className="text-sm font-mono font-bold text-purple-400">{holding.amount} PXB</div>
+              <div className="text-xs text-dream-foreground/70 flex items-center justify-end">
+                <Clock className="w-3 h-3 mr-1" />
                 {formatTimeAgo(holding.createdAt)}
               </div>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-1 mt-0.5">
-            <div className="bg-black/40 rounded-md p-0.5 border border-white/5">
-              <div className="text-[9px] text-dream-foreground/60 mb-0.5 flex items-center">
-                <DollarSign className="w-2 h-2 mr-0.5" />
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="bg-black/40 rounded-md p-3 border border-white/5">
+              <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
+                <DollarSign className="w-3 h-3 mr-1" />
                 PXB Used
               </div>
-              <div className="font-bold text-white text-[10px]">{holding.amount} PXB</div>
+              <div className="font-bold text-white text-sm">{holding.amount} PXB</div>
             </div>
             
-            <div className="bg-black/40 rounded-md p-0.5 border border-white/5">
-              <div className="text-[9px] text-dream-foreground/60 mb-0.5 flex items-center">
-                <ShoppingCart className="w-2 h-2 mr-0.5" />
+            <div className="bg-black/40 rounded-md p-3 border border-white/5">
+              <div className="text-xs text-dream-foreground/60 mb-1 flex items-center">
+                <ShoppingCart className="w-3 h-3 mr-1" />
                 Tokens Received
               </div>
-              <div className="font-bold text-white text-[10px]">
+              <div className="font-bold text-white text-sm">
                 {holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </div>
             </div>
           </div>
           
-          <div className="mt-0.5 bg-black/40 rounded-md p-0.5 border border-white/5">
+          <div className="mt-4 bg-black/40 rounded-md p-3 border border-white/5">
             <div className="flex justify-between items-center">
-              <div className="text-[9px] text-dream-foreground/60">Current PXB Value</div>
-              <div className={`font-mono text-[10px] font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+              <div className="text-xs text-dream-foreground/60">Current PXB Value</div>
+              <div className={`font-mono text-sm font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
                 {holding.currentValue.toFixed(2)} PXB
-                <span className="ml-0.5 text-[8px]">
+                <span className="ml-1 text-xs">
                   ({isPositiveChange ? '+' : ''}{holding.percentageChange.toFixed(2)}%)
                 </span>
               </div>
             </div>
           </div>
           
-          <div className="mt-0.5">
-            <div className="flex justify-between items-center text-[9px] mb-0.5">
+          <div className="mt-4">
+            <div className="flex justify-between items-center text-xs mb-2">
               <div className="text-dream-foreground/70 flex items-center">
-                <BarChart3 className="w-2 h-2 mr-0.5" />
+                <BarChart3 className="w-3 h-3 mr-1" />
                 Market Performance
               </div>
-              <div className={`text-[9px] font-mono font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+              <div className={`text-xs font-mono font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
                 {isPositiveChange ? '+' : ''}{holding.percentageChange.toFixed(2)}%
               </div>
             </div>
             
-            <div className="w-full h-1 bg-black/40 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden">
               <div 
                 className={`h-full ${isPositiveChange ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-red-500 to-pink-400'}`}
                 style={{ width: `${Math.min(100, Math.abs(holding.percentageChange))}%` }}
@@ -548,7 +569,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <div className="mt-0.5 flex justify-between items-center text-[9px] bg-black/20 rounded-md px-1 py-0.5">
+          <div className="mt-4 flex justify-between items-center text-xs bg-black/20 rounded-md px-3 py-2">
             <div>
               <span className="text-dream-foreground/60">Initial: </span>
               <span className="text-white">{formatMarketCap(holding.initialMarketCap)}</span>
@@ -560,16 +581,16 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <div className="flex items-center justify-between mt-0.5 text-[9px]">
-            <div className="flex items-center bg-black/20 rounded-md px-1 py-0.5">
-              <User className="w-2 h-2 mr-0.5 text-dream-foreground/60" />
-              <span className="text-dream-foreground/60 mr-0.5">You</span>
+          <div className="flex items-center justify-between mt-4 text-xs">
+            <div className="flex items-center bg-black/20 rounded-md px-2 py-1">
+              <User className="w-3 h-3 mr-1 text-dream-foreground/60" />
+              <span className="text-dream-foreground/60 mr-1">You</span>
             </div>
             
-            <div className={`flex items-center px-1 py-0.5 rounded-md ${isPositiveChange ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+            <div className={`flex items-center px-2 py-1 rounded-md ${isPositiveChange ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
               {isPositiveChange ? 
-                <TrendingUp className={`w-2 h-2 mr-0.5 text-green-400`} /> : 
-                <TrendingDown className={`w-2 h-2 mr-0.5 text-red-400`} />
+                <TrendingUp className={`w-3 h-3 mr-1 text-green-400`} /> : 
+                <TrendingDown className={`w-3 h-3 mr-1 text-red-400`} />
               }
               <span className={`font-semibold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
                 {isPositiveChange ? 'Profit' : 'Loss'}
@@ -577,22 +598,33 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <Button 
-            variant={isPositiveChange ? "default" : "destructive"} 
-            size="sm"
-            className={`w-full text-[9px] py-0 mt-0.5 h-4 ${isPositiveChange ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'}`}
-            onClick={() => handleSellTokens(holding)}
-            disabled={isSellingThisHolding}
-          >
-            {isSellingThisHolding ? (
-              <>
-                <Loader2 className="w-2 h-2 mr-1 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>Sell for {holding.currentValue.toFixed(2)} PXB ({isPositiveChange ? '+' : ''}{holding.percentageChange.toFixed(2)}%)</>
-            )}
-          </Button>
+          <div className="flex gap-2 mt-4">
+            <Button 
+              variant={isPositiveChange ? "default" : "destructive"} 
+              className={`flex-grow ${isPositiveChange ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'}`}
+              onClick={() => handleSellTokens(holding)}
+              disabled={isSellingThisHolding}
+            >
+              {isSellingThisHolding ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>Sell for {holding.currentValue.toFixed(2)} PXB</>
+              )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-black/30 border-white/10 hover:bg-black/50"
+              onClick={() => takeScreenshot(holding.id)}
+              disabled={isScreenshotting}
+            >
+              {isScreenshotting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -641,40 +673,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
                   </p>
                 </div>
               </div>
-              
-              {initialPurchaseData && (
-                <div className="mt-4 pt-4 border-t border-dream-foreground/10">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-sm text-dream-foreground/70 flex items-center">
-                        <LineChart className="w-4 h-4 mr-1" />
-                        Purchase Market Cap
-                      </p>
-                      <p className="text-lg font-bold">{formatMarketCap(initialPurchaseData.marketCap)}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-dream-foreground/70">Value Change</p>
-                      <p className={`text-lg font-bold ${calculatePercentageChange() >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {calculatePercentageChange() >= 0 ? '+' : ''}{calculatePercentageChange().toFixed(2)}%
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-dream-foreground/70">Your Tokens</p>
-                      <p className="text-lg font-bold">
-                        {initialPurchaseData.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {tokenSymbol}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-dream-foreground/70">Current Value</p>
-                      <p className="text-lg font-bold">
-                        {(initialPurchaseData.tokenAmount * tokenPrice).toLocaleString(undefined, { maximumFractionDigits: 2 })} PXB
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -739,14 +737,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
           {userTokenHoldings.length > 0 ? (
             <>
-              <p className="text-xs text-dream-foreground/70">Your token holdings for {tokenSymbol}</p>
-              <ScrollArea className="h-[200px] rounded-md border border-white/10 bg-black/20 p-1">
-                <div className="pr-1 pl-0.5 max-w-[95%]">
-                  {userTokenHoldings
-                    .filter(holding => holding.tokenSymbol === tokenSymbol)
-                    .map(renderTokenHoldingCard)}
-                </div>
-              </ScrollArea>
+              <div>
+                {userTokenHoldings
+                  .filter(holding => holding.tokenSymbol === tokenSymbol)
+                  .map(renderTokenHoldingCard)}
+              </div>
             </>
           ) : (
             <div className="text-center py-8 text-dream-foreground/50">

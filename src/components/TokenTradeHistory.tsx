@@ -1,8 +1,8 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowUpRight, ArrowDownRight, ExternalLink } from 'lucide-react';
-import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TokenTradeHistoryProps {
@@ -41,77 +41,62 @@ interface PXBTransaction {
 }
 
 const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
-  const pxbContext = usePXBPoints();
-  const [transactions, setTransactions] = useState<PXBTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadTransactions = async () => {
-      setLoading(true);
-      try {
-        // Fetch all transactions for this token from Supabase
-        const { data: tokenTxs, error } = await supabase
-          .from('token_transactions')
-          .select(`
-            id, 
-            type, 
-            price, 
-            timestamp, 
-            quantity, 
-            pxbamount, 
-            userid, 
-            tokenid, 
-            tokenname, 
-            tokensymbol,
-            users (username)
-          `)
-          .eq('tokenid', tokenId)
-          .order('timestamp', { ascending: false });
-        
-        if (error) {
-          console.error("Error fetching token transactions:", error);
-          throw error;
-        }
-        
-        // Transform to the format needed by the component
-        const txs = tokenTxs.map(tx => ({
-          id: tx.id,
-          timestamp: tx.timestamp,
-          type: tx.type,
-          tokenAmount: tx.quantity,
-          price: tx.price,
-          pxbAmount: tx.pxbamount,
-          userId: tx.userid,
-          tokenId: tx.tokenid,
-          tokenName: tx.tokenname,
-          tokenSymbol: tx.tokensymbol,
-          username: tx.users?.username
-        }));
-        
-        setTransactions(txs);
-      } catch (error) {
-        console.error("Error loading token trade history:", error);
-      } finally {
-        setLoading(false);
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ['tokenTradeHistory', tokenId],
+    queryFn: async () => {
+      // Fetch all transactions for this token from Supabase
+      const { data: tokenTxs, error } = await supabase
+        .from('token_transactions')
+        .select(`
+          id, 
+          type, 
+          price, 
+          timestamp, 
+          quantity, 
+          pxbamount, 
+          userid, 
+          tokenid, 
+          tokenname, 
+          tokensymbol,
+          users (username)
+        `)
+        .eq('tokenid', tokenId)
+        .order('timestamp', { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching token transactions:", error);
+        throw error;
       }
-    };
-
-    loadTransactions();
-    
-    // Refresh transactions every 5 seconds (reduced from 30 seconds)
-    const interval = setInterval(loadTransactions, 5000);
-    return () => clearInterval(interval);
-  }, [tokenId]);
+      
+      // Transform to the format needed by the component
+      const txs = tokenTxs.map(tx => ({
+        id: tx.id,
+        timestamp: tx.timestamp,
+        type: tx.type,
+        tokenAmount: tx.quantity,
+        price: tx.price,
+        pxbAmount: tx.pxbamount,
+        userId: tx.userid,
+        tokenId: tx.tokenid,
+        tokenName: tx.tokenname,
+        tokenSymbol: tx.tokensymbol,
+        username: tx.users?.username
+      }));
+      
+      return txs;
+    },
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
 
   return (
     <div className="space-y-4 max-h-96 overflow-y-auto">
-      {loading && (
+      {isLoading && (
         <div className="text-center py-8 text-dream-foreground/70">
           <p>Loading transaction history...</p>
         </div>
       )}
       
-      {!loading && transactions.length === 0 ? (
+      {!isLoading && transactions.length === 0 ? (
         <div className="text-center py-8 text-dream-foreground/70">
           <p>No trade history available for this token yet.</p>
           <p className="text-sm mt-2">Be the first to trade this token with PXB points!</p>
