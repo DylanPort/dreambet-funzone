@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
@@ -133,14 +134,51 @@ const Index = () => {
                     <img alt="Mint PXB Points" className="w-64 h-auto transition-all duration-500" src="/lovable-uploads/75b9d39b-4705-4e43-8bf5-99c97463da79.png" />
                     <div className="mt-4 text-xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent
                       drop-shadow-[0_0_3px_rgba(255,255,255,0.8)] flex items-center">
-                      {userProfile ? 'Your PXB Points' : 'Mint PXB Points'}
-                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                      {userProfile ? 'Your PXB Points' : 'View PXB Points'}
+                      <PartyPopper className="ml-2 h-5 w-5 text-yellow-300 animate-bounce-slow" />
                     </div>
                   </div>
                 </DialogTrigger>
                 <DialogContent className="w-full max-w-md bg-transparent border-none shadow-none">
-                  <DialogTitle className="sr-only">{userProfile ? 'Your PXB Points' : 'Mint PXB Points'}</DialogTitle>
-                  <PXBOnboarding />
+                  <DialogTitle className="sr-only">{userProfile ? 'Your PXB Points' : 'PXB Points Supply'}</DialogTitle>
+                  <div className="p-6 rounded-lg bg-black/50 backdrop-blur-md border border-white/10 text-center">
+                    <div className="flex justify-center mb-4">
+                      <PartyPopper className="h-10 w-10 text-yellow-300 animate-bounce" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-yellow-200 to-yellow-500 bg-clip-text text-transparent">Congratulations!</h2>
+                    <p className="text-white mb-4">The entire PXB supply of 1 billion tokens has been minted!</p>
+                    <p className="text-gray-300 mb-6">Don't worry - you can still earn PXB through trading, completing tasks, and participating in community events.</p>
+                    
+                    {userProfile && (
+                      <div className="mb-6 p-4 bg-black/30 rounded-lg border border-white/10">
+                        <h3 className="font-medium text-white mb-2">Your PXB Balance</h3>
+                        <p className="text-2xl font-bold text-green-400">{userProfile.pxbPoints.toLocaleString()} PXB</p>
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="p-3 bg-black/30 rounded-lg border border-white/10">
+                        <Trophy className="h-5 w-5 text-purple-400 mx-auto mb-2" />
+                        <p className="text-xs text-gray-300">Compete in bets</p>
+                      </div>
+                      <div className="p-3 bg-black/30 rounded-lg border border-white/10">
+                        <Users className="h-5 w-5 text-blue-400 mx-auto mb-2" />
+                        <p className="text-xs text-gray-300">Refer friends</p>
+                      </div>
+                      <div className="p-3 bg-black/30 rounded-lg border border-white/10">
+                        <Award className="h-5 w-5 text-amber-400 mx-auto mb-2" />
+                        <p className="text-xs text-gray-300">Complete tasks</p>
+                      </div>
+                      <div className="p-3 bg-black/30 rounded-lg border border-white/10">
+                        <Activity className="h-5 w-5 text-green-400 mx-auto mb-2" />
+                        <p className="text-xs text-gray-300">Trade tokens</p>
+                      </div>
+                    </div>
+                    
+                    <Button variant="default" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white w-full">
+                      Explore Earning Opportunities
+                    </Button>
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>
