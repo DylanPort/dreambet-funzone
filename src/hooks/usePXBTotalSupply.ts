@@ -11,7 +11,7 @@ export interface PXBSupplyData {
 
 export const usePXBTotalSupply = (refreshInterval = 1000) => {
   const [supplyData, setSupplyData] = useState<PXBSupplyData>({
-    totalMinted: 220590627, // Start with the known correct value
+    totalMinted: 1000000000, // Set to 1 billion to force the fully minted state
     totalUsers: 0,
     usersWithPoints: 0,
     averagePerUser: 0
@@ -28,7 +28,8 @@ export const usePXBTotalSupply = (refreshInterval = 1000) => {
       
       if (totalMintedError) throw totalMintedError;
       
-      const totalMinted = totalMintedData || 220590627; // Fallback to known value if needed
+      // Force to 1 billion to ensure fully minted state is shown
+      const totalMinted = 1000000000; // Always show as fully minted
       
       // Get total users count
       const { data: userData, error: userError } = await supabase

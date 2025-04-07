@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -164,6 +165,8 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     return num.toLocaleString();
   };
 
+  // Ensure this value is set to true for testing if needed
+  // Force the supply to be considered fully minted at 990,000,000
   const isSupplyFullyMinted = supplyData.totalMinted >= 990000000;
   
   const renderPXBInfo = () => {
