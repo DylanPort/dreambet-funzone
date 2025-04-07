@@ -29,8 +29,9 @@ const PXBSupplyProgress = () => {
   const burnedPercentage = (additionalBurned / maxSupply) * 100;
   const totalPercentage = mintedPercentage + stakingPercentage + burnedPercentage;
 
-  // Calculate remaining supply - ensure it's 0 if fully minted
+  // Calculate remaining supply
   const remainingSupply = Math.max(0, maxSupply - totalReserved - supplyData.totalMinted);
+  const remainingPercentage = (remainingSupply / maxSupply) * 100;
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString();
@@ -265,9 +266,9 @@ const PXBSupplyProgress = () => {
         </div>
         <div className="mb-1">
           <span className="text-dream-foreground/60">Remaining: </span>
-          <span className="font-medium text-pink-400">0 PXB</span>
+          <span className="font-medium text-pink-400">{formatNumber(remainingSupply)} PXB</span>
           <span className="text-dream-foreground/40 text-xs ml-1">
-            (0.0%)
+            ({remainingPercentage.toFixed(1)}%)
           </span>
           {remainingSupply === 0 && (
             <span className="ml-1 text-xs bg-pink-500/20 px-1 py-0.5 rounded text-pink-300 font-semibold animate-pulse-subtle">
