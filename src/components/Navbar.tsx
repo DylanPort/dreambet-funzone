@@ -88,18 +88,15 @@ const Navbar = () => {
             
             <ProfileButton />
             
-            {pxbPoints !== null && pxbPoints > 0 ? <div className="glass-panel relative overflow-hidden py-1 px-2 flex items-center gap-1 text-yellow-400 group animate-pulse-subtle">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300 py-[-7px]"></div>
+            {userProfile && (
+              <div className="glass-panel py-1.5 px-3 flex items-center gap-1.5 text-yellow-400 group animate-pulse-subtle">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="w-5 h-5 flex items-center justify-center">
                   <img alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" src="/lovable-uploads/d1c82b81-d141-4bf8-a3d8-7cdbbe82785a.png" />
                 </div>
-                <span className="relative z-10 text-xs">{pxbPoints.toLocaleString()} PXB</span>
-              </div> : userProfile && <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400/70">
-                <div className="w-5 h-5 flex items-center justify-center">
-                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
-                </div>
-                <span className="text-xs">0 PXB</span>
-              </div>}
+                <span className="relative z-10 font-medium">{userProfile.pxbPoints.toLocaleString()}</span>
+              </div>
+            )}
             
             {balance !== null}
             
@@ -107,12 +104,14 @@ const Navbar = () => {
           </nav>
           
           <div className="md:hidden flex items-center gap-3">
-            {userProfile && pxbPoints !== null && <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400">
+            {userProfile && (
+              <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400">
                 <div className="w-4 h-4 flex items-center justify-center">
                   <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
-                <span className="text-xs">{pxbPoints.toLocaleString()}</span>
-              </div>}
+                <span className="text-xs font-medium">{userProfile.pxbPoints.toLocaleString()}</span>
+              </div>
+            )}
             
             <button className="text-dream-foreground" onClick={() => setIsOpen(!isOpen)}>
               {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -146,17 +145,14 @@ const Navbar = () => {
               <span className="text-sm">Profile</span>
             </Link>
             
-            {pxbPoints !== null && pxbPoints > 0 ? <div className="py-1 flex items-center gap-1.5 text-yellow-400 animate-pulse-subtle">
+            {userProfile && (
+              <div className="py-1 flex items-center gap-1.5 text-yellow-400">
                 <div className="w-8 h-8 flex items-center justify-center">
                   <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-10 h-10 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
-                <span className="text-sm">{pxbPoints.toLocaleString()} PXB</span>
-              </div> : userProfile && <div className="py-1 flex items-center gap-1.5 text-yellow-400/70">
-                <div className="w-8 h-8 flex items-center justify-center">
-                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-10 h-10 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
-                </div>
-                <span className="text-sm">0 PXB</span>
-              </div>}
+                <span className="text-sm font-medium">{userProfile.pxbPoints.toLocaleString()} PXB</span>
+              </div>
+            )}
             
             {balance !== null}
             
