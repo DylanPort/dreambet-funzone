@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -139,6 +140,17 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Create wrapper function to match expected signature (amount: number) => Promise<void>
+  const addPointsWrapper = async (amount: number): Promise<void> => {
+    await addPointsToUser(amount, "Points operation");
+  };
+
+  // Create wrapper function to match expected signature for checkAndProcessReferral
+  const checkAndProcessReferralWrapper = async (referralCode: string): Promise<boolean> => {
+    await checkAndProcessReferral(referralCode);
+    return true;
+  };
+
   return (
     <PXBPointsContext.Provider
       value={{
@@ -158,14 +170,14 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fetchUserBets,
         fetchLeaderboard,
         fetchWinRateLeaderboard,
-        addPointsToUser,
+        addPointsToUser: addPointsWrapper,
         mintingPoints,
         transferFeature,
         isLeaderboardLoading,
         isLoadingWinRate,
         isLoadingBets,
         generateReferralLink,
-        checkAndProcessReferral,
+        checkAndProcessReferral: checkAndProcessReferralWrapper,
         referralStats,
         fetchReferralStats,
         isLoadingReferrals,

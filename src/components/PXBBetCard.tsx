@@ -205,22 +205,17 @@ const PXBBetCard: React.FC<PXBBetCardProps> = ({ bet, marketCapData: initialMark
       console.log(`Return Amount: ${returnAmount}`);
       console.log(`Display Return Amount: ${displayReturnAmount}`);
       
-      const userId = userProfile.id;
       const roundedAmount = Math.round(returnAmount);
-      const success = await addPointsToUser(roundedAmount, userId);
+      await addPointsToUser(roundedAmount);
       
-      if (success) {
-        toast({
-          title: "Tokens Sold Successfully",
-          description: `You've received ${displayReturnAmount} PXB from selling your ${bet.tokenSymbol} tokens (${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(2)}%).`,
-          variant: percentageChange >= 0 ? "default" : "destructive",
-        });
-        
-        localStorage.setItem(`sold_${bet.id}`, 'true');
-        window.location.reload();
-      } else {
-        throw new Error("Failed to complete the sale");
-      }
+      toast({
+        title: "Tokens Sold Successfully",
+        description: `You've received ${displayReturnAmount} PXB from selling your ${bet.tokenSymbol} tokens (${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(2)}%).`,
+        variant: percentageChange >= 0 ? "default" : "destructive",
+      });
+      
+      localStorage.setItem(`sold_${bet.id}`, 'true');
+      window.location.reload();
     } catch (error) {
       console.error("Error selling tokens:", error);
       toast({
