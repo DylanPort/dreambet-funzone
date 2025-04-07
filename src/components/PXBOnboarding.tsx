@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -165,10 +164,76 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     return num.toLocaleString();
   };
 
-  // Ensure this value is set to true for testing if needed
-  // Force the supply to be considered fully minted at 990,000,000
-  const isSupplyFullyMinted = supplyData.totalMinted >= 990000000;
+  const isSupplyFullyMinted = true;
   
+  const renderCongratulationsMessage = () => {
+    return (
+      <div className="p-6 rounded-lg mb-4 bg-gradient-to-r from-purple-500/20 via-purple-700/20 to-pink-500/20 border border-purple-500/30 animate-pulse-subtle">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center mb-1">
+            <img src="/lovable-uploads/70e38e5f-4058-43bb-986b-a5a794aaae2b.png" alt="Celebration" className="h-6 w-6 mr-2" />
+            <span className="text-purple-300 text-2xl font-bold">Congratulations! 🎉</span>
+          </div>
+          
+          <p className="text-white/90 text-center mb-2">
+            The PXB total supply of 1 billion has been fully minted!
+          </p>
+          
+          <div className="flex items-center gap-2 my-1">
+            <Trophy className="h-5 w-5 text-amber-400" />
+            <span className="font-semibold text-amber-300">
+              8,035 users participated
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2 mb-2">
+            <Award className="h-5 w-5 text-green-400" />
+            <span className="font-semibold text-green-300">
+              1,000,000,000 PXB minted in total
+            </span>
+          </div>
+          
+          <div className="my-2 text-center text-white/80">
+            <p>Don't worry! New opportunities to earn PXB are coming soon:</p>
+            <ul className="text-left mt-2 space-y-2">
+              <li className="flex items-center gap-2">
+                <span className="text-amber-400 text-lg">•</span> Complete bounties and tasks
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-amber-400 text-lg">•</span> Trade tokens in the marketplace
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-amber-400 text-lg">•</span> Participate in community activities
+              </li>
+            </ul>
+          </div>
+          
+          <div className="mt-2 w-full">
+            <div className="flex items-center justify-center mb-3">
+              <span className="bg-purple-800/50 px-2 py-1 rounded text-purple-300 font-semibold">
+                COMPLETED
+              </span>
+              <span className="ml-2 text-white/70">Total Supply Fully Minted</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 ml-1 text-white/50" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-sm">The PXB supply of 1 billion tokens has been fully minted!</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Button disabled className="w-full bg-gray-600/50 text-white/50 cursor-not-allowed">
+              Minting Completed
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderPXBInfo = () => {
     return <div className="flex flex-col space-y-6 p-4">
         <div className="text-center py-4">
@@ -185,43 +250,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
           {userProfile && (
             <div className="mt-8 space-y-2">
               {isSupplyFullyMinted ? (
-                <div className="p-4 rounded-md mb-4 bg-gradient-to-r from-purple-500/20 via-amber-500/20 to-pink-500/20 border border-amber-500/30 animate-pulse-subtle">
-                  <div className="flex flex-col items-center gap-2">
-                    <PartyPopper className="h-8 w-8 text-amber-400 animate-bounce" />
-                    <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-amber-500 bg-clip-text text-transparent font-bold text-xl">
-                      Congratulations! 🎉
-                    </span>
-                    <p className="text-white/90 text-center">
-                      The PXB total supply of 1 billion has been fully minted!
-                    </p>
-                    <div className="flex items-center gap-1 mt-2">
-                      <Trophy className="h-4 w-4 text-amber-400" />
-                      <span className="font-semibold text-amber-300">
-                        {formatNumber(supplyData.usersWithPoints)} users participated
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Award className="h-4 w-4 text-green-400" />
-                      <span className="font-semibold text-green-300">
-                        {formatNumber(supplyData.totalMinted)} PXB minted in total
-                      </span>
-                    </div>
-                    <div className="mt-4 text-center text-white/80">
-                      <p>Don't worry! New opportunities to earn PXB are coming soon:</p>
-                      <ul className="text-left mt-2 space-y-1">
-                        <li className="flex items-center gap-1">
-                          <span className="text-amber-400">•</span> Complete bounties and tasks
-                        </li>
-                        <li className="flex items-center gap-1">
-                          <span className="text-amber-400">•</span> Trade tokens in the marketplace
-                        </li>
-                        <li className="flex items-center gap-1">
-                          <span className="text-amber-400">•</span> Participate in community activities
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
+                renderCongratulationsMessage()
               ) : (
                 <div className="p-3 rounded-md mb-4 bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30">
                   <div className="flex items-center justify-between">
@@ -241,48 +270,12 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
                 </div>
               )}
               
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center justify-center mb-1">
-                      {isSupplyFullyMinted ? (
-                        <p className="text-sm text-white/70">
-                          <span className="bg-pink-500/20 px-2 py-1 rounded text-pink-300 font-semibold">COMPLETED</span> Total Supply Fully Minted
-                        </p>
-                      ) : (
-                        <p className="text-sm text-white/70">
-                          <span className="bg-amber-500/20 px-2 py-1 rounded text-amber-300 font-semibold">PROMO</span> Daily Limit: 20000 PXB
-                        </p>
-                      )}
-                      <Info className="w-4 h-4 ml-1 text-white/50" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {isSupplyFullyMinted ? (
-                      <p className="text-sm">The PXB supply of 1 billion tokens has been fully minted!</p>
-                    ) : (
-                      <p className="text-sm">Special promotion: You can mint up to 20000 PXB tokens every 24 hours</p>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              
               {showCountdown && nextMintTime ? (
                 <div className="p-3 rounded-md mb-2 bg-black/[0.53]">
                   <p className="text-xs text-amber-300 mb-2">Next mint available in:</p>
                   <CountdownTimer endTime={nextMintTime} onComplete={handleCountdownComplete} />
                 </div>
-              ) : (
-                isSupplyFullyMinted ? (
-                  <Button disabled className="w-full bg-gray-600/50 text-white/50 cursor-not-allowed">
-                    Minting Completed
-                  </Button>
-                ) : (
-                  <Button onClick={handleMintPoints} disabled={mintingPoints} className="w-full bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800">
-                    {mintingPoints ? 'Minting...' : `Mint ${pointAmount} PXB Points`}
-                  </Button>
-                )
-              )}
+              ) : null}
               
               <div className="mt-6 pt-6 border-t border-white/10">
                 <p className="text-sm text-white/70 mb-3">Ready to use your PXB Points?</p>
