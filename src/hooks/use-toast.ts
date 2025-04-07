@@ -10,14 +10,14 @@ export interface ToastProps {
   id?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  variant?: 'default' | 'destructive' | 'success';
+  variant?: 'default' | 'destructive' | 'success' | 'info';
 }
 
 type ToastOptions = {
   title?: string;
   description?: string;
   action?: React.ReactNode;
-  variant?: 'default' | 'destructive' | 'success';
+  variant?: 'default' | 'destructive' | 'success' | 'info';
   duration?: number;
 };
 
@@ -44,6 +44,11 @@ const showToast = (options: ToastOptions) => {
       description,
       duration: duration || 3000,
     });
+  } else if (variant === 'info') {
+    return sonnerToast.info(title, {
+      description,
+      duration: duration || 3000,
+    });
   } else {
     return sonnerToast(title, {
       description,
@@ -64,6 +69,13 @@ showToast.error = (title: string, options?: Omit<ToastOptions, 'variant'>) => {
   return sonnerToast.error(title, {
     description: options?.description,
     duration: options?.duration || 5000,
+  });
+};
+
+showToast.info = (title: string, options?: Omit<ToastOptions, 'variant'>) => {
+  return sonnerToast.info(title, {
+    description: options?.description,
+    duration: options?.duration || 3000,
   });
 };
 
