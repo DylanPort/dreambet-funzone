@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
@@ -20,7 +19,6 @@ import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
 import Footer from '@/components/Footer';
-
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
   const pumpPortal = usePumpPortalWebSocket();
@@ -28,13 +26,11 @@ const Index = () => {
     userProfile
   } = usePXBPoints();
   const isMobile = useIsMobile();
-
   useEffect(() => {
     if (pumpPortal.connected) {
       pumpPortal.subscribeToNewTokens();
     }
   }, [pumpPortal.connected]);
-
   useEffect(() => {
     const tokens = [];
     if (pumpPortal.recentTokens && pumpPortal.recentTokens.length > 0) {
@@ -75,12 +71,10 @@ const Index = () => {
     }
     setLatestTokens(tokens);
   }, [pumpPortal.recentTokens, pumpPortal.rawTokens]);
-
   const getTokenSymbol = (token: any) => {
     if (!token) return 'T';
     return token.symbol ? token.symbol.charAt(0).toUpperCase() : 'T';
   };
-
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -91,7 +85,6 @@ const Index = () => {
       maximumFractionDigits: 2
     });
   };
-
   return <>
       <OrbitingParticles />
       <Navbar />
@@ -149,12 +142,10 @@ const Index = () => {
                     <p className="text-white mb-4">The entire PXB supply of 1 billion tokens has been minted!</p>
                     <p className="text-gray-300 mb-6">Don't worry - you can still earn PXB through trading, completing tasks, and participating in community events.</p>
                     
-                    {userProfile && (
-                      <div className="mb-6 p-4 bg-black/30 rounded-lg border border-white/10">
+                    {userProfile && <div className="mb-6 p-4 bg-black/30 rounded-lg border border-white/10">
                         <h3 className="font-medium text-white mb-2">Your PXB Balance</h3>
                         <p className="text-2xl font-bold text-green-400">{userProfile.pxbPoints.toLocaleString()} PXB</p>
-                      </div>
-                    )}
+                      </div>}
                     
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="p-3 bg-black/30 rounded-lg border border-white/10">
@@ -175,9 +166,7 @@ const Index = () => {
                       </div>
                     </div>
                     
-                    <Button variant="default" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white w-full">
-                      Explore Earning Opportunities
-                    </Button>
+                    <Button variant="default" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white w-full">Coming Soon</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -218,5 +207,4 @@ const Index = () => {
       <Footer />
     </>;
 };
-
 export default Index;
