@@ -398,21 +398,7 @@ const CommunityPage = () => {
                               {msg.username || truncateAddress(msg.user_id)}
                             </Link>
                             
-                            <div className="flex mt-1 space-x-2">
-                              <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
-                                <img src="/lovable-uploads/5bea0b92-6460-4b88-890b-093867d1e680.png" className="w-3 h-3 mr-1" alt="PXB" />
-                                <span>{msg.user_pxb_points?.toLocaleString() || "0"}</span>
-                              </div>
-                              {msg.user_win_rate !== undefined && <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
-                                  <Percent className="w-3 h-3 mr-1 text-green-500" />
-                                  <span>{(msg.user_win_rate || 0).toFixed(1)}%</span>
-                                </div>}
-                              {msg.user_rank !== undefined && <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
-                                  <img src="/lovable-uploads/710dcb90-5e8c-496a-98a7-a0b2dba75e90.png" className="w-3 h-3 mr-1" alt="PXB Rank" />
-                                  <span>#{msg.user_rank}</span>
-                                </div>}
-                              {index === 0}
-                            </div>
+                            
                           </div>
                         </div>
                         <span className="text-dream-foreground/50 text-sm">{formatTimeAgo(msg.created_at)}</span>
