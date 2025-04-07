@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { usePXBAnalytics } from '@/hooks/usePXBAnalytics';
 import { usePXBTotalSupply } from '@/hooks/usePXBTotalSupply';
+
 const PXBSupplyProgress = () => {
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [showDistribution, setShowDistribution] = useState<boolean>(false);
@@ -30,20 +31,23 @@ const PXBSupplyProgress = () => {
   const mintedPercentage = supplyData.totalMinted / maxSupply * 100;
   const stakingPercentage = stakingRewards / maxSupply * 100;
   const burnedPercentage = additionalBurned / maxSupply * 100;
-  const totalPercentage = mintedPercentage + stakingPercentage + burnedPercentage;
+  const totalPercentage = 100; // Force to 100%
 
   // Calculate remaining supply
-  const remainingSupply = Math.max(0, maxSupply - totalReserved - supplyData.totalMinted);
-  const remainingPercentage = remainingSupply / maxSupply * 100;
+  const remainingSupply = 0; // Force to 0 since fully minted
+  const remainingPercentage = 0; // Force to 0%
+  
   const formatNumber = (num: number): string => {
     return num.toLocaleString();
   };
+  
   useEffect(() => {
     if (!isLoading) {
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 1500);
     }
   }, [isLoading]);
+  
   const getActivityColor = (action: string) => {
     switch (action) {
       case 'mint':
@@ -56,6 +60,7 @@ const PXBSupplyProgress = () => {
         return 'text-gray-400';
     }
   };
+  
   const getActionLabel = (action: string) => {
     switch (action) {
       case 'mint':
@@ -72,6 +77,7 @@ const PXBSupplyProgress = () => {
         return action.replace(/_/g, ' ');
     }
   };
+  
   const renderDistributionChart = () => {
     if (analytics.distributionByRange.length === 0) return null;
     return <div className="mt-4 space-y-3 animate-fade-in">
@@ -98,6 +104,7 @@ const PXBSupplyProgress = () => {
         </div>
       </div>;
   };
+  
   const renderTopHolders = () => {
     if (analytics.topHolders.length === 0) return null;
     return <div className="mt-4 animate-fade-in">
@@ -121,6 +128,7 @@ const PXBSupplyProgress = () => {
         </div>
       </div>;
   };
+  
   const renderRecentActivity = () => {
     if (analytics.recentMints.length === 0) return null;
     return <div className="mt-4 animate-fade-in">
@@ -148,6 +156,7 @@ const PXBSupplyProgress = () => {
         </div>
       </div>;
   };
+  
   return <div className="relative z-10">
       <div className={`absolute inset-0 bg-gradient-to-r from-dream-accent1/30 to-dream-accent3/30 rounded-lg blur-xl transition-opacity duration-300 ${isAnimating ? 'opacity-80' : 'opacity-20'}`}></div>
       
@@ -183,7 +192,7 @@ const PXBSupplyProgress = () => {
               left: `${mintedPercentage}%`,
               width: `${stakingPercentage}%`
             }}>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10 animate-shine" style={{
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-transparent to-white/20 animate-shine" style={{
                 animationDelay: '0.5s'
               }}></div>
               </div>
@@ -192,7 +201,7 @@ const PXBSupplyProgress = () => {
               left: `${mintedPercentage + stakingPercentage}%`,
               width: `${burnedPercentage}%`
             }}>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10 animate-shine" style={{
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-transparent to-white/20 animate-shine" style={{
                 animationDelay: '1s'
               }}></div>
               </div>
@@ -209,9 +218,9 @@ const PXBSupplyProgress = () => {
               }} />)}
               </div>
               
-              {totalPercentage > 5 && <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white drop-shadow-md pointer-events-none">
-                  {totalPercentage.toFixed(2)}% of 1B
-                </div>}
+              <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white drop-shadow-md pointer-events-none">
+                100% of 1B
+              </div>
             </div>
           </div>
         </div>
@@ -224,7 +233,7 @@ const PXBSupplyProgress = () => {
             {formatNumber(supplyData.totalMinted)} PXB
           </span>
           <span className="text-dream-foreground/40 text-xs ml-1">
-            ({mintedPercentage.toFixed(5)}%)
+            ({mintedPercentage.toFixed(0)}%)
           </span>
         </div>
         <div className="mb-1">
@@ -245,11 +254,11 @@ const PXBSupplyProgress = () => {
           <span className="text-dream-foreground/60">Remaining: </span>
           <span className="font-medium text-pink-400">{formatNumber(remainingSupply)} PXB</span>
           <span className="text-dream-foreground/40 text-xs ml-1">
-            ({remainingPercentage.toFixed(1)}%)
+            ({remainingPercentage.toFixed(0)}%)
           </span>
-          {remainingSupply === 0 && <span className="ml-1 text-xs bg-pink-500/20 px-1 py-0.5 rounded text-pink-300 font-semibold animate-pulse-subtle">
-              SOLD OUT
-            </span>}
+          <span className="ml-1 text-xs bg-pink-500/20 px-1 py-0.5 rounded text-pink-300 font-semibold animate-pulse-subtle">
+            SOLD OUT
+          </span>
         </div>
         
       </div>

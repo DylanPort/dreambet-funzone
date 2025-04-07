@@ -21,16 +21,6 @@ export const usePXBTotalSupply = (refreshInterval = 1000) => {
 
   const fetchTotalMinted = async () => {
     try {
-      // Get total minted from our new database function
-      // Since TypeScript doesn't know about this function yet, we need to use a type assertion
-      const { data: totalMintedData, error: totalMintedError } = await supabase
-        .rpc('get_total_minted_pxb') as { data: number | null, error: any };
-      
-      if (totalMintedError) throw totalMintedError;
-      
-      // Force to 1 billion to ensure fully minted state is shown
-      const totalMinted = 1000000000; // Always show as fully minted
-      
       // Get total users count
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -40,23 +30,16 @@ export const usePXBTotalSupply = (refreshInterval = 1000) => {
       
       const totalUsers = userData[0]?.count || 0;
       
-      // Get users with points count
-      const { data: usersWithPointsData, error: pointsError } = await supabase
-        .from('users')
-        .select('count')
-        .gt('points', 0);
-      
-      if (pointsError) throw pointsError;
-      
+      // Fixed values for fully minted supply
+      const totalMinted = 1000000000; // 1 billion (fully minted)
       const usersWithPoints = 8035; // Fixed value as shown in the image
       
-      // Calculate average points per user (only for users with points)
-      // Fix type issue by explicitly converting to number
+      // Calculate average points per user
       const averagePerUser = usersWithPoints > 0 ? 
         Math.round(Number(totalMinted) / Number(usersWithPoints)) : 0;
       
       setSupplyData({
-        totalMinted: Number(totalMinted),
+        totalMinted,
         totalUsers,
         usersWithPoints,
         averagePerUser
