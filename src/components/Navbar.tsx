@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Coins } from 'lucide-react';
+import { Menu, X, Coins, MessageSquare } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 import ProfileButton from './ProfileButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
@@ -86,17 +85,27 @@ const Navbar = () => {
               <span className="text-sm">PXB Space</span>
             </Link>
             
+            <Link to="/community" className={`nav-link flex items-center gap-1 ${location.pathname === '/community' ? 'text-green-400' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
+              <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105 relative">
+                <img src="/lovable-uploads/dc0e4ed7-1c9d-4cca-9abc-12614bc6013e.png" alt="Community" className="w-8 h-8 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+              </div>
+              <span className="text-sm">Community</span>
+            </Link>
+            
             <ProfileButton />
             
-            {userProfile && (
-              <div className="glass-panel py-1.5 px-3 flex items-center gap-1.5 text-yellow-400 group animate-pulse-subtle">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {pxbPoints !== null && pxbPoints > 0 ? <div className="glass-panel relative overflow-hidden py-1 px-2 flex items-center gap-1 text-yellow-400 group animate-pulse-subtle">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-600/10 opacity-70 group-hover:opacity-100 transition-opacity duration-300 py-[-7px]"></div>
                 <div className="w-5 h-5 flex items-center justify-center">
                   <img alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" src="/lovable-uploads/d1c82b81-d141-4bf8-a3d8-7cdbbe82785a.png" />
                 </div>
-                <span className="relative z-10 font-medium">{userProfile.pxbPoints.toLocaleString()}</span>
-              </div>
-            )}
+                <span className="relative z-10 text-xs">{pxbPoints.toLocaleString()} PXB</span>
+              </div> : userProfile && <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400/70">
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-6 h-6 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                </div>
+                <span className="text-xs">0 PXB</span>
+              </div>}
             
             {balance !== null}
             
@@ -104,14 +113,12 @@ const Navbar = () => {
           </nav>
           
           <div className="md:hidden flex items-center gap-3">
-            {userProfile && (
-              <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400">
+            {userProfile && pxbPoints !== null && <div className="glass-panel py-1 px-2 flex items-center gap-1 text-yellow-400">
                 <div className="w-4 h-4 flex items-center justify-center">
                   <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
-                <span className="text-xs font-medium">{userProfile.pxbPoints.toLocaleString()}</span>
-              </div>
-            )}
+                <span className="text-xs">{pxbPoints.toLocaleString()}</span>
+              </div>}
             
             <button className="text-dream-foreground" onClick={() => setIsOpen(!isOpen)}>
               {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -138,6 +145,13 @@ const Navbar = () => {
               <span className="text-sm">PXB Space</span>
             </Link>
             
+            <Link to="/community" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/community' ? 'text-green-400' : 'text-dream-foreground/70'}`}>
+              <div className="w-8 h-8 flex items-center justify-center">
+                <img src="/lovable-uploads/dc0e4ed7-1c9d-4cca-9abc-12614bc6013e.png" alt="Community" className="w-6 h-6 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+              </div>
+              <span className="text-sm">Community</span>
+            </Link>
+            
             <Link to="/profile" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/profile' ? 'text-green-400' : 'text-dream-foreground/70'}`}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
                 <img src="/lovable-uploads/be6baddd-a67e-4583-b969-a471b47274e1.png" alt="Profile" className="w-full h-full object-cover" />
@@ -145,14 +159,17 @@ const Navbar = () => {
               <span className="text-sm">Profile</span>
             </Link>
             
-            {userProfile && (
-              <div className="py-1 flex items-center gap-1.5 text-yellow-400">
+            {pxbPoints !== null && pxbPoints > 0 ? <div className="py-1 flex items-center gap-1.5 text-yellow-400 animate-pulse-subtle">
                 <div className="w-8 h-8 flex items-center justify-center">
                   <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-10 h-10 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
                 </div>
-                <span className="text-sm font-medium">{userProfile.pxbPoints.toLocaleString()} PXB</span>
-              </div>
-            )}
+                <span className="text-sm">{pxbPoints.toLocaleString()} PXB</span>
+              </div> : userProfile && <div className="py-1 flex items-center gap-1.5 text-yellow-400/70">
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-10 h-10 filter drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                </div>
+                <span className="text-sm">0 PXB</span>
+              </div>}
             
             {balance !== null}
             

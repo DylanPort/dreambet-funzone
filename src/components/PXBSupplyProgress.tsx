@@ -262,9 +262,9 @@ const PXBSupplyProgress = () => {
         </div>
         <div className="mb-1">
           <span className="text-dream-foreground/60">Remaining: </span>
-          <span className="font-medium">{formatNumber(Math.max(0, maxSupply - totalReserved - supplyData.totalMinted))} PXB</span>
+          <span className="font-medium">{formatNumber(maxSupply - totalReserved - supplyData.totalMinted)} PXB</span>
           <span className="text-dream-foreground/40 text-xs ml-1">
-            ({Math.max(0, (100 - totalPercentage)).toFixed(1)}%)
+            ({(100 - totalPercentage).toFixed(1)}%)
           </span>
         </div>
         <div className="mb-1">

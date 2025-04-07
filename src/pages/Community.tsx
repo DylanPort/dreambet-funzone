@@ -6,9 +6,9 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare, Send, User, Reply, ThumbsUp, ThumbsDown, Award, Trophy, Percent, Coins, ExternalLink, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import useCommunityMessages from '@/hooks/useCommunityMessages'; // Changed to default import
+import { useCommunityMessages } from '@/hooks/useCommunityMessages';
 import { toast } from 'sonner';
-import { CommunityMessage, CommunityReply } from '@/types/community'; // Using the newly created type
+import { CommunityMessage, CommunityReply } from '@/services/communityService';
 import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { Link } from 'react-router-dom';
