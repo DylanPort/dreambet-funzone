@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -376,10 +375,12 @@ export const usePointOperations = (
     try {
       setIsLoading(true);
 
+      // Update UI immediately to show points deduction
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints - pxbAmount } : null);
 
       const userId = userProfile.id;
 
+      // Store transaction record first
       const { error: txError } = await supabase.from('token_transactions').insert({
         userid: userId,
         tokenid: tokenMint,
@@ -398,6 +399,7 @@ export const usePointOperations = (
         return false;
       }
 
+      // Update user's points in database
       const { error: updateError } = await supabase
         .from('users')
         .update({ points: userProfile.pxbPoints - pxbAmount })
@@ -409,6 +411,7 @@ export const usePointOperations = (
         return false;
       }
 
+      // Record the point transaction in history
       await supabase.from('points_history').insert({
         user_id: userProfile.id,
         amount: -pxbAmount,
@@ -417,6 +420,7 @@ export const usePointOperations = (
         reference_name: tokenName
       });
 
+      // Check and update user's token portfolio
       const { data: existingPortfolio } = await supabase
         .from('token_portfolios')
         .select('*')
@@ -453,16 +457,16 @@ export const usePointOperations = (
       }
 
       console.log(`Successfully purchased ${tokenQuantity} ${tokenSymbol} for ${pxbAmount} PXB!`);
-      await fetchUserProfile();
       return true;
     } catch (error) {
       console.error('Error purchasing token:', error);
+      // Restore points if there was an error
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + pxbAmount } : null);
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [userProfile, publicKey, setUserProfile, fetchUserProfile, setIsLoading]);
+  }, [userProfile, publicKey, setUserProfile, setIsLoading]);
 
   const sellToken = useCallback(async (
     tokenMint: string,
@@ -514,8 +518,10 @@ export const usePointOperations = (
       console.log(`Current value: ${currentValue} PXB`);
       console.log(`Profit/Loss: ${currentValue - initialInvestment} PXB`);
       
+      // Update UI first with the sale proceeds
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + pxbProceeds } : null);
 
+      // Record the sale transaction
       const { error: txError } = await supabase.from('token_transactions').insert({
         userid: userId,
         tokenid: tokenMint,
@@ -534,6 +540,7 @@ export const usePointOperations = (
         return false;
       }
 
+      // Update the user's points in the database
       const { error: updateError } = await supabase
         .from('users')
         .update({ points: userProfile.pxbPoints + pxbProceeds })
@@ -545,6 +552,7 @@ export const usePointOperations = (
         return false;
       }
 
+      // Record the point transaction in history
       const profitLoss = currentValue - initialInvestment;
       const actionSuffix = profitLoss >= 0 ? 'profit' : 'loss';
 
@@ -556,6 +564,7 @@ export const usePointOperations = (
         reference_name: `${tokenName} (${profitLoss >= 0 ? '+' : ''}${profitLoss.toFixed(2)} PXB)`
       });
 
+      // Update the portfolio
       const newQuantity = portfolio.quantity - tokenQuantity;
       
       if (newQuantity > 0) {
@@ -576,7 +585,8 @@ export const usePointOperations = (
 
       console.log(`Successfully sold ${tokenQuantity} ${tokenSymbol} for ${pxbProceeds} PXB!`);
       console.log(`Profit/Loss: ${profitLoss >= 0 ? '+' : ''}${profitLoss.toFixed(2)} PXB`);
-      await fetchUserProfile();
+      
+      // We won't fetch the user profile here because we've already updated the UI
       return true;
     } catch (error) {
       console.error('Error selling token:', error);
@@ -584,7 +594,7 @@ export const usePointOperations = (
     } finally {
       setIsLoading(false);
     }
-  }, [userProfile, publicKey, setUserProfile, fetchUserProfile, setIsLoading]);
+  }, [userProfile, publicKey, setUserProfile, setIsLoading]);
 
   return {
     mintPoints,

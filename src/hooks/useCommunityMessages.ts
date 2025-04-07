@@ -303,3 +303,6 @@ export const useCommunityMessages = () => {
     refreshMessages: fetchMessages
   };
 };
+
+// Add a default export to fix the import in Community.tsx
+export default useCommunityMessages;

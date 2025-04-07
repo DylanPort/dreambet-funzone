@@ -68,7 +68,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const [selectedHolding, setSelectedHolding] = useState<TokenHolding | null>(null);
 
   const { toast } = useToast();
-  const { userProfile, placeBet, mintPoints, addPointsToUser } = usePXBPoints();
+  const { userProfile, purchaseToken, sellToken } = usePXBPoints();
   const pumpPortalService = usePumpPortalWebSocket();
 
   useEffect(() => {
@@ -291,44 +291,51 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const executeBuyTokens = async () => {
     setIsLoading(true);
     try {
-      await placeBet(
+      const success = await purchaseToken(
         tokenId,
         tokenName,
         tokenSymbol,
         amount,
-        'up',
-        0,
-        0
+        tokenAmount,
+        tokenPrice
       );
 
-      setInitialPurchaseData({
-        marketCap: currentMarketCap,
-        volume: currentVolume,
-        price: tokenPrice,
-        amount: amount,
-        tokenAmount: tokenAmount
-      });
-
-      if (pumpPortalService.connected) {
-        pumpPortalService.subscribeToToken(tokenId);
-      }
-
-      toast({
-        title: "Purchase successful!",
-        description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
-      });
-
-      window.dispatchEvent(new CustomEvent('tokenPurchase', { 
-        detail: {
-          tokenId,
+      if (success) {
+        setInitialPurchaseData({
+          marketCap: currentMarketCap,
+          volume: currentVolume,
           price: tokenPrice,
-          timestamp: new Date().toISOString(),
-          amount: amount
-        }
-      }));
+          amount: amount,
+          tokenAmount: tokenAmount
+        });
 
-      if (onSuccess) {
-        onSuccess();
+        if (pumpPortalService.connected) {
+          pumpPortalService.subscribeToToken(tokenId);
+        }
+
+        toast({
+          title: "Purchase successful!",
+          description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
+        });
+
+        window.dispatchEvent(new CustomEvent('tokenPurchase', { 
+          detail: {
+            tokenId,
+            price: tokenPrice,
+            timestamp: new Date().toISOString(),
+            amount: amount
+          }
+        }));
+
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        toast({
+          title: "Purchase failed",
+          description: "There was an error processing your purchase",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error purchasing tokens:", error);
@@ -366,40 +373,43 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       console.log(`Selling tokens: ${holding.tokenAmount} ${holding.tokenSymbol}`);
       console.log(`Return amount: ${returnAmount} PXB`);
       
-      await addPointsToUser(Math.round(returnAmount));
+      const success = await sellToken(
+        tokenId,
+        tokenName,
+        tokenSymbol,
+        holding.tokenAmount,
+        tokenPrice
+      );
       
-      toast({
-        title: "Tokens sold successfully!",
-        description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`,
-        variant: isPositiveChange ? "default" : "destructive",
-      });
-      
-      const updatedHoldings = userTokenHoldings.filter(h => h.id !== holding.id);
-      setUserTokenHoldings(updatedHoldings);
-      userTokenHoldingsRef.current = updatedHoldings;
-      
-      if (userProfile) {
-        try {
-          const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
-          localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
-        } catch (error) {
-          console.error("Error updating token holdings in localStorage:", error);
+      if (success) {
+        toast({
+          title: "Tokens sold successfully!",
+          description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`,
+          variant: isPositiveChange ? "default" : "destructive",
+        });
+        
+        const updatedHoldings = userTokenHoldings.filter(h => h.id !== holding.id);
+        setUserTokenHoldings(updatedHoldings);
+        userTokenHoldingsRef.current = updatedHoldings;
+        
+        if (userProfile) {
+          try {
+            const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+            localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
+          } catch (error) {
+            console.error("Error updating token holdings in localStorage:", error);
+          }
         }
-      }
-      
-      const newTransaction = {
-        tokenid: tokenId,
-        tokensymbol: holding.tokenSymbol,
-        tokenname: tokenName,
-        quantity: holding.tokenAmount,
-        pxbamount: returnAmount,
-        price: tokenPrice,
-        type: 'sell',
-        userid: userProfile.id
-      };
-      
-      if (onSuccess) {
-        onSuccess();
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        toast({
+          title: "Sale failed",
+          description: "There was an error processing your sale",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error selling tokens:", error);
