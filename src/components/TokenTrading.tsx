@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
 import { fetchGMGNTokenData } from '@/services/gmgnService';
+import TokenTransactionConfirmDialog from './TokenTransactionConfirmDialog';
 
 interface TokenTradingProps {
   tokenId: string;
@@ -63,14 +63,15 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   } | null>(null);
   const [userTokenHoldings, setUserTokenHoldings] = useState<TokenHolding[]>([]);
   const userTokenHoldingsRef = useRef<TokenHolding[]>([]);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [sellConfirmDialogOpen, setSellConfirmDialogOpen] = useState(false);
+  const [selectedHolding, setSelectedHolding] = useState<TokenHolding | null>(null);
 
   const { toast } = useToast();
   const { userProfile, placeBet, mintPoints, addPointsToUser } = usePXBPoints();
   const pumpPortalService = usePumpPortalWebSocket();
 
-  // Add auto-refresh for market cap and volume data using real API data
   useEffect(() => {
-    // Initial setup
     if (marketCap) {
       setCurrentMarketCap(marketCap);
     }
@@ -81,7 +82,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     
     const fetchRealMarketData = async () => {
       try {
-        // Try DexScreener first
         const dexData = await fetchDexScreenerData(tokenId);
         if (dexData && dexData.marketCap) {
           setCurrentMarketCap(dexData.marketCap);
@@ -90,7 +90,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           return;
         }
         
-        // Fallback to GMGN if DexScreener failed
         const gmgnData = await fetchGMGNTokenData(tokenId);
         if (gmgnData && gmgnData.marketCap) {
           setCurrentMarketCap(gmgnData.marketCap);
@@ -102,18 +101,14 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       }
     };
     
-    // Fetch immediately
     fetchRealMarketData();
     
-    // Set up automatic refresh interval
-    const intervalId = setInterval(fetchRealMarketData, 5000); // Update every 5 seconds
-    
+    const intervalId = setInterval(fetchRealMarketData, 5000);
     return () => {
       clearInterval(intervalId);
     };
   }, [tokenId, marketCap, volume24h]);
 
-  // Load holdings from localStorage on mount
   useEffect(() => {
     if (userProfile && tokenId) {
       try {
@@ -131,16 +126,13 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     }
   }, [userProfile, tokenId]);
 
-  // Updated to only show consolidated user holdings
   useEffect(() => {
-    // Check if we already have a holding for this token
     if (initialPurchaseData) {
       const existingHoldingIndex = userTokenHoldingsRef.current.findIndex(
         holding => holding.tokenSymbol === tokenSymbol
       );
       
       if (existingHoldingIndex >= 0) {
-        // Update existing holding
         const updatedHoldings = [...userTokenHoldingsRef.current];
         const existingHolding = updatedHoldings[existingHoldingIndex];
         
@@ -159,7 +151,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         setUserTokenHoldings(updatedHoldings);
         userTokenHoldingsRef.current = updatedHoldings;
         
-        // Save to localStorage
         if (userProfile) {
           try {
             const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
@@ -169,7 +160,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           }
         }
       } else {
-        // Create new holding
         if (currentMarketCap) {
           const newHolding: TokenHolding = {
             id: Date.now(),
@@ -191,7 +181,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           setUserTokenHoldings(newHoldings);
           userTokenHoldingsRef.current = newHoldings;
           
-          // Save to localStorage
           if (userProfile) {
             try {
               const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
@@ -203,10 +192,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         }
       }
       
-      // Clear the initial purchase data to prevent duplicate additions
       setInitialPurchaseData(null);
       
-      // Also add to token_transactions table in Supabase if needed
       if (userProfile) {
         const newTransaction = {
           tokenid: tokenId,
@@ -219,7 +206,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           userid: userProfile.id
         };
         
-        // Add a custom event to allow PriceChart to add a marker
         window.dispatchEvent(new CustomEvent('tokenPurchase', { 
           detail: {
             tokenId,
@@ -232,7 +218,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     }
   }, [initialPurchaseData, currentMarketCap, tokenPrice, tokenId, tokenName, tokenSymbol, userProfile]);
 
-  // Update current values periodically
   useEffect(() => {
     if (currentMarketCap && userTokenHoldings.length > 0) {
       const updatedHoldings = userTokenHoldings.map(holding => ({
@@ -248,7 +233,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       setUserTokenHoldings(updatedHoldings);
       userTokenHoldingsRef.current = updatedHoldings;
       
-      // Save updated holdings to localStorage
       if (userProfile) {
         try {
           const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
@@ -301,6 +285,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       return;
     }
 
+    setConfirmDialogOpen(true);
+  };
+
+  const executeBuyTokens = async () => {
     setIsLoading(true);
     try {
       await placeBet(
@@ -330,7 +318,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
       });
 
-      // Add a custom event to allow PriceChart to add a marker
       window.dispatchEvent(new CustomEvent('tokenPurchase', { 
         detail: {
           tokenId,
@@ -355,6 +342,11 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     }
   };
 
+  const openSellConfirmation = (holding: TokenHolding) => {
+    setSelectedHolding(holding);
+    setSellConfirmDialogOpen(true);
+  };
+
   const handleSellTokens = async (holding: TokenHolding) => {
     if (!userProfile) {
       toast({
@@ -374,7 +366,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       console.log(`Selling tokens: ${holding.tokenAmount} ${holding.tokenSymbol}`);
       console.log(`Return amount: ${returnAmount} PXB`);
       
-      // Add points to user
       const success = await addPointsToUser(Math.round(returnAmount), userProfile.id);
       
       if (success) {
@@ -384,12 +375,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           variant: isPositiveChange ? "default" : "destructive",
         });
         
-        // Remove holding from list
         const updatedHoldings = userTokenHoldings.filter(h => h.id !== holding.id);
         setUserTokenHoldings(updatedHoldings);
         userTokenHoldingsRef.current = updatedHoldings;
         
-        // Update localStorage
         if (userProfile) {
           try {
             const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
@@ -399,7 +388,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           }
         }
         
-        // Also add to token_transactions table in Supabase if needed
         const newTransaction = {
           tokenid: tokenId,
           tokensymbol: holding.tokenSymbol,
@@ -410,8 +398,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           type: 'sell',
           userid: userProfile.id
         };
-        
-        // We can add Supabase code here if needed
         
         if (onSuccess) {
           onSuccess();
@@ -529,13 +515,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             </div>
           </div>
           
-          <div className="mt-0.5">
-            <div className="flex justify-between items-center text-[9px] mb-0.5">
-              <div className="text-dream-foreground/70 flex items-center">
-                <BarChart3 className="w-2 h-2 mr-0.5" />
-                Market Performance
-              </div>
-              <div className={`text-[9px] font-mono font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
+          <div className="mt-0.5 bg-black/40 rounded-md p-0.5 border border-white/5">
+            <div className="flex justify-between items-center">
+              <div className="text-[9px] text-dream-foreground/60">Market Performance</div>
+              <div className={`font-mono text-[10px] font-bold ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
                 {isPositiveChange ? '+' : ''}{holding.percentageChange.toFixed(2)}%
               </div>
             </div>
@@ -581,7 +564,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
             variant={isPositiveChange ? "default" : "destructive"} 
             size="sm"
             className={`w-full text-[9px] py-0 mt-0.5 h-4 ${isPositiveChange ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'}`}
-            onClick={() => handleSellTokens(holding)}
+            onClick={() => openSellConfirmation(holding)}
             disabled={isSellingThisHolding}
           >
             {isSellingThisHolding ? (
@@ -757,6 +740,33 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           )}
         </TabsContent>
       </Tabs>
+
+      <TokenTransactionConfirmDialog
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+        onConfirm={executeBuyTokens}
+        type="buy"
+        tokenSymbol={tokenSymbol}
+        tokenName={tokenName}
+        pxbAmount={amount}
+        tokenAmount={tokenAmount}
+        tokenPrice={tokenPrice}
+      />
+
+      {selectedHolding && (
+        <TokenTransactionConfirmDialog
+          open={sellConfirmDialogOpen}
+          onOpenChange={setSellConfirmDialogOpen}
+          onConfirm={() => selectedHolding && handleSellTokens(selectedHolding)}
+          type="sell"
+          tokenSymbol={selectedHolding.tokenSymbol}
+          tokenName={tokenName}
+          pxbAmount={Math.round(selectedHolding.currentValue)}
+          tokenAmount={selectedHolding.tokenAmount}
+          tokenPrice={tokenPrice}
+          percentageChange={selectedHolding.percentageChange}
+        />
+      )}
     </div>
   );
 };
