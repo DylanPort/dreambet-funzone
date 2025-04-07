@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -433,7 +432,7 @@ export const usePointOperations = (
         return false;
       }
 
-      // Update user points in Supabase - FIX: Don't call fetchUserProfile() here to avoid double credit
+      // Update user points in Supabase - IMPORTANT: Don't call fetchUserProfile() here to avoid double credit
       const { error: updateError } = await supabase
         .from('users')
         .update({ points: userProfile.pxbPoints - pxbAmount })
@@ -506,7 +505,7 @@ export const usePointOperations = (
 
       console.log(`Successfully purchased ${tokenQuantity} ${tokenSymbol} for ${pxbAmount} PXB!`);
       
-      // FIX: Only refresh user profile once at the end to prevent double crediting
+      // IMPORTANT: Only refresh user profile once at the end to prevent double crediting
       await fetchUserProfile(); 
       return true;
     } catch (error) {

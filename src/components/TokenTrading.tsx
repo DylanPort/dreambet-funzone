@@ -68,7 +68,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const [selectedHolding, setSelectedHolding] = useState<TokenHolding | null>(null);
 
   const { toast } = useToast();
-  const { userProfile, placeBet, mintPoints, addPointsToUser } = usePXBPoints();
+  const { userProfile, placeBet, mintPoints, addPointsToUser, purchaseToken } = usePXBPoints();
   const pumpPortalService = usePumpPortalWebSocket();
 
   useEffect(() => {
@@ -291,44 +291,47 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const executeBuyTokens = async () => {
     setIsLoading(true);
     try {
-      await placeBet(
+      const success = await purchaseToken(
         tokenId,
         tokenName,
         tokenSymbol,
         amount,
-        'up',
-        0,
-        0
+        tokenAmount,
+        tokenPrice
       );
 
-      setInitialPurchaseData({
-        marketCap: currentMarketCap,
-        volume: currentVolume,
-        price: tokenPrice,
-        amount: amount,
-        tokenAmount: tokenAmount
-      });
-
-      if (pumpPortalService.connected) {
-        pumpPortalService.subscribeToToken(tokenId);
-      }
-
-      toast({
-        title: "Purchase successful!",
-        description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
-      });
-
-      window.dispatchEvent(new CustomEvent('tokenPurchase', { 
-        detail: {
-          tokenId,
+      if (success) {
+        setInitialPurchaseData({
+          marketCap: currentMarketCap,
+          volume: currentVolume,
           price: tokenPrice,
-          timestamp: new Date().toISOString(),
-          amount: amount
-        }
-      }));
+          amount: amount,
+          tokenAmount: tokenAmount
+        });
 
-      if (onSuccess) {
-        onSuccess();
+        if (pumpPortalService.connected) {
+          pumpPortalService.subscribeToToken(tokenId);
+        }
+
+        toast({
+          title: "Purchase successful!",
+          description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
+        });
+
+        window.dispatchEvent(new CustomEvent('tokenPurchase', { 
+          detail: {
+            tokenId,
+            price: tokenPrice,
+            timestamp: new Date().toISOString(),
+            amount: amount
+          }
+        }));
+
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        throw new Error("Purchase failed");
       }
     } catch (error) {
       console.error("Error purchasing tokens:", error);
