@@ -366,44 +366,40 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       console.log(`Selling tokens: ${holding.tokenAmount} ${holding.tokenSymbol}`);
       console.log(`Return amount: ${returnAmount} PXB`);
       
-      const success = await addPointsToUser(Math.round(returnAmount), userProfile.id);
+      await addPointsToUser(Math.round(returnAmount));
       
-      if (success) {
-        toast({
-          title: "Tokens sold successfully!",
-          description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`,
-          variant: isPositiveChange ? "default" : "destructive",
-        });
-        
-        const updatedHoldings = userTokenHoldings.filter(h => h.id !== holding.id);
-        setUserTokenHoldings(updatedHoldings);
-        userTokenHoldingsRef.current = updatedHoldings;
-        
-        if (userProfile) {
-          try {
-            const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
-            localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
-          } catch (error) {
-            console.error("Error updating token holdings in localStorage:", error);
-          }
+      toast({
+        title: "Tokens sold successfully!",
+        description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`,
+        variant: isPositiveChange ? "default" : "destructive",
+      });
+      
+      const updatedHoldings = userTokenHoldings.filter(h => h.id !== holding.id);
+      setUserTokenHoldings(updatedHoldings);
+      userTokenHoldingsRef.current = updatedHoldings;
+      
+      if (userProfile) {
+        try {
+          const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+          localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
+        } catch (error) {
+          console.error("Error updating token holdings in localStorage:", error);
         }
-        
-        const newTransaction = {
-          tokenid: tokenId,
-          tokensymbol: holding.tokenSymbol,
-          tokenname: tokenName,
-          quantity: holding.tokenAmount,
-          pxbamount: returnAmount,
-          price: tokenPrice,
-          type: 'sell',
-          userid: userProfile.id
-        };
-        
-        if (onSuccess) {
-          onSuccess();
-        }
-      } else {
-        throw new Error("Failed to add points to user account");
+      }
+      
+      const newTransaction = {
+        tokenid: tokenId,
+        tokensymbol: holding.tokenSymbol,
+        tokenname: tokenName,
+        quantity: holding.tokenAmount,
+        pxbamount: returnAmount,
+        price: tokenPrice,
+        type: 'sell',
+        userid: userProfile.id
+      };
+      
+      if (onSuccess) {
+        onSuccess();
       }
     } catch (error) {
       console.error("Error selling tokens:", error);
