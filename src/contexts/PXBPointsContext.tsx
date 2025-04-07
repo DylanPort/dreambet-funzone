@@ -138,9 +138,17 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     isLoadingWinRate,
     fetchLeaderboard,
     fetchWinRateLeaderboard,
-    topBettors,
+    topBettors: rawTopBettors,
     leaderboardLoading
   } = useLeaderboardData();
+
+  // Convert LeaderboardEntry[] to UserProfile[] for topBettors
+  const topBettors: UserProfile[] = rawTopBettors?.map(entry => ({
+    id: entry.id || entry.user_id || entry.wallet,
+    username: entry.username || entry.wallet.substring(0, 8),
+    pxbPoints: entry.points || entry.pxbPoints || 0,
+    createdAt: new Date().toISOString() // Default createdAt since it's required
+  })) || [];
 
   // Use empty referral system if not available
   const defaultReferralSystem = {
