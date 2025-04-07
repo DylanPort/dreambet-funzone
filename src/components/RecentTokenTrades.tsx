@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
 
 interface TokenTransaction {
   id: string;
@@ -59,6 +60,13 @@ const RecentTokenTrades: React.FC = () => {
           };
           
           setTransactions(prev => [formattedTx, ...prev].slice(0, 20));
+          
+          // Show toast notification for new transactions
+          toast({
+            title: `New ${formattedTx.type.toUpperCase()} Transaction`,
+            description: `${formattedTx.username} ${formattedTx.type === 'buy' ? 'bought' : 'sold'} ${formatAmount(formattedTx.tokenAmount)} tokens for ${formatAmount(formattedTx.pxbAmount)} PXB`,
+            variant: 'info',
+          });
         })
       .subscribe();
       
