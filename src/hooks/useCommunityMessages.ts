@@ -94,16 +94,25 @@ const useCommunityMessages = () => {
   // Add loadRepliesForMessage function - mocked as we don't have community_replies table
   const loadRepliesForMessage = async (messageId: string) => {
     try {
-      // Since message_replies table doesn't exist, return mock data
-      // In a real implementation, this would query a community_replies table
-      const mockReplies: CommunityReply[] = [];
+      // Now that we have the community_replies table, fetch real replies
+      const { data, error } = await supabase
+        .from('community_replies')
+        .select('*')
+        .eq('message_id', messageId)
+        .order('created_at', { ascending: true });
       
+      if (error) {
+        console.error("Error loading replies:", error);
+        return [];
+      }
+      
+      const typedReplies = data as CommunityReply[];
       setMessageReplies(prev => ({
         ...prev,
-        [messageId]: mockReplies
+        [messageId]: typedReplies
       }));
 
-      return mockReplies;
+      return typedReplies;
     } catch (err) {
       console.error("Error loading replies:", err);
       return [];
@@ -115,15 +124,53 @@ const useCommunityMessages = () => {
     if (!user) return;
     
     try {
-      // Mock implementation for now
-      setMessageReactions(prev => ({
-        ...prev,
-        [messageId]: {
-          likes: (prev[messageId]?.likes || 0) + (reactionType === 'like' ? 1 : 0),
-          dislikes: (prev[messageId]?.dislikes || 0) + (reactionType === 'dislike' ? 1 : 0),
-          userReaction: reactionType
+      // Now using the real community_message_reactions table
+      // First check if user already reacted
+      const { data: existingReaction } = await supabase
+        .from('community_message_reactions')
+        .select('*')
+        .eq('message_id', messageId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (existingReaction) {
+        // Update existing reaction if different
+        if (existingReaction.reaction_type !== reactionType) {
+          await supabase
+            .from('community_message_reactions')
+            .update({ reaction_type: reactionType })
+            .eq('id', existingReaction.id);
         }
-      }));
+      } else {
+        // Insert new reaction
+        await supabase
+          .from('community_message_reactions')
+          .insert({
+            message_id: messageId,
+            user_id: user.id,
+            reaction_type: reactionType
+          });
+      }
+      
+      // Get updated reaction counts
+      const { data: likesData } = await supabase
+        .from('community_message_reactions')
+        .select('reaction_type')
+        .eq('message_id', messageId);
+      
+      if (likesData) {
+        const likes = likesData.filter(r => r.reaction_type === 'like').length;
+        const dislikes = likesData.filter(r => r.reaction_type === 'dislike').length;
+        
+        setMessageReactions(prev => ({
+          ...prev,
+          [messageId]: {
+            likes,
+            dislikes,
+            userReaction: reactionType
+          }
+        }));
+      }
       
       return true;
     } catch (error) {
@@ -137,15 +184,24 @@ const useCommunityMessages = () => {
     if (!user) return null;
     
     try {
-      // Mock implementation for now
-      const newReply: CommunityReply = {
-        id: `reply-${Date.now()}`,
-        message_id: messageId,
-        content,
-        created_at: new Date().toISOString(),
-        user_id: user.id,
-        username: 'Current User'
-      };
+      // Now using the real community_replies table
+      const { data, error } = await supabase
+        .from('community_replies')
+        .insert({
+          message_id: messageId,
+          content,
+          user_id: user.id,
+          username: user.email?.split('@')[0] || 'Current User'
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error posting reply:", error);
+        return null;
+      }
+      
+      const newReply = data as CommunityReply;
       
       setMessageReplies(prev => ({
         ...prev,
