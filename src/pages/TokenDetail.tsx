@@ -27,6 +27,7 @@ import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
 import TokenTrading from '@/components/TokenTrading';
 import TokenTradeHistory from '@/components/TokenTradeHistory';
+
 const TokenChart = ({
   tokenId,
   tokenName,
@@ -94,6 +95,7 @@ const TokenChart = ({
       
     </div>;
 };
+
 const TokenDetail = () => {
   const {
     id
@@ -733,7 +735,9 @@ const TokenDetail = () => {
                 </div>
               </div>
               
-              
+              <div className="mb-8">
+                <TokenTradeHistory tokenId={token.id} />
+              </div>
               
               <div className="mb-8">
                 <TokenComments tokenId={id} tokenName={token.name} />
@@ -743,4 +747,5 @@ const TokenDetail = () => {
       </main>
     </>;
 };
+
 export default TokenDetail;
