@@ -1,4 +1,3 @@
-
 import { PXBBet, UserProfile, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from '@/types/pxb';
 
 // Define types for token portfolio and transactions
@@ -12,7 +11,7 @@ export interface TokenPortfolio {
   averagePurchasePrice: number;
   currentValue: number;
   lastUpdated: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface TokenTransaction {
@@ -26,7 +25,7 @@ export interface TokenTransaction {
   price: number;
   pxbAmount: number;
   timestamp: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface PXBPointsContextType {

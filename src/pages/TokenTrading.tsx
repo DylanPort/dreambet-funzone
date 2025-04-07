@@ -26,10 +26,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenPortfolio } from '@/contexts/pxb/types';
+import TokenTradingChart from '@/components/TokenTradingChart';
+import TokenTransactionHistory from '@/components/TokenTransactionHistory';
 
 // Helper function to format numbers nicely
 const formatNumber = (num: number, decimals = 2) => {
@@ -49,8 +50,11 @@ const TokenTrading = () => {
     purchaseToken, 
     sellToken,
     tokenPortfolios,
+    tokenTransactions,
     fetchTokenPortfolios,
-    isLoadingPortfolios
+    fetchTokenTransactions,
+    isLoadingPortfolios,
+    isLoadingTransactions
   } = usePXBPoints();
   
   const [tokenMetrics, setTokenMetrics] = useState<any>(null);
@@ -65,16 +69,18 @@ const TokenTrading = () => {
   // Calculate token quantity based on PXB amount
   const calculateTokenQuantity = (pxbAmount: number) => {
     if (!tokenMetrics || tokenMetrics.marketCap === null) return 0;
-    const totalSupply = tokenMetrics.totalSupply || 1000000000;
-    const tokenPrice = tokenMetrics.marketCap / totalSupply;
+    // Estimate total supply if not available directly
+    const estimatedTotalSupply = tokenMetrics.marketCap / (tokenMetrics.priceUsd || 0.001);
+    const tokenPrice = tokenMetrics.marketCap / estimatedTotalSupply;
     return pxbAmount / tokenPrice;
   };
 
   // Calculate PXB amount based on token quantity
   const calculatePxbAmount = (tokenQuantity: number) => {
     if (!tokenMetrics || tokenMetrics.marketCap === null || !selectedPortfolio) return 0;
-    const totalSupply = tokenMetrics.totalSupply || 1000000000;
-    const tokenPrice = tokenMetrics.marketCap / totalSupply;
+    // Estimate total supply if not available directly
+    const estimatedTotalSupply = tokenMetrics.marketCap / (tokenMetrics.priceUsd || 0.001);
+    const tokenPrice = tokenMetrics.marketCap / estimatedTotalSupply;
     return tokenQuantity * tokenPrice;
   };
 
@@ -87,7 +93,7 @@ const TokenTrading = () => {
   useEffect(() => {
     const loadTokenData = async () => {
       if (!tokenMint) {
-        navigate('/');
+        navigate('/trading');
         return;
       }
 
@@ -106,13 +112,14 @@ const TokenTrading = () => {
     loadTokenData();
   }, [tokenMint, navigate]);
 
-  // Load user's token portfolios
+  // Load user's token portfolios and transactions
   useEffect(() => {
     if (connected && userProfile) {
       fetchTokenPortfolios();
+      fetchTokenTransactions();
       setSelectedPortfolio(getPortfolioForCurrentToken());
     }
-  }, [connected, userProfile, fetchTokenPortfolios, tokenMint]);
+  }, [connected, userProfile, fetchTokenPortfolios, fetchTokenTransactions, tokenMint]);
 
   // Update selected portfolio when portfolios change
   useEffect(() => {
@@ -169,12 +176,12 @@ const TokenTrading = () => {
     setRefreshing(true);
     try {
       if (tokenMint) {
-        // Fix here - remove the second argument
         const metrics = await fetchTokenMetrics(tokenMint);
         setTokenMetrics(metrics);
       }
       if (connected && userProfile) {
         await fetchTokenPortfolios();
+        await fetchTokenTransactions();
       }
       toast.success('Data refreshed');
     } catch (error) {
@@ -184,6 +191,16 @@ const TokenTrading = () => {
       setRefreshing(false);
     }
   };
+
+  const handleMetricsUpdate = (metrics: any) => {
+    setTokenMetrics(prevMetrics => ({
+      ...prevMetrics,
+      ...metrics
+    }));
+  };
+
+  // Filter transactions for the current token
+  const currentTokenTransactions = tokenTransactions.filter(tx => tx.tokenId === tokenMint);
 
   if (loading) {
     return (
@@ -205,7 +222,7 @@ const TokenTrading = () => {
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold mb-4">Token Not Found</h2>
           <p className="text-gray-400 mb-6">The requested token could not be loaded.</p>
-          <Button onClick={() => navigate('/')}>Return Home</Button>
+          <Button onClick={() => navigate('/trading')}>Return to Trading</Button>
         </div>
       </div>
     );
@@ -214,9 +231,9 @@ const TokenTrading = () => {
   const currentPortfolio = getPortfolioForCurrentToken();
   const tokenName = tokenMetrics.name || 'Unknown Token';
   const tokenSymbol = tokenMetrics.symbol || 'UNK';
-  const tokenPrice = tokenMetrics.marketCap 
-    ? (tokenMetrics.marketCap / (tokenMetrics.totalSupply || 1000000000)) 
-    : null;
+  // Estimate token price from market cap
+  const estimatedTotalSupply = tokenMetrics.marketCap / (tokenMetrics.priceUsd || 0.001);
+  const tokenPrice = tokenMetrics.marketCap ? (tokenMetrics.marketCap / estimatedTotalSupply) : null;
 
   return (
     <div className="container max-w-6xl mx-auto py-8 px-4">
@@ -225,17 +242,30 @@ const TokenTrading = () => {
           <h1 className="text-3xl font-bold">
             {tokenName} ({tokenSymbol})
           </h1>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={refreshData}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/trading/portfolio')}
+            >
+              My Portfolio
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={refreshData}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
+        {/* Chart Section */}
+        <TokenTradingChart tokenId={tokenMint || ''} onMetricsUpdate={handleMetricsUpdate} />
+
+        {/* Trading and Portfolio Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Token Info Card */}
           <Card className="p-6 bg-black/20 backdrop-blur-md border-gray-800">
@@ -268,7 +298,7 @@ const TokenTrading = () => {
                   <span className="text-gray-300">Supply</span>
                 </div>
                 <span className="font-medium">
-                  {tokenMetrics.totalSupply ? formatNumber(tokenMetrics.totalSupply) : '1,000,000,000'}
+                  {estimatedTotalSupply ? formatNumber(estimatedTotalSupply) : '1,000,000,000'}
                 </span>
               </div>
               
@@ -393,6 +423,12 @@ const TokenTrading = () => {
             )}
           </Card>
         </div>
+
+        {/* Transaction History */}
+        <TokenTransactionHistory 
+          transactions={currentTokenTransactions} 
+          isLoading={isLoadingTransactions} 
+        />
       </div>
 
       {/* Buy Dialog */}

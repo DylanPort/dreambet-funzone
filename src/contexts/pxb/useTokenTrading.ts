@@ -41,8 +41,9 @@ export const useTokenTrading = (
         try {
           const metrics = await fetchTokenMetrics(portfolio.tokenid);
           if (metrics && metrics.marketCap !== null) {
-            const totalSupply = metrics.marketCap / (metrics.priceUsd || 0.001); // Estimate if not available
-            const currentPrice = metrics.marketCap / totalSupply;
+            // Estimate total supply if not available directly
+            const estimatedTotalSupply = metrics.marketCap / (metrics.priceUsd || 0.001);
+            const currentPrice = metrics.marketCap / estimatedTotalSupply;
             const currentValue = portfolio.quantity * currentPrice;
             
             // Update portfolio in database if value has changed significantly
@@ -66,7 +67,7 @@ export const useTokenTrading = (
               tokenSymbol: portfolio.tokensymbol,
               averagePurchasePrice: portfolio.averagepurchaseprice,
               lastUpdated: portfolio.lastupdated
-            };
+            } as TokenPortfolio;
           }
           return {
             ...portfolio,
@@ -78,7 +79,7 @@ export const useTokenTrading = (
             currentValue: portfolio.currentvalue,
             averagePurchasePrice: portfolio.averagepurchaseprice,
             lastUpdated: portfolio.lastupdated
-          };
+          } as TokenPortfolio;
         } catch (err) {
           console.error(`Error updating portfolio value for ${portfolio.tokenname}:`, err);
           return {
@@ -91,7 +92,7 @@ export const useTokenTrading = (
             currentValue: portfolio.currentvalue,
             averagePurchasePrice: portfolio.averagepurchaseprice,
             lastUpdated: portfolio.lastupdated
-          };
+          } as TokenPortfolio;
         }
       }));
       
@@ -124,13 +125,17 @@ export const useTokenTrading = (
       
       // Map DB column names to our interface properties
       const mappedTransactions = (data || []).map(tx => ({
-        ...tx,
+        id: tx.id,
         userId: tx.userid,
         tokenId: tx.tokenid,
         tokenName: tx.tokenname,
         tokenSymbol: tx.tokensymbol,
-        pxbAmount: tx.pxbamount
-      }));
+        type: tx.type as 'buy' | 'sell', // Explicitly cast to the expected union type
+        quantity: tx.quantity,
+        price: tx.price,
+        pxbAmount: tx.pxbamount,
+        timestamp: tx.timestamp
+      })) as TokenTransaction[];
       
       setTokenTransactions(mappedTransactions);
     } catch (error) {
@@ -170,8 +175,9 @@ export const useTokenTrading = (
         return false;
       }
 
-      const totalSupply = metrics.marketCap / (metrics.priceUsd || 0.001); // Estimate if not available
-      const tokenPrice = metrics.marketCap / totalSupply;
+      // Estimate total supply if not available directly
+      const estimatedTotalSupply = metrics.marketCap / (metrics.priceUsd || 0.001);
+      const tokenPrice = metrics.marketCap / estimatedTotalSupply;
       const tokenQuantity = pxbAmount / tokenPrice;
 
       if (tokenQuantity <= 0) {
@@ -195,17 +201,19 @@ export const useTokenTrading = (
       }
 
       // 2. Record the transaction
-      const { error: transactionError } = await supabase.from('token_transactions').insert({
-        userid: userProfile.id,
-        tokenid: tokenId,
-        tokenname: tokenName,
-        tokensymbol: tokenSymbol,
-        type: 'buy',
-        quantity: tokenQuantity,
-        price: tokenPrice,
-        pxbamount: pxbAmount,
-        timestamp: new Date().toISOString()
-      });
+      const { error: transactionError } = await supabase
+        .from('token_transactions')
+        .insert({
+          userid: userProfile.id,
+          tokenid: tokenId,
+          tokenname: tokenName,
+          tokensymbol: tokenSymbol,
+          type: 'buy',
+          quantity: tokenQuantity,
+          price: tokenPrice,
+          pxbamount: pxbAmount,
+          timestamp: new Date().toISOString()
+        });
 
       if (transactionError) {
         console.error('Error recording token transaction:', transactionError);
@@ -335,8 +343,9 @@ export const useTokenTrading = (
         return false;
       }
 
-      const totalSupply = metrics.marketCap / (metrics.priceUsd || 0.001); // Estimate if not available
-      const currentPrice = metrics.marketCap / totalSupply;
+      // Estimate total supply if not available directly
+      const estimatedTotalSupply = metrics.marketCap / (metrics.priceUsd || 0.001);
+      const currentPrice = metrics.marketCap / estimatedTotalSupply;
       const pxbAmount = quantity * currentPrice;
 
       // 3. Add PXB points to user
@@ -354,17 +363,19 @@ export const useTokenTrading = (
       }
 
       // 4. Record the transaction
-      const { error: transactionError } = await supabase.from('token_transactions').insert({
-        userid: userProfile.id,
-        tokenid: portfolio.tokenid,
-        tokenname: portfolio.tokenname,
-        tokensymbol: portfolio.tokensymbol,
-        type: 'sell',
-        quantity,
-        price: currentPrice,
-        pxbamount: pxbAmount,
-        timestamp: new Date().toISOString()
-      });
+      const { error: transactionError } = await supabase
+        .from('token_transactions')
+        .insert({
+          userid: userProfile.id,
+          tokenid: portfolio.tokenid,
+          tokenname: portfolio.tokenname,
+          tokensymbol: portfolio.tokensymbol,
+          type: 'sell',
+          quantity,
+          price: currentPrice,
+          pxbamount: pxbAmount,
+          timestamp: new Date().toISOString()
+        });
 
       if (transactionError) {
         console.error('Error recording token sale transaction:', transactionError);
