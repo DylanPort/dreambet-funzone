@@ -12,7 +12,7 @@ import TokenBetting from '@/pages/TokenBetting';
 import TokenDetail from '@/pages/TokenDetail';
 import MyBets from '@/pages/MyBets';
 import NotFound from '@/pages/NotFound';
-import { WalletProvider } from '@solana/wallet-adapter-react';
+import SolanaWalletProvider from '@/providers/SolanaWalletProvider';
 import { PXBPointsProvider } from '@/contexts/PXBPointsContext';
 import Trading from '@/pages/Trading';
 import TokenTrading from '@/pages/TokenTrading';
@@ -30,7 +30,7 @@ function App() {
   };
 
   return (
-    <WalletProvider>
+    <SolanaWalletProvider>
       <PXBPointsProvider>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -49,7 +49,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </PXBPointsProvider>
-    </WalletProvider>
+    </SolanaWalletProvider>
   );
 }
 
