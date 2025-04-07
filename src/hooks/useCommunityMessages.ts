@@ -1,11 +1,15 @@
+
 import { useState, useEffect } from 'react';
-import { useUser } from '@supabase/auth-helpers-react';
+import { useUser } from '@/integrations/auth-helpers'; // Updated import path
 import { supabase } from '@/integrations/supabase/client';
 import { CommunityMessage } from '@/types/community';
 
 const useCommunityMessages = () => {
   const user = useUser();
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
+  const [messageReplies, setMessageReplies] = useState<Record<string, any[]>>({});
+  const [messageReactions, setMessageReactions] = useState<Record<string, any>>({});
+  const [topLikedMessages, setTopLikedMessages] = useState<CommunityMessage[]>([]);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,12 +58,104 @@ const useCommunityMessages = () => {
             setMessages(prevMessages => [newMessage, ...prevMessages]);
           }
         })
-      .subscribe()
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  // Add the fetchTopLiked function
+  const fetchTopLiked = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('community_messages')
+        .select('*')
+        .order('likes_count', { ascending: false })
+        .limit(3);
+
+      if (error) {
+        console.error("Error fetching top liked messages:", error);
+      } else {
+        setTopLikedMessages(data as CommunityMessage[]);
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching top liked messages:", err);
+    }
+  };
+
+  // Add loadRepliesForMessage function
+  const loadRepliesForMessage = async (messageId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('message_replies')
+        .select('*')
+        .eq('message_id', messageId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error("Error loading replies:", error);
+        return [];
+      }
+
+      setMessageReplies(prev => ({
+        ...prev,
+        [messageId]: data
+      }));
+
+      return data;
+    } catch (err) {
+      console.error("Error loading replies:", err);
+      return [];
+    }
+  };
+
+  // Add reactToMessage function
+  const reactToMessage = async (messageId: string, reactionType: 'like' | 'dislike') => {
+    if (!user) return;
+    
+    try {
+      // Logic for reacting to messages would go here
+      // For now returning a mock implementation
+      setMessageReactions(prev => ({
+        ...prev,
+        [messageId]: {
+          likes: (prev[messageId]?.likes || 0) + (reactionType === 'like' ? 1 : 0),
+          dislikes: (prev[messageId]?.dislikes || 0) + (reactionType === 'dislike' ? 1 : 0),
+          userReaction: reactionType
+        }
+      }));
+    } catch (error) {
+      console.error("Error reacting to message:", error);
+      throw error;
+    }
+  };
+
+  // Add postReply function
+  const postReply = async (messageId: string, content: string) => {
+    if (!user) return;
+    
+    try {
+      // Logic for posting a reply would go here
+      // For now returning a mock implementation
+      const newReply = {
+        id: `reply-${Date.now()}`,
+        message_id: messageId,
+        content,
+        created_at: new Date().toISOString(),
+        user_id: user.id,
+        username: 'Current User'
+      };
+      
+      setMessageReplies(prev => ({
+        ...prev,
+        [messageId]: [...(prev[messageId] || []), newReply]
+      }));
+    } catch (error) {
+      console.error("Error posting reply:", error);
+      throw error;
+    }
+  };
 
   const postMessage = async (content: string): Promise<void> => {
     if (!user) return;
@@ -84,7 +180,20 @@ const useCommunityMessages = () => {
     }
   };
 
-  return { messages, postMessage, posting, error, loading };
+  return { 
+    messages, 
+    postMessage, 
+    posting, 
+    error, 
+    loading,
+    messageReplies,
+    messageReactions,
+    topLikedMessages,
+    loadRepliesForMessage,
+    postReply,
+    reactToMessage,
+    fetchTopLiked
+  };
 };
 
 export default useCommunityMessages;
