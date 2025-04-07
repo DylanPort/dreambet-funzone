@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Coins, MessageSquare } from 'lucide-react';
+import { Menu, X, Coins } from 'lucide-react';
 import WalletConnectButton from './WalletConnectButton';
 import ProfileButton from './ProfileButton';
 import useSolanaBalance from '@/hooks/useSolanaBalance';
@@ -85,13 +86,6 @@ const Navbar = () => {
               <span className="text-sm">PXB Space</span>
             </Link>
             
-            <Link to="/community" className={`nav-link flex items-center gap-1 ${location.pathname === '/community' ? 'text-green-400' : 'text-dream-foreground/70 hover:text-dream-foreground'}`}>
-              <div className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105 relative">
-                <img src="/lovable-uploads/dc0e4ed7-1c9d-4cca-9abc-12614bc6013e.png" alt="Community" className="w-8 h-8 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-              </div>
-              <span className="text-sm">Community</span>
-            </Link>
-            
             <ProfileButton />
             
             {pxbPoints !== null && pxbPoints > 0 ? <div className="glass-panel relative overflow-hidden py-1 px-2 flex items-center gap-1 text-yellow-400 group animate-pulse-subtle">
@@ -143,13 +137,6 @@ const Navbar = () => {
                 <img src="/lovable-uploads/f4f0715a-b593-4250-b09f-b31137657bf2.png" alt="My Bets" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]" />
               </div>
               <span className="text-sm">PXB Space</span>
-            </Link>
-            
-            <Link to="/community" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/community' ? 'text-green-400' : 'text-dream-foreground/70'}`}>
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img src="/lovable-uploads/dc0e4ed7-1c9d-4cca-9abc-12614bc6013e.png" alt="Community" className="w-6 h-6 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-              </div>
-              <span className="text-sm">Community</span>
             </Link>
             
             <Link to="/profile" className={`py-1 flex items-center gap-1.5 ${location.pathname === '/profile' ? 'text-green-400' : 'text-dream-foreground/70'}`}>

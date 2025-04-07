@@ -12,9 +12,12 @@ const viteBinPath = path.resolve(__dirname, '../node_modules/.bin/vite');
 // Make the vite binary executable (equivalent to chmod +x)
 try {
   fs.chmodSync(viteBinPath, '755');
+  console.log(`Made vite executable: ${viteBinPath}`);
 } catch (error) {
   console.error(`Warning: Unable to make vite executable: ${error.message}`);
 }
+
+console.log('Starting Vite development server...');
 
 const args = process.argv.slice(2);
 const viteProcess = spawn(viteBinPath, args, { 
@@ -31,4 +34,3 @@ viteProcess.on('error', (error) => {
 viteProcess.on('close', (code) => {
   process.exit(code);
 });
-
