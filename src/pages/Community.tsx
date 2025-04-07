@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,6 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-
 const CommunityPage = () => {
   const [message, setMessage] = useState('');
   const [replyContent, setReplyContent] = useState<Record<string, string>>({});
@@ -49,19 +47,16 @@ const CommunityPage = () => {
   const [winRate, setWinRate] = useState(0);
   const [userRank, setUserRank] = useState<number | undefined>(undefined);
   const isMobile = useIsMobile();
-
   const sortedMessages = [...messages].sort((a, b) => {
     const pointsA = a.user_pxb_points || 0;
     const pointsB = b.user_pxb_points || 0;
     return pointsB - pointsA;
   });
-
   useEffect(() => {
     if (connected && userProfile) {
       fetchUserBets();
     }
   }, [connected, userProfile, fetchUserBets]);
-
   useEffect(() => {
     if (bets && bets.length > 0) {
       const completedBets = bets.filter(bet => bet.status === 'won' || bet.status === 'lost');
@@ -69,7 +64,6 @@ const CommunityPage = () => {
       setWinRate(completedBets.length > 0 ? wonBets.length / completedBets.length * 100 : 0);
     }
   }, [bets]);
-
   useEffect(() => {
     if (userProfile && leaderboard && leaderboard.length > 0) {
       const userEntry = leaderboard.find(entry => entry.id === userProfile.id);
@@ -78,13 +72,11 @@ const CommunityPage = () => {
       }
     }
   }, [userProfile, leaderboard]);
-
   const scrollToBottom = () => {
     messageEndRef.current?.scrollIntoView({
       behavior: 'smooth'
     });
   };
-
   useEffect(() => {
     const initialExpandedState: Record<string, boolean> = {};
     Object.entries(messageReplies).forEach(([messageId, replies]) => {
@@ -94,7 +86,6 @@ const CommunityPage = () => {
     });
     setExpandedReplies(initialExpandedState);
   }, [messageReplies]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connected) {
@@ -115,7 +106,6 @@ const CommunityPage = () => {
       toast.error("Failed to post message. Please try again.");
     }
   };
-
   const handleLoadReplies = async (messageId: string) => {
     try {
       setExpandedReplies(prev => ({
@@ -137,14 +127,12 @@ const CommunityPage = () => {
       toast.error("Failed to load replies. Please try again.");
     }
   };
-
   const handleReplyClick = (messageId: string) => {
     setShowReplyInput(prev => ({
       ...prev,
       [messageId]: !prev[messageId]
     }));
   };
-
   const handleSubmitReply = async (messageId: string) => {
     if (!connected) {
       toast.error("Please connect your wallet to reply");
@@ -173,7 +161,6 @@ const CommunityPage = () => {
       toast.error("Failed to post reply. Please try again.");
     }
   };
-
   const handleReaction = async (messageId: string, reactionType: 'like' | 'dislike') => {
     if (!connected) {
       toast.error("Please connect your wallet to like or dislike");
@@ -186,7 +173,6 @@ const CommunityPage = () => {
       toast.error("Failed to record your reaction. Please try again.");
     }
   };
-
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
     const messageDate = new Date(timestamp);
@@ -197,11 +183,9 @@ const CommunityPage = () => {
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
     return `${Math.floor(diffMins / 1440)}d ago`;
   };
-
   const truncateAddress = (address: string) => {
     return address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
   };
-
   return <div className="min-h-screen bg-dream-background bg-[url('/lovable-uploads/de5a5440-6c74-4a87-af08-110c2e96ffbc.png')] bg-cover bg-center bg-no-repeat bg-fixed">
       <div className="absolute inset-0 bg-dream-background/80 backdrop-blur-sm"></div>
       
@@ -211,11 +195,12 @@ const CommunityPage = () => {
         <div className="flex flex-col md:flex-row max-w-7xl mx-auto pt-32 px-4 pb-20">
           {/* Mobile horizontal scrollable section */}
           <div className={`md:hidden w-full overflow-x-auto pb-4 horizontal-scroll`}>
-            <div className="flex space-x-4" style={{ minWidth: 'max-content' }}>
+            <div className="flex space-x-4" style={{
+            minWidth: 'max-content'
+          }}>
               <OnlineUsersSidebar className="min-w-64" />
               
-              {connected && userProfile && (
-                <div className="min-w-64 glass-panel p-4">
+              {connected && userProfile && <div className="min-w-64 glass-panel p-4">
                   <div className="flex items-center mb-4">
                     <h3 className="font-display font-bold text-lg">Your Profile</h3>
                   </div>
@@ -265,20 +250,15 @@ const CommunityPage = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                </div>}
               
               <div className="min-w-64 glass-panel p-4">
                 <div className="flex items-center mb-4">
                   <h3 className="font-display font-bold text-lg">Most Liked Messages</h3>
                 </div>
                 
-                {!topLikedMessages || topLikedMessages.length === 0 ? (
-                  <p className="text-dream-foreground/50 text-sm text-center py-3">No liked messages yet</p>
-                ) : (
-                  <div className="space-y-3">
-                    {topLikedMessages.slice(0, 3).map(msg => (
-                      <Card key={`liked-${msg.id}`} className="p-3 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
+                {!topLikedMessages || topLikedMessages.length === 0 ? <p className="text-dream-foreground/50 text-sm text-center py-3">No liked messages yet</p> : <div className="space-y-3">
+                    {topLikedMessages.slice(0, 3).map(msg => <Card key={`liked-${msg.id}`} className="p-3 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
                         <div className="flex justify-between items-start mb-1">
                           <Link to={`/profile/${msg.user_id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
                             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
@@ -299,10 +279,8 @@ const CommunityPage = () => {
                         <p className="text-sm text-dream-foreground/80 line-clamp-2 mt-1">
                           {msg.content}
                         </p>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                      </Card>)}
+                  </div>}
               </div>
             </div>
             
@@ -433,9 +411,9 @@ const CommunityPage = () => {
                 </div>
               </div>
               
-              {error && <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500">
-                  Error loading messages. Please try refreshing the page.
-                </div>}
+              {error && <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500">We apologize, but this section is under mainatinance!
+
+            </div>}
               
               {!loading && sortedMessages.length === 0 ? <div className="text-center py-12 text-dream-foreground/50">
                   <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -553,5 +531,4 @@ const CommunityPage = () => {
       </div>
     </div>;
 };
-
 export default CommunityPage;
