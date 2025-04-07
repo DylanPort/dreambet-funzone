@@ -2,16 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
-import { X, Settings, Info, Gamepad, Clock } from 'lucide-react';
+import { X, Settings, Info, Gamepad, Clock, PartyPopper, Award, Trophy } from 'lucide-react';
 import TourVideoManager from './TourVideoManager';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link } from 'react-router-dom';
 import CountdownTimer from './CountdownTimer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
+import { usePXBTotalSupply } from '@/hooks/usePXBTotalSupply';
+
 interface PXBOnboardingProps {
   onClose?: () => void;
 }
+
 const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
   onClose
 }) => {
@@ -48,6 +51,9 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     title: 'Leaderboard',
     description: 'Compete with others on the leaderboard'
   }];
+  
+  const { supplyData, isLoading: supplyLoading } = usePXBTotalSupply(1000);
+  
   useEffect(() => {
     const fetchTourVideos = async () => {
       try {
@@ -82,6 +88,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
     };
     fetchTourVideos();
   }, []);
+
   useEffect(() => {
     if (userProfile) {
       const savedNextMintTime = localStorage.getItem(`nextMintTime_${userProfile.id}`);
@@ -96,24 +103,30 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
       }
     }
   }, [userProfile]);
+
   useEffect(() => {
     const hasCompletedTour = localStorage.getItem('pxbTourCompleted');
     if (!hasCompletedTour) {
       setShowTour(true);
     }
   }, []);
+  
   const completeTour = () => {
     localStorage.setItem('pxbTourCompleted', 'true');
     setShowTour(false);
     if (onClose) onClose();
   };
+  
   const tourStepTitle = (step: number) => {
     return tourSteps[step].title;
   };
+  
   const tourStepDescription = (step: number) => {
     return tourSteps[step].description;
   };
+  
   const [tourVideoModalOpen, setTourVideoModalOpen] = useState(false);
+  
   const handleMintPoints = async () => {
     try {
       await mintPoints(pointAmount);
@@ -138,6 +151,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
       });
     }
   };
+  
   const handleCountdownComplete = () => {
     setShowCountdown(false);
     setNextMintTime(null);
@@ -145,6 +159,13 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
       localStorage.removeItem(`nextMintTime_${userProfile.id}`);
     }
   };
+
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
+  };
+
+  const isSupplyFullyMinted = supplyData.totalMinted >= 990000000;
+  
   const renderPXBInfo = () => {
     return <div className="flex flex-col space-y-6 p-4">
         <div className="text-center py-4">
@@ -158,48 +179,107 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
               <p className="text-sm text-white/50 mt-2">PXB Points</p>
             </div> : <p className="text-white/70 mt-2">Connect your wallet to manage PXB Points</p>}
           
-          {userProfile && <div className="mt-8 space-y-2">
-              <div className="p-3 rounded-md mb-4 bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="bg-amber-500/20 px-2 py-1 rounded text-amber-300 font-semibold">PROMO</span>
-                    <span className="ml-2 text-white/80">Limited Time Offer!</span>
+          {userProfile && (
+            <div className="mt-8 space-y-2">
+              {isSupplyFullyMinted ? (
+                <div className="p-4 rounded-md mb-4 bg-gradient-to-r from-purple-500/20 via-amber-500/20 to-pink-500/20 border border-amber-500/30 animate-pulse-subtle">
+                  <div className="flex flex-col items-center gap-2">
+                    <PartyPopper className="h-8 w-8 text-amber-400 animate-bounce" />
+                    <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-amber-500 bg-clip-text text-transparent font-bold text-xl">
+                      Congratulations! 🎉
+                    </span>
+                    <p className="text-white/90 text-center">
+                      The PXB total supply of 1 billion has been fully minted!
+                    </p>
+                    <div className="flex items-center gap-1 mt-2">
+                      <Trophy className="h-4 w-4 text-amber-400" />
+                      <span className="font-semibold text-amber-300">
+                        {formatNumber(supplyData.usersWithPoints)} users participated
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Award className="h-4 w-4 text-green-400" />
+                      <span className="font-semibold text-green-300">
+                        {formatNumber(supplyData.totalMinted)} PXB minted in total
+                      </span>
+                    </div>
+                    <div className="mt-4 text-center text-white/80">
+                      <p>Don't worry! New opportunities to earn PXB are coming soon:</p>
+                      <ul className="text-left mt-2 space-y-1">
+                        <li className="flex items-center gap-1">
+                          <span className="text-amber-400">•</span> Complete bounties and tasks
+                        </li>
+                        <li className="flex items-center gap-1">
+                          <span className="text-amber-400">•</span> Trade tokens in the marketplace
+                        </li>
+                        <li className="flex items-center gap-1">
+                          <span className="text-amber-400">•</span> Participate in community activities
+                        </li>
+                      </ul>
+                    </div>
                   </div>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="w-4 h-4 text-white/50" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-sm">Get 20,000 PXB points daily for a limited time!</p>
-                    </TooltipContent>
-                  </Tooltip>
                 </div>
-                
-                
-              </div>
+              ) : (
+                <div className="p-3 rounded-md mb-4 bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="bg-amber-500/20 px-2 py-1 rounded text-amber-300 font-semibold">PROMO</span>
+                      <span className="ml-2 text-white/80">Limited Time Offer!</span>
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-4 h-4 text-white/50" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-sm">Get 20,000 PXB points daily for a limited time!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              )}
               
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center justify-center mb-1">
-                      <p className="text-sm text-white/70">
-                        <span className="bg-amber-500/20 px-2 py-1 rounded text-amber-300 font-semibold">PROMO</span> Daily Limit: 20000 PXB
-                      </p>
+                      {isSupplyFullyMinted ? (
+                        <p className="text-sm text-white/70">
+                          <span className="bg-pink-500/20 px-2 py-1 rounded text-pink-300 font-semibold">COMPLETED</span> Total Supply Fully Minted
+                        </p>
+                      ) : (
+                        <p className="text-sm text-white/70">
+                          <span className="bg-amber-500/20 px-2 py-1 rounded text-amber-300 font-semibold">PROMO</span> Daily Limit: 20000 PXB
+                        </p>
+                      )}
                       <Info className="w-4 h-4 ml-1 text-white/50" />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="text-sm">Special promotion: You can mint up to 20000 PXB tokens every 24 hours</p>
+                    {isSupplyFullyMinted ? (
+                      <p className="text-sm">The PXB supply of 1 billion tokens has been fully minted!</p>
+                    ) : (
+                      <p className="text-sm">Special promotion: You can mint up to 20000 PXB tokens every 24 hours</p>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
               
-              {showCountdown && nextMintTime ? <div className="p-3 rounded-md mb-2 bg-black/[0.53]">
+              {showCountdown && nextMintTime ? (
+                <div className="p-3 rounded-md mb-2 bg-black/[0.53]">
                   <p className="text-xs text-amber-300 mb-2">Next mint available in:</p>
                   <CountdownTimer endTime={nextMintTime} onComplete={handleCountdownComplete} />
-                </div> : <Button onClick={handleMintPoints} disabled={mintingPoints} className="w-full bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800">
-                  {mintingPoints ? 'Minting...' : `Mint ${pointAmount} PXB Points`}
-                </Button>}
+                </div>
+              ) : (
+                isSupplyFullyMinted ? (
+                  <Button disabled className="w-full bg-gray-600/50 text-white/50 cursor-not-allowed">
+                    Minting Completed
+                  </Button>
+                ) : (
+                  <Button onClick={handleMintPoints} disabled={mintingPoints} className="w-full bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800">
+                    {mintingPoints ? 'Minting...' : `Mint ${pointAmount} PXB Points`}
+                  </Button>
+                )
+              )}
               
               <div className="mt-6 pt-6 border-t border-white/10">
                 <p className="text-sm text-white/70 mb-3">Ready to use your PXB Points?</p>
@@ -213,10 +293,12 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
                   Start your journey by placing bets on tokens in our PXB Playground!
                 </p>
               </div>
-            </div>}
+            </div>
+          )}
         </div>
       </div>;
   };
+  
   const renderTourStep = (step: number) => {
     const stepId = tourSteps[step].id;
     const videoUrl = tourVideos[stepId];
@@ -252,6 +334,7 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
         </div>
       </div>;
   };
+  
   return <>
       {showTour ? <div className="bg-dream-background rounded-lg shadow-xl overflow-hidden w-full">
           <div className="p-4 bg-gradient-to-r from-dream-accent1 to-dream-accent3 flex justify-between items-center">
@@ -294,4 +377,5 @@ const PXBOnboarding: React.FC<PXBOnboardingProps> = ({
         </div>}
     </>;
 };
+
 export default PXBOnboarding;
