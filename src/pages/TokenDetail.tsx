@@ -25,8 +25,6 @@ import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow } from 'date-fns';
 import { fetchTokenImage } from '@/services/moralisService';
 import { Skeleton } from '@/components/ui/skeleton';
-import TokenTrading from '@/components/TokenTrading';
-import TokenTradeHistory from '@/components/TokenTradeHistory';
 
 const TokenChart = ({
   tokenId,
@@ -213,13 +211,6 @@ const TokenDetail = () => {
           }
           if (pumpPortal.connected) {
             pumpPortal.subscribeToToken(id);
-            
-            // Force refresh token metrics
-            pumpPortal.fetchTokenMetrics(id);
-            
-            // Add console log to debug
-            const currentTrades = pumpPortal.recentTrades[id] || [];
-            console.log(`Current trades for ${id}:`, currentTrades);
           }
           const now = new Date();
           const initialData = [];
@@ -367,9 +358,46 @@ const TokenDetail = () => {
   }, []);
   useEffect(() => {
     if (id && pumpPortal.recentTrades[id]) {
-      console.log(`Trades updated for ${id}:`, pumpPortal.recentTrades[id]);
+      const trades = pumpPortal.recentTrades[id];
+      if (trades.length > 0) {
+        const latestPrice = getLatestPriceFromTrades(trades);
+        const currentPrice = token?.currentPrice || 0;
+        if (Math.abs(latestPrice - currentPrice) / (currentPrice || 1) > 0.001) {
+          const priceChange = currentPrice > 0 ? (latestPrice - currentPrice) / currentPrice * 100 : 0;
+          updateTokenPrice(latestPrice, priceChange);
+          setPriceData(current => {
+            const newPoint = {
+              time: new Date().toISOString(),
+              price: latestPrice
+            };
+            return [...current, newPoint].slice(-60);
+          });
+        }
+        if (Date.now() - lastMetricsUpdateRef.current > 5000) {
+          if (pumpPortal.tokenMetrics[id]) {
+            const metrics = pumpPortal.tokenMetrics[id];
+            updateTokenMetrics({
+              marketCap: metrics.market_cap,
+              volume24h: metrics.volume_24h,
+              liquidity: metrics.liquidity,
+              holders: metrics.holders
+            });
+          }
+        }
+        const lastPrice = priceData[priceData.length - 1]?.price || 0;
+        if (lastPrice > 0) {
+          const percentChange = (latestPrice - lastPrice) / lastPrice * 100;
+          if (Math.abs(percentChange) > 5) {
+            toast({
+              title: `Price ${percentChange > 0 ? 'up' : 'down'} ${Math.abs(percentChange).toFixed(1)}%`,
+              description: `${token?.symbol || 'Token'} is now $${formatPrice(latestPrice)}`,
+              variant: percentChange > 0 ? "default" : "destructive"
+            });
+          }
+        }
+      }
     }
-  }, [id, pumpPortal.recentTrades]);
+  }, [id, pumpPortal.recentTrades, updateTokenPrice, priceData]);
   useEffect(() => {
     if (id && pumpPortal.tokenMetrics[id]) {
       const metrics = pumpPortal.tokenMetrics[id];
@@ -727,26 +755,63 @@ const TokenDetail = () => {
                 
                 <div className="space-y-8">
                   <div className="glass-panel p-6">
-                    <h3 className="text-xl font-display font-bold mb-4">Buy {token.symbol} Tokens</h3>
-                    <TokenTrading 
-                      tokenId={token.id} 
-                      tokenName={token.name} 
-                      tokenSymbol={token.symbol}
-                      marketCap={tokenMetrics.marketCap}
-                      volume24h={tokenMetrics.volume24h}
-                      onSuccess={() => {
-                        refreshData();
-                      }}
-                      onCancel={() => {}}
-                    />
+                    <h3 className="text-xl font-display font-bold mb-4">Token Metrics</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex flex-row gap-4 overflow-x-auto pb-2">
+                        <TokenMarketCap tokenId={id || ''} />
+                        <TokenVolume tokenId={id || ''} />
+                        <div className="glass-panel border border-dream-accent1/20 p-4 space-y-1 min-w-[150px]">
+                          <div className="text-dream-foreground/70 text-xs flex items-center">
+                            <Users className="w-3 h-3 mr-1" />
+                            Holders
+                          </div>
+                          <div className="font-bold">{tokenMetrics.holders || 'N/A'}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="glass-panel border border-dream-accent1/20 p-4">
+                        <div className="flex justify-between items-center mb-1">
+                          <div className="text-dream-foreground/70 text-xs">Create a bet</div>
+                          <div className="text-dream-foreground/70 text-xs">
+                            {connected ? 'Wallet connected' : 'Connect wallet'}
+                          </div>
+                        </div>
+                        
+                        <Button className="w-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 transition-all" onClick={() => setShowCreateBet(true)}>
+                          Place a Bet
+                        </Button>
+                      </div>
+                      
+                      <div>
+                        <a href={`https://dexscreener.com/solana/${token.id}`} target="_blank" rel="noopener noreferrer" className="text-dream-accent2 hover:underline flex items-center text-sm justify-end">
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          View on DexScreener
+                        </a>
+                      </div>
+                    </div>
                   </div>
+                  
+                  {showCreateBet && <div className="glass-panel p-6">
+                      <h3 className="text-xl font-display font-bold mb-4">Create Bet</h3>
+                      <CreateBetForm tokenId={token.id} tokenName={token.name} tokenSymbol={token.symbol} onBetCreated={() => {
+                  refreshData();
+                  setShowCreateBet(false);
+                }} onCancel={() => setShowCreateBet(false)} />
+                    </div>}
                 </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 <div className="glass-panel p-6">
-                  <h3 className="text-xl font-display font-bold mb-4">Trade History</h3>
-                  <TokenTradeHistory tokenId={id || ''} />
+                  <h3 className="text-xl font-display font-bold mb-4">Token Bets</h3>
+                  
+                  {bets.length === 0 ? <div className="text-center py-8 text-dream-foreground/70">
+                      <p>No bets available for this token yet.</p>
+                      <p className="text-sm mt-2">Be the first to create a bet!</p>
+                    </div> : <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {bets.map(bet => <BetCard key={bet.id} bet={bet} connected={connected} publicKeyString={publicKey?.toString() || null} onAcceptBet={handleAcceptBet} />)}
+                    </div>}
                 </div>
                 
                 <div className="glass-panel p-6">

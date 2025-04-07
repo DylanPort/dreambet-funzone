@@ -141,7 +141,7 @@ const InteractiveTour = () => {
       return;
     }
     try {
-      await addPointsToUser(2000);
+      await addPointsToUser(2000, "Welcome bonus");
       setHasClaimedPoints(true);
       toast.success("You've earned 2000 PXB points! Welcome aboard!");
     } catch (error) {

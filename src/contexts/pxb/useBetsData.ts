@@ -24,7 +24,7 @@ export const useBetsData = (userProfile: any) => {
       const { data, error } = await supabase
         .from('bets')
         .select('*, tokens:token_mint(token_name, token_symbol)')
-        .or(`bettor1_id.eq.${userProfile.id},bettor2_id.eq.${userProfile.id},creator.eq.${publicKey.toString()}`)
+        .or(`bettor1_id.eq.${userProfile.id},bettor2_id.eq.${userProfile.id}`)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -44,8 +44,8 @@ export const useBetsData = (userProfile: any) => {
         const tokenName = bet.token_name || bet.tokens?.token_name || 'Unknown Token';
         const tokenSymbol = bet.token_symbol || bet.tokens?.token_symbol || 'UNKNOWN';
         
-        // Determine if this user is the creator or participant
-        const isCreator = bet.bettor1_id === userProfile.id || bet.creator === publicKey.toString();
+        // Determine if this user was the creator or participant
+        const isCreator = bet.bettor1_id === userProfile.id;
 
         // Check if bet is expired but status is still 'open'
         const createdTime = new Date(bet.created_at).getTime();

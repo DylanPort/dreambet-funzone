@@ -41,7 +41,7 @@ const ProfileButton = () => {
     if (connected && userProfile && !hasClaimedBonus) {
       try {
         // Only award bonus points if user hasn't claimed them before
-        await addPointsToUser(2000);
+        await addPointsToUser(2000, "Profile visit bonus");
         toast.success("You've earned 2000 PXB points for visiting your profile!");
         localStorage.setItem('profile-bonus-claimed', 'true');
         setHasClaimedBonus(true);

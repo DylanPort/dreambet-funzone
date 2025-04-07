@@ -6,10 +6,12 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Bet, BetPrediction } from '@/types/bet';
 import { createSupabaseBet } from '@/services/supabaseService';
 
-const MINT_LIMIT_PER_PERIOD = 20000;
-const MINT_PERIOD_HOURS = 24;
-const MINT_PERIOD_MS = MINT_PERIOD_HOURS * 60 * 60 * 1000;
+// Constants for minting limits
+const MINT_LIMIT_PER_PERIOD = 20000; // Increased from 2000 for the promotion
+const MINT_PERIOD_HOURS = 24; // Period in hours
+const MINT_PERIOD_MS = MINT_PERIOD_HOURS * 60 * 60 * 1000; // Period in milliseconds
 
+// Define generatePxbId at the top level to avoid using it before declaration
 const generatePxbId = (userProfile: UserProfile | null): string => {
   if (!userProfile) return "";
   const shortId = userProfile.id.substring(0, 8).toUpperCase();
@@ -43,10 +45,13 @@ export const usePointOperations = (
     
     setMintingPoints(true);
     try {
+      // Check if user has a temporary profile
       const isTemporaryUser = userProfile.isTemporary || userProfile.id.startsWith('temp-');
       let mintAmount = amount;
       
+      // Only check minting history for permanent users
       if (!isTemporaryUser) {
+        // Get minting history for this wallet in the last 24 hours
         const now = new Date();
         const periodStart = new Date(now.getTime() - MINT_PERIOD_MS);
         
@@ -60,7 +65,9 @@ export const usePointOperations = (
             
           if (historyError) {
             console.error('Error fetching mint history:', historyError);
+            // Continue with minting anyway to not block the user
           } else {
+            // Calculate how much has been minted in the current period
             const mintedInPeriod = mintHistory?.reduce((total, record) => total + record.amount, 0) || 0;
             const remainingAllowance = MINT_LIMIT_PER_PERIOD - mintedInPeriod;
             
@@ -70,6 +77,7 @@ export const usePointOperations = (
               return;
             }
             
+            // If requested amount exceeds remaining allowance, limit it
             mintAmount = Math.min(amount, remainingAllowance);
             if (mintAmount < amount) {
               console.log(`Mint limit reached. You can only mint ${mintAmount} more PXB within this ${MINT_PERIOD_HOURS}-hour period`);
@@ -77,10 +85,13 @@ export const usePointOperations = (
           }
         } catch (historyErr) {
           console.error('Error processing mint history:', historyErr);
+          // Continue with minting anyway
         }
       }
       
+      // For temporary users, just update the state without database operations
       if (isTemporaryUser) {
+        // Update the user profile with new points for temporary users
         const newPointsTotal = userProfile.pxbPoints + mintAmount;
         setUserProfile({
           ...userProfile,
@@ -92,6 +103,8 @@ export const usePointOperations = (
         return;
       }
       
+      // For permanent users, continue with database operations
+      // Get the current user profile to ensure we have the latest data
       const { data: userData, error: fetchError } = await supabase
         .from('users')
         .select('points')
@@ -108,6 +121,7 @@ export const usePointOperations = (
       const currentPoints = userData?.points || userProfile.pxbPoints;
       const newPointsTotal = currentPoints + mintAmount;
       
+      // Update the points in the database
       const { data, error } = await supabase
         .from('users')
         .update({ points: newPointsTotal })
@@ -123,18 +137,21 @@ export const usePointOperations = (
 
       console.log('Points updated in database:', data);
 
+      // Add record to points history with a timestamp
       const { error: historyError2 } = await supabase.from('points_history').insert({
         user_id: userProfile.id,
         amount: mintAmount,
         action: 'mint',
-        reference_id: `mint_${Date.now()}_${uuidv4().substring(0, 8)}`,
+        reference_id: `mint_${Date.now()}_${uuidv4().substring(0, 8)}`,  // Use timestamp and UUID to make each mint unique
         created_at: new Date().toISOString()
       });
 
       if (historyError2) {
         console.error('Error recording points history:', historyError2);
+        // Continue anyway since the points were already added
       }
 
+      // Update the user profile with new points
       setUserProfile({
         ...userProfile,
         pxbPoints: newPointsTotal
@@ -178,12 +195,14 @@ export const usePointOperations = (
     try {
       setIsLoading(true);
 
-      // Immediately update the UI to reflect the points deduction
+      // Optimistically update user profile
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints - betAmount } : null);
 
+      // Convert betType to a valid BetPrediction
       const prediction: BetPrediction = betType === 'up' ? 'up' : 'down';
 
       try {
+        // Create the bet in Supabase
         const newBet = await createSupabaseBet(
           tokenMint,
           tokenName,
@@ -199,21 +218,20 @@ export const usePointOperations = (
           throw new Error('Failed to create bet');
         }
 
-        console.log('Created bet in Supabase:', newBet);
-
-        // Update user points in the database
+        // Update user points in Supabase
         const { error: updateError } = await supabase
           .from('users')
           .update({ points: userProfile.pxbPoints - betAmount })
-          .eq('id', userProfile.id);
+          .eq('wallet_address', walletAddress);
 
         if (updateError) {
           console.error('Error updating user points after bet:', updateError);
+          // Revert optimistic update if update fails
           setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
           throw new Error('Failed to update points after bet');
         }
 
-        // Record the point transaction in history
+        // Record the bet in points history
         await supabase.from('points_history').insert({
           user_id: userProfile.id,
           amount: -betAmount,
@@ -222,10 +240,10 @@ export const usePointOperations = (
           reference_name: tokenName
         });
 
+        // Convert Bet to PXBBet
         const pxbBet: PXBBet = {
           id: newBet.id,
           userId: userProfile.id,
-          creator: walletAddress,
           tokenMint: newBet.tokenMint,
           tokenName: newBet.tokenName,
           tokenSymbol: newBet.tokenSymbol,
@@ -240,20 +258,21 @@ export const usePointOperations = (
           currentMarketCap: newBet.initialMarketCap
         };
 
+        // Update bets state
         setBets(prevBets => [...prevBets, pxbBet]);
 
         console.log(`Bet placed successfully!`);
         return pxbBet;
       } catch (supabaseError: any) {
         console.error('Error with Supabase operations:', supabaseError);
-        // Revert UI change if database operation fails
+        // Revert optimistic update if Supabase operations fail
         setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
         throw new Error(supabaseError.message || 'Failed to place bet in database');
       }
     } catch (error: any) {
       console.error('Error placing bet:', error);
       console.error(error.message || 'Failed to place bet');
-      // Ensure points are restored if anything fails
+      // Revert optimistic update if any error occurs
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
       return;
     } finally {
@@ -287,8 +306,10 @@ export const usePointOperations = (
     try {
       setIsLoading(true);
 
+      // Optimistically update user profile
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints - amount } : null);
 
+      // Deduct points from sender
       const { error: senderError } = await supabase
         .from('users')
         .update({ points: userProfile.pxbPoints - amount })
@@ -296,10 +317,12 @@ export const usePointOperations = (
 
       if (senderError) {
         console.error('Error deducting points from sender:', senderError);
+        // Revert optimistic update if update fails
         setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + amount } : null);
         throw new Error('Failed to deduct points from sender');
       }
 
+      // Add points to recipient
       const { data: recipientData, error: recipientError } = await supabase
         .from('users')
         .select('*')
@@ -308,6 +331,7 @@ export const usePointOperations = (
 
       if (recipientError) {
         console.error('Error fetching recipient:', recipientError);
+        // Revert optimistic update if recipient fetch fails
         setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + amount } : null);
         throw new Error('Failed to fetch recipient');
       }
@@ -321,10 +345,12 @@ export const usePointOperations = (
 
       if (addPointsError) {
         console.error('Error adding points to recipient:', addPointsError);
+        // Revert optimistic update if adding points fails
         setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + amount } : null);
         throw new Error('Failed to add points to recipient');
       }
 
+      // Record the transaction in points history for sender
       await supabase.from('points_history').insert({
         user_id: userProfile.id,
         amount: -amount,
@@ -332,6 +358,7 @@ export const usePointOperations = (
         reference_id: recipientId
       });
 
+      // Record the transaction in points history for recipient
       await supabase.from('points_history').insert({
         user_id: recipientId,
         amount: amount,
@@ -339,6 +366,7 @@ export const usePointOperations = (
         reference_id: userProfile.id
       });
 
+      // Refresh sender's profile
       await fetchUserProfile();
 
       console.log(`Successfully sent ${amount} PXB points!`);
@@ -352,258 +380,12 @@ export const usePointOperations = (
     }
   }, [userProfile, publicKey, setUserProfile, fetchUserProfile, setIsLoading, transferFeature]);
 
-  const purchaseToken = useCallback(async (
-    tokenMint: string,
-    tokenName: string,
-    tokenSymbol: string,
-    pxbAmount: number,
-    tokenQuantity: number,
-    price: number
-  ): Promise<boolean> => {
-    if (!userProfile || !publicKey) {
-      console.error('Please connect your wallet to purchase tokens');
-      return false;
-    }
-
-    if (pxbAmount > userProfile.pxbPoints) {
-      console.error('Insufficient PXB points to purchase tokens');
-      return false;
-    }
-
-    const walletAddress = publicKey.toString();
-
-    try {
-      setIsLoading(true);
-
-      // Update UI immediately to show points deduction
-      setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints - pxbAmount } : null);
-
-      const userId = userProfile.id;
-
-      // Store transaction record first
-      const { error: txError } = await supabase.from('token_transactions').insert({
-        userid: userId,
-        tokenid: tokenMint,
-        tokenname: tokenName,
-        tokensymbol: tokenSymbol,
-        type: 'buy',
-        quantity: tokenQuantity,
-        price: price,
-        pxbamount: pxbAmount,
-        timestamp: new Date().toISOString()
-      });
-
-      if (txError) {
-        console.error('Error recording token purchase:', txError);
-        setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + pxbAmount } : null);
-        return false;
-      }
-
-      // Update user's points in database
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ points: userProfile.pxbPoints - pxbAmount })
-        .eq('id', userProfile.id);
-
-      if (updateError) {
-        console.error('Error updating user points after purchase:', updateError);
-        setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + pxbAmount } : null);
-        return false;
-      }
-
-      // Record the point transaction in history
-      await supabase.from('points_history').insert({
-        user_id: userProfile.id,
-        amount: -pxbAmount,
-        action: 'token_purchase',
-        reference_id: tokenMint,
-        reference_name: tokenName
-      });
-
-      // Check and update user's token portfolio
-      const { data: existingPortfolio } = await supabase
-        .from('token_portfolios')
-        .select('*')
-        .eq('userid', userId)
-        .eq('tokenid', tokenMint)
-        .single();
-
-      if (existingPortfolio) {
-        const totalValue = (existingPortfolio.quantity * existingPortfolio.averagepurchaseprice) + (tokenQuantity * price);
-        const newQuantity = existingPortfolio.quantity + tokenQuantity;
-        const newAvgPrice = totalValue / newQuantity;
-
-        await supabase
-          .from('token_portfolios')
-          .update({
-            quantity: newQuantity,
-            averagepurchaseprice: newAvgPrice,
-            currentvalue: newQuantity * price,
-            lastupdated: new Date().toISOString()
-          })
-          .eq('id', existingPortfolio.id);
-      } else {
-        await supabase
-          .from('token_portfolios')
-          .insert({
-            userid: userId,
-            tokenid: tokenMint,
-            tokenname: tokenName,
-            tokensymbol: tokenSymbol,
-            quantity: tokenQuantity,
-            averagepurchaseprice: price,
-            currentvalue: tokenQuantity * price
-          });
-      }
-
-      console.log(`Successfully purchased ${tokenQuantity} ${tokenSymbol} for ${pxbAmount} PXB!`);
-      return true;
-    } catch (error) {
-      console.error('Error purchasing token:', error);
-      // Restore points if there was an error
-      setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + pxbAmount } : null);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userProfile, publicKey, setUserProfile, setIsLoading]);
-
-  const sellToken = useCallback(async (
-    tokenMint: string,
-    tokenName: string,
-    tokenSymbol: string,
-    tokenQuantity: number,
-    price: number
-  ): Promise<boolean> => {
-    if (!userProfile || !publicKey) {
-      console.error('Please connect your wallet to sell tokens');
-      return false;
-    }
-
-    const walletAddress = publicKey.toString();
-
-    try {
-      setIsLoading(true);
-      
-      const userId = userProfile.id;
-
-      const { data: portfolio, error: portfolioError } = await supabase
-        .from('token_portfolios')
-        .select('*')
-        .eq('userid', userId)
-        .eq('tokenid', tokenMint)
-        .single();
-
-      if (portfolioError) {
-        console.error('Error checking portfolio:', portfolioError);
-        return false;
-      }
-
-      if (!portfolio) {
-        console.error('You do not own this token');
-        return false;
-      }
-
-      if (portfolio.quantity < tokenQuantity) {
-        console.error(`Insufficient token quantity. You only have ${portfolio.quantity} ${tokenSymbol}`);
-        return false;
-      }
-
-      const initialInvestment = tokenQuantity * portfolio.averagepurchaseprice;
-      const currentValue = tokenQuantity * price;
-      const pxbProceeds = currentValue;
-      
-      console.log(`Selling ${tokenQuantity} ${tokenSymbol} tokens`);
-      console.log(`Initial investment: ${initialInvestment} PXB`);
-      console.log(`Current value: ${currentValue} PXB`);
-      console.log(`Profit/Loss: ${currentValue - initialInvestment} PXB`);
-      
-      // Update UI first with the sale proceeds
-      setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + pxbProceeds } : null);
-
-      // Record the sale transaction
-      const { error: txError } = await supabase.from('token_transactions').insert({
-        userid: userId,
-        tokenid: tokenMint,
-        tokenname: tokenName,
-        tokensymbol: tokenSymbol,
-        type: 'sell',
-        quantity: tokenQuantity,
-        price: price,
-        pxbamount: pxbProceeds,
-        timestamp: new Date().toISOString()
-      });
-
-      if (txError) {
-        console.error('Error recording token sale:', txError);
-        setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints - pxbProceeds } : null);
-        return false;
-      }
-
-      // Update the user's points in the database
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ points: userProfile.pxbPoints + pxbProceeds })
-        .eq('id', userProfile.id);
-
-      if (updateError) {
-        console.error('Error updating user points after sale:', updateError);
-        setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints - pxbProceeds } : null);
-        return false;
-      }
-
-      // Record the point transaction in history
-      const profitLoss = currentValue - initialInvestment;
-      const actionSuffix = profitLoss >= 0 ? 'profit' : 'loss';
-
-      await supabase.from('points_history').insert({
-        user_id: userProfile.id,
-        amount: pxbProceeds,
-        action: `token_sale_${actionSuffix}`,
-        reference_id: tokenMint,
-        reference_name: `${tokenName} (${profitLoss >= 0 ? '+' : ''}${profitLoss.toFixed(2)} PXB)`
-      });
-
-      // Update the portfolio
-      const newQuantity = portfolio.quantity - tokenQuantity;
-      
-      if (newQuantity > 0) {
-        await supabase
-          .from('token_portfolios')
-          .update({
-            quantity: newQuantity,
-            currentvalue: newQuantity * price,
-            lastupdated: new Date().toISOString()
-          })
-          .eq('id', portfolio.id);
-      } else {
-        await supabase
-          .from('token_portfolios')
-          .delete()
-          .eq('id', portfolio.id);
-      }
-
-      console.log(`Successfully sold ${tokenQuantity} ${tokenSymbol} for ${pxbProceeds} PXB!`);
-      console.log(`Profit/Loss: ${profitLoss >= 0 ? '+' : ''}${profitLoss.toFixed(2)} PXB`);
-      
-      // We won't fetch the user profile here because we've already updated the UI
-      return true;
-    } catch (error) {
-      console.error('Error selling token:', error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userProfile, publicKey, setUserProfile, setIsLoading]);
-
   return {
     mintPoints,
     placeBet,
     sendPoints,
-    purchaseToken,
-    sellToken,
     generatePxbId: useCallback(() => generatePxbId(userProfile), [userProfile]),
-    mintingPoints,
-    transferFeature
+    mintingPoints, // Expose the mintingPoints state
+    transferFeature // Expose the transferFeature state
   };
 };

@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 
 // Types for WebSocket messages
@@ -24,7 +25,6 @@ export interface TokenTradeEvent {
     buyer: string;
     seller: string;
     side: 'buy' | 'sell';
-    signature?: string; // Add optional signature property
   };
 }
 
@@ -362,8 +362,7 @@ export const usePumpPortalWebSocket = create<PumpPortalState>((set, get) => ({
             timestamp: tradeEvent.timestamp || new Date().toISOString(),
             buyer: tradeEvent.txType === 'buy' ? tradeEvent.traderPublicKey : '',
             seller: tradeEvent.txType === 'sell' ? tradeEvent.traderPublicKey : '',
-            side: tradeEvent.txType as 'buy' | 'sell',
-            signature: tradeEvent.signature // Add signature from raw event
+            side: tradeEvent.txType as 'buy' | 'sell'
           };
           
           // Add to token-specific trades

@@ -68,7 +68,6 @@ import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { formatWebSocketTokenData } from '@/services/pumpPortalWebSocketService';
 import { PXBBet } from '@/types/pxb';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
-import TokenTrading from '@/components/TokenTrading';
 
 interface BetDetailsProps {
   // Define any props if needed
@@ -475,14 +474,85 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
         <div className="mb-6">
           <h4 className="font-semibold text-lg mb-3">Place a Bet</h4>
           {showCreateBet ? (
-            <TokenTrading 
-              tokenId={token?.id || ''}
-              tokenName={token?.name || ''}
-              tokenSymbol={token?.symbol || ''}
-              marketCap={marketCap}
-              onCancel={() => setShowCreateBet(false)}
-              onSuccess={() => setShowCreateBet(false)}
-            />
+            <Card>
+              <CardHeader>
+                <CardTitle>Create Bet</CardTitle>
+                <CardDescription>
+                  Enter the details for your bet.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="amount">Amount (PXB)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    min="10"
+                    value={betAmount}
+                    onChange={(e) => setBetAmount(Number(e.target.value))}
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Direction</Label>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant={betType === 'up' ? 'default' : 'outline'}
+                      onClick={() => setBetType('up')}
+                    >
+                      <ArrowUp className="mr-2 h-4 w-4" />
+                      Up
+                    </Button>
+                    <Button
+                      variant={betType === 'down' ? 'default' : 'outline'}
+                      onClick={() => setBetType('down')}
+                    >
+                      <ArrowDown className="mr-2 h-4 w-4" />
+                      Down
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="timeframe">Timeframe (minutes)</Label>
+                  <Input
+                    id="timeframe"
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={timeframe}
+                    onChange={(e) => setTimeframe(Number(e.target.value))}
+                    placeholder="Enter timeframe"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="percentageChange">Target Change (%)</Label>
+                  <Input
+                    id="percentageChange"
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={percentageChange}
+                    onChange={(e) => setPercentageChange(Number(e.target.value))}
+                    placeholder="Enter percentage"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="ghost" onClick={() => setShowCreateBet(false)}>
+                  Cancel
+                </Button>
+                <Button disabled={isBetting} onClick={handlePlaceBet}>
+                  {isBetting ? (
+                    <>
+                      Placing Bet...
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    </>
+                  ) : (
+                    'Place Bet'
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
           ) : (
             <Button className="w-full" variant="default" onClick={() => setShowCreateBet(true)}>
               Place a Bet

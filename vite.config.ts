@@ -26,46 +26,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    host: true,
-    port: 8080,
-    fs: {
-      // Allow serving files from one level up (the project root)
-      allow: ['..']
-    }
-  },
-  // Add optimizeDeps section to improve dependency handling
-  optimizeDeps: {
-    include: ['react', 'react-dom', '@solana/web3.js', 'date-fns', 'lucide-react'],
-    esbuildOptions: {
-      // Node.js global to browser globalThis
-      define: {
-        global: 'globalThis',
-      },
-    },
-  },
-  // Add build options to prevent potential build issues
-  build: {
-    sourcemap: true,
-    commonjsOptions: {
-      transformMixedEsModules: true,
-    },
-    rollupOptions: {
-      // Optimize bundle size by properly handling large dependencies
-      output: {
-        manualChunks: {
-          'vendor': [
-            'react',
-            'react-dom',
-            'react-router-dom',
-          ],
-          'solana': [
-            '@solana/web3.js',
-            '@solana/wallet-adapter-react',
-            '@solana/wallet-adapter-react-ui',
-            '@solana/wallet-adapter-wallets',
-          ],
-        },
-      },
-    },
-  },
+    host: "::",
+    port: 8080
+  }
 }))

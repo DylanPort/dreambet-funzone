@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -22,6 +21,7 @@ export const usePXBPoints = () => {
 export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { connected, publicKey } = useWallet();
   
+  // Set up state and data fetching functions
   const { 
     userProfile, 
     setUserProfile, 
@@ -41,12 +41,11 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     isLoadingWinRate
   } = useLeaderboardData();
   
+  // Set up operations
   const { 
     mintPoints, 
     placeBet, 
     sendPoints, 
-    purchaseToken,
-    sellToken,
     generatePxbId,
     mintingPoints,
     transferFeature
@@ -58,6 +57,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsLoading
   );
 
+  // Set up referral system
   const {
     generateReferralLink,
     checkAndProcessReferral,
@@ -66,8 +66,10 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     isLoadingReferrals
   } = useReferralSystem(userProfile, fetchUserProfile);
   
+  // Handle bet processing
   useBetProcessor(bets, userProfile, setUserProfile, setBets);
   
+  // Load user profile when wallet connects
   useEffect(() => {
     if (connected && publicKey) {
       fetchUserProfile();
@@ -76,6 +78,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [connected, publicKey, fetchUserProfile, setUserProfile]);
 
+  // Create wrapper functions to match expected types in PXBPointsContextType
   const mintPointsWrapper = async (amount?: number) => {
     if (amount) {
       await mintPoints(amount);
@@ -94,94 +97,35 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
   };
 
-  const purchaseTokenWrapper = async (
-    tokenMint: string,
-    tokenName: string,
-    tokenSymbol: string,
-    pxbAmount: number,
-    tokenQuantity: number,
-    price: number
-  ) => {
-    return purchaseToken(tokenMint, tokenName, tokenSymbol, pxbAmount, tokenQuantity, price);
-  };
-
-  const sellTokenWrapper = async (
-    tokenMint: string,
-    tokenName: string,
-    tokenSymbol: string,
-    tokenQuantity: number,
-    price: number
-  ) => {
-    return sellToken(tokenMint, tokenName, tokenSymbol, tokenQuantity, price);
-  };
-
-  const fetchTokenTransactions = async (tokenId: string) => {
-    try {
-      if (bets && bets.length > 0) {
-        return bets
-          .filter(bet => bet.tokenMint === tokenId)
-          .map(bet => ({
-            id: bet.id,
-            timestamp: bet.createdAt,
-            type: 'buy',
-            tokenAmount: bet.betAmount * 10,
-            price: 0.001,
-            pxbAmount: bet.betAmount,
-            userId: bet.userId,
-            tokenId: bet.tokenMint,
-            tokenName: bet.tokenName || '',
-            tokenSymbol: bet.tokenSymbol || ''
-          }));
-      }
-      return [];
-    } catch (error) {
-      console.error("Error fetching token transactions:", error);
-      return [];
-    }
-  };
-
-  // Create wrapper function to match expected signature (amount: number) => Promise<void>
-  const addPointsWrapper = async (amount: number): Promise<void> => {
-    await addPointsToUser(amount, "Points operation");
-  };
-
-  // Create wrapper function to match expected signature for checkAndProcessReferral
-  const checkAndProcessReferralWrapper = async (referralCode: string): Promise<boolean> => {
-    await checkAndProcessReferral(referralCode);
-    return true;
-  };
-
   return (
     <PXBPointsContext.Provider
       value={{
         userProfile,
         isLoading,
         bets,
-        userBets: bets,
+        userBets: bets, // Expose bets as userBets for BetDetails.tsx
         leaderboard,
         winRateLeaderboard,
         mintPoints: mintPointsWrapper,
         placeBet: placeBetWrapper,
         sendPoints,
-        purchaseToken: purchaseTokenWrapper,
-        sellToken: sellTokenWrapper,
         generatePxbId,
         fetchUserProfile,
         fetchUserBets,
         fetchLeaderboard,
         fetchWinRateLeaderboard,
-        addPointsToUser: addPointsWrapper,
+        addPointsToUser,
         mintingPoints,
         transferFeature,
         isLeaderboardLoading,
         isLoadingWinRate,
         isLoadingBets,
+        // Referral system
         generateReferralLink,
-        checkAndProcessReferral: checkAndProcessReferralWrapper,
+        checkAndProcessReferral,
         referralStats,
         fetchReferralStats,
-        isLoadingReferrals,
-        fetchTokenTransactions
+        isLoadingReferrals
       }}
     >
       {children}

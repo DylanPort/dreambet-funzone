@@ -1,6 +1,6 @@
 
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
+import React, { useEffect, useState, useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface PriceChartProps {
   data?: {
@@ -9,13 +9,6 @@ interface PriceChartProps {
   }[];
   color?: string;
   isLoading?: boolean;
-  tokenId?: string;
-}
-
-interface PurchaseMarker {
-  time: string;
-  price: number;
-  amount: number;
 }
 
 // Generate sample data if none is provided - memoized to prevent regeneration
@@ -71,70 +64,16 @@ MemoizedTooltip.displayName = 'MemoizedTooltip';
 const PriceChart: React.FC<PriceChartProps> = React.memo(({ 
   data: propData, 
   color = "url(#colorGradient)", 
-  isLoading = false,
-  tokenId
+  isLoading = false 
 }) => {
   const sampleData = useSampleData();
   const [data, setData] = useState(propData || sampleData);
-  const [purchaseMarkers, setPurchaseMarkers] = useState<PurchaseMarker[]>([]);
-  const chartRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (propData) {
       setData(propData);
     }
   }, [propData]);
-  
-  // Load purchase markers from localStorage on mount
-  useEffect(() => {
-    if (tokenId) {
-      try {
-        const storageKey = `purchase_markers_${tokenId}`;
-        const storedMarkers = localStorage.getItem(storageKey);
-        
-        if (storedMarkers) {
-          setPurchaseMarkers(JSON.parse(storedMarkers));
-        }
-      } catch (error) {
-        console.error("Error loading purchase markers from localStorage:", error);
-      }
-    }
-  }, [tokenId]);
-  
-  // Listen for token purchase events to add markers
-  useEffect(() => {
-    const handleTokenPurchase = (event: CustomEvent) => {
-      const { tokenId: eventTokenId, price, timestamp, amount } = event.detail;
-      
-      if (tokenId && eventTokenId === tokenId) {
-        const newMarker = {
-          time: timestamp,
-          price,
-          amount
-        };
-        
-        setPurchaseMarkers(prev => {
-          const updated = [...prev, newMarker];
-          
-          // Save to localStorage
-          try {
-            const storageKey = `purchase_markers_${tokenId}`;
-            localStorage.setItem(storageKey, JSON.stringify(updated));
-          } catch (error) {
-            console.error("Error saving purchase markers to localStorage:", error);
-          }
-          
-          return updated;
-        });
-      }
-    };
-    
-    window.addEventListener('tokenPurchase', handleTokenPurchase as EventListener);
-    
-    return () => {
-      window.removeEventListener('tokenPurchase', handleTokenPurchase as EventListener);
-    };
-  }, [tokenId]);
   
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr);
@@ -155,7 +94,7 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
     data;
   
   return (
-    <div className="w-full h-64 md:h-80" ref={chartRef}>
+    <div className="w-full h-64 md:h-80">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={optimizedData}
@@ -198,42 +137,8 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
             activeDot={{ r: 8, fill: "#FF3DFC", strokeWidth: 0 }}
             isAnimationActive={false}
           />
-          
-          {/* Purchase markers */}
-          {purchaseMarkers.map((marker, index) => {
-            // Find closest data point to marker time
-            const closestDataPoint = optimizedData.reduce((closest, point) => {
-              const closestTime = new Date(closest.time).getTime();
-              const pointTime = new Date(point.time).getTime();
-              const markerTime = new Date(marker.time).getTime();
-              
-              return Math.abs(pointTime - markerTime) < Math.abs(closestTime - markerTime) 
-                ? point 
-                : closest;
-            }, optimizedData[0] || { time: marker.time, price: marker.price });
-            
-            return (
-              <ReferenceDot
-                key={`purchase-marker-${index}`}
-                x={closestDataPoint.time}
-                y={marker.price}
-                r={6}
-                fill="#00FF00"
-                stroke="#FFFFFF"
-                strokeWidth={2}
-              />
-            );
-          })}
         </LineChart>
       </ResponsiveContainer>
-      
-      {/* Purchase markers legend */}
-      {purchaseMarkers.length > 0 && (
-        <div className="mt-2 text-xs text-dream-foreground/70 flex items-center">
-          <div className="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
-          <span>Your purchase points</span>
-        </div>
-      )}
     </div>
   );
 });

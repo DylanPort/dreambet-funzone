@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -79,16 +78,6 @@
   
   .animate-flip {
     animation: flip 1s cubic-bezier(0.455, 0.03, 0.515, 0.955) forwards;
-  }
-
-  /* New animation for progress bar stripes */
-  @keyframes progress-stripe {
-    0% {
-      background-position: 0 0;
-    }
-    100% {
-      background-position: 20px 0;
-    }
   }
 
   /* Other existing animations */
