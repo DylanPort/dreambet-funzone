@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
 import { fetchGMGNTokenData } from '@/services/gmgnService';
 import TokenTransactionConfirmDialog from './TokenTransactionConfirmDialog';
+import { toast } from 'sonner';
 
 interface TokenTradingProps {
   tokenId: string;
@@ -66,9 +67,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [sellConfirmDialogOpen, setSellConfirmDialogOpen] = useState(false);
   const [selectedHolding, setSelectedHolding] = useState<TokenHolding | null>(null);
+  const [isDemoMode] = useState<boolean>(true);
 
   const { toast } = useToast();
-  const { userProfile, placeBet, mintPoints, addPointsToUser } = usePXBPoints();
+  const { userProfile } = usePXBPoints();
   const pumpPortalService = usePumpPortalWebSocket();
 
   useEffect(() => {
@@ -112,7 +114,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   useEffect(() => {
     if (userProfile && tokenId) {
       try {
-        const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+        const storageKey = `demo_token_holdings_${userProfile.id}_${tokenId}`;
         const storedHoldings = localStorage.getItem(storageKey);
         
         if (storedHoldings) {
@@ -153,7 +155,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         
         if (userProfile) {
           try {
-            const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+            const storageKey = `demo_token_holdings_${userProfile.id}_${tokenId}`;
             localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
           } catch (error) {
             console.error("Error saving token holdings to localStorage:", error);
@@ -183,7 +185,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           
           if (userProfile) {
             try {
-              const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+              const storageKey = `demo_token_holdings_${userProfile.id}_${tokenId}`;
               localStorage.setItem(storageKey, JSON.stringify(newHoldings));
             } catch (error) {
               console.error("Error saving token holdings to localStorage:", error);
@@ -194,27 +196,15 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       
       setInitialPurchaseData(null);
       
-      if (userProfile) {
-        const newTransaction = {
-          tokenid: tokenId,
-          tokensymbol: tokenSymbol,
-          tokenname: tokenName,
-          quantity: initialPurchaseData.tokenAmount,
-          pxbamount: initialPurchaseData.amount,
+      window.dispatchEvent(new CustomEvent('tokenPurchase', { 
+        detail: {
+          tokenId,
           price: tokenPrice,
-          type: 'buy',
-          userid: userProfile.id
-        };
-        
-        window.dispatchEvent(new CustomEvent('tokenPurchase', { 
-          detail: {
-            tokenId,
-            price: tokenPrice,
-            timestamp: new Date().toISOString(),
-            amount: initialPurchaseData.amount
-          }
-        }));
-      }
+          timestamp: new Date().toISOString(),
+          amount: initialPurchaseData.amount,
+          isDemo: true
+        }
+      }));
     }
   }, [initialPurchaseData, currentMarketCap, tokenPrice, tokenId, tokenName, tokenSymbol, userProfile]);
 
@@ -235,7 +225,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       
       if (userProfile) {
         try {
-          const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+          const storageKey = `demo_token_holdings_${userProfile.id}_${tokenId}`;
           localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
         } catch (error) {
           console.error("Error saving updated token holdings to localStorage:", error);
@@ -267,7 +257,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       return;
     }
 
-    if (userProfile.pxbPoints < amount) {
+    if (!isDemoMode && userProfile.pxbPoints < amount) {
       toast({
         title: "Insufficient PXB points",
         description: `You need at least ${amount} PXB points for this purchase`,
@@ -291,16 +281,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
   const executeBuyTokens = async () => {
     setIsLoading(true);
     try {
-      await placeBet(
-        tokenId,
-        tokenName,
-        tokenSymbol,
-        amount,
-        'up',
-        0,
-        0
-      );
-
       setInitialPurchaseData({
         marketCap: currentMarketCap,
         volume: currentVolume,
@@ -314,8 +294,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       }
 
       toast({
-        title: "Purchase successful!",
-        description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens`,
+        title: "Demo Purchase",
+        description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens (Demo Mode)`,
       });
 
       window.dispatchEvent(new CustomEvent('tokenPurchase', { 
@@ -323,7 +303,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           tokenId,
           price: tokenPrice,
           timestamp: new Date().toISOString(),
-          amount: amount
+          amount: amount,
+          isDemo: true
         }
       }));
 
@@ -363,16 +344,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       const isPositiveChange = holding.percentageChange >= 0;
       const returnAmount = Math.max(0, holding.currentValue);
       
-      console.log(`Selling tokens: ${holding.tokenAmount} ${holding.tokenSymbol}`);
-      console.log(`Return amount: ${returnAmount} PXB`);
+      console.log(`Selling tokens (Demo Mode): ${holding.tokenAmount} ${holding.tokenSymbol}`);
+      console.log(`Return amount (Demo Mode): ${returnAmount} PXB`);
       
-      await addPointsToUser(Math.round(returnAmount));
-      
-      toast({
-        title: "Tokens sold successfully!",
-        description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`,
-        variant: isPositiveChange ? "default" : "destructive",
-      });
+      toast.success(`Demo Sale: You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`);
       
       const updatedHoldings = userTokenHoldings.filter(h => h.id !== holding.id);
       setUserTokenHoldings(updatedHoldings);
@@ -380,23 +355,22 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       
       if (userProfile) {
         try {
-          const storageKey = `token_holdings_${userProfile.id}_${tokenId}`;
+          const storageKey = `demo_token_holdings_${userProfile.id}_${tokenId}`;
           localStorage.setItem(storageKey, JSON.stringify(updatedHoldings));
         } catch (error) {
           console.error("Error updating token holdings in localStorage:", error);
         }
       }
       
-      const newTransaction = {
-        tokenid: tokenId,
-        tokensymbol: holding.tokenSymbol,
-        tokenname: tokenName,
-        quantity: holding.tokenAmount,
-        pxbamount: returnAmount,
-        price: tokenPrice,
-        type: 'sell',
-        userid: userProfile.id
-      };
+      window.dispatchEvent(new CustomEvent('tokenSale', { 
+        detail: {
+          tokenId,
+          price: tokenPrice,
+          timestamp: new Date().toISOString(),
+          amount: holding.tokenAmount,
+          isDemo: true
+        }
+      }));
       
       if (onSuccess) {
         onSuccess();
@@ -579,6 +553,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
   return (
     <div className="glass-panel p-4 space-y-4">
+      <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-md p-2 text-center mb-2">
+        <p className="text-sm font-medium text-yellow-200">Demo Mode: Trading tokens won't affect your PXB balance</p>
+      </div>
+
       <Tabs defaultValue="buy" className="w-full">
         <TabsList className="grid grid-cols-2 mb-4">
           <TabsTrigger value="buy" className="text-base">
@@ -660,9 +638,9 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-2">
-                <label className="block text-sm font-medium">PXB Amount</label>
+                <label className="block text-sm font-medium">PXB Amount (Demo)</label>
                 <span className="text-sm text-dream-foreground/70">
-                  Balance: {userProfile?.pxbPoints || 0} PXB
+                  Demo Mode: Unlimited PXB
                 </span>
               </div>
               <Input
@@ -689,7 +667,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
               <Button 
                 className="w-1/2" 
                 onClick={handleBuyTokens}
-                disabled={isLoading || amount <= 0 || (userProfile && userProfile.pxbPoints < amount)}
+                disabled={isLoading || amount <= 0}
               >
                 {isLoading ? (
                   <>
@@ -699,7 +677,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
                 ) : (
                   <>
                     <TrendingUp className="w-4 h-4 mr-2" />
-                    Buy Tokens
+                    Buy Tokens (Demo)
                   </>
                 )}
               </Button>
@@ -718,7 +696,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
 
           {userTokenHoldings.length > 0 ? (
             <>
-              <p className="text-xs text-dream-foreground/70">Your token holdings for {tokenSymbol}</p>
+              <p className="text-xs text-dream-foreground/70">Your token holdings for {tokenSymbol} (Demo)</p>
               <ScrollArea className="h-[200px] rounded-md border border-white/10 bg-black/20 p-1">
                 <div className="pr-1 pl-0.5 max-w-[95%]">
                   {userTokenHoldings
@@ -747,6 +725,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         pxbAmount={amount}
         tokenAmount={tokenAmount}
         tokenPrice={tokenPrice}
+        isDemo={true}
       />
 
       {selectedHolding && (
@@ -761,6 +740,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           tokenAmount={selectedHolding.tokenAmount}
           tokenPrice={tokenPrice}
           percentageChange={selectedHolding.percentageChange}
+          isDemo={true}
         />
       )}
     </div>
