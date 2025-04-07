@@ -18,15 +18,15 @@ const useCommunityMessages = () => {
     const fetchMessages = async () => {
       setLoading(true);
       try {
+        // Since we don't have a likes_count column or a users relation, update the query
         const { data, error } = await supabase
           .from('community_messages')
           .select(`
             id, 
             created_at, 
             content, 
-            user_id, 
-            likes_count,
-            users(username)
+            user_id,
+            username
           `)
           .order('created_at', { ascending: false })
           .limit(50);
@@ -35,14 +35,13 @@ const useCommunityMessages = () => {
           console.error("Error fetching messages:", error);
           setError("Failed to load messages.");
         } else {
-          // Properly type the messages with the username
+          // Map and type the messages with the available data
           const typedMessages: CommunityMessage[] = data.map(msg => ({
             id: msg.id,
             created_at: msg.created_at,
             content: msg.content,
             user_id: msg.user_id,
-            likes_count: msg.likes_count || 0,
-            username: msg.users?.username || 'Unknown User',
+            username: msg.username || 'Unknown User',
           }));
           setMessages(typedMessages);
         }
@@ -73,13 +72,13 @@ const useCommunityMessages = () => {
     };
   }, [user]);
 
-  // Add the fetchTopLiked function
+  // Add the fetchTopLiked function - mocked since we don't have likes_count
   const fetchTopLiked = async () => {
     try {
       const { data, error } = await supabase
         .from('community_messages')
         .select('*')
-        .order('likes_count', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(3);
 
       if (error) {
@@ -92,28 +91,19 @@ const useCommunityMessages = () => {
     }
   };
 
-  // Add loadRepliesForMessage function
+  // Add loadRepliesForMessage function - mocked as we don't have community_replies table
   const loadRepliesForMessage = async (messageId: string) => {
     try {
-      // Need to directly query the database for replies
-      const { data, error } = await supabase
-        .from('message_replies')
-        .select('*')
-        .eq('message_id', messageId)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error("Error loading replies:", error);
-        return [];
-      }
-
-      const typedReplies = data as CommunityReply[];
+      // Since message_replies table doesn't exist, return mock data
+      // In a real implementation, this would query a community_replies table
+      const mockReplies: CommunityReply[] = [];
+      
       setMessageReplies(prev => ({
         ...prev,
-        [messageId]: typedReplies
+        [messageId]: mockReplies
       }));
 
-      return typedReplies;
+      return mockReplies;
     } catch (err) {
       console.error("Error loading replies:", err);
       return [];
@@ -176,7 +166,11 @@ const useCommunityMessages = () => {
       setPosting(true);
       const { error } = await supabase
         .from('community_messages')
-        .insert([{ content, user_id: user.id }]);
+        .insert([{ 
+          content, 
+          user_id: user.id,
+          username: user.email?.split('@')[0] || 'Anonymous'
+        }]);
 
       if (error) {
         console.error("Error posting message:", error);
