@@ -7,6 +7,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const PXBLeaderboard: React.FC = () => {
   const {
@@ -105,7 +113,7 @@ const PXBLeaderboard: React.FC = () => {
     ? winRateLeaderboard || []
     : safeArraySlice(winRateLeaderboard, 0, 10);
   
-  const renderLeaderboardContent = (data: any[], valueKey: string, valueLabel: string, isLoading: boolean) => {
+  const renderLeaderboardTable = (data: any[], valueKey: string, valueLabel: string, isLoading: boolean) => {
     if (isLoading) {
       return (
         <div className="flex justify-center items-center h-[320px]">
@@ -131,36 +139,44 @@ const PXBLeaderboard: React.FC = () => {
     
     return (
       <ScrollArea className={showAllUsers ? "h-[420px] pr-4" : "h-[320px] pr-4"}>
-        <div className="space-y-3">
-          {data.map((trader, index) => {
-            const isCurrentUser = trader?.id === userProfile?.id;
-            const userId = trader?.id || trader?.user_id;
-            const isSpecial = trader?.isSpecial === true;
-            
-            if (!trader) return null;
-            
-            return (
-              <div 
-                key={userId || `trader-${index}`} 
-                className={cn(
-                  `flex items-center p-2 rounded-lg transition-all duration-500 transform ${animate ? 'translate-x-0 opacity-100' : 'translate-x-[-20px] opacity-0'}`, 
-                  getPositionStyle(index, isCurrentUser, isSpecial)
-                )} 
-                style={getAnimationDelay(index)}
-              >
-                <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center mr-3", 
-                  isSpecial ? "bg-purple-500/30" :
-                  index === 0 ? "bg-yellow-500/20" : 
-                  index === 1 ? "bg-gray-300/20" : 
-                  index === 2 ? "bg-orange-600/20" : 
-                  "bg-dream-foreground/10"
-                )}>
-                  {getLeaderIcon(index, isSpecial)}
-                </div>
-                
-                <div className="flex-1">
-                  <div className="flex justify-between">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">Rank</TableHead>
+              <TableHead>Player</TableHead>
+              <TableHead className="text-right">{valueKey === 'winRate' ? 'Win Rate' : 'Points'}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((trader, index) => {
+              const isCurrentUser = trader?.id === userProfile?.id;
+              const userId = trader?.id || trader?.user_id;
+              const isSpecial = trader?.isSpecial === true;
+              
+              if (!trader) return null;
+              
+              return (
+                <TableRow 
+                  key={userId || `trader-${index}`}
+                  className={cn(
+                    `transition-all duration-500 transform ${animate ? 'translate-x-0 opacity-100' : 'translate-x-[-20px] opacity-0'}`, 
+                    getPositionStyle(index, isCurrentUser, isSpecial)
+                  )}
+                  style={getAnimationDelay(index)}
+                >
+                  <TableCell className="font-medium">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center", 
+                      isSpecial ? "bg-purple-500/30" :
+                      index === 0 ? "bg-yellow-500/20" : 
+                      index === 1 ? "bg-gray-300/20" : 
+                      index === 2 ? "bg-orange-600/20" : 
+                      "bg-dream-foreground/10"
+                    )}>
+                      {getLeaderIcon(index, isSpecial)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     {isSpecial ? (
                       <div 
                         className="font-medium truncate max-w-[180px] flex items-center gap-1 text-purple-300"
@@ -187,7 +203,9 @@ const PXBLeaderboard: React.FC = () => {
                         )}
                       </Link>
                     )}
-                    <div className={cn(
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className={cn(
                       "font-medium", 
                       isSpecial ? "text-purple-300 animate-pulse" :
                       index === 0 ? "text-yellow-400" : 
@@ -198,27 +216,13 @@ const PXBLeaderboard: React.FC = () => {
                       {valueKey === 'winRate' 
                         ? `${trader[valueKey] || 0}%` 
                         : `${formatPoints(trader[valueKey] || 0)} ${valueLabel}`}
-                    </div>
-                  </div>
-                </div>
-                
-                {(index < 3 || isSpecial) && (
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
-                    <div className={cn(
-                      "absolute top-0 left-0 w-full h-full opacity-10", 
-                      isSpecial ? "bg-purple-400" :
-                      index === 0 ? "bg-yellow-400" : 
-                      index === 1 ? "bg-gray-300" : 
-                      "bg-orange-500"
-                    )}>
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shine"></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </ScrollArea>
     );
   };
@@ -247,11 +251,11 @@ const PXBLeaderboard: React.FC = () => {
         </TabsList>
         
         <TabsContent value="points" className="mt-0">
-          {renderLeaderboardContent(displayedPointsUsers, 'pxbPoints', 'PXB', isLeaderboardLoading || false)}
+          {renderLeaderboardTable(displayedPointsUsers, 'pxbPoints', 'PXB', isLeaderboardLoading || false)}
         </TabsContent>
         
         <TabsContent value="winrate" className="mt-0">
-          {renderLeaderboardContent(displayedWinRateUsers, 'winRate', '', isLoadingWinRate || false)}
+          {renderLeaderboardTable(displayedWinRateUsers, 'winRate', '', isLoadingWinRate || false)}
         </TabsContent>
       </Tabs>
       
