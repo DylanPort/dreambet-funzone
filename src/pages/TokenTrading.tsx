@@ -169,7 +169,8 @@ const TokenTrading = () => {
     setRefreshing(true);
     try {
       if (tokenMint) {
-        const metrics = await fetchTokenMetrics(tokenMint, true); // Force refresh
+        // Fix here - remove the second argument
+        const metrics = await fetchTokenMetrics(tokenMint);
         setTokenMetrics(metrics);
       }
       if (connected && userProfile) {

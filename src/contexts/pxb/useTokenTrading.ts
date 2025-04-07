@@ -27,7 +27,7 @@ export const useTokenTrading = (
       const { data, error } = await supabase
         .from('token_portfolios')
         .select('*')
-        .eq('userId', userProfile.id)
+        .eq('userid', userProfile.id)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -39,32 +39,59 @@ export const useTokenTrading = (
       // Update current values
       const updatedPortfolios = await Promise.all((data || []).map(async (portfolio) => {
         try {
-          const metrics = await fetchTokenMetrics(portfolio.tokenId);
+          const metrics = await fetchTokenMetrics(portfolio.tokenid);
           if (metrics && metrics.marketCap !== null) {
-            const totalSupply = metrics.totalSupply || 1000000000;
+            const totalSupply = metrics.marketCap / (metrics.priceUsd || 0.001); // Estimate if not available
             const currentPrice = metrics.marketCap / totalSupply;
             const currentValue = portfolio.quantity * currentPrice;
             
             // Update portfolio in database if value has changed significantly
-            if (Math.abs(currentValue - portfolio.currentValue) / portfolio.currentValue > 0.01) {
+            if (Math.abs(currentValue - portfolio.currentvalue) / portfolio.currentvalue > 0.01) {
               await supabase
                 .from('token_portfolios')
                 .update({ 
-                  currentValue, 
-                  lastUpdated: new Date().toISOString() 
+                  currentvalue: currentValue, 
+                  lastupdated: new Date().toISOString() 
                 })
                 .eq('id', portfolio.id);
             }
             
             return {
               ...portfolio,
-              currentValue
+              currentValue: currentValue,
+              // Map DB column names to our interface properties
+              userId: portfolio.userid,
+              tokenId: portfolio.tokenid,
+              tokenName: portfolio.tokenname,
+              tokenSymbol: portfolio.tokensymbol,
+              averagePurchasePrice: portfolio.averagepurchaseprice,
+              lastUpdated: portfolio.lastupdated
             };
           }
-          return portfolio;
+          return {
+            ...portfolio,
+            // Map DB column names to our interface properties
+            userId: portfolio.userid,
+            tokenId: portfolio.tokenid,
+            tokenName: portfolio.tokenname,
+            tokenSymbol: portfolio.tokensymbol,
+            currentValue: portfolio.currentvalue,
+            averagePurchasePrice: portfolio.averagepurchaseprice,
+            lastUpdated: portfolio.lastupdated
+          };
         } catch (err) {
-          console.error(`Error updating portfolio value for ${portfolio.tokenName}:`, err);
-          return portfolio;
+          console.error(`Error updating portfolio value for ${portfolio.tokenname}:`, err);
+          return {
+            ...portfolio,
+            // Map DB column names to our interface properties
+            userId: portfolio.userid,
+            tokenId: portfolio.tokenid,
+            tokenName: portfolio.tokenname,
+            tokenSymbol: portfolio.tokensymbol,
+            currentValue: portfolio.currentvalue,
+            averagePurchasePrice: portfolio.averagepurchaseprice,
+            lastUpdated: portfolio.lastupdated
+          };
         }
       }));
       
@@ -86,7 +113,7 @@ export const useTokenTrading = (
       const { data, error } = await supabase
         .from('token_transactions')
         .select('*')
-        .eq('userId', userProfile.id)
+        .eq('userid', userProfile.id)
         .order('timestamp', { ascending: false });
       
       if (error) {
@@ -95,7 +122,17 @@ export const useTokenTrading = (
         return;
       }
       
-      setTokenTransactions(data || []);
+      // Map DB column names to our interface properties
+      const mappedTransactions = (data || []).map(tx => ({
+        ...tx,
+        userId: tx.userid,
+        tokenId: tx.tokenid,
+        tokenName: tx.tokenname,
+        tokenSymbol: tx.tokensymbol,
+        pxbAmount: tx.pxbamount
+      }));
+      
+      setTokenTransactions(mappedTransactions);
     } catch (error) {
       console.error('Error in fetchTokenTransactions:', error);
     } finally {
@@ -133,7 +170,7 @@ export const useTokenTrading = (
         return false;
       }
 
-      const totalSupply = metrics.totalSupply || 1000000000;
+      const totalSupply = metrics.marketCap / (metrics.priceUsd || 0.001); // Estimate if not available
       const tokenPrice = metrics.marketCap / totalSupply;
       const tokenQuantity = pxbAmount / tokenPrice;
 
@@ -159,14 +196,14 @@ export const useTokenTrading = (
 
       // 2. Record the transaction
       const { error: transactionError } = await supabase.from('token_transactions').insert({
-        userId: userProfile.id,
-        tokenId,
-        tokenName,
-        tokenSymbol,
+        userid: userProfile.id,
+        tokenid: tokenId,
+        tokenname: tokenName,
+        tokensymbol: tokenSymbol,
         type: 'buy',
         quantity: tokenQuantity,
         price: tokenPrice,
-        pxbAmount,
+        pxbamount: pxbAmount,
         timestamp: new Date().toISOString()
       });
 
@@ -186,14 +223,14 @@ export const useTokenTrading = (
       const { data: existingPortfolio } = await supabase
         .from('token_portfolios')
         .select('*')
-        .eq('userId', userProfile.id)
-        .eq('tokenId', tokenId)
+        .eq('userid', userProfile.id)
+        .eq('tokenid', tokenId)
         .maybeSingle();
 
       if (existingPortfolio) {
         // Update existing portfolio
         const newQuantity = existingPortfolio.quantity + tokenQuantity;
-        const newAveragePrice = ((existingPortfolio.quantity * existingPortfolio.averagePurchasePrice) + 
+        const newAveragePrice = ((existingPortfolio.quantity * existingPortfolio.averagepurchaseprice) + 
           (tokenQuantity * tokenPrice)) / newQuantity;
         const newValue = newQuantity * tokenPrice;
 
@@ -201,9 +238,9 @@ export const useTokenTrading = (
           .from('token_portfolios')
           .update({
             quantity: newQuantity,
-            averagePurchasePrice: newAveragePrice,
-            currentValue: newValue,
-            lastUpdated: new Date().toISOString()
+            averagepurchaseprice: newAveragePrice,
+            currentvalue: newValue,
+            lastupdated: new Date().toISOString()
           })
           .eq('id', existingPortfolio.id);
 
@@ -217,13 +254,13 @@ export const useTokenTrading = (
         const { error: createPortfolioError } = await supabase
           .from('token_portfolios')
           .insert({
-            userId: userProfile.id,
-            tokenId,
-            tokenName,
-            tokenSymbol,
+            userid: userProfile.id,
+            tokenid: tokenId,
+            tokenname: tokenName,
+            tokensymbol: tokenSymbol,
             quantity: tokenQuantity,
-            averagePurchasePrice: tokenPrice,
-            currentValue: tokenQuantity * tokenPrice
+            averagepurchaseprice: tokenPrice,
+            currentvalue: tokenQuantity * tokenPrice
           });
 
         if (createPortfolioError) {
@@ -277,7 +314,7 @@ export const useTokenTrading = (
         .from('token_portfolios')
         .select('*')
         .eq('id', portfolioId)
-        .eq('userId', userProfile.id)
+        .eq('userid', userProfile.id)
         .single();
 
       if (portfolioError || !portfolio) {
@@ -292,13 +329,13 @@ export const useTokenTrading = (
       }
 
       // 2. Get current token price
-      const metrics = await fetchTokenMetrics(portfolio.tokenId);
+      const metrics = await fetchTokenMetrics(portfolio.tokenid);
       if (!metrics || metrics.marketCap === null) {
         toast.error('Could not fetch current token price');
         return false;
       }
 
-      const totalSupply = metrics.totalSupply || 1000000000;
+      const totalSupply = metrics.marketCap / (metrics.priceUsd || 0.001); // Estimate if not available
       const currentPrice = metrics.marketCap / totalSupply;
       const pxbAmount = quantity * currentPrice;
 
@@ -318,14 +355,14 @@ export const useTokenTrading = (
 
       // 4. Record the transaction
       const { error: transactionError } = await supabase.from('token_transactions').insert({
-        userId: userProfile.id,
-        tokenId: portfolio.tokenId,
-        tokenName: portfolio.tokenName,
-        tokenSymbol: portfolio.tokenSymbol,
+        userid: userProfile.id,
+        tokenid: portfolio.tokenid,
+        tokenname: portfolio.tokenname,
+        tokensymbol: portfolio.tokensymbol,
         type: 'sell',
         quantity,
         price: currentPrice,
-        pxbAmount,
+        pxbamount: pxbAmount,
         timestamp: new Date().toISOString()
       });
 
@@ -362,8 +399,8 @@ export const useTokenTrading = (
           .from('token_portfolios')
           .update({
             quantity: remainingQuantity,
-            currentValue: newValue,
-            lastUpdated: new Date().toISOString()
+            currentvalue: newValue,
+            lastupdated: new Date().toISOString()
           })
           .eq('id', portfolioId);
 
@@ -379,8 +416,8 @@ export const useTokenTrading = (
         user_id: userProfile.id,
         amount: pxbAmount,
         action: 'token_sale',
-        reference_id: portfolio.tokenId,
-        reference_name: portfolio.tokenName
+        reference_id: portfolio.tokenid,
+        reference_name: portfolio.tokenname
       });
 
       // 7. Update user profile in state
@@ -393,7 +430,7 @@ export const useTokenTrading = (
       fetchTokenPortfolios();
       fetchTokenTransactions();
       
-      toast.success(`Successfully sold ${portfolio.tokenName} tokens for ${pxbAmount.toFixed(2)} PXB!`);
+      toast.success(`Successfully sold ${portfolio.tokenname} tokens for ${pxbAmount.toFixed(2)} PXB!`);
       return true;
     } catch (error) {
       console.error('Error selling token:', error);
