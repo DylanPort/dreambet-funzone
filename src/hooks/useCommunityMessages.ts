@@ -1,262 +1,305 @@
 
-import { useState, useEffect } from 'react';
-import { useUser } from '@/integrations/auth-helpers';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CommunityMessage, CommunityReply, MessageReactionCounts } from '@/types/community';
+import { useUser } from '@/integrations/auth-helpers';
+import { toast } from 'sonner';
 
-const useCommunityMessages = () => {
-  const user = useUser();
+export interface CommunityMessage {
+  id: string;
+  content: string;
+  username: string | null;
+  user_id: string;
+  created_at: string;
+  reactions: MessageReaction[];
+  replies: MessageReply[];
+}
+
+export interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  reaction_type: string;
+  created_at: string;
+}
+
+export interface MessageReply {
+  id: string;
+  message_id: string;
+  content: string;
+  username: string | null;
+  user_id: string;
+  created_at: string;
+}
+
+export const useCommunityMessages = () => {
+  const { user } = useUser();
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
-  const [messageReplies, setMessageReplies] = useState<Record<string, CommunityReply[]>>({});
-  const [messageReactions, setMessageReactions] = useState<Record<string, MessageReactionCounts>>({});
-  const [topLikedMessages, setTopLikedMessages] = useState<CommunityMessage[]>([]);
-  const [posting, setPosting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchMessages = async () => {
-      setLoading(true);
-      try {
-        // Since we don't have a likes_count column or a users relation, update the query
-        const { data, error } = await supabase
-          .from('community_messages')
-          .select(`
-            id, 
-            created_at, 
-            content, 
-            user_id,
-            username
-          `)
-          .order('created_at', { ascending: false })
-          .limit(50);
-
-        if (error) {
-          console.error("Error fetching messages:", error);
-          setError("Failed to load messages.");
-        } else {
-          // Map and type the messages with the available data
-          const typedMessages: CommunityMessage[] = data.map(msg => ({
-            id: msg.id,
-            created_at: msg.created_at,
-            content: msg.content,
-            user_id: msg.user_id,
-            username: msg.username || 'Unknown User',
-          }));
-          setMessages(typedMessages);
-        }
-      } catch (err) {
-        console.error("Unexpected error fetching messages:", err);
-        setError("An unexpected error occurred.");
-      } finally {
-        setLoading(false);
+  
+  const fetchMessages = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('community_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (messagesError) {
+        throw messagesError;
       }
-    };
-
+      
+      // Fetch reactions for all messages
+      const { data: reactionsData, error: reactionsError } = await supabase
+        .from('community_message_reactions')
+        .select('*');
+      
+      if (reactionsError) {
+        throw reactionsError;
+      }
+      
+      // Fetch replies for all messages
+      const { data: repliesData, error: repliesError } = await supabase
+        .from('community_replies')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (repliesError) {
+        throw repliesError;
+      }
+      
+      // Map reactions and replies to their respective messages
+      const messagesWithData = messagesData.map(message => {
+        const messageReactions = reactionsData.filter(
+          reaction => reaction.message_id === message.id
+        );
+        
+        const messageReplies = repliesData.filter(
+          reply => reply.message_id === message.id
+        );
+        
+        return {
+          ...message,
+          reactions: messageReactions,
+          replies: messageReplies
+        };
+      });
+      
+      setMessages(messagesWithData);
+    } catch (err: any) {
+      console.error('Error fetching community messages:', err);
+      setError(err.message || 'Failed to fetch messages');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  useEffect(() => {
     fetchMessages();
-
-    // Setup Realtime subscription
+    
+    // Set up real-time subscription
     const channel = supabase
       .channel('public:community_messages')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_messages' }, 
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newMessage = payload.new as CommunityMessage;
-            setMessages(prevMessages => [newMessage, ...prevMessages]);
-          }
-        })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'community_messages'
+      }, payload => {
+        console.log('New message received:', payload);
+        const newMessage = payload.new as any;
+        
+        // Add the new message with empty reactions and replies arrays
+        setMessages(prevMessages => [
+          {
+            ...newMessage,
+            reactions: [],
+            replies: []
+          },
+          ...prevMessages
+        ]);
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'community_message_reactions'
+      }, payload => {
+        console.log('New reaction received:', payload);
+        const newReaction = payload.new as MessageReaction;
+        
+        // Update the messages with the new reaction
+        setMessages(prevMessages => 
+          prevMessages.map(message => 
+            message.id === newReaction.message_id
+              ? { ...message, reactions: [...message.reactions, newReaction] }
+              : message
+          )
+        );
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'community_replies'
+      }, payload => {
+        console.log('New reply received:', payload);
+        const newReply = payload.new as MessageReply;
+        
+        // Update the messages with the new reply
+        setMessages(prevMessages => 
+          prevMessages.map(message => 
+            message.id === newReply.message_id
+              ? { ...message, replies: [...message.replies, newReply] }
+              : message
+          )
+        );
+      })
       .subscribe();
-
+    
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
-
-  // Add the fetchTopLiked function - mocked since we don't have likes_count
-  const fetchTopLiked = async () => {
+  }, [fetchMessages]);
+  
+  const postMessage = useCallback(async (content: string) => {
+    if (!user) {
+      toast.error('You need to be logged in to post a message');
+      return false;
+    }
+    
+    if (!content.trim()) {
+      toast.error('Message cannot be empty');
+      return false;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('community_messages')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (error) {
-        console.error("Error fetching top liked messages:", error);
-      } else {
-        setTopLikedMessages(data as CommunityMessage[]);
-      }
-    } catch (err) {
-      console.error("Unexpected error fetching top liked messages:", err);
-    }
-  };
-
-  // Add loadRepliesForMessage function - mocked as we don't have community_replies table
-  const loadRepliesForMessage = async (messageId: string) => {
-    try {
-      // Now that we have the community_replies table, fetch real replies
-      const { data, error } = await supabase
-        .from('community_replies')
-        .select('*')
-        .eq('message_id', messageId)
-        .order('created_at', { ascending: true });
-      
-      if (error) {
-        console.error("Error loading replies:", error);
-        return [];
-      }
-      
-      const typedReplies = data as CommunityReply[];
-      setMessageReplies(prev => ({
-        ...prev,
-        [messageId]: typedReplies
-      }));
-
-      return typedReplies;
-    } catch (err) {
-      console.error("Error loading replies:", err);
-      return [];
-    }
-  };
-
-  // Add reactToMessage function
-  const reactToMessage = async (messageId: string, reactionType: 'like' | 'dislike') => {
-    if (!user) return;
-    
-    try {
-      // Now using the real community_message_reactions table
-      // First check if user already reacted
-      const { data: existingReaction } = await supabase
-        .from('community_message_reactions')
-        .select('*')
-        .eq('message_id', messageId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (existingReaction) {
-        // Update existing reaction if different
-        if (existingReaction.reaction_type !== reactionType) {
-          await supabase
-            .from('community_message_reactions')
-            .update({ reaction_type: reactionType })
-            .eq('id', existingReaction.id);
-        }
-      } else {
-        // Insert new reaction
-        await supabase
-          .from('community_message_reactions')
-          .insert({
-            message_id: messageId,
-            user_id: user.id,
-            reaction_type: reactionType
-          });
-      }
-      
-      // Get updated reaction counts
-      const { data: likesData } = await supabase
-        .from('community_message_reactions')
-        .select('reaction_type')
-        .eq('message_id', messageId);
-      
-      if (likesData) {
-        const likes = likesData.filter(r => r.reaction_type === 'like').length;
-        const dislikes = likesData.filter(r => r.reaction_type === 'dislike').length;
-        
-        setMessageReactions(prev => ({
-          ...prev,
-          [messageId]: {
-            likes,
-            dislikes,
-            userReaction: reactionType
-          }
-        }));
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error reacting to message:", error);
-      return false;
-    }
-  };
-
-  // Add postReply function
-  const postReply = async (messageId: string, content: string) => {
-    if (!user) return null;
-    
-    try {
-      // Now using the real community_replies table
-      const { data, error } = await supabase
-        .from('community_replies')
         .insert({
-          message_id: messageId,
-          content,
+          content: content.trim(),
           user_id: user.id,
-          username: user.email?.split('@')[0] || 'Current User'
+          username: user.user_metadata?.username || user.email?.split('@')[0] || 'Anonymous'
         })
         .select()
         .single();
       
       if (error) {
-        console.error("Error posting reply:", error);
-        return null;
+        throw error;
       }
       
-      const newReply = data as CommunityReply;
-      
-      setMessageReplies(prev => ({
-        ...prev,
-        [messageId]: [...(prev[messageId] || []), newReply]
-      }));
-      
-      return newReply;
-    } catch (error) {
-      console.error("Error posting reply:", error);
-      return null;
+      toast.success('Message posted successfully');
+      return true;
+    } catch (err: any) {
+      console.error('Error posting message:', err);
+      toast.error(err.message || 'Failed to post message');
+      return false;
     }
-  };
-
-  const postMessage = async (content: string): Promise<boolean> => {
-    if (!user) return false;
+  }, [user]);
+  
+  const postReply = useCallback(async (messageId: string, content: string) => {
+    if (!user) {
+      toast.error('You need to be logged in to reply');
+      return false;
+    }
+    
+    if (!content.trim()) {
+      toast.error('Reply cannot be empty');
+      return false;
+    }
     
     try {
-      setPosting(true);
-      const { error } = await supabase
-        .from('community_messages')
-        .insert([{ 
-          content, 
+      const { data, error } = await supabase
+        .from('community_replies')
+        .insert({
+          message_id: messageId,
+          content: content.trim(),
           user_id: user.id,
-          username: user.email?.split('@')[0] || 'Anonymous'
-        }]);
-
+          username: user.user_metadata?.username || user.email?.split('@')[0] || 'Anonymous'
+        })
+        .select()
+        .single();
+      
       if (error) {
-        console.error("Error posting message:", error);
-        setError("Failed to post message.");
-        return false;
+        throw error;
       }
+      
+      toast.success('Reply posted successfully');
       return true;
-    } catch (error) {
-      console.error("Error posting message:", error);
-      setError("Failed to post message.");
+    } catch (err: any) {
+      console.error('Error posting reply:', err);
+      toast.error(err.message || 'Failed to post reply');
       return false;
-    } finally {
-      setPosting(false);
     }
-  };
-
-  return { 
-    messages, 
-    postMessage, 
-    posting, 
-    error, 
-    loading,
-    messageReplies,
-    messageReactions,
-    topLikedMessages,
-    loadRepliesForMessage,
+  }, [user]);
+  
+  const reactToMessage = useCallback(async (messageId: string, reactionType: string) => {
+    if (!user) {
+      toast.error('You need to be logged in to react');
+      return false;
+    }
+    
+    try {
+      // Check if user has already reacted with this reaction
+      const existingReaction = messages
+        .find(m => m.id === messageId)
+        ?.reactions.find(r => r.user_id === user.id && r.reaction_type === reactionType);
+      
+      if (existingReaction) {
+        // Remove the reaction if it already exists
+        const { error } = await supabase
+          .from('community_message_reactions')
+          .delete()
+          .eq('id', existingReaction.id);
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Update local state
+        setMessages(prevMessages => 
+          prevMessages.map(message => 
+            message.id === messageId
+              ? { 
+                  ...message, 
+                  reactions: message.reactions.filter(r => r.id !== existingReaction.id)
+                }
+              : message
+          )
+        );
+        
+        return true;
+      }
+      
+      // Add the new reaction
+      const { data, error } = await supabase
+        .from('community_message_reactions')
+        .insert({
+          message_id: messageId,
+          user_id: user.id,
+          reaction_type: reactionType
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      return true;
+    } catch (err: any) {
+      console.error('Error reacting to message:', err);
+      toast.error(err.message || 'Failed to react to message');
+      return false;
+    }
+  }, [messages, user]);
+  
+  return {
+    messages,
+    isLoading,
+    error,
+    postMessage,
     postReply,
     reactToMessage,
-    fetchTopLiked
+    refreshMessages: fetchMessages
   };
 };
-
-export default useCommunityMessages;

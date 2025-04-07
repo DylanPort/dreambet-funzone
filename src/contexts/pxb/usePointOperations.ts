@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -178,6 +179,7 @@ export const usePointOperations = (
     try {
       setIsLoading(true);
 
+      // Immediately update the UI to reflect the points deduction
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints - betAmount } : null);
 
       const prediction: BetPrediction = betType === 'up' ? 'up' : 'down';
@@ -200,6 +202,7 @@ export const usePointOperations = (
 
         console.log('Created bet in Supabase:', newBet);
 
+        // Update user points in the database
         const { error: updateError } = await supabase
           .from('users')
           .update({ points: userProfile.pxbPoints - betAmount })
@@ -211,6 +214,7 @@ export const usePointOperations = (
           throw new Error('Failed to update points after bet');
         }
 
+        // Record the point transaction in history
         await supabase.from('points_history').insert({
           user_id: userProfile.id,
           amount: -betAmount,
@@ -243,12 +247,14 @@ export const usePointOperations = (
         return pxbBet;
       } catch (supabaseError: any) {
         console.error('Error with Supabase operations:', supabaseError);
+        // Revert UI change if database operation fails
         setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
         throw new Error(supabaseError.message || 'Failed to place bet in database');
       }
     } catch (error: any) {
       console.error('Error placing bet:', error);
       console.error(error.message || 'Failed to place bet');
+      // Ensure points are restored if anything fails
       setUserProfile(prev => prev ? { ...prev, pxbPoints: prev.pxbPoints + betAmount } : null);
       return;
     } finally {
