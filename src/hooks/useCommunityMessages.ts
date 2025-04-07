@@ -18,6 +18,7 @@ const useCommunityMessages = () => {
     const fetchMessages = async () => {
       setLoading(true);
       try {
+        // Modified query to not select fields that don't exist in the table
         const { data, error } = await supabase
           .from('community_messages')
           .select(`
@@ -25,8 +26,7 @@ const useCommunityMessages = () => {
             created_at, 
             content, 
             user_id, 
-            likes_count,
-            users(username)
+            username
           `)
           .order('created_at', { ascending: false })
           .limit(50);
@@ -35,14 +35,14 @@ const useCommunityMessages = () => {
           console.error("Error fetching messages:", error);
           setError("Failed to load messages.");
         } else {
-          // Properly type the messages with the username
+          // Properly type the messages and set default values for missing fields
           const typedMessages: CommunityMessage[] = data.map(msg => ({
             id: msg.id,
             created_at: msg.created_at,
             content: msg.content,
             user_id: msg.user_id,
-            likes_count: msg.likes_count || 0,
-            username: msg.users?.username || 'Unknown User',
+            likes_count: 0, // Default value since column doesn't exist yet
+            username: msg.username || 'Unknown User',
           }));
           setMessages(typedMessages);
         }
@@ -76,10 +76,11 @@ const useCommunityMessages = () => {
   // Add the fetchTopLiked function
   const fetchTopLiked = async () => {
     try {
+      // For now, just get the most recent messages since we don't have likes_count
       const { data, error } = await supabase
         .from('community_messages')
         .select('*')
-        .order('likes_count', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(3);
 
       if (error) {
@@ -92,12 +93,12 @@ const useCommunityMessages = () => {
     }
   };
 
-  // Add loadRepliesForMessage function
+  // Update loadRepliesForMessage function to use community_replies table
   const loadRepliesForMessage = async (messageId: string) => {
     try {
-      // Need to directly query the database for replies
+      // Changed from message_replies to community_replies
       const { data, error } = await supabase
-        .from('message_replies')
+        .from('community_replies')
         .select('*')
         .eq('message_id', messageId)
         .order('created_at', { ascending: true });
@@ -125,13 +126,56 @@ const useCommunityMessages = () => {
     if (!user) return;
     
     try {
-      // Mock implementation for now
+      // Check if reaction already exists
+      const { data: existingReaction } = await supabase
+        .from('community_message_reactions')
+        .select('*')
+        .eq('message_id', messageId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingReaction) {
+        // Update existing reaction
+        if (existingReaction.reaction_type === reactionType) {
+          // If same reaction type, remove it (toggle off)
+          await supabase
+            .from('community_message_reactions')
+            .delete()
+            .eq('id', existingReaction.id);
+        } else {
+          // Change reaction type
+          await supabase
+            .from('community_message_reactions')
+            .update({ reaction_type: reactionType })
+            .eq('id', existingReaction.id);
+        }
+      } else {
+        // Create new reaction
+        await supabase
+          .from('community_message_reactions')
+          .insert({
+            message_id: messageId,
+            user_id: user.id,
+            reaction_type: reactionType
+          });
+      }
+
+      // Get updated counts
+      const { data: reactions } = await supabase
+        .from('community_message_reactions')
+        .select('*')
+        .eq('message_id', messageId);
+
+      const likes = reactions?.filter(r => r.reaction_type === 'like').length || 0;
+      const dislikes = reactions?.filter(r => r.reaction_type === 'dislike').length || 0;
+      const userReaction = reactions?.find(r => r.user_id === user.id)?.reaction_type as 'like' | 'dislike' | undefined;
+
       setMessageReactions(prev => ({
         ...prev,
         [messageId]: {
-          likes: (prev[messageId]?.likes || 0) + (reactionType === 'like' ? 1 : 0),
-          dislikes: (prev[messageId]?.dislikes || 0) + (reactionType === 'dislike' ? 1 : 0),
-          userReaction: reactionType
+          likes,
+          dislikes,
+          userReaction
         }
       }));
       
@@ -147,15 +191,23 @@ const useCommunityMessages = () => {
     if (!user) return null;
     
     try {
-      // Mock implementation for now
-      const newReply: CommunityReply = {
-        id: `reply-${Date.now()}`,
-        message_id: messageId,
-        content,
-        created_at: new Date().toISOString(),
-        user_id: user.id,
-        username: 'Current User'
-      };
+      const { data, error } = await supabase
+        .from('community_replies')
+        .insert({
+          message_id: messageId,
+          content,
+          user_id: user.id,
+          username: user.username || 'User ' + user.id.substring(0, 6)
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error posting reply:", error);
+        return null;
+      }
+      
+      const newReply = data as CommunityReply;
       
       setMessageReplies(prev => ({
         ...prev,
@@ -176,7 +228,11 @@ const useCommunityMessages = () => {
       setPosting(true);
       const { error } = await supabase
         .from('community_messages')
-        .insert([{ content, user_id: user.id }]);
+        .insert([{ 
+          content, 
+          user_id: user.id,
+          username: user.username || 'User ' + user.id.substring(0, 6)
+        }]);
 
       if (error) {
         console.error("Error posting message:", error);
