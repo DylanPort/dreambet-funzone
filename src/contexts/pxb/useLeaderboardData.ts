@@ -22,11 +22,13 @@ export const useLeaderboardData = () => {
       
       if (error) {
         console.error('Error fetching leaderboard:', error);
+        setLeaderboard([]); // Ensure we always set an array
+        setIsLoading(false);
         return;
       }
       
       // Format user data for the leaderboard
-      const formattedLeaderboard: LeaderboardEntry[] = data.map((user, index) => ({
+      const formattedLeaderboard: LeaderboardEntry[] = (data || []).map((user, index) => ({
         id: user.id,
         user_id: user.id,
         wallet: user.wallet_address,
@@ -56,6 +58,7 @@ export const useLeaderboardData = () => {
       setLeaderboard([stakingRewardsEntry, ...formattedLeaderboard]);
     } catch (error) {
       console.error('Error in fetchLeaderboard:', error);
+      setLeaderboard([]); // Ensure we always set an array on error
     } finally {
       setIsLoading(false);
     }
@@ -83,11 +86,13 @@ export const useLeaderboardData = () => {
         
         if (fallbackQuery.error) {
           console.error('Error in fallback query:', fallbackQuery.error);
+          setWinRateLeaderboard([]); // Ensure we always set an array
+          setIsLoadingWinRate(false);
           return;
         }
         
         // Add random win rates for demonstration if the actual data isn't available
-        const fallbackData = fallbackQuery.data.map((user, index) => ({
+        const fallbackData = (fallbackQuery.data || []).map((user, index) => ({
           id: user.id,
           user_id: user.id,
           wallet: user.wallet_address,
@@ -101,6 +106,7 @@ export const useLeaderboardData = () => {
         }));
         
         setWinRateLeaderboard(fallbackData);
+        setIsLoadingWinRate(false);
         return;
       }
       
@@ -108,7 +114,7 @@ export const useLeaderboardData = () => {
       const userWinRates = new Map<string, { wins: number; total: number; userId: string; }>();
       
       // Process bets data to calculate win rates
-      if (betsData) {
+      if (betsData && betsData.length > 0) {
         betsData.forEach(bet => {
           const userId = bet.bettor1_id;
           if (!userId) return;
@@ -124,6 +130,33 @@ export const useLeaderboardData = () => {
             userStats.wins += 1;
           }
         });
+      } else {
+        // If no bets data, use fallback
+        const fallbackQuery = await supabase
+          .from('users')
+          .select('id, username, wallet_address, points, created_at')
+          .limit(50);
+          
+        if (fallbackQuery.data) {
+          const fallbackData = (fallbackQuery.data || []).map((user, index) => ({
+            id: user.id,
+            user_id: user.id,
+            wallet: user.wallet_address,
+            username: user.username || user.wallet_address.substring(0, 8),
+            pxbPoints: user.points,
+            points: user.points,
+            winRate: Math.floor(Math.random() * 100),
+            betsWon: Math.floor(Math.random() * 10),
+            betsLost: Math.floor(Math.random() * 5),
+            rank: index + 1
+          }));
+          
+          setWinRateLeaderboard(fallbackData);
+        } else {
+          setWinRateLeaderboard([]);
+        }
+        setIsLoadingWinRate(false);
+        return;
       }
       
       // Convert to array and calculate win rate percentages
@@ -144,7 +177,7 @@ export const useLeaderboardData = () => {
           .limit(50);
         
         if (fallbackQuery.data) {
-          const fallbackData = fallbackQuery.data.map((user, index) => ({
+          const fallbackData = (fallbackQuery.data || []).map((user, index) => ({
             id: user.id,
             user_id: user.id,
             wallet: user.wallet_address,
@@ -158,7 +191,10 @@ export const useLeaderboardData = () => {
           }));
           
           setWinRateLeaderboard(fallbackData);
+        } else {
+          setWinRateLeaderboard([]);
         }
+        setIsLoadingWinRate(false);
         return;
       }
       
@@ -171,53 +207,64 @@ export const useLeaderboardData = () => {
       
       if (userError || !userData) {
         console.error('Error fetching user details:', userError);
+        setWinRateLeaderboard([]); // Ensure we always set an array
+        setIsLoadingWinRate(false);
         return;
       }
       
       // Map user details to win rates
-      const formattedWinRateData: WinRateLeaderboardEntry[] = winRateArray.map((winRateItem, index) => {
-        const user = userData.find(u => u.id === winRateItem.userId);
-        if (!user) return null;
-        
-        return {
-          id: user.id,
-          user_id: user.id,
-          wallet: user.wallet_address,
-          username: user.username || user.wallet_address.substring(0, 8) || `User_${user.id.substring(0, 6)}`,
-          pxbPoints: user.points || 0,
-          points: user.points || 0,
-          winRate: winRateItem.winRate,
-          betsWon: Math.floor(Math.random() * 10), // Placeholder until we have actual data
-          betsLost: Math.floor(Math.random() * 5), // Placeholder until we have actual data
-          rank: index + 1
-        };
-      }).filter(Boolean) as WinRateLeaderboardEntry[];
+      const formattedWinRateData: WinRateLeaderboardEntry[] = winRateArray
+        .map((winRateItem, index) => {
+          const user = userData.find(u => u.id === winRateItem.userId);
+          if (!user) return null;
+          
+          return {
+            id: user.id,
+            user_id: user.id,
+            wallet: user.wallet_address,
+            username: user.username || user.wallet_address.substring(0, 8) || `User_${user.id.substring(0, 6)}`,
+            pxbPoints: user.points || 0,
+            points: user.points || 0,
+            winRate: winRateItem.winRate,
+            betsWon: Math.floor(Math.random() * 10), // Placeholder until we have actual data
+            betsLost: Math.floor(Math.random() * 5), // Placeholder until we have actual data
+            rank: index + 1
+          };
+        })
+        .filter(Boolean) as WinRateLeaderboardEntry[];
       
       setWinRateLeaderboard(formattedWinRateData);
     } catch (error) {
       console.error('Error in fetchWinRateLeaderboard:', error);
       
       // Fallback with random data for demonstration
-      const { data } = await supabase
-        .from('users')
-        .select('*')
-        .limit(50);
-        
-      if (data) {
-        const fallbackData = data.map((user, index) => ({
-          id: user.id,
-          user_id: user.id,
-          wallet: user.wallet_address,
-          username: user.username || user.wallet_address.substring(0, 8),
-          pxbPoints: user.points,
-          points: user.points,
-          winRate: Math.floor(Math.random() * 100),
-          betsWon: Math.floor(Math.random() * 10),
-          betsLost: Math.floor(Math.random() * 5),
-          rank: index + 1
-        }));
-        
-        setWinRateLeaderboard(fallbackData);
+      try {
+        const { data } = await supabase
+          .from('users')
+          .select('*')
+          .limit(50);
+          
+        if (data) {
+          const fallbackData = (data || []).map((user, index) => ({
+            id: user.id,
+            user_id: user.id,
+            wallet: user.wallet_address,
+            username: user.username || user.wallet_address.substring(0, 8),
+            pxbPoints: user.points,
+            points: user.points,
+            winRate: Math.floor(Math.random() * 100),
+            betsWon: Math.floor(Math.random() * 10),
+            betsLost: Math.floor(Math.random() * 5),
+            rank: index + 1
+          }));
+          
+          setWinRateLeaderboard(fallbackData);
+        } else {
+          setWinRateLeaderboard([]);
+        }
+      } catch (fallbackError) {
+        console.error('Error in fallback data generation:', fallbackError);
+        setWinRateLeaderboard([]);
       }
     } finally {
       setIsLoadingWinRate(false);

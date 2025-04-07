@@ -88,8 +88,20 @@ const PXBLeaderboard: React.FC = () => {
     return points;
   };
   
-  const displayedPointsUsers = showAllUsers ? leaderboard : leaderboard.slice(0, 10);
-  const displayedWinRateUsers = showAllUsers ? winRateLeaderboard : winRateLeaderboard.slice(0, 10);
+  // Safely handle arrays that might be undefined
+  const safeArraySlice = (array: any[] | undefined | null, start: number, end?: number) => {
+    if (!array || !Array.isArray(array)) return [];
+    return array.slice(start, end);
+  };
+  
+  // Ensure leaderboard and winRateLeaderboard are arrays before attempting to slice them
+  const displayedPointsUsers = showAllUsers 
+    ? (leaderboard || []) 
+    : safeArraySlice(leaderboard, 0, 10);
+    
+  const displayedWinRateUsers = showAllUsers 
+    ? (winRateLeaderboard || []) 
+    : safeArraySlice(winRateLeaderboard, 0, 10);
   
   const renderLeaderboardContent = (data: any[], valueKey: string, valueLabel: string, isLoading: boolean) => {
     if (isLoading) {
@@ -100,17 +112,34 @@ const PXBLeaderboard: React.FC = () => {
       );
     }
     
+    if (!data || data.length === 0) {
+      return (
+        <div className="text-center py-4 text-dream-foreground/60 h-[320px] flex flex-col justify-center">
+          <p className="animate-pulse">No data yet. Be the first on the leaderboard!</p>
+          <div className="mt-2 w-32 h-32 mx-auto opacity-20">
+            <img 
+              src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" 
+              className="w-full h-full text-yellow-400 animate-float" 
+              alt="Trophy" 
+            />
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <ScrollArea className={showAllUsers ? "h-[420px] pr-4" : "h-[320px] pr-4"}>
         <div className="space-y-3">
           {data.map((trader, index) => {
-            const isCurrentUser = trader.id === userProfile?.id;
-            const userId = trader.id || trader.user_id;
-            const isSpecial = trader.isSpecial === true;
+            const isCurrentUser = trader?.id === userProfile?.id;
+            const userId = trader?.id || trader?.user_id;
+            const isSpecial = trader?.isSpecial === true;
+            
+            if (!trader) return null;
             
             return (
               <div 
-                key={userId} 
+                key={userId || `trader-${index}`} 
                 className={cn(
                   `flex items-center p-2 rounded-lg transition-all duration-500 transform ${animate ? 'translate-x-0 opacity-100' : 'translate-x-[-20px] opacity-0'}`, 
                   getPositionStyle(index, isCurrentUser, isSpecial)
@@ -164,7 +193,9 @@ const PXBLeaderboard: React.FC = () => {
                       index === 2 ? "text-orange-500" : 
                       "text-green-400"
                     )}>
-                      {valueKey === 'winRate' ? `${trader[valueKey]}%` : `${formatPoints(trader[valueKey])} ${valueLabel}`}
+                      {valueKey === 'winRate' 
+                        ? `${trader[valueKey] || 0}%` 
+                        : `${formatPoints(trader[valueKey] || 0)} ${valueLabel}`}
                     </div>
                   </div>
                 </div>
@@ -185,19 +216,6 @@ const PXBLeaderboard: React.FC = () => {
               </div>
             );
           })}
-
-          {data.length === 0 && !isLoading && (
-            <div className="text-center py-4 text-dream-foreground/60">
-              <p className="animate-pulse">No data yet. Be the first on the leaderboard!</p>
-              <div className="mt-2 w-32 h-32 mx-auto opacity-20">
-                <img 
-                  src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" 
-                  className="w-full h-full text-yellow-400 animate-float" 
-                  alt="Trophy" 
-                />
-              </div>
-            </div>
-          )}
         </div>
       </ScrollArea>
     );
