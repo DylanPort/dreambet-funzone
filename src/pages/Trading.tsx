@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Trending, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Search, TrendingUp, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { fetchTokenDataFromSolscan } from '@/services/solscanService';
 import { toast } from 'sonner';
@@ -20,7 +19,6 @@ const Trading = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState('search');
 
-  // Load recent searches from local storage on initial render
   useEffect(() => {
     const savedSearches = localStorage.getItem('recentTokenSearches');
     if (savedSearches) {
@@ -32,7 +30,6 @@ const Trading = () => {
     }
   }, []);
 
-  // Save a token search to recent searches
   const saveSearch = (token: any) => {
     if (!token) return;
     
@@ -41,7 +38,6 @@ const Trading = () => {
     localStorage.setItem('recentTokenSearches', JSON.stringify(updatedSearches));
   };
 
-  // Handle search form submission
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -53,11 +49,9 @@ const Trading = () => {
     setIsSearching(true);
     
     try {
-      // For simplicity, we'll focus on searching by address for now
       const tokenData = await fetchTokenDataFromSolscan(searchQuery.trim());
       
       if (tokenData) {
-        // Navigate directly to the token trading page
         navigate(`/trading/token/${tokenData.address}`);
         saveSearch(tokenData);
       } else {
@@ -73,7 +67,6 @@ const Trading = () => {
     }
   };
   
-  // Navigate to a token's trading page
   const navigateToToken = (tokenAddress: string) => {
     navigate(`/trading/token/${tokenAddress}`);
   };
@@ -212,7 +205,7 @@ const Trading = () => {
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center gap-2">
                   <div className="w-12 h-12 rounded-full bg-purple-900/30 flex items-center justify-center mb-2">
-                    <Trending className="h-6 w-6 text-purple-400" />
+                    <TrendingUp className="h-6 w-6 text-purple-400" />
                   </div>
                   <h3 className="font-semibold">Track Your Portfolio</h3>
                   <p className="text-sm text-gray-400">Monitor performance of your token holdings in real-time</p>

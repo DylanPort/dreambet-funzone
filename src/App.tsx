@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Index from '@/pages/Index';
@@ -11,7 +12,7 @@ import TokenBetting from '@/pages/TokenBetting';
 import TokenDetail from '@/pages/TokenDetail';
 import MyBets from '@/pages/MyBets';
 import NotFound from '@/pages/NotFound';
-import { SolanaWalletProvider } from '@solana/wallet-adapter-react';
+import { WalletProvider } from '@solana/wallet-adapter-react';
 import { PXBPointsProvider } from '@/contexts/PXBPointsContext';
 import Trading from '@/pages/Trading';
 import TokenTrading from '@/pages/TokenTrading';
@@ -29,7 +30,7 @@ function App() {
   };
 
   return (
-    <SolanaWalletProvider>
+    <WalletProvider>
       <PXBPointsProvider>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -48,7 +49,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </PXBPointsProvider>
-    </SolanaWalletProvider>
+    </WalletProvider>
   );
 }
 
