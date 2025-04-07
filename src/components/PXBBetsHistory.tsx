@@ -31,8 +31,8 @@ const PXBBetsHistory: React.FC<PXBBetsHistoryProps> = ({ userId, walletAddress, 
         const userWalletAddress = walletAddress || publicKey?.toString();
         let targetUserId = userId;
         
+        // If we have a wallet address but no userId, look up the user ID
         if (!targetUserId && userWalletAddress) {
-          // If we only have a wallet address, we need to look up the user ID
           console.log("Looking up user ID for wallet:", userWalletAddress);
           const { data: userData, error: userError } = await supabase
             .from('users')

@@ -1,55 +1,52 @@
 
-import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Index from '@/pages/Index';
-import Dashboard from '@/pages/Dashboard';
-import PointsBettingDashboard from '@/pages/PointsBettingDashboard';
-import Profile from '@/pages/Profile';
-import PointsCommunity from '@/pages/PointsCommunity';
-import BetDetails from '@/pages/BetDetails';
-import UserProfile from '@/pages/UserProfile';
-import TokenBetting from '@/pages/TokenBetting';
-import TokenDetail from '@/pages/TokenDetail';
-import MyBets from '@/pages/MyBets';
-import NotFound from '@/pages/NotFound';
-import SolanaWalletProvider from '@/providers/SolanaWalletProvider';
-import { PXBPointsProvider } from '@/contexts/PXBPointsContext';
-import Trading from '@/pages/Trading';
-import TokenTrading from '@/pages/TokenTrading';
-import TokenPortfolio from '@/pages/TokenPortfolio';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createQueryClient } from "./services/queryClient";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import SolanaWalletProvider from "./providers/SolanaWalletProvider";
+import { PXBPointsProvider } from "./contexts/pxb/PXBPointsContext";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
+import TokenDetail from "./pages/TokenDetail";
+import BettingDashboard from "./pages/BettingDashboard";
+import TokenBetting from "./pages/TokenBetting";
+import PXBSpace from "./pages/MyBets";
+import BetDetails from "./pages/BetDetails";
+import UserProfile from "./pages/UserProfile";
+
+// Use the createQueryClient function for better error handling
+const queryClient = createQueryClient();
 
 function App() {
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-
-  const toggleMobileMenu = () => {
-    setShowMobileMenu(!showMobileMenu);
-  };
-
-  const closeMobileMenu = () => {
-    setShowMobileMenu(false);
-  };
-
+  console.log("App rendering");
+  
   return (
-    <SolanaWalletProvider>
-      <PXBPointsProvider>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/points-betting" element={<PointsBettingDashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/community" element={<PointsCommunity />} />
-          <Route path="/bets/:id" element={<BetDetails />} />
-          <Route path="/user/:id" element={<UserProfile />} />
-          <Route path="/token-betting/:id" element={<TokenBetting />} />
-          <Route path="/token/:id" element={<TokenDetail />} />
-          <Route path="/bets" element={<MyBets />} />
-          <Route path="/trading" element={<Trading />} />
-          <Route path="/trading/token/:id" element={<TokenTrading />} />
-          <Route path="/trading/portfolio" element={<TokenPortfolio />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </PXBPointsProvider>
-    </SolanaWalletProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <SolanaWalletProvider>
+          <PXBPointsProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/:userId" element={<UserProfile />} />
+                <Route path="/token/:id" element={<TokenDetail />} />
+                <Route path="/betting" element={<BettingDashboard />} />
+                <Route path="/betting/token/:id" element={<TokenBetting />} />
+                <Route path="/betting/my-bets" element={<PXBSpace />} />
+                <Route path="/betting/bet/:id" element={<BetDetails />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </PXBPointsProvider>
+        </SolanaWalletProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 

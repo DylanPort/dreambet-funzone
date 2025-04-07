@@ -39,21 +39,6 @@ export const formatNumberWithCommas = (num: number): string => {
 };
 
 /**
- * Formats a number with appropriate abbreviations based on size
- * @param num The number to format
- * @param decimals Number of decimal places to show
- * @returns The formatted number string
- */
-export const formatNumber = (num: number, decimals: number = 2): string => {
-  if (num === null || num === undefined) return 'N/A';
-  
-  if (num >= 1_000_000_000) return `${(num / 1_000_000_000).toFixed(decimals)}B`;
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(decimals)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(decimals)}K`;
-  return num.toFixed(decimals);
-};
-
-/**
  * Formats the time remaining until expiry
  * @param expiresAt Timestamp when the bet expires
  * @returns Formatted time remaining string
@@ -101,3 +86,4 @@ export const formatBetDuration = (durationInSeconds: number): string => {
   
   return `${minutes} minutes`;
 };
+
