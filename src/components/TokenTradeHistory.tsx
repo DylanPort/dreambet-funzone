@@ -5,6 +5,8 @@ import { ArrowUpRight, ArrowDownRight, ExternalLink, Clock, DollarSign, User, Ha
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
+import { toast } from 'sonner';
 
 interface TokenTradeHistoryProps {
   tokenId: string;
@@ -43,10 +45,12 @@ interface PXBTransaction {
 
 const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
   const pxbContext = usePXBPoints();
+  const pumpPortalState = usePumpPortalWebSocket();
   const [transactions, setTransactions] = useState<PXBTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
+  // Load past transactions and subscribe to new ones
   useEffect(() => {
     const loadTransactions = async () => {
       setLoading(true);
@@ -93,6 +97,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
         setTransactions(txs);
       } catch (error) {
         console.error("Error loading token trade history:", error);
+        toast.error("Failed to load trade history");
       } finally {
         setLoading(false);
       }
@@ -100,9 +105,94 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
 
     loadTransactions();
     
-    // Refresh transactions every 5 seconds (reduced from 30 seconds)
-    const interval = setInterval(loadTransactions, 5000);
+    // Subscribe to token trades via PumpPortal WebSocket
+    if (pumpPortalState.connected) {
+      pumpPortalState.subscribeToToken(tokenId);
+      console.log("Subscribed to token trades for:", tokenId);
+    }
+    
+    // Refresh transactions every 30 seconds (as a fallback)
+    const interval = setInterval(loadTransactions, 30000);
     return () => clearInterval(interval);
+  }, [tokenId, pumpPortalState.connected]);
+
+  // Listen for realtime trades from PumpPortal WebSocket
+  useEffect(() => {
+    const tokenTrades = pumpPortalState.recentTrades[tokenId] || [];
+    
+    if (tokenTrades.length > 0) {
+      // Convert PumpPortal trades to our format
+      const newTrades = tokenTrades.map(trade => ({
+        id: `pp-${trade.timestamp}-${Math.random().toString(36).substring(7)}`, // Generate a random ID
+        timestamp: trade.timestamp,
+        type: trade.side,
+        tokenAmount: trade.amount,
+        price: trade.price,
+        pxbAmount: trade.price * trade.amount,
+        userId: trade.side === 'buy' ? trade.buyer : trade.seller,
+        tokenId: trade.token_mint,
+        tokenName: '', // PumpPortal doesn't provide name in trade events
+        tokenSymbol: '', // PumpPortal doesn't provide symbol in trade events
+        username: trade.side === 'buy' ? 
+          `${trade.buyer.substring(0, 4)}...${trade.buyer.substring(trade.buyer.length - 4)}` : 
+          `${trade.seller.substring(0, 4)}...${trade.seller.substring(trade.seller.length - 4)}`
+      }));
+      
+      // Update transaction list with new trades
+      setTransactions(prev => {
+        // Check if the trade is already in the list by timestamp and amounts
+        const existingIds = new Set(prev.map(tx => tx.id));
+        const filteredNew = newTrades.filter(trade => !existingIds.has(trade.id));
+        
+        if (filteredNew.length > 0) {
+          // Sort by timestamp (newest first)
+          return [...filteredNew, ...prev]
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
+        
+        return prev;
+      });
+    }
+  }, [tokenId, pumpPortalState.recentTrades]);
+
+  // Also listen for Supabase realtime updates for token_transactions
+  useEffect(() => {
+    const channel = supabase
+      .channel('token_transactions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'token_transactions',
+          filter: `tokenid=eq.${tokenId}`
+        },
+        (payload) => {
+          // Add the new transaction to the list
+          const newTx = payload.new as any;
+          
+          const formattedTx: PXBTransaction = {
+            id: newTx.id,
+            timestamp: newTx.timestamp,
+            type: newTx.type,
+            tokenAmount: newTx.quantity,
+            price: newTx.price,
+            pxbAmount: newTx.pxbamount,
+            userId: newTx.userid,
+            tokenId: newTx.tokenid,
+            tokenName: newTx.tokenname,
+            tokenSymbol: newTx.tokensymbol,
+            username: newTx.username || newTx.userid.substring(0, 6) + '...'
+          };
+          
+          setTransactions(prev => [formattedTx, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [tokenId]);
 
   const renderTableView = () => (
