@@ -17,6 +17,24 @@ import { fetchTokenMetrics } from '@/services/tokenDataCache';
 import usePumpPortal from '@/hooks/usePumpPortal';
 import { formatDistanceToNow } from 'date-fns';
 
+// Define the data structure for price history points
+interface PriceHistoryPoint {
+  timestamp: number;
+  price: number;
+  volume?: number;
+}
+
+// Define expected metrics structure
+interface TokenMetrics {
+  marketCap?: number | null;
+  volume24h?: number | null;
+  price?: number | null;
+  priceChange?: number | null;
+  priceUsd?: number | null;
+  priceHistory?: PriceHistoryPoint[];
+  lastUpdated?: Date | number;
+}
+
 // Format time for chart display
 const formatChartTime = (timestamp: number) => {
   const date = new Date(timestamp);
@@ -71,8 +89,11 @@ const TokenTradingChart: React.FC<TokenTradingChartProps> = ({
         setMarketCap(metrics.marketCap || null);
         setVolume24h(metrics.volume24h || null);
         
-        if (metrics.priceHistory && metrics.priceHistory.length > 0) {
-          const sortedPrices = [...metrics.priceHistory].sort((a, b) => a.timestamp - b.timestamp);
+        // Create a synthetic price history if none exists
+        const priceHistoryData = metrics.priceHistory || [];
+        
+        if (priceHistoryData && priceHistoryData.length > 0) {
+          const sortedPrices = [...priceHistoryData].sort((a, b) => a.timestamp - b.timestamp);
           
           // Calculate price change percentage
           if (sortedPrices.length >= 2) {
@@ -97,6 +118,23 @@ const TokenTradingChart: React.FC<TokenTradingChartProps> = ({
           }));
           
           setChartData(formattedData);
+        } else if (metrics.marketCap) {
+          // If we don't have price history but we have market cap, create a single point
+          const estimatedTotalSupply = metrics.marketCap / (metrics.priceUsd || 0.001);
+          const tokenPrice = metrics.marketCap / estimatedTotalSupply;
+          
+          setCurrentPrice(tokenPrice);
+          
+          // Create a single data point for now
+          const now = Date.now();
+          const singlePoint = {
+            time: formatChartTime(now),
+            price: tokenPrice,
+            volume: metrics.volume24h || 0,
+            timestamp: now
+          };
+          
+          setChartData([singlePoint]);
         }
         
         setLastUpdated(new Date());
@@ -125,7 +163,7 @@ const TokenTradingChart: React.FC<TokenTradingChartProps> = ({
   
   // Filter data based on selected time range
   const filteredChartData = chartData.filter(point => {
-    if (!point.timestamp) return false;
+    if (!point || !point.timestamp) return false;
     
     const now = Date.now();
     const pointTime = new Date(point.timestamp).getTime();
@@ -196,7 +234,7 @@ const TokenTradingChart: React.FC<TokenTradingChartProps> = ({
             <div className="h-full flex items-center justify-center">
               <Skeleton className="h-[250px] w-full" />
             </div>
-          ) : filteredChartData.length > 0 ? (
+          ) : filteredChartData && filteredChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={filteredChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />

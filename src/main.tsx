@@ -1,5 +1,6 @@
 
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
 
@@ -17,7 +18,11 @@ console.log('Initializing application');
 
 try {
   const root = createRoot(document.getElementById("root")!);
-  root.render(<App />);
+  root.render(
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  );
   console.log('Application rendered successfully');
 } catch (error) {
   console.error('Failed to render application:', error);
