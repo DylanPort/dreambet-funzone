@@ -23,7 +23,9 @@ const PXBLeaderboard: React.FC = () => {
   const [showAllUsers, setShowAllUsers] = useState(false);
   
   useEffect(() => {
-    fetchLeaderboard();
+    if (fetchLeaderboard && typeof fetchLeaderboard === 'function') {
+      fetchLeaderboard();
+    }
 
     // Set animation state to true after a short delay for entrance animation
     const timer = setTimeout(() => setAnimate(true), 300);
@@ -31,7 +33,7 @@ const PXBLeaderboard: React.FC = () => {
   }, [fetchLeaderboard]);
   
   const handleTabChange = (value: string) => {
-    if (value === 'winrate') {
+    if (value === 'winrate' && fetchWinRateLeaderboard && typeof fetchWinRateLeaderboard === 'function') {
       fetchWinRateLeaderboard();
     }
   };
@@ -96,11 +98,11 @@ const PXBLeaderboard: React.FC = () => {
   
   // Ensure leaderboard and winRateLeaderboard are arrays before attempting to slice them
   const displayedPointsUsers = showAllUsers 
-    ? (leaderboard || []) 
+    ? leaderboard || []
     : safeArraySlice(leaderboard, 0, 10);
     
   const displayedWinRateUsers = showAllUsers 
-    ? (winRateLeaderboard || []) 
+    ? winRateLeaderboard || []
     : safeArraySlice(winRateLeaderboard, 0, 10);
   
   const renderLeaderboardContent = (data: any[], valueKey: string, valueLabel: string, isLoading: boolean) => {
@@ -245,11 +247,11 @@ const PXBLeaderboard: React.FC = () => {
         </TabsList>
         
         <TabsContent value="points" className="mt-0">
-          {renderLeaderboardContent(displayedPointsUsers, 'pxbPoints', 'PXB', isLeaderboardLoading)}
+          {renderLeaderboardContent(displayedPointsUsers, 'pxbPoints', 'PXB', isLeaderboardLoading || false)}
         </TabsContent>
         
         <TabsContent value="winrate" className="mt-0">
-          {renderLeaderboardContent(displayedWinRateUsers, 'winRate', '', isLoadingWinRate)}
+          {renderLeaderboardContent(displayedWinRateUsers, 'winRate', '', isLoadingWinRate || false)}
         </TabsContent>
       </Tabs>
       

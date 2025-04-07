@@ -1,7 +1,9 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { ReferralStats, UserProfile } from '@/types/pxb';
 import { supabase } from '@/integrations/supabase/client';
-import { UserProfile, ReferralStats, Referral } from '@/types/pxb';
+import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useReferralSystem = (
   userProfile: UserProfile | null,
@@ -10,184 +12,36 @@ export const useReferralSystem = (
   const [referralStats, setReferralStats] = useState<ReferralStats>({
     totalReferrals: 0,
     activeReferrals: 0,
-    pointsEarned: 0,
-    totalPointsEarned: 0, // Added for compatibility
-    referrals_count: 0,
-    points_earned: 0,
-    referral_code: null,
-    referrals: []
+    pointsEarned: 0
   });
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
 
-  // Generate a referral link based on user's referral code
-  const generateReferralLink = useCallback(async (): Promise<string> => {
-    if (!userProfile) return Promise.resolve('');
-    
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('referral_code')
-        .eq('id', userProfile.id)
-        .single();
-        
-      if (error) {
-        console.error('Error fetching referral code:', error);
-        return Promise.resolve('');
-      }
-      
-      if (data && data.referral_code) {
-        // Use pumpxbounty.fun domain for referrals
-        return `https://pumpxbounty.fun?ref=${data.referral_code}`;
-      }
-      
-      return Promise.resolve('');
-    } catch (error) {
-      console.error('Error in generateReferralLink:', error);
-      return Promise.resolve('');
-    }
-  }, [userProfile]);
-
-  // Check if a referral code is valid and process the referral
-  const checkAndProcessReferral = useCallback(async (referralCode: string) => {
-    if (!userProfile) {
-      console.error('Please connect your wallet to use referral links');
-      return;
-    }
-
-    try {
-      // First, check if user has already been referred
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('referred_by')
-        .eq('id', userProfile.id)
-        .single();
-      
-      if (userError) {
-        console.error('Error checking if user was already referred:', userError);
-        return;
-      }
-      
-      // If user has already been referred, don't process again
-      if (userData && userData.referred_by) {
-        console.log('User was already referred, not processing again');
-        return;
-      }
-      
-      // Find the referrer by the referral code
-      const { data: referrerData, error: referrerError } = await supabase
-        .from('users')
-        .select('id, referral_code')
-        .eq('referral_code', referralCode)
-        .single();
-      
-      if (referrerError || !referrerData) {
-        console.error('Invalid referral code or error finding referrer:', referrerError);
-        return;
-      }
-      
-      // Don't allow self-referrals
-      if (referrerData.id === userProfile.id) {
-        console.error("You can't refer yourself");
-        return;
-      }
-      
-      // Update the user to mark them as referred
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ referred_by: referralCode })
-        .eq('id', userProfile.id);
-      
-      if (updateError) {
-        console.error('Error updating user with referral:', updateError);
-        return;
-      }
-      
-      // Call the database function to process the referral reward
-      const { data: processResult, error: processError } = await supabase
-        .rpc('process_referral_reward', {
-          referrer_id: referrerData.id,
-          referred_id: userProfile.id
-        });
-      
-      if (processError) {
-        console.error('Error processing referral reward:', processError);
-        return;
-      }
-      
-      if (processResult) {
-        console.log('Referral successfully processed! Your friend will receive 10,000 PXB points.');
-        fetchUserProfile(); // Refresh user data
-      } else {
-        console.log('Referral was not processed, possibly already processed');
-      }
-    } catch (error) {
-      console.error('Error in checkAndProcessReferral:', error);
-    }
-  }, [userProfile, fetchUserProfile]);
-
-  // Fetch referral stats for the current user
   const fetchReferralStats = useCallback(async () => {
     if (!userProfile) return;
-    
+
     setIsLoadingReferrals(true);
     try {
-      // Get user's referral code
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('referral_code')
-        .eq('id', userProfile.id)
-        .single();
-      
-      if (userError) {
-        console.error('Error fetching user referral code:', userError);
-        return;
-      }
-      
-      // Get referrals made by this user
+      // Get total referrals count
       const { data: referralsData, error: referralsError } = await supabase
         .from('referrals')
-        .select(`
-          id,
-          points_awarded,
-          created_at,
-          referred_id,
-          users!referred_id(username)
-        `)
-        .eq('referrer_id', userProfile.id)
-        .order('created_at', { ascending: false });
-      
+        .select('id, points_awarded, status')
+        .eq('referrer_id', userProfile.id);
+
       if (referralsError) {
         console.error('Error fetching referrals:', referralsError);
         return;
       }
-      
-      // Calculate total points earned from referrals
-      const totalPointsEarned = referralsData.reduce((sum, r) => sum + r.points_awarded, 0);
-      
-      // Format referrals data with all required fields for the component
-      const formattedReferrals: Referral[] = referralsData.map(r => ({
-        id: r.id, // Added id field
-        referrer: userProfile.id,
-        referee: r.referred_id,
-        referred_id: r.referred_id, // For backend compatibility
-        date: r.created_at,
-        createdAt: r.created_at, // Added for component compatibility
-        status: 'active',
-        pointsEarned: r.points_awarded,
-        pointsAwarded: r.points_awarded, // Added alias for component compatibility
-        referredUsername: r.users?.username || 'Anonymous User' // Added for display in component
-      }));
-      
-      setReferralStats({
-        totalReferrals: referralsData.length,
-        activeReferrals: referralsData.length,
-        pointsEarned: totalPointsEarned,
-        totalPointsEarned: totalPointsEarned, // Added for component compatibility
-        referrals_count: referralsData.length,
-        points_earned: totalPointsEarned,
-        referral_code: userData?.referral_code || null,
-        referrals: formattedReferrals
-      });
+
+      if (referralsData) {
+        const activeReferrals = referralsData.filter(ref => ref.status === 'completed').length;
+        const totalPoints = referralsData.reduce((sum, ref) => sum + (ref.points_awarded || 0), 0);
+
+        setReferralStats({
+          totalReferrals: referralsData.length,
+          activeReferrals,
+          pointsEarned: totalPoints
+        });
+      }
     } catch (error) {
       console.error('Error in fetchReferralStats:', error);
     } finally {
@@ -195,12 +49,151 @@ export const useReferralSystem = (
     }
   }, [userProfile]);
 
-  // Fetch referral stats when the user profile changes
-  useEffect(() => {
-    if (userProfile) {
-      fetchReferralStats();
+  const generateReferralLink = useCallback(async (): Promise<string> => {
+    if (!userProfile) {
+      toast.error('Please connect your wallet first');
+      return '';
     }
-  }, [userProfile, fetchReferralStats]);
+
+    try {
+      // Check if user already has a referral code
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('referral_code')
+        .eq('id', userProfile.id)
+        .single();
+
+      if (userError && userError.code !== 'PGRST116') {
+        console.error('Error checking referral code:', userError);
+        toast.error('Failed to generate referral link');
+        return '';
+      }
+
+      let referralCode = userData?.referral_code;
+
+      if (!referralCode) {
+        // Generate a new referral code
+        referralCode = `${userProfile.id.substring(0, 6)}-${uuidv4().substring(0, 6)}`.toLowerCase();
+
+        // Save the referral code to the user's profile
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ referral_code: referralCode })
+          .eq('id', userProfile.id);
+
+        if (updateError) {
+          console.error('Error saving referral code:', updateError);
+          toast.error('Failed to save referral code');
+          return '';
+        }
+      }
+
+      // Construct the full referral link (adjust the base URL as needed)
+      const referralLink = `${window.location.origin}?ref=${referralCode}`;
+      return referralLink;
+    } catch (error) {
+      console.error('Error generating referral link:', error);
+      toast.error('Failed to generate referral link');
+      return '';
+    }
+  }, [userProfile]);
+
+  const checkAndProcessReferral = useCallback(async (referralCode: string): Promise<boolean> => {
+    if (!userProfile) {
+      toast.error('Please connect your wallet first');
+      return false;
+    }
+
+    try {
+      // Check if the referral code exists and belongs to another user
+      const { data: referrerData, error: referrerError } = await supabase
+        .from('users')
+        .select('id, username')
+        .eq('referral_code', referralCode)
+        .neq('id', userProfile.id)
+        .single();
+
+      if (referrerError || !referrerData) {
+        console.error('Invalid referral code or error:', referrerError);
+        toast.error('Invalid referral code');
+        return false;
+      }
+
+      // Check if the user has already been referred
+      const { data: existingReferral, error: existingError } = await supabase
+        .from('referrals')
+        .select('id')
+        .eq('referred_id', userProfile.id)
+        .single();
+
+      if (existingReferral) {
+        toast.error('You have already used a referral code');
+        return false;
+      }
+
+      // Create a new referral record
+      const referralPoints = 10000;
+      const { error: createReferralError } = await supabase
+        .from('referrals')
+        .insert({
+          referrer_id: referrerData.id,
+          referred_id: userProfile.id,
+          points_awarded: referralPoints,
+          status: 'completed'
+        });
+
+      if (createReferralError) {
+        console.error('Error creating referral:', createReferralError);
+        toast.error('Failed to process referral');
+        return false;
+      }
+
+      // Update the referred_by field for the user
+      const { error: updateUserError } = await supabase
+        .from('users')
+        .update({ referred_by: referrerData.id })
+        .eq('id', userProfile.id);
+
+      if (updateUserError) {
+        console.error('Error updating user referred_by:', updateUserError);
+      }
+
+      // Award points to the referrer
+      const { data: referrerProfile, error: referrerProfileError } = await supabase
+        .from('users')
+        .select('points')
+        .eq('id', referrerData.id)
+        .single();
+
+      if (!referrerProfileError && referrerProfile) {
+        const newPoints = (referrerProfile.points || 0) + referralPoints;
+        await supabase
+          .from('users')
+          .update({ points: newPoints })
+          .eq('id', referrerData.id);
+
+        // Record the points transaction
+        await supabase
+          .from('points_history')
+          .insert({
+            user_id: referrerData.id,
+            amount: referralPoints,
+            action: 'referral_bonus',
+            reference_id: userProfile.id
+          });
+      }
+
+      // Refresh user profile to get updated points
+      await fetchUserProfile();
+
+      toast.success(`Referral successful! ${referrerData.username || 'User'} received ${referralPoints} PXB!`);
+      return true;
+    } catch (error) {
+      console.error('Error processing referral:', error);
+      toast.error('Failed to process referral');
+      return false;
+    }
+  }, [userProfile, fetchUserProfile]);
 
   return {
     generateReferralLink,

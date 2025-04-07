@@ -32,9 +32,9 @@ export const useLeaderboardData = () => {
         id: user.id,
         user_id: user.id,
         wallet: user.wallet_address,
-        username: user.username || user.wallet_address.substring(0, 8),
-        points: user.points,
-        pxbPoints: user.points,
+        username: user.username || user.wallet_address?.substring(0, 8) || `User_${index}`,
+        points: user.points || 0,
+        pxbPoints: user.points || 0,
         betsWon: 0, // Default values since we don't have this data
         betsLost: 0, // Default values since we don't have this data
         rank: index + 1
@@ -95,10 +95,10 @@ export const useLeaderboardData = () => {
         const fallbackData = (fallbackQuery.data || []).map((user, index) => ({
           id: user.id,
           user_id: user.id,
-          wallet: user.wallet_address,
-          username: user.username || user.wallet_address.substring(0, 8),
-          pxbPoints: user.points,
-          points: user.points,
+          wallet: user.wallet_address || `wallet_${index}`,
+          username: user.username || (user.wallet_address ? user.wallet_address.substring(0, 8) : `User_${index}`),
+          pxbPoints: user.points || 0,
+          points: user.points || 0,
           winRate: Math.floor(Math.random() * 100),
           betsWon: Math.floor(Math.random() * 10),
           betsLost: Math.floor(Math.random() * 5),
@@ -141,10 +141,10 @@ export const useLeaderboardData = () => {
           const fallbackData = (fallbackQuery.data || []).map((user, index) => ({
             id: user.id,
             user_id: user.id,
-            wallet: user.wallet_address,
-            username: user.username || user.wallet_address.substring(0, 8),
-            pxbPoints: user.points,
-            points: user.points,
+            wallet: user.wallet_address || `wallet_${index}`,
+            username: user.username || (user.wallet_address ? user.wallet_address.substring(0, 8) : `User_${index}`),
+            pxbPoints: user.points || 0,
+            points: user.points || 0,
             winRate: Math.floor(Math.random() * 100),
             betsWon: Math.floor(Math.random() * 10),
             betsLost: Math.floor(Math.random() * 5),
@@ -180,10 +180,10 @@ export const useLeaderboardData = () => {
           const fallbackData = (fallbackQuery.data || []).map((user, index) => ({
             id: user.id,
             user_id: user.id,
-            wallet: user.wallet_address,
-            username: user.username || user.wallet_address.substring(0, 8),
-            pxbPoints: user.points,
-            points: user.points,
+            wallet: user.wallet_address || `wallet_${index}`,
+            username: user.username || (user.wallet_address ? user.wallet_address.substring(0, 8) : `User_${index}`),
+            pxbPoints: user.points || 0,
+            points: user.points || 0,
             winRate: Math.floor(Math.random() * 100),
             betsWon: Math.floor(Math.random() * 10),
             betsLost: Math.floor(Math.random() * 5),
@@ -221,8 +221,8 @@ export const useLeaderboardData = () => {
           return {
             id: user.id,
             user_id: user.id,
-            wallet: user.wallet_address,
-            username: user.username || user.wallet_address.substring(0, 8) || `User_${user.id.substring(0, 6)}`,
+            wallet: user.wallet_address || `wallet_${index}`,
+            username: user.username || (user.wallet_address ? user.wallet_address.substring(0, 8) : `User_${index}`),
             pxbPoints: user.points || 0,
             points: user.points || 0,
             winRate: winRateItem.winRate,
@@ -248,10 +248,10 @@ export const useLeaderboardData = () => {
           const fallbackData = (data || []).map((user, index) => ({
             id: user.id,
             user_id: user.id,
-            wallet: user.wallet_address,
-            username: user.username || user.wallet_address.substring(0, 8),
-            pxbPoints: user.points,
-            points: user.points,
+            wallet: user.wallet_address || `wallet_${index}`,
+            username: user.username || (user.wallet_address ? user.wallet_address.substring(0, 8) : `User_${index}`),
+            pxbPoints: user.points || 0,
+            points: user.points || 0,
             winRate: Math.floor(Math.random() * 100),
             betsWon: Math.floor(Math.random() * 10),
             betsLost: Math.floor(Math.random() * 5),
@@ -271,12 +271,18 @@ export const useLeaderboardData = () => {
     }
   }, []);
 
+  // Add topBettors for compatibility with PXBPointsContext
+  const topBettors = leaderboard.slice(0, 10);
+  const leaderboardLoading = isLoading;
+
   return {
     leaderboard,
     winRateLeaderboard,
     isLoading,
     isLoadingWinRate,
     fetchLeaderboard,
-    fetchWinRateLeaderboard
+    fetchWinRateLeaderboard,
+    topBettors,
+    leaderboardLoading
   };
 };
