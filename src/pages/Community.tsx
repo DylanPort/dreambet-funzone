@@ -351,37 +351,7 @@ const CommunityPage = () => {
                 </div>
               </div>}
             
-            <div className="mt-6 glass-panel p-4">
-              <div className="flex items-center mb-4">
-                
-                <h3 className="font-display font-bold text-lg">Most Liked Messages</h3>
-              </div>
-              
-              {!topLikedMessages || topLikedMessages.length === 0 ? <p className="text-dream-foreground/50 text-sm text-center py-3">No liked messages yet</p> : <div className="space-y-3">
-                  {topLikedMessages.slice(0, 3).map(msg => <Card key={`liked-${msg.id}`} className="p-3 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
-                      <div className="flex justify-between items-start mb-1">
-                        <Link to={`/profile/${msg.user_id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
-                            <Avatar className="w-full h-full">
-                              <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
-                              <AvatarFallback className="bg-transparent">
-                                <User className="w-3 h-3 text-dream-foreground/70" />
-                              </AvatarFallback>
-                            </Avatar>
-                          </div>
-                          <span className="text-sm font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
-                        </Link>
-                        <div className="flex items-center text-xs text-dream-foreground/50">
-                          <ThumbsUp className="w-3 h-3 mr-1 text-green-500 fill-green-500" />
-                          <span>{msg.likes_count || messageReactions[msg.id]?.likes || 0}</span>
-                        </div>
-                      </div>
-                      <p className="text-sm text-dream-foreground/80 line-clamp-2 mt-1">
-                        {msg.content}
-                      </p>
-                    </Card>)}
-              </div>}
-            </div>
+            
           </div>
           
           {/* Main content area */}
@@ -463,26 +433,7 @@ const CommunityPage = () => {
                       <p className="text-dream-foreground/90 mt-1 mb-3">{msg.content}</p>
                       
                       <div className="flex items-center justify-between mt-2 mb-1 text-dream-foreground/50">
-                        <div className="flex items-center space-x-4">
-                          <Button variant="ghost" size="sm" onClick={() => handleReaction(msg.id, 'like')} className={`flex items-center text-xs px-2 py-1 h-auto group ${messageReactions[msg.id]?.userReaction === 'like' ? 'text-green-500' : ''}`} disabled={!connected}>
-                            <ThumbsUp className={`w-4 h-4 mr-1 ${messageReactions[msg.id]?.userReaction === 'like' ? 'fill-green-500 text-green-500' : 'group-hover:text-green-400'}`} />
-                            <span className={`font-medium ${messageReactions[msg.id]?.userReaction === 'like' ? 'text-green-500' : ''}`}>
-                              {messageReactions[msg.id]?.likes || 0}
-                            </span>
-                          </Button>
-                          
-                          <Button variant="ghost" size="sm" onClick={() => handleReaction(msg.id, 'dislike')} className={`flex items-center text-xs px-2 py-1 h-auto group ${messageReactions[msg.id]?.userReaction === 'dislike' ? 'text-red-500' : ''}`} disabled={!connected}>
-                            <ThumbsDown className={`w-4 h-4 mr-1 ${messageReactions[msg.id]?.userReaction === 'dislike' ? 'fill-red-500 text-red-500' : 'group-hover:text-red-400'}`} />
-                            <span className={`font-medium ${messageReactions[msg.id]?.userReaction === 'dislike' ? 'text-red-500' : ''}`}>
-                              {messageReactions[msg.id]?.dislikes || 0}
-                            </span>
-                          </Button>
-                          
-                          <Button variant="ghost" size="sm" onClick={() => handleReplyClick(msg.id)} className="flex items-center text-xs px-2 py-1 h-auto group hover:text-dream-accent2">
-                            <Reply className="w-4 h-4 mr-1 group-hover:text-dream-accent2" />
-                            Reply
-                          </Button>
-                        </div>
+                        
                         
                         {messageReplies[msg.id]?.length > 0 && <Button variant="ghost" size="sm" onClick={() => handleLoadReplies(msg.id)} className="flex items-center text-xs px-2 py-1 h-auto">
                             <span className="text-[#00ff26]">
