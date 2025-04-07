@@ -16,6 +16,8 @@ import PXBSpace from "./pages/MyBets";
 import BetDetails from "./pages/BetDetails";
 import UserProfile from "./pages/UserProfile";
 import PointsCommunity from "./pages/PointsCommunity";
+import TokenTrading from "./pages/TokenTrading";
+import TokenPortfolio from "./pages/TokenPortfolio";
 
 // Configure Query Client with retry options for better error handling
 const queryClient = new QueryClient({
@@ -49,6 +51,8 @@ function App() {
                 <Route path="/betting/my-bets" element={<PXBSpace />} />
                 <Route path="/betting/bet/:id" element={<BetDetails />} />
                 <Route path="/community" element={<PointsCommunity />} />
+                <Route path="/trading/token/:id" element={<TokenTrading />} />
+                <Route path="/trading/portfolio" element={<TokenPortfolio />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

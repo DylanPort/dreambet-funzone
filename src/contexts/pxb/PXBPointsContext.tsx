@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -6,6 +7,7 @@ import { useLeaderboardData } from './useLeaderboardData';
 import { usePointOperations } from './usePointOperations';
 import { useBetProcessor } from './useBetProcessor';
 import { useReferralSystem } from './useReferralSystem';
+import { useTokenTrading } from './useTokenTrading';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 const PXBPointsContext = createContext<PXBPointsContextType | undefined>(undefined);
@@ -66,6 +68,18 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     isLoadingReferrals
   } = useReferralSystem(userProfile, fetchUserProfile);
   
+  // Set up token trading
+  const {
+    tokenPortfolios,
+    tokenTransactions,
+    isLoadingPortfolios,
+    isLoadingTransactions,
+    fetchTokenPortfolios,
+    fetchTokenTransactions,
+    purchaseToken,
+    sellToken
+  } = useTokenTrading(userProfile, setUserProfile, fetchUserProfile);
+  
   // Handle bet processing
   useBetProcessor(bets, userProfile, setUserProfile, setBets);
   
@@ -125,7 +139,16 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         checkAndProcessReferral,
         referralStats,
         fetchReferralStats,
-        isLoadingReferrals
+        isLoadingReferrals,
+        // Token trading
+        purchaseToken,
+        sellToken,
+        tokenPortfolios,
+        tokenTransactions,
+        fetchTokenPortfolios,
+        fetchTokenTransactions,
+        isLoadingPortfolios,
+        isLoadingTransactions
       }}
     >
       {children}
