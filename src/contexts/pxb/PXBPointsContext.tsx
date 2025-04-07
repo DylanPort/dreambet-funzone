@@ -142,8 +142,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Create wrapper function to match expected signature (amount: number) => Promise<void>
   const addPointsWrapper = async (amount: number): Promise<void> => {
-    const result = await addPointsToUser(amount, "Points operation");
-    return;
+    await addPointsToUser(amount, "Points operation");
   };
 
   // Create wrapper function to match expected signature for checkAndProcessReferral

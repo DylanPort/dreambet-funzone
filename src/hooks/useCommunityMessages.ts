@@ -1,14 +1,14 @@
 
 import { useState, useEffect } from 'react';
-import { useUser } from '@/integrations/auth-helpers'; // Updated import path
+import { useUser } from '@/integrations/auth-helpers';
 import { supabase } from '@/integrations/supabase/client';
-import { CommunityMessage } from '@/types/community';
+import { CommunityMessage, CommunityReply, MessageReactionCounts } from '@/types/community';
 
 const useCommunityMessages = () => {
   const user = useUser();
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
-  const [messageReplies, setMessageReplies] = useState<Record<string, any[]>>({});
-  const [messageReactions, setMessageReactions] = useState<Record<string, any>>({});
+  const [messageReplies, setMessageReplies] = useState<Record<string, CommunityReply[]>>({});
+  const [messageReactions, setMessageReactions] = useState<Record<string, MessageReactionCounts>>({});
   const [topLikedMessages, setTopLikedMessages] = useState<CommunityMessage[]>([]);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,14 @@ const useCommunityMessages = () => {
       try {
         const { data, error } = await supabase
           .from('community_messages')
-          .select('id, created_at, content, user_id, users(username)')
+          .select(`
+            id, 
+            created_at, 
+            content, 
+            user_id, 
+            likes_count,
+            users(username)
+          `)
           .order('created_at', { ascending: false })
           .limit(50);
 
@@ -34,6 +41,7 @@ const useCommunityMessages = () => {
             created_at: msg.created_at,
             content: msg.content,
             user_id: msg.user_id,
+            likes_count: msg.likes_count || 0,
             username: msg.users?.username || 'Unknown User',
           }));
           setMessages(typedMessages);
@@ -87,6 +95,7 @@ const useCommunityMessages = () => {
   // Add loadRepliesForMessage function
   const loadRepliesForMessage = async (messageId: string) => {
     try {
+      // Need to directly query the database for replies
       const { data, error } = await supabase
         .from('message_replies')
         .select('*')
@@ -98,12 +107,13 @@ const useCommunityMessages = () => {
         return [];
       }
 
+      const typedReplies = data as CommunityReply[];
       setMessageReplies(prev => ({
         ...prev,
-        [messageId]: data
+        [messageId]: typedReplies
       }));
 
-      return data;
+      return typedReplies;
     } catch (err) {
       console.error("Error loading replies:", err);
       return [];
@@ -115,8 +125,7 @@ const useCommunityMessages = () => {
     if (!user) return;
     
     try {
-      // Logic for reacting to messages would go here
-      // For now returning a mock implementation
+      // Mock implementation for now
       setMessageReactions(prev => ({
         ...prev,
         [messageId]: {
@@ -125,20 +134,21 @@ const useCommunityMessages = () => {
           userReaction: reactionType
         }
       }));
+      
+      return true;
     } catch (error) {
       console.error("Error reacting to message:", error);
-      throw error;
+      return false;
     }
   };
 
   // Add postReply function
   const postReply = async (messageId: string, content: string) => {
-    if (!user) return;
+    if (!user) return null;
     
     try {
-      // Logic for posting a reply would go here
-      // For now returning a mock implementation
-      const newReply = {
+      // Mock implementation for now
+      const newReply: CommunityReply = {
         id: `reply-${Date.now()}`,
         message_id: messageId,
         content,
@@ -151,14 +161,16 @@ const useCommunityMessages = () => {
         ...prev,
         [messageId]: [...(prev[messageId] || []), newReply]
       }));
+      
+      return newReply;
     } catch (error) {
       console.error("Error posting reply:", error);
-      throw error;
+      return null;
     }
   };
 
-  const postMessage = async (content: string): Promise<void> => {
-    if (!user) return;
+  const postMessage = async (content: string): Promise<boolean> => {
+    if (!user) return false;
     
     try {
       setPosting(true);
@@ -169,12 +181,13 @@ const useCommunityMessages = () => {
       if (error) {
         console.error("Error posting message:", error);
         setError("Failed to post message.");
-        throw error;
+        return false;
       }
+      return true;
     } catch (error) {
       console.error("Error posting message:", error);
       setError("Failed to post message.");
-      throw error;
+      return false;
     } finally {
       setPosting(false);
     }

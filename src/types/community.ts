@@ -5,6 +5,8 @@ export interface CommunityMessage {
   created_at: string;
   user_id: string;
   username: string;
+  likes_count?: number;
+  dislikes_count?: number;
   user_pxb_points?: number;
   user_win_rate?: number;
   user_rank?: number;
