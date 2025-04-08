@@ -12,22 +12,14 @@ interface TokenTradingProps {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  currentPrice?: number;
-  marketCap?: number | null;
-  volume24h?: number | null;
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  currentPrice: number;
 }
 
 const TokenTrading: React.FC<TokenTradingProps> = ({
   tokenId, 
   tokenName,
   tokenSymbol,
-  currentPrice = 0.0001,
-  marketCap,
-  volume24h,
-  onSuccess,
-  onCancel
+  currentPrice
 }) => {
   const [activeTab, setActiveTab] = useState('buy');
   const [tokenQuantity, setTokenQuantity] = useState(100);
@@ -45,7 +37,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     const quantity = parseInt(e.target.value) || 0;
     setTokenQuantity(quantity);
     // Update PXB amount based on token quantity
-    setPxbAmount(Math.round(quantity * (currentPrice || 0.0001)));
+    setPxbAmount(Math.round(quantity * currentPrice));
   };
   
   // Handle change in PXB amount
@@ -53,7 +45,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
     const amount = parseInt(e.target.value) || 0;
     setPxbAmount(amount);
     // Update token quantity based on PXB amount
-    setTokenQuantity(Math.round(amount / (currentPrice || 0.0001)));
+    setTokenQuantity(Math.round(amount / currentPrice));
   };
 
   // Handle buying tokens
@@ -94,7 +86,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         tokenSymbol,
         pxbAmount,
         tokenQuantity,
-        currentPrice || 0.0001
+        currentPrice
       );
       
       if (success) {
@@ -112,14 +104,14 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
               sol_amount: pxbAmount / 1000, // Convert PXB to SOL equivalent (for demo)
               duration: 86400, // 24 hours in seconds
               status: 'pending',
-              initial_market_cap: (currentPrice || 0.0001) * tokenQuantity
+              initial_market_cap: currentPrice * tokenQuantity
             })
             .select('bet_id')
             .single();
           
           if (betError) {
             console.error('Error recording bet:', betError);
-          } else if (betData) {
+          } else {
             // Also record in bet_history
             await supabase
               .from('bet_history')
@@ -133,7 +125,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
                   pxb_amount: pxbAmount,
                   token_quantity: tokenQuantity
                 },
-                market_cap_at_action: (currentPrice || 0.0001) * tokenQuantity
+                market_cap_at_action: currentPrice * tokenQuantity
               });
           }
         } catch (err) {
@@ -145,10 +137,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           description: `You purchased ${tokenQuantity} ${tokenSymbol} tokens`,
           variant: "default",
         });
-
-        if (onSuccess) {
-          onSuccess();
-        }
       } else {
         throw new Error("Purchase failed");
       }
@@ -192,7 +180,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         tokenName,
         tokenSymbol,
         tokenQuantity,
-        currentPrice || 0.0001
+        currentPrice
       );
       
       if (success) {
@@ -210,14 +198,14 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
               sol_amount: pxbAmount / 1000, // Convert PXB to SOL equivalent
               duration: 86400, // 24 hours in seconds
               status: 'pending',
-              initial_market_cap: (currentPrice || 0.0001) * tokenQuantity
+              initial_market_cap: currentPrice * tokenQuantity
             })
             .select('bet_id')
             .single();
           
           if (betError) {
             console.error('Error recording bet:', betError);
-          } else if (betData) {
+          } else {
             // Also record in bet_history
             await supabase
               .from('bet_history')
@@ -231,7 +219,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
                   pxb_amount: pxbAmount,
                   token_quantity: tokenQuantity
                 },
-                market_cap_at_action: (currentPrice || 0.0001) * tokenQuantity
+                market_cap_at_action: currentPrice * tokenQuantity
               });
           }
         } catch (err) {
@@ -243,10 +231,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           description: `You sold ${tokenQuantity} ${tokenSymbol} tokens for ${pxbAmount} PXB`,
           variant: "default",
         });
-
-        if (onSuccess) {
-          onSuccess();
-        }
       } else {
         throw new Error("Sale failed");
       }
@@ -261,9 +245,6 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       setIsProcessing(false);
     }
   };
-
-  // Ensure we have a safe value for formatting price
-  const safeCurrentPrice = currentPrice || 0.0001;
 
   return (
     <Card className="glass-panel p-6 mb-8">
@@ -309,7 +290,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
                 <div className="bg-dream-background/30 p-4 rounded-md">
                   <div className="flex justify-between">
                     <span>Price per token:</span>
-                    <span>{safeCurrentPrice.toFixed(6)} PXB</span>
+                    <span>{currentPrice.toFixed(6)} PXB</span>
                   </div>
                   <div className="flex justify-between mt-2">
                     <span>Total cost:</span>
@@ -358,7 +339,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
                 <div className="bg-dream-background/30 p-4 rounded-md">
                   <div className="flex justify-between">
                     <span>Price per token:</span>
-                    <span>{safeCurrentPrice.toFixed(6)} PXB</span>
+                    <span>{currentPrice.toFixed(6)} PXB</span>
                   </div>
                   <div className="flex justify-between mt-2">
                     <span>Total to receive:</span>
