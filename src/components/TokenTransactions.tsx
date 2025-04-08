@@ -46,14 +46,8 @@ const TokenTransactions: React.FC<TokenTransactionsProps> = ({ tokenId }) => {
           throw error;
         }
         
-        // Ensure we cast the type field to 'buy' | 'sell' to match our interface
-        const typedTransactions = data?.map(tx => ({
-          ...tx,
-          type: tx.type === 'buy' ? 'buy' : 'sell' // Ensure the type is either 'buy' or 'sell'
-        })) as TokenTransaction[];
-        
-        setTransactions(typedTransactions || []);
-        console.log("Fetched token transactions:", typedTransactions);
+        setTransactions(data || []);
+        console.log("Fetched token transactions:", data);
       } catch (error) {
         console.error('Error loading token transactions:', error);
       } finally {
