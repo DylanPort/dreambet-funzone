@@ -41,7 +41,6 @@ interface PXBTransaction {
   tokenName: string;
   tokenSymbol: string;
   username?: string;
-  isDemo?: boolean;
 }
 
 const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
@@ -92,8 +91,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
           tokenId: tx.tokenid,
           tokenName: tx.tokenname,
           tokenSymbol: tx.tokensymbol,
-          username: tx.users?.username,
-          isDemo: false
+          username: tx.users?.username
         }));
         
         setTransactions(txs);
@@ -137,8 +135,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
         tokenSymbol: '', // PumpPortal doesn't provide symbol in trade events
         username: trade.side === 'buy' ? 
           `${trade.buyer.substring(0, 4)}...${trade.buyer.substring(trade.buyer.length - 4)}` : 
-          `${trade.seller.substring(0, 4)}...${trade.seller.substring(trade.seller.length - 4)}`,
-        isDemo: false
+          `${trade.seller.substring(0, 4)}...${trade.seller.substring(trade.seller.length - 4)}`
       }));
       
       // Update transaction list with new trades
@@ -185,8 +182,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
             tokenId: newTx.tokenid,
             tokenName: newTx.tokenname,
             tokenSymbol: newTx.tokensymbol,
-            username: newTx.username || newTx.userid.substring(0, 6) + '...',
-            isDemo: false
+            username: newTx.username || newTx.userid.substring(0, 6) + '...'
           };
           
           setTransactions(prev => [formattedTx, ...prev]);
@@ -198,41 +194,6 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
       supabase.removeChannel(channel);
     };
   }, [tokenId]);
-
-  // Listen for demo mode purchases and sales
-  useEffect(() => {
-    const handleDemoTransaction = (event: any) => {
-      if (event.detail && event.detail.tokenId === tokenId) {
-        const isBuy = event.type === 'tokenPurchase';
-        const newTransaction: PXBTransaction = {
-          id: `demo-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-          timestamp: event.detail.timestamp || new Date().toISOString(),
-          type: isBuy ? 'buy' : 'sell',
-          tokenAmount: event.detail.amount || 0,
-          price: event.detail.price || 0,
-          pxbAmount: (event.detail.amount || 0) * (event.detail.price || 0),
-          userId: pxbContext.userProfile?.id || 'unknown',
-          tokenId: event.detail.tokenId,
-          tokenName: '',
-          tokenSymbol: '',
-          username: pxbContext.userProfile?.username || 'You',
-          isDemo: true
-        };
-        
-        console.log("Demo transaction detected:", newTransaction);
-        
-        setTransactions(prev => [newTransaction, ...prev]);
-      }
-    };
-    
-    window.addEventListener('tokenPurchase', handleDemoTransaction);
-    window.addEventListener('tokenSale', handleDemoTransaction);
-    
-    return () => {
-      window.removeEventListener('tokenPurchase', handleDemoTransaction);
-      window.removeEventListener('tokenSale', handleDemoTransaction);
-    };
-  }, [tokenId, pxbContext.userProfile]);
 
   const renderTableView = () => (
     <div className="w-full overflow-auto">
@@ -251,7 +212,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
           {transactions.map((trade) => (
             <TableRow 
               key={trade.id} 
-              className={`border-b border-dream-accent1/10 hover:bg-dream-accent1/5 ${trade.isDemo ? 'bg-purple-900/10' : ''}`}
+              className="border-b border-dream-accent1/10 hover:bg-dream-accent1/5"
             >
               <TableCell>
                 <div className="flex items-center">
@@ -263,9 +224,6 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
                   <span className={trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}>
                     {trade.type === 'buy' ? 'Buy' : 'Sell'}
                   </span>
-                  {trade.isDemo && (
-                    <span className="ml-1 px-1 py-0.5 text-[9px] bg-purple-500/20 text-purple-300 rounded">DEMO</span>
-                  )}
                 </div>
               </TableCell>
               <TableCell>${formatPrice(trade.price)}</TableCell>
@@ -287,10 +245,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
   const renderCardView = () => (
     <div className="space-y-4 max-h-96 overflow-y-auto">
       {transactions.map((trade, index) => (
-        <div 
-          key={`${trade.id}-${index}`} 
-          className={`glass-panel border border-dream-accent1/20 p-4 rounded-lg ${trade.isDemo ? 'bg-purple-900/20 border-purple-500/30' : ''}`}
-        >
+        <div key={`${trade.id}-${index}`} className="glass-panel border border-dream-accent1/20 p-4 rounded-lg">
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center">
               {trade.type === 'buy' ? (
@@ -301,9 +256,6 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
               <span className={`font-semibold ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
                 {trade.type === 'buy' ? 'Buy' : 'Sell'}
               </span>
-              {trade.isDemo && (
-                <span className="ml-2 px-1.5 py-0.5 text-xs bg-purple-500/20 text-purple-300 rounded">DEMO</span>
-              )}
             </div>
             <span className="text-xs text-dream-foreground/70">
               {formatDistanceToNow(new Date(trade.timestamp), { addSuffix: true })}
