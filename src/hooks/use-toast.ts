@@ -1,6 +1,8 @@
 
+// Empty implementation that does nothing but maintains the interface
+// so existing code doesn't break
+
 import * as React from "react";
-import { toast as sonnerToast } from "sonner";
 
 export interface ToastActionElement {
   altText: string;
@@ -10,80 +12,37 @@ export interface ToastProps {
   id?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  variant?: 'default' | 'destructive' | 'success' | 'info';
+  variant?: 'default' | 'destructive' | 'success';
 }
 
-type ToastOptions = {
-  title?: string;
-  description?: string;
-  action?: React.ReactNode;
-  variant?: 'default' | 'destructive' | 'success' | 'info';
-  duration?: number;
-};
-
-// Create the actual toast implementation using sonner
+// No-op implementation that does nothing
 export const useToast = () => {
   return {
     toasts: [],
-    toast: showToast,
-    dismiss: sonnerToast.dismiss,
+    toast: noOpToast,
+    dismiss: () => {},
   };
 };
 
-// Helper function to display toasts
-const showToast = (options: ToastOptions) => {
-  const { title, description, variant, duration } = options;
-
-  if (variant === 'destructive') {
-    return sonnerToast.error(title, {
-      description,
-      duration: duration || 5000,
-    });
-  } else if (variant === 'success') {
-    return sonnerToast.success(title, {
-      description,
-      duration: duration || 3000,
-    });
-  } else if (variant === 'info') {
-    return sonnerToast.info(title, {
-      description,
-      duration: duration || 3000,
-    });
-  } else {
-    return sonnerToast(title, {
-      description,
-      duration: duration || 3000,
-    });
-  }
+const noOpToast = (props: any) => {
+  console.log('Toast disabled:', props);
+  return { id: '0', dismiss: () => {}, update: () => {} };
 };
 
-// Create versions of the toast function for different variants
-showToast.success = (title: string, options?: Omit<ToastOptions, 'variant'>) => {
-  return sonnerToast.success(title, {
-    description: options?.description,
-    duration: options?.duration || 3000,
-  });
+// Create no-op versions of the toast functions to maintain the interface
+noOpToast.success = (title: string, props?: any) => {
+  console.log('Toast success disabled:', title, props);
+  return { id: '0', dismiss: () => {}, update: () => {} };
 };
 
-showToast.error = (title: string, options?: Omit<ToastOptions, 'variant'>) => {
-  return sonnerToast.error(title, {
-    description: options?.description,
-    duration: options?.duration || 5000,
-  });
+noOpToast.error = (title: string, props?: any) => {
+  console.log('Toast error disabled:', title, props);
+  return { id: '0', dismiss: () => {}, update: () => {} };
 };
 
-showToast.info = (title: string, options?: Omit<ToastOptions, 'variant'>) => {
-  return sonnerToast.info(title, {
-    description: options?.description,
-    duration: options?.duration || 3000,
-  });
+noOpToast.bet = (title: string, props?: any) => {
+  console.log('Toast bet disabled:', title, props);
+  return { id: '0', dismiss: () => {}, update: () => {} };
 };
 
-showToast.bet = (title: string, options?: Omit<ToastOptions, 'variant'>) => {
-  return sonnerToast(title, {
-    description: options?.description,
-    duration: options?.duration || 3000,
-  });
-};
-
-export const toast = showToast;
+export const toast = noOpToast;

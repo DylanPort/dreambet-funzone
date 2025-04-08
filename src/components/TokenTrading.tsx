@@ -13,7 +13,6 @@ import { fetchDexScreenerData } from '@/services/dexScreenerService';
 import { fetchGMGNTokenData } from '@/services/gmgnService';
 import TokenTransactionConfirmDialog from './TokenTransactionConfirmDialog';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 interface TokenTradingProps {
   tokenId: string;
@@ -294,33 +293,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         pumpPortalService.subscribeToToken(tokenId);
       }
 
-      toast.success(`Token Purchase Successful`, {
-        description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens (Demo Mode)`
+      toast({
+        title: "Demo Purchase",
+        description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens (Demo Mode)`,
       });
-
-      if (userProfile) {
-        try {
-          const { error } = await supabase
-            .from('token_transactions')
-            .insert({
-              userid: userProfile.id,
-              tokenid: tokenId,
-              tokenname: tokenName,
-              tokensymbol: tokenSymbol,
-              type: 'buy',
-              quantity: tokenAmount,
-              price: tokenPrice,
-              pxbamount: amount,
-              timestamp: new Date().toISOString()
-            });
-            
-          if (error) {
-            console.error("Error saving transaction to database:", error);
-          }
-        } catch (dbError) {
-          console.error("Database error:", dbError);
-        }
-      }
 
       window.dispatchEvent(new CustomEvent('tokenPurchase', { 
         detail: {
@@ -371,33 +347,7 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       console.log(`Selling tokens (Demo Mode): ${holding.tokenAmount} ${holding.tokenSymbol}`);
       console.log(`Return amount (Demo Mode): ${returnAmount} PXB`);
       
-      toast.success(`Token Sale Successful`, {
-        description: `You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`
-      });
-
-      if (userProfile) {
-        try {
-          const { error } = await supabase
-            .from('token_transactions')
-            .insert({
-              userid: userProfile.id,
-              tokenid: tokenId,
-              tokenname: tokenName,
-              tokensymbol: holding.tokenSymbol,
-              type: 'sell',
-              quantity: holding.tokenAmount,
-              price: tokenPrice,
-              pxbamount: returnAmount,
-              timestamp: new Date().toISOString()
-            });
-            
-          if (error) {
-            console.error("Error saving transaction to database:", error);
-          }
-        } catch (dbError) {
-          console.error("Database error:", dbError);
-        }
-      }
+      toast.success(`Demo Sale: You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`);
       
       const updatedHoldings = userTokenHoldings.filter(h => h.id !== holding.id);
       setUserTokenHoldings(updatedHoldings);
@@ -747,8 +697,8 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
           {userTokenHoldings.length > 0 ? (
             <>
               <p className="text-sm text-dream-foreground/70">Your token holdings for {tokenSymbol} (Demo)</p>
-              <ScrollArea className="h-[600px] rounded-md border border-white/10 bg-black/20 p-4">
-                <div className="pr-4 pl-1 space-y-4">
+              <ScrollArea className="h-[400px] rounded-md border border-white/10 bg-black/20 p-3">
+                <div className="pr-4 pl-1">
                   {userTokenHoldings
                     .filter(holding => holding.tokenSymbol === tokenSymbol)
                     .map(renderTokenHoldingCard)}
@@ -756,10 +706,10 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
               </ScrollArea>
             </>
           ) : (
-            <div className="text-center py-20 text-dream-foreground/50 bg-black/20 rounded-md border border-white/10">
-              <ShoppingCart className="w-16 h-16 mx-auto mb-6 opacity-50" />
-              <p className="text-xl mb-2">You don't have any {tokenSymbol} tokens yet.</p>
-              <p className="text-sm mt-4 max-w-md mx-auto">Purchase some tokens in the "Buy" tab to see them here and track your performance.</p>
+            <div className="text-center py-16 text-dream-foreground/50 bg-black/20 rounded-md border border-white/10">
+              <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg">You don't have any {tokenSymbol} tokens yet.</p>
+              <p className="text-sm mt-2 max-w-md mx-auto">Purchase some tokens in the "Buy" tab to see them here and track your performance.</p>
             </div>
           )}
         </TabsContent>
