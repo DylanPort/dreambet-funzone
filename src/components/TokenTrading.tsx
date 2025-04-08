@@ -13,6 +13,7 @@ import { fetchDexScreenerData } from '@/services/dexScreenerService';
 import { fetchGMGNTokenData } from '@/services/gmgnService';
 import TokenTransactionConfirmDialog from './TokenTransactionConfirmDialog';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TokenTradingProps {
   tokenId: string;
@@ -293,6 +294,30 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
         pumpPortalService.subscribeToToken(tokenId);
       }
 
+      try {
+        if (userProfile) {
+          const { error } = await supabase.from('token_transactions').insert({
+            userid: userProfile.id,
+            tokenid: tokenId,
+            tokenname: tokenName,
+            tokensymbol: tokenSymbol,
+            type: 'buy',
+            quantity: tokenAmount,
+            price: tokenPrice,
+            pxbamount: amount,
+            timestamp: new Date().toISOString()
+          });
+
+          if (error) {
+            console.error("Error storing token transaction in Supabase:", error);
+          } else {
+            console.log("Demo purchase transaction stored in Supabase");
+          }
+        }
+      } catch (supabaseError) {
+        console.error("Supabase error storing transaction:", supabaseError);
+      }
+
       toast({
         title: "Demo Purchase",
         description: `You purchased ${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol} tokens (Demo Mode)`,
@@ -346,6 +371,30 @@ const TokenTrading: React.FC<TokenTradingProps> = ({
       
       console.log(`Selling tokens (Demo Mode): ${holding.tokenAmount} ${holding.tokenSymbol}`);
       console.log(`Return amount (Demo Mode): ${returnAmount} PXB`);
+      
+      try {
+        if (userProfile) {
+          const { error } = await supabase.from('token_transactions').insert({
+            userid: userProfile.id,
+            tokenid: tokenId,
+            tokenname: tokenName,
+            tokensymbol: tokenSymbol,
+            type: 'sell',
+            quantity: holding.tokenAmount,
+            price: tokenPrice,
+            pxbamount: returnAmount,
+            timestamp: new Date().toISOString()
+          });
+
+          if (error) {
+            console.error("Error storing token sell transaction in Supabase:", error);
+          } else {
+            console.log("Demo sell transaction stored in Supabase");
+          }
+        }
+      } catch (supabaseError) {
+        console.error("Supabase error storing sell transaction:", supabaseError);
+      }
       
       toast.success(`Demo Sale: You sold ${holding.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${holding.tokenSymbol} tokens for ${returnAmount.toFixed(2)} PXB`);
       

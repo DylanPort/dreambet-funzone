@@ -2,9 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
-import { fetchTokenTransactions, TokenTransaction } from '@/services/supabaseService';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from '@/integrations/supabase/client';
+
+interface TokenTransaction {
+  id: string;
+  timestamp: string;
+  type: 'buy' | 'sell';
+  quantity: number;
+  price: number;
+  pxbamount: number;
+  userid: string;
+  tokenid: string;
+  tokenname: string;
+  tokensymbol: string;
+}
 
 interface TokenTransactionsProps {
   tokenId: string;
@@ -21,8 +34,20 @@ const TokenTransactions: React.FC<TokenTransactionsProps> = ({ tokenId }) => {
       
       try {
         setLoading(true);
-        const data = await fetchTokenTransactions(tokenId);
-        setTransactions(data);
+        
+        // Fetch transactions directly from Supabase
+        const { data, error } = await supabase
+          .from('token_transactions')
+          .select('*')
+          .eq('tokenid', tokenId)
+          .order('timestamp', { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
+        
+        setTransactions(data || []);
+        console.log("Fetched token transactions:", data);
       } catch (error) {
         console.error('Error loading token transactions:', error);
       } finally {
@@ -31,6 +56,24 @@ const TokenTransactions: React.FC<TokenTransactionsProps> = ({ tokenId }) => {
     };
     
     loadTransactions();
+    
+    // Set up real-time subscription to token transactions
+    const channel = supabase
+      .channel('token_transactions_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'token_transactions',
+        filter: `tokenid=eq.${tokenId}`
+      }, (payload) => {
+        console.log('Real-time update to token transactions:', payload);
+        loadTransactions();
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [tokenId]);
   
   const filteredTransactions = transactions.filter(tx => {
@@ -119,7 +162,7 @@ const TokenTransactions: React.FC<TokenTransactionsProps> = ({ tokenId }) => {
             <TabsTrigger value="sells" className="flex-1">Sells ({getSellCount()})</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="all" className="space-y-4 mt-4 max-h-[400px] overflow-y-auto pr-2">
+          <TabsContent value={activeTab} className="space-y-4 mt-4 max-h-[400px] overflow-y-auto pr-2">
             {filteredTransactions.length > 0 ? filteredTransactions.map(tx => (
               <div key={tx.id} className="bg-black/10 border border-white/5 rounded-lg p-4 flex justify-between items-center">
                 <div>
@@ -148,58 +191,6 @@ const TokenTransactions: React.FC<TokenTransactionsProps> = ({ tokenId }) => {
               </div>
             )) : (
               <div className="text-center py-6 text-dream-foreground/50">No transactions found</div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="buys" className="space-y-4 mt-4 max-h-[400px] overflow-y-auto pr-2">
-            {filteredTransactions.length > 0 ? filteredTransactions.map(tx => (
-              <div key={tx.id} className="bg-black/10 border border-white/5 rounded-lg p-4 flex justify-between items-center">
-                <div>
-                  <div className="flex items-center">
-                    <ArrowUp className="text-green-500 mr-2 h-4 w-4" />
-                    <span className="text-green-500">BUY</span>
-                  </div>
-                  <div className="text-sm text-dream-foreground/70 mt-1">
-                    {formatDistanceToNow(new Date(tx.timestamp), { addSuffix: true })}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-right font-medium">
-                    {formatPXBAmount(tx.pxbamount)} PXB
-                  </div>
-                  <div className="text-sm text-dream-foreground/70 mt-1">
-                    {tx.quantity.toLocaleString()} tokens @ {tx.price.toFixed(6)}
-                  </div>
-                </div>
-              </div>
-            )) : (
-              <div className="text-center py-6 text-dream-foreground/50">No buy transactions found</div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="sells" className="space-y-4 mt-4 max-h-[400px] overflow-y-auto pr-2">
-            {filteredTransactions.length > 0 ? filteredTransactions.map(tx => (
-              <div key={tx.id} className="bg-black/10 border border-white/5 rounded-lg p-4 flex justify-between items-center">
-                <div>
-                  <div className="flex items-center">
-                    <ArrowDown className="text-red-500 mr-2 h-4 w-4" />
-                    <span className="text-red-500">SELL</span>
-                  </div>
-                  <div className="text-sm text-dream-foreground/70 mt-1">
-                    {formatDistanceToNow(new Date(tx.timestamp), { addSuffix: true })}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-right font-medium">
-                    {formatPXBAmount(tx.pxbamount)} PXB
-                  </div>
-                  <div className="text-sm text-dream-foreground/70 mt-1">
-                    {tx.quantity.toLocaleString()} tokens @ {tx.price.toFixed(6)}
-                  </div>
-                </div>
-              </div>
-            )) : (
-              <div className="text-center py-6 text-dream-foreground/50">No sell transactions found</div>
             )}
           </TabsContent>
         </Tabs>
