@@ -351,7 +351,37 @@ const CommunityPage = () => {
                 </div>
               </div>}
             
-            
+            <div className="mt-6 glass-panel p-4">
+              <div className="flex items-center mb-4">
+                
+                <h3 className="font-display font-bold text-lg">Most Liked Messages</h3>
+              </div>
+              
+              {!topLikedMessages || topLikedMessages.length === 0 ? <p className="text-dream-foreground/50 text-sm text-center py-3">No liked messages yet</p> : <div className="space-y-3">
+                  {topLikedMessages.slice(0, 3).map(msg => <Card key={`liked-${msg.id}`} className="p-3 bg-dream-background/20 border border-dream-foreground/10 hover:border-dream-foreground/20 transition-all">
+                      <div className="flex justify-between items-start mb-1">
+                        <Link to={`/profile/${msg.user_id}`} className="flex items-center hover:text-dream-accent1 transition-colors">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dream-accent1/30 to-dream-accent2/30 flex items-center justify-center mr-2 overflow-hidden">
+                            <Avatar className="w-full h-full">
+                              <AvatarImage src="/lovable-uploads/ecc52c7d-725c-4ccd-bace-82d464afe6bd.png" alt="User avatar" className="w-full h-full object-cover" />
+                              <AvatarFallback className="bg-transparent">
+                                <User className="w-3 h-3 text-dream-foreground/70" />
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                          <span className="text-sm font-medium">{msg.username || truncateAddress(msg.user_id)}</span>
+                        </Link>
+                        <div className="flex items-center text-xs text-dream-foreground/50">
+                          <ThumbsUp className="w-3 h-3 mr-1 text-green-500 fill-green-500" />
+                          <span>{msg.likes_count || messageReactions[msg.id]?.likes || 0}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-dream-foreground/80 line-clamp-2 mt-1">
+                        {msg.content}
+                      </p>
+                    </Card>)}
+              </div>}
+            </div>
           </div>
           
           {/* Main content area */}
@@ -369,7 +399,17 @@ const CommunityPage = () => {
             </Card>
             
             <div className="space-y-4">
-              
+              <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-dream-accent1/10 to-dream-accent2/10 rounded-lg mb-3">
+                <div className="flex items-center">
+                  <img src="/lovable-uploads/710dcb90-5e8c-496a-98a7-a0b2dba75e90.png" className="w-5 h-5 mr-2" alt="PXB Rank" />
+                  <span className="font-display font-semibold text-dream-foreground/90">Messages sorted by PXB Points</span>
+                </div>
+                <div className="flex items-center text-sm text-dream-foreground/60">
+                  <img src="/lovable-uploads/5bea0b92-6460-4b88-890b-093867d1e680.png" className="w-4 h-4 mr-1" alt="PXB" />
+                  <span>Higher points at top</span>
+                  <ArrowDown className="w-4 h-4 ml-1 text-dream-foreground/50" />
+                </div>
+              </div>
               
               {error && <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500">We apologize, but this section is under mainatinance!
 
@@ -398,7 +438,24 @@ const CommunityPage = () => {
                               {msg.username || truncateAddress(msg.user_id)}
                             </Link>
                             
-                            
+                            <div className="flex mt-1 space-x-2">
+                              <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
+                                <img src="/lovable-uploads/5bea0b92-6460-4b88-890b-093867d1e680.png" className="w-3 h-3 mr-1" alt="PXB" />
+                                <span>{msg.user_pxb_points?.toLocaleString() || "0"}</span>
+                              </div>
+                              {msg.user_win_rate !== undefined && <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
+                                  <Percent className="w-3 h-3 mr-1 text-green-500" />
+                                  <span>{(msg.user_win_rate || 0).toFixed(1)}%</span>
+                                </div>}
+                              {msg.user_rank !== undefined && <div className="flex items-center px-1.5 py-0.5 bg-dream-background/30 rounded text-xs">
+                                  <img src="/lovable-uploads/710dcb90-5e8c-496a-98a7-a0b2dba75e90.png" className="w-3 h-3 mr-1" alt="PXB Rank" />
+                                  <span>#{msg.user_rank}</span>
+                                </div>}
+                              {index === 0 && <div className="flex items-center px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs text-yellow-500">
+                                  <Award className="w-3 h-3 mr-1" />
+                                  <span>Top Contributor</span>
+                                </div>}
+                            </div>
                           </div>
                         </div>
                         <span className="text-dream-foreground/50 text-sm">{formatTimeAgo(msg.created_at)}</span>
@@ -406,7 +463,26 @@ const CommunityPage = () => {
                       <p className="text-dream-foreground/90 mt-1 mb-3">{msg.content}</p>
                       
                       <div className="flex items-center justify-between mt-2 mb-1 text-dream-foreground/50">
-                        
+                        <div className="flex items-center space-x-4">
+                          <Button variant="ghost" size="sm" onClick={() => handleReaction(msg.id, 'like')} className={`flex items-center text-xs px-2 py-1 h-auto group ${messageReactions[msg.id]?.userReaction === 'like' ? 'text-green-500' : ''}`} disabled={!connected}>
+                            <ThumbsUp className={`w-4 h-4 mr-1 ${messageReactions[msg.id]?.userReaction === 'like' ? 'fill-green-500 text-green-500' : 'group-hover:text-green-400'}`} />
+                            <span className={`font-medium ${messageReactions[msg.id]?.userReaction === 'like' ? 'text-green-500' : ''}`}>
+                              {messageReactions[msg.id]?.likes || 0}
+                            </span>
+                          </Button>
+                          
+                          <Button variant="ghost" size="sm" onClick={() => handleReaction(msg.id, 'dislike')} className={`flex items-center text-xs px-2 py-1 h-auto group ${messageReactions[msg.id]?.userReaction === 'dislike' ? 'text-red-500' : ''}`} disabled={!connected}>
+                            <ThumbsDown className={`w-4 h-4 mr-1 ${messageReactions[msg.id]?.userReaction === 'dislike' ? 'fill-red-500 text-red-500' : 'group-hover:text-red-400'}`} />
+                            <span className={`font-medium ${messageReactions[msg.id]?.userReaction === 'dislike' ? 'text-red-500' : ''}`}>
+                              {messageReactions[msg.id]?.dislikes || 0}
+                            </span>
+                          </Button>
+                          
+                          <Button variant="ghost" size="sm" onClick={() => handleReplyClick(msg.id)} className="flex items-center text-xs px-2 py-1 h-auto group hover:text-dream-accent2">
+                            <Reply className="w-4 h-4 mr-1 group-hover:text-dream-accent2" />
+                            Reply
+                          </Button>
+                        </div>
                         
                         {messageReplies[msg.id]?.length > 0 && <Button variant="ghost" size="sm" onClick={() => handleLoadReplies(msg.id)} className="flex items-center text-xs px-2 py-1 h-auto">
                             <span className="text-[#00ff26]">

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -249,8 +248,8 @@ export const usePointOperations = (
           userId: userProfile.id,
           creator: walletAddress,
           tokenMint: newBet.tokenMint,
-          tokenName: newBet.tokenName || '',
-          tokenSymbol: newBet.tokenSymbol || '',
+          tokenName: newBet.tokenName,
+          tokenSymbol: newBet.tokenSymbol,
           betAmount: newBet.amount,
           betType: betType,
           percentageChange: percentageChange,
@@ -433,7 +432,7 @@ export const usePointOperations = (
         return false;
       }
 
-      // Update user points in Supabase - FIX: Don't call fetchUserProfile() here to avoid double credit
+      // Update user points in Supabase
       const { error: updateError } = await supabase
         .from('users')
         .update({ points: userProfile.pxbPoints - pxbAmount })
@@ -505,9 +504,7 @@ export const usePointOperations = (
       window.dispatchEvent(purchaseEvent);
 
       console.log(`Successfully purchased ${tokenQuantity} ${tokenSymbol} for ${pxbAmount} PXB!`);
-      
-      // FIX: Only refresh user profile once at the end to prevent double crediting
-      await fetchUserProfile(); 
+      await fetchUserProfile(); // Refresh user data
       return true;
     } catch (error) {
       console.error('Error purchasing token:', error);
