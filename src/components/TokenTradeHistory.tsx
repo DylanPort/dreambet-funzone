@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowUpRight, ArrowDownRight, ExternalLink, Clock, DollarSign, User, Hash } from 'lucide-react';
-import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { usePumpPortalWebSocket } from '@/services/pumpPortalWebSocketService';
@@ -41,6 +40,7 @@ interface PXBTransaction {
   tokenName: string;
   tokenSymbol: string;
   username?: string;
+  isDemo?: boolean;
 }
 
 const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
@@ -49,6 +49,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
   const [transactions, setTransactions] = useState<PXBTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   // Load past transactions and subscribe to new ones
   useEffect(() => {
@@ -89,12 +90,14 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
           pxbAmount: tx.pxbamount,
           userId: tx.userid,
           tokenId: tx.tokenid,
-          tokenName: tx.tokenname,
-          tokenSymbol: tx.tokensymbol,
-          username: tx.users?.username
+          tokenName: tx.tokenname || '',
+          tokenSymbol: tx.tokensymbol || '',
+          username: tx.users?.username || `User-${tx.userid.substring(0, 6)}`,
+          isDemo: false
         }));
         
         setTransactions(txs);
+        setInitialLoadDone(true);
       } catch (error) {
         console.error("Error loading token trade history:", error);
         toast.error("Failed to load trade history");
@@ -111,8 +114,8 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
       console.log("Subscribed to token trades for:", tokenId);
     }
     
-    // Refresh transactions every 30 seconds (as a fallback)
-    const interval = setInterval(loadTransactions, 30000);
+    // Refresh transactions every minute (as a fallback to keep data updated)
+    const interval = setInterval(loadTransactions, 60000);
     return () => clearInterval(interval);
   }, [tokenId, pumpPortalState.connected]);
 
@@ -120,7 +123,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
   useEffect(() => {
     const tokenTrades = pumpPortalState.recentTrades[tokenId] || [];
     
-    if (tokenTrades.length > 0) {
+    if (tokenTrades.length > 0 && initialLoadDone) {
       // Convert PumpPortal trades to our format
       const newTrades = tokenTrades.map(trade => ({
         id: `pp-${trade.timestamp}-${Math.random().toString(36).substring(7)}`, // Generate a random ID
@@ -135,7 +138,8 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
         tokenSymbol: '', // PumpPortal doesn't provide symbol in trade events
         username: trade.side === 'buy' ? 
           `${trade.buyer.substring(0, 4)}...${trade.buyer.substring(trade.buyer.length - 4)}` : 
-          `${trade.seller.substring(0, 4)}...${trade.seller.substring(trade.seller.length - 4)}`
+          `${trade.seller.substring(0, 4)}...${trade.seller.substring(trade.seller.length - 4)}`,
+        isDemo: false
       }));
       
       // Update transaction list with new trades
@@ -153,7 +157,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
         return prev;
       });
     }
-  }, [tokenId, pumpPortalState.recentTrades]);
+  }, [tokenId, pumpPortalState.recentTrades, initialLoadDone]);
 
   // Also listen for Supabase realtime updates for token_transactions
   useEffect(() => {
@@ -180,10 +184,16 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
             pxbAmount: newTx.pxbamount,
             userId: newTx.userid,
             tokenId: newTx.tokenid,
-            tokenName: newTx.tokenname,
-            tokenSymbol: newTx.tokensymbol,
-            username: newTx.username || newTx.userid.substring(0, 6) + '...'
+            tokenName: newTx.tokenname || '',
+            tokenSymbol: newTx.tokensymbol || '',
+            username: newTx.username || `User-${newTx.userid.substring(0, 6)}`,
+            isDemo: false
           };
+          
+          // Show a toast notification for new transactions
+          toast(`New ${formattedTx.type.toUpperCase()} Transaction`, {
+            description: `${formattedTx.username} ${formattedTx.type === 'buy' ? 'bought' : 'sold'} ${formatAmount(formattedTx.tokenAmount)} tokens for ${formatAmount(formattedTx.pxbAmount)} PXB`
+          });
           
           setTransactions(prev => [formattedTx, ...prev]);
         }
@@ -194,6 +204,41 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
       supabase.removeChannel(channel);
     };
   }, [tokenId]);
+
+  // Listen for demo mode purchases and sales
+  useEffect(() => {
+    const handleDemoTransaction = (event: any) => {
+      if (event.detail && event.detail.tokenId === tokenId) {
+        const isBuy = event.type === 'tokenPurchase';
+        const newTransaction: PXBTransaction = {
+          id: `demo-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+          timestamp: event.detail.timestamp || new Date().toISOString(),
+          type: isBuy ? 'buy' : 'sell',
+          tokenAmount: event.detail.amount || 0,
+          price: event.detail.price || 0,
+          pxbAmount: (event.detail.amount || 0) * (event.detail.price || 0),
+          userId: pxbContext.userProfile?.id || 'unknown',
+          tokenId: event.detail.tokenId,
+          tokenName: '',
+          tokenSymbol: '',
+          username: pxbContext.userProfile?.username || 'You',
+          isDemo: true
+        };
+        
+        console.log("Demo transaction detected:", newTransaction);
+        
+        setTransactions(prev => [newTransaction, ...prev]);
+      }
+    };
+    
+    window.addEventListener('tokenPurchase', handleDemoTransaction);
+    window.addEventListener('tokenSale', handleDemoTransaction);
+    
+    return () => {
+      window.removeEventListener('tokenPurchase', handleDemoTransaction);
+      window.removeEventListener('tokenSale', handleDemoTransaction);
+    };
+  }, [tokenId, pxbContext.userProfile]);
 
   const renderTableView = () => (
     <div className="w-full overflow-auto">
@@ -209,81 +254,105 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((trade) => (
-            <TableRow 
-              key={trade.id} 
-              className="border-b border-dream-accent1/10 hover:bg-dream-accent1/5"
-            >
-              <TableCell>
-                <div className="flex items-center">
-                  {trade.type === 'buy' ? (
-                    <ArrowUpRight className="w-4 h-4 text-green-400 mr-2" />
-                  ) : (
-                    <ArrowDownRight className="w-4 h-4 text-red-400 mr-2" />
-                  )}
-                  <span className={trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}>
-                    {trade.type === 'buy' ? 'Buy' : 'Sell'}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>${formatPrice(trade.price)}</TableCell>
-              <TableCell>{formatAmount(trade.tokenAmount)}</TableCell>
-              <TableCell>{formatAmount(trade.pxbAmount)} PXB</TableCell>
-              <TableCell className="truncate max-w-[100px]">
-                {trade.username || trade.userId.substring(0, 6) + '...'}
-              </TableCell>
-              <TableCell className="text-right text-xs text-dream-foreground/60">
-                {formatDistanceToNow(new Date(trade.timestamp), { addSuffix: true })}
+          {transactions.length > 0 ? (
+            transactions.map((trade) => (
+              <TableRow 
+                key={trade.id} 
+                className={`border-b border-dream-accent1/10 hover:bg-dream-accent1/5 ${trade.isDemo ? 'bg-purple-900/10' : ''}`}
+              >
+                <TableCell>
+                  <div className="flex items-center">
+                    {trade.type === 'buy' ? (
+                      <ArrowUpRight className="w-4 h-4 text-green-400 mr-2" />
+                    ) : (
+                      <ArrowDownRight className="w-4 h-4 text-red-400 mr-2" />
+                    )}
+                    <span className={trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}>
+                      {trade.type === 'buy' ? 'Buy' : 'Sell'}
+                    </span>
+                    {trade.isDemo && (
+                      <span className="ml-1 px-1 py-0.5 text-[9px] bg-purple-500/20 text-purple-300 rounded">DEMO</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>${formatPrice(trade.price)}</TableCell>
+                <TableCell>{formatAmount(trade.tokenAmount)}</TableCell>
+                <TableCell>{formatAmount(trade.pxbAmount)} PXB</TableCell>
+                <TableCell className="truncate max-w-[100px]">
+                  {trade.username || trade.userId.substring(0, 6) + '...'}
+                </TableCell>
+                <TableCell className="text-right text-xs text-dream-foreground/60">
+                  {formatDistanceToNow(new Date(trade.timestamp), { addSuffix: true })}
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-8 text-dream-foreground/50">
+                No transaction history available yet
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </div>
   );
 
   const renderCardView = () => (
-    <div className="space-y-4 max-h-96 overflow-y-auto">
-      {transactions.map((trade, index) => (
-        <div key={`${trade.id}-${index}`} className="glass-panel border border-dream-accent1/20 p-4 rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center">
-              {trade.type === 'buy' ? (
-                <ArrowUpRight className="w-4 h-4 text-green-400 mr-2" />
-              ) : (
-                <ArrowDownRight className="w-4 h-4 text-red-400 mr-2" />
-              )}
-              <span className={`font-semibold ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                {trade.type === 'buy' ? 'Buy' : 'Sell'}
+    <div className="space-y-4 max-h-96 overflow-y-auto p-2">
+      {transactions.length > 0 ? (
+        transactions.map((trade, index) => (
+          <div 
+            key={`${trade.id}-${index}`} 
+            className={`glass-panel border border-dream-accent1/20 p-4 rounded-lg ${trade.isDemo ? 'bg-purple-900/20 border-purple-500/30' : ''}`}
+          >
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center">
+                {trade.type === 'buy' ? (
+                  <ArrowUpRight className="w-4 h-4 text-green-400 mr-2" />
+                ) : (
+                  <ArrowDownRight className="w-4 h-4 text-red-400 mr-2" />
+                )}
+                <span className={`font-semibold ${trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                  {trade.type === 'buy' ? 'Buy' : 'Sell'}
+                </span>
+                {trade.isDemo && (
+                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-purple-500/20 text-purple-300 rounded">DEMO</span>
+                )}
+              </div>
+              <span className="text-xs text-dream-foreground/70">
+                {formatDistanceToNow(new Date(trade.timestamp), { addSuffix: true })}
               </span>
             </div>
-            <span className="text-xs text-dream-foreground/70">
-              {formatDistanceToNow(new Date(trade.timestamp), { addSuffix: true })}
-            </span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <div className="text-dream-foreground/70">Amount</div>
-              <div className="font-medium">{formatAmount(trade.tokenAmount)}</div>
-            </div>
-            <div>
-              <div className="text-dream-foreground/70">Price</div>
-              <div className="font-medium">${formatPrice(trade.price)}</div>
-            </div>
-            <div>
-              <div className="text-dream-foreground/70">PXB Spent</div>
-              <div className="font-medium">{formatAmount(trade.pxbAmount)} PXB</div>
-            </div>
-            <div>
-              <div className="text-dream-foreground/70">Trader</div>
-              <div className="font-medium truncate">
-                {trade.username || trade.userId.substring(0, 6) + '...'}
+            
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <div className="text-dream-foreground/70">Amount</div>
+                <div className="font-medium">{formatAmount(trade.tokenAmount)}</div>
+              </div>
+              <div>
+                <div className="text-dream-foreground/70">Price</div>
+                <div className="font-medium">${formatPrice(trade.price)}</div>
+              </div>
+              <div>
+                <div className="text-dream-foreground/70">PXB Spent</div>
+                <div className="font-medium">{formatAmount(trade.pxbAmount)} PXB</div>
+              </div>
+              <div>
+                <div className="text-dream-foreground/70">Trader</div>
+                <div className="font-medium truncate">
+                  {trade.username || trade.userId.substring(0, 6) + '...'}
+                </div>
               </div>
             </div>
           </div>
+        ))
+      ) : (
+        <div className="text-center py-8 text-dream-foreground/70">
+          <p>No transaction history available for this token yet.</p>
+          <p className="text-sm mt-2">Be the first to trade this token with PXB points!</p>
         </div>
-      ))}
+      )}
     </div>
   );
 
@@ -311,7 +380,7 @@ const TokenTradeHistory: React.FC<TokenTradeHistoryProps> = ({ tokenId }) => {
         </div>
       </div>
 
-      {loading && (
+      {loading && !initialLoadDone && (
         <div className="text-center py-8 text-dream-foreground/70">
           <div className="inline-block w-6 h-6 border-2 border-dream-accent2 border-t-transparent rounded-full animate-spin mb-2"></div>
           <p>Loading transaction history...</p>
