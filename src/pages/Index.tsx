@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
@@ -18,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
+import PXBTradingGame from "@/components/PXBTradingGame";
 import Footer from '@/components/Footer';
 
 const Index = () => {
@@ -144,6 +146,19 @@ const Index = () => {
                 </DialogContent>
               </Dialog>
             </div>
+          </div>
+          
+          {/* Add Trading Game section */}
+          <div className="max-w-7xl mx-auto mb-16">
+            <div className="text-center mb-4">
+              <h2 className="text-2xl font-bold text-center 
+                  bg-gradient-to-r from-white via-purple-300 to-blue-400 bg-clip-text text-transparent 
+                  flex items-center justify-center gap-2 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">
+                <BarChart3 className="h-6 w-6" />
+                PXB Trading Game
+              </h2>
+            </div>
+            <PXBTradingGame />
           </div>
           
           <div className="max-w-5xl mx-auto mb-16">
