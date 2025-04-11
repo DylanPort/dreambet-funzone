@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import TradeGamePanel from './TradeGamePanel';
 

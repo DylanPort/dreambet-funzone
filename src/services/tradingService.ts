@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/pxb';
 import { invalidateTradingPoolData, handleTradingError } from './queryClient';
@@ -58,8 +57,29 @@ export const fetchPoolConfig = async (): Promise<PoolConfig> => {
     };
     
     // Merge with stored configuration
-    if (data?.config && typeof data.config === 'object') {
-      return { ...defaultConfig, ...data.config as PoolConfig };
+    if (data?.config) {
+      // Handle JSON data coming from Supabase
+      if (typeof data.config === 'string') {
+        try {
+          // If it's a string, parse it
+          const parsedConfig = JSON.parse(data.config);
+          return { ...defaultConfig, ...parsedConfig };
+        } catch (e) {
+          console.error("Error parsing config:", e);
+          return defaultConfig;
+        }
+      } else if (typeof data.config === 'object') {
+        // If it's already an object
+        const configObj = data.config as Record<string, any>;
+        return { 
+          ...defaultConfig, 
+          pool_size: configObj.pool_size || defaultConfig.pool_size,
+          vault_balance: configObj.vault_balance || defaultConfig.vault_balance,
+          cap_multiplier: configObj.cap_multiplier || defaultConfig.cap_multiplier,
+          minimum_guarantee: configObj.minimum_guarantee || defaultConfig.minimum_guarantee,
+          vault_rate: configObj.vault_rate || defaultConfig.vault_rate
+        };
+      }
     }
     
     return defaultConfig;
@@ -82,7 +102,9 @@ export const updatePoolConfig = async (config: Partial<PoolConfig>): Promise<boo
     
     const { error } = await supabase
       .from('app_features')
-      .update({ config: updatedConfig })
+      .update({ 
+        config: updatedConfig as Record<string, any>
+      })
       .eq('feature_name', TRADING_CONFIG.FEATURE_NAME);
       
     if (error) {
@@ -609,8 +631,9 @@ export const initializeTradingPool = async (): Promise<void> => {
         .from('app_features')
         .insert({
           feature_name: TRADING_CONFIG.FEATURE_NAME,
-          config: initialConfig,
-          is_active: true
+          config: initialConfig as Record<string, any>,
+          is_active: true,
+          end_date: '2099-12-31' // Set a far future end date
         });
         
       console.log("Trading pool feature initialized with default configuration");

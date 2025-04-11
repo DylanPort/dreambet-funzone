@@ -1,4 +1,3 @@
-
 import { UserProfile, PXBBet, LeaderboardEntry, WinRateLeaderboardEntry, ReferralStats } from '@/types/pxb';
 
 export interface PXBPointsContextType {
@@ -17,7 +16,7 @@ export interface PXBPointsContextType {
     betType: 'up' | 'down', 
     percentageChange: number,
     duration: number
-  ) => Promise<PXBBet | void>;
+  ) => Promise<PXBBet | null>;
   sendPoints: (recipientId: string, amount: number) => Promise<boolean>;
   purchaseToken: (
     tokenMint: string,
@@ -34,20 +33,40 @@ export interface PXBPointsContextType {
     tokenQuantity: number,
     price: number
   ) => Promise<boolean>;
-  generatePxbId: () => string;
+  participateInTradingPool: (amount: number) => Promise<{
+    success: boolean;
+    message: string;
+    position?: any;
+  }>;
+  executeTradeInPool: (
+    tradeType: 'up' | 'down',
+    position: { initialPXB: number; currentPXB: number }
+  ) => Promise<{
+    success: boolean;
+    message: string;
+    newPosition?: { currentPXB: number; percentChange: number };
+  }>;
+  withdrawFromPool: (
+    position: { initialPXB: number; currentPXB: number }
+  ) => Promise<{
+    success: boolean;
+    message: string;
+    amount?: number;
+  }>;
+  generatePxbId: () => Promise<string>;
   fetchUserProfile: () => Promise<void>;
   fetchUserBets: () => Promise<void>;
   fetchLeaderboard: () => Promise<void>;
   fetchWinRateLeaderboard: () => Promise<void>;
   addPointsToUser: (amount: number) => Promise<void>;
   mintingPoints: boolean;
-  transferFeature: 'enabled' | 'coming-soon';
+  transferFeature: { enabled: boolean; fee: number };
   isLeaderboardLoading: boolean;
   isLoadingWinRate: boolean;
   isLoadingBets: boolean;
   generateReferralLink: () => Promise<string>;
   checkAndProcessReferral: (referralCode: string) => Promise<boolean>;
-  referralStats: ReferralStats;
+  referralStats: ReferralStats | null;
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
   fetchTokenTransactions: (tokenId: string) => Promise<any[]>;

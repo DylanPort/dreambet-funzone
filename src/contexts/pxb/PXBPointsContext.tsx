@@ -6,6 +6,7 @@ import { useLeaderboardData } from './useLeaderboardData';
 import { usePointOperations } from './usePointOperations';
 import { useBetProcessor } from './useBetProcessor';
 import { useReferralSystem } from './useReferralSystem';
+import { useTradingPool } from './useTradingPool';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 const PXBPointsContext = createContext<PXBPointsContextType | undefined>(undefined);
@@ -46,9 +47,6 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     sendPoints, 
     purchaseToken,
     sellToken,
-    participateInTradingPool,
-    executeTradeInPool,
-    withdrawFromPool,
     generatePxbId,
     mintingPoints,
     transferFeature
@@ -59,6 +57,12 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     fetchUserProfile,
     setIsLoading
   );
+
+  const {
+    participateInTradingPool,
+    executeTradeInPool,
+    withdrawFromPool
+  } = useTradingPool(userProfile, fetchUserProfile);
 
   const {
     generateReferralLink,
