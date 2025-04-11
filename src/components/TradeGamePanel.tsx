@@ -18,6 +18,10 @@ interface TraderPosition {
   timestamp: string;
 }
 
+interface PoolConfig {
+  pool_size?: number;
+}
+
 const TradeGamePanel = () => {
   const { userProfile, mintPoints, placeBet, addPointsToUser } = usePXBPoints();
   const [poolSize, setPoolSize] = useState<number>(10000);
@@ -48,8 +52,12 @@ const TradeGamePanel = () => {
           return;
         }
 
-        if (poolData?.config?.pool_size) {
-          setPoolSize(poolData.config.pool_size);
+        // Type check before accessing pool_size
+        if (poolData?.config && typeof poolData.config === 'object') {
+          const config = poolData.config as PoolConfig;
+          if (config.pool_size !== undefined) {
+            setPoolSize(config.pool_size);
+          }
         }
       } catch (error) {
         console.error("Error in fetchPoolData:", error);
