@@ -7,23 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowUpRight, ArrowDownRight, BarChart3, TrendingUp, TrendingDown, DollarSign, Wallet, Trophy, Shield, Coins } from 'lucide-react';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
-
-interface TraderPosition {
-  id: string;
-  username: string;
-  initialPXB: number;
-  currentPXB: number;
-  percentChange: number;
-  timestamp: string;
-}
+import { fetchPoolConfig, fetchTradingLeaderboard, fetchUserTradingPosition, TradingPosition, calculateWithdrawalAmount } from '@/services/tradingService';
 
 interface PoolConfig {
   pool_size?: number;
 }
 
 const TradeGamePanel = () => {
-  const { userProfile, mintPoints, placeBet, addPointsToUser } = usePXBPoints();
+  const { userProfile, participateInTradingPool, executeTradeInPool, withdrawFromPool } = usePXBPoints();
   const [poolSize, setPoolSize] = useState<number>(10000);
   const [depositAmount, setDepositAmount] = useState<number>(100);
   const [userPosition, setUserPosition] = useState<{
@@ -31,7 +22,7 @@ const TradeGamePanel = () => {
     currentPXB: number;
     timestamp: string;
   } | null>(null);
-  const [leaderboard, setLeaderboard] = useState<TraderPosition[]>([]);
+  const [leaderboard, setLeaderboard] = useState<TradingPosition[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTradingUp, setIsTradingUp] = useState(false);
   const [isTradingDown, setIsTradingDown] = useState(false);
@@ -39,175 +30,48 @@ const TradeGamePanel = () => {
 
   // Load pool data
   useEffect(() => {
-    const fetchPoolData = async () => {
+    const loadPoolData = async () => {
       try {
-        const { data: poolData, error } = await supabase
-          .from('app_features')
-          .select('config')
-          .eq('feature_name', 'trading_pool')
-          .single();
+        const poolConfig = await fetchPoolConfig();
+        if (poolConfig.pool_size) {
+          setPoolSize(poolConfig.pool_size);
+        }
         
-        if (error) {
-          console.error("Error fetching pool data:", error);
-          return;
-        }
-
-        // Type check before accessing pool_size
-        if (poolData?.config && typeof poolData.config === 'object') {
-          const config = poolData.config as PoolConfig;
-          if (config.pool_size !== undefined) {
-            setPoolSize(config.pool_size);
-          }
-        }
+        await loadLeaderboard();
       } catch (error) {
-        console.error("Error in fetchPoolData:", error);
+        console.error("Error loading pool data:", error);
       }
     };
 
-    fetchPoolData();
-    fetchLeaderboard();
+    loadPoolData();
+    
+    // Refresh data every 30 seconds
+    const interval = setInterval(loadPoolData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Load user position
   useEffect(() => {
-    if (userProfile) {
-      const fetchUserPosition = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('token_transactions')
-            .select('*')
-            .eq('userid', userProfile.id)
-            .eq('type', 'pool_deposit')
-            .order('timestamp', { ascending: false })
-            .limit(1);
-          
-          if (error) {
-            console.error("Error fetching user position:", error);
-            return;
-          }
-
-          if (data && data.length > 0) {
-            // Get the most recent deposit
-            const deposit = data[0];
-            
-            // Also fetch any trading activities
-            const { data: tradingData, error: tradingError } = await supabase
-              .from('token_transactions')
-              .select('*')
-              .eq('userid', userProfile.id)
-              .in('type', ['pool_trade_up', 'pool_trade_down'])
-              .order('timestamp', { ascending: false });
-              
-            if (tradingError) {
-              console.error("Error fetching trading data:", tradingError);
-              return;
-            }
-            
-            // Calculate current PXB
-            let currentPXB = deposit.quantity;
-            if (tradingData && tradingData.length > 0) {
-              // Apply each trade's effect
-              tradingData.forEach(trade => {
-                if (trade.type === 'pool_trade_up') {
-                  // Random gain between 5% and 20%
-                  const percentGain = 5 + Math.random() * 15;
-                  currentPXB += (currentPXB * (percentGain / 100));
-                } else if (trade.type === 'pool_trade_down') {
-                  // Random loss between 2% and 15%
-                  const percentLoss = 2 + Math.random() * 13;
-                  currentPXB -= (currentPXB * (percentLoss / 100));
-                }
-              });
-            }
-            
-            setUserPosition({
-              initialPXB: deposit.quantity,
-              currentPXB: parseFloat(currentPXB.toFixed(2)),
-              timestamp: deposit.timestamp
-            });
-          }
-        } catch (error) {
-          console.error("Error in fetchUserPosition:", error);
-        }
-      };
-
-      fetchUserPosition();
-    }
+    const loadUserPosition = async () => {
+      if (!userProfile) return;
+      
+      try {
+        const position = await fetchUserTradingPosition(userProfile.id);
+        setUserPosition(position);
+      } catch (error) {
+        console.error("Error loading user position:", error);
+      }
+    };
+    
+    loadUserPosition();
   }, [userProfile]);
 
-  const fetchLeaderboard = async () => {
+  const loadLeaderboard = async () => {
     try {
-      // First get all users with pool deposits
-      const { data: depositsData, error: depositsError } = await supabase
-        .from('token_transactions')
-        .select('userid, quantity, timestamp')
-        .eq('type', 'pool_deposit');
-      
-      if (depositsError) {
-        console.error("Error fetching deposits:", depositsError);
-        return;
-      }
-
-      // Get user details
-      const userIds = depositsData?.map(d => d.userid) || [];
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id, username')
-        .in('id', userIds);
-      
-      if (usersError) {
-        console.error("Error fetching users:", usersError);
-        return;
-      }
-
-      // Get trading activities
-      const { data: tradingData, error: tradingError } = await supabase
-        .from('token_transactions')
-        .select('userid, type, timestamp')
-        .in('type', ['pool_trade_up', 'pool_trade_down'])
-        .in('userid', userIds);
-      
-      if (tradingError) {
-        console.error("Error fetching trading data:", tradingError);
-        return;
-      }
-
-      // Calculate positions
-      const positions = depositsData?.map(deposit => {
-        const user = usersData?.find(u => u.id === deposit.userid);
-        const userTrades = tradingData?.filter(t => t.userid === deposit.userid) || [];
-        
-        // Calculate current PXB with trades
-        let currentPXB = deposit.quantity;
-        userTrades.forEach(trade => {
-          if (trade.type === 'pool_trade_up') {
-            // Random gain between 5% and 20%
-            const percentGain = 5 + Math.random() * 15;
-            currentPXB += (currentPXB * (percentGain / 100));
-          } else if (trade.type === 'pool_trade_down') {
-            // Random loss between 2% and 15%
-            const percentLoss = 2 + Math.random() * 13;
-            currentPXB -= (currentPXB * (percentLoss / 100));
-          }
-        });
-        
-        const percentChange = ((currentPXB - deposit.quantity) / deposit.quantity) * 100;
-        
-        return {
-          id: deposit.userid,
-          username: user?.username || 'Unknown',
-          initialPXB: deposit.quantity,
-          currentPXB: parseFloat(currentPXB.toFixed(2)),
-          percentChange: parseFloat(percentChange.toFixed(2)),
-          timestamp: deposit.timestamp
-        };
-      }) || [];
-      
-      // Sort by percent change
-      const sortedPositions = positions.sort((a, b) => b.percentChange - a.percentChange);
-      setLeaderboard(sortedPositions.slice(0, 10));
+      const leaderboardData = await fetchTradingLeaderboard();
+      setLeaderboard(leaderboardData);
     } catch (error) {
-      console.error("Error in fetchLeaderboard:", error);
+      console.error("Error loading leaderboard:", error);
     }
   };
 
@@ -225,59 +89,26 @@ const TradeGamePanel = () => {
     try {
       setIsLoading(true);
       
-      // Record the deposit in token_transactions
-      const { data, error } = await supabase
-        .from('token_transactions')
-        .insert({
-          tokenid: 'pxb_pool',
-          tokenname: 'PXB Trading Pool',
-          tokensymbol: 'PXBPOOL',
-          quantity: depositAmount,
-          pxbamount: depositAmount,
-          price: 1,
-          type: 'pool_deposit',
-          userid: userProfile.id
-        })
-        .select()
-        .single();
+      const result = await participateInTradingPool(depositAmount);
+      
+      if (result.success) {
+        toast.success(result.message);
         
-      if (error) {
-        throw error;
-      }
-      
-      // Deduct PXB points from user
-      await placeBet(
-        'pxb_pool',
-        'PXB Trading Pool',
-        'PXBPOOL',
-        depositAmount,
-        'up',
-        0,
-        0
-      );
-      
-      // Update pool size
-      const { error: poolError } = await supabase
-        .from('app_features')
-        .update({ 
-          config: { pool_size: poolSize + depositAmount } 
-        })
-        .eq('feature_name', 'trading_pool');
+        // Update local state
+        setPoolSize(prevSize => prevSize + depositAmount);
+        if (result.position) {
+          setUserPosition({
+            initialPXB: result.position.initialPXB,
+            currentPXB: result.position.currentPXB,
+            timestamp: result.position.timestamp
+          });
+        }
         
-      if (poolError) {
-        console.error("Error updating pool size:", poolError);
+        // Refresh leaderboard
+        await loadLeaderboard();
+      } else {
+        toast.error(result.message);
       }
-      
-      // Update local state
-      setPoolSize(prevSize => prevSize + depositAmount);
-      setUserPosition({
-        initialPXB: depositAmount,
-        currentPXB: depositAmount,
-        timestamp: new Date().toISOString()
-      });
-      
-      toast.success(`Successfully deposited ${depositAmount} PXB into the trading pool`);
-      fetchLeaderboard();
     } catch (error) {
       console.error("Error depositing:", error);
       toast.error("Error depositing to pool");
@@ -295,39 +126,24 @@ const TradeGamePanel = () => {
     try {
       setIsTradingUp(true);
       
-      // Random gain between 5% and 20%
-      const percentGain = 5 + Math.random() * 15;
-      const gainAmount = userPosition.currentPXB * (percentGain / 100);
-      const newTotal = userPosition.currentPXB + gainAmount;
+      const result = await executeTradeInPool('up', userPosition);
       
-      // Record the trade in token_transactions
-      const { data, error } = await supabase
-        .from('token_transactions')
-        .insert({
-          tokenid: 'pxb_pool',
-          tokenname: 'PXB Trading Pool',
-          tokensymbol: 'PXBPOOL',
-          quantity: gainAmount,
-          pxbamount: gainAmount,
-          price: 1,
-          type: 'pool_trade_up',
-          userid: userProfile.id
-        })
-        .select()
-        .single();
+      if (result.success) {
+        toast.success(result.message);
         
-      if (error) {
-        throw error;
+        // Update user position
+        if (result.newPosition) {
+          setUserPosition({
+            ...userPosition,
+            currentPXB: result.newPosition.currentPXB
+          });
+        }
+        
+        // Refresh leaderboard
+        await loadLeaderboard();
+      } else {
+        toast.error(result.message);
       }
-      
-      // Update user position
-      setUserPosition({
-        ...userPosition,
-        currentPXB: parseFloat(newTotal.toFixed(2))
-      });
-      
-      toast.success(`Trade successful! Gained ${gainAmount.toFixed(2)} PXB (+${percentGain.toFixed(2)}%)`);
-      fetchLeaderboard();
     } catch (error) {
       console.error("Error trading up:", error);
       toast.error("Error executing trade");
@@ -345,39 +161,24 @@ const TradeGamePanel = () => {
     try {
       setIsTradingDown(true);
       
-      // Random loss between 2% and 15%
-      const percentLoss = 2 + Math.random() * 13;
-      const lossAmount = userPosition.currentPXB * (percentLoss / 100);
-      const newTotal = userPosition.currentPXB - lossAmount;
+      const result = await executeTradeInPool('down', userPosition);
       
-      // Record the trade in token_transactions
-      const { data, error } = await supabase
-        .from('token_transactions')
-        .insert({
-          tokenid: 'pxb_pool',
-          tokenname: 'PXB Trading Pool',
-          tokensymbol: 'PXBPOOL',
-          quantity: lossAmount,
-          pxbamount: lossAmount,
-          price: 1,
-          type: 'pool_trade_down',
-          userid: userProfile.id
-        })
-        .select()
-        .single();
+      if (result.success) {
+        toast.error(result.message); // Using error toast because it's a loss
         
-      if (error) {
-        throw error;
+        // Update user position
+        if (result.newPosition) {
+          setUserPosition({
+            ...userPosition,
+            currentPXB: result.newPosition.currentPXB
+          });
+        }
+        
+        // Refresh leaderboard
+        await loadLeaderboard();
+      } else {
+        toast.error(result.message);
       }
-      
-      // Update user position
-      setUserPosition({
-        ...userPosition,
-        currentPXB: parseFloat(newTotal.toFixed(2))
-      });
-      
-      toast.error(`Trade resulted in a loss of ${lossAmount.toFixed(2)} PXB (-${percentLoss.toFixed(2)}%)`);
-      fetchLeaderboard();
     } catch (error) {
       console.error("Error trading down:", error);
       toast.error("Error executing trade");
@@ -395,65 +196,20 @@ const TradeGamePanel = () => {
     try {
       setIsWithdrawing(true);
       
-      // Calculate payout based on PnL with minimum guarantee
-      const pnlPercent = (userPosition.currentPXB - userPosition.initialPXB) / userPosition.initialPXB;
+      const result = await withdrawFromPool(userPosition);
       
-      // Base payout formula: B_i = D_i × (1 + PnL_i %)
-      let basePayout = userPosition.initialPXB * (1 + pnlPercent);
-      
-      // Apply minimum guarantee (50% of initial deposit)
-      const minimumGuarantee = userPosition.initialPXB * 0.5;
-      basePayout = Math.max(basePayout, minimumGuarantee);
-      
-      // Apply cap (maximum 5x initial deposit)
-      const cappedPayout = Math.min(basePayout, userPosition.initialPXB * 5);
-      
-      // Apply vault deduction (3%)
-      const vaultDeduction = cappedPayout * 0.03;
-      const finalPayout = cappedPayout * 0.97;
-      
-      // Create a withdrawal record
-      const { data, error } = await supabase
-        .from('token_transactions')
-        .insert({
-          tokenid: 'pxb_pool',
-          tokenname: 'PXB Trading Pool',
-          tokensymbol: 'PXBPOOL',
-          quantity: userPosition.currentPXB,
-          pxbamount: finalPayout,
-          price: 1,
-          type: 'pool_withdraw',
-          userid: userProfile.id
-        })
-        .select()
-        .single();
+      if (result.success) {
+        toast.success(result.message);
         
-      if (error) {
-        throw error;
-      }
-      
-      // Update pool size
-      const newPoolSize = poolSize - cappedPayout;
-      const { error: poolError } = await supabase
-        .from('app_features')
-        .update({ 
-          config: { pool_size: newPoolSize } 
-        })
-        .eq('feature_name', 'trading_pool');
+        // Update local state
+        setPoolSize(prevSize => prevSize - (result.amount || 0));
+        setUserPosition(null);
         
-      if (poolError) {
-        console.error("Error updating pool size:", poolError);
+        // Refresh leaderboard
+        await loadLeaderboard();
+      } else {
+        toast.error(result.message);
       }
-      
-      // Add PXB points to user
-      await addPointsToUser(Math.round(finalPayout));
-      
-      // Update local state
-      setPoolSize(newPoolSize);
-      setUserPosition(null);
-      
-      toast.success(`Successfully withdrawn ${finalPayout.toFixed(2)} PXB from the trading pool`);
-      fetchLeaderboard();
     } catch (error) {
       console.error("Error withdrawing:", error);
       toast.error("Error withdrawing from pool");
@@ -469,6 +225,12 @@ const TradeGamePanel = () => {
 
   const formatPnL = (pnl: number): string => {
     return pnl >= 0 ? `+${pnl.toFixed(2)}%` : `${pnl.toFixed(2)}%`;
+  };
+
+  const getWithdrawalEstimate = () => {
+    if (!userPosition) return null;
+    
+    return calculateWithdrawalAmount(userPosition.initialPXB, userPosition.currentPXB);
   };
 
   return (
@@ -637,42 +399,48 @@ const TradeGamePanel = () => {
                 <div className="glass-panel p-4 rounded-lg border border-dream-accent1/20">
                   <h3 className="text-lg font-semibold mb-2">Withdrawal Estimate</h3>
                   
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-dream-foreground/70">Base Payout (Initial × PnL):</span>
-                      <span className="font-medium">
-                        {(userPosition.initialPXB * (1 + calculatePnL()/100)).toFixed(2)} PXB
-                      </span>
+                  {userPosition && (
+                    <div className="space-y-2 mb-4">
+                      {getWithdrawalEstimate() && (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-dream-foreground/70">Base Payout (Initial × PnL):</span>
+                            <span className="font-medium">
+                              {getWithdrawalEstimate()?.basePayout} PXB
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between text-sm">
+                            <span className="text-dream-foreground/70">Minimum Guarantee (50%):</span>
+                            <span className="font-medium">
+                              {getWithdrawalEstimate()?.minimumGuarantee} PXB
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between text-sm">
+                            <span className="text-dream-foreground/70">Maximum Cap (5x):</span>
+                            <span className="font-medium">
+                              {(userPosition.initialPXB * 5).toFixed(2)} PXB
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between text-sm">
+                            <span className="text-dream-foreground/70">Vault Deduction (3%):</span>
+                            <span className="font-medium text-dream-foreground/70">
+                              -{getWithdrawalEstimate()?.vaultDeduction} PXB
+                            </span>
+                          </div>
+                          
+                          <div className="border-t border-dream-accent1/20 pt-2 flex justify-between">
+                            <span className="font-semibold">Estimated Payout:</span>
+                            <span className="font-bold text-purple-400">
+                              {getWithdrawalEstimate()?.finalPayout} PXB
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    
-                    <div className="flex justify-between text-sm">
-                      <span className="text-dream-foreground/70">Minimum Guarantee (50%):</span>
-                      <span className="font-medium">
-                        {(userPosition.initialPXB * 0.5).toFixed(2)} PXB
-                      </span>
-                    </div>
-                    
-                    <div className="flex justify-between text-sm">
-                      <span className="text-dream-foreground/70">Maximum Cap (5x):</span>
-                      <span className="font-medium">
-                        {(userPosition.initialPXB * 5).toFixed(2)} PXB
-                      </span>
-                    </div>
-                    
-                    <div className="flex justify-between text-sm">
-                      <span className="text-dream-foreground/70">Vault Deduction (3%):</span>
-                      <span className="font-medium text-dream-foreground/70">
-                        -{(Math.min(Math.max(userPosition.initialPXB * (1 + calculatePnL()/100), userPosition.initialPXB * 0.5), userPosition.initialPXB * 5) * 0.03).toFixed(2)} PXB
-                      </span>
-                    </div>
-                    
-                    <div className="border-t border-dream-accent1/20 pt-2 flex justify-between">
-                      <span className="font-semibold">Estimated Payout:</span>
-                      <span className="font-bold text-purple-400">
-                        {(Math.min(Math.max(userPosition.initialPXB * (1 + calculatePnL()/100), userPosition.initialPXB * 0.5), userPosition.initialPXB * 5) * 0.97).toFixed(2)} PXB
-                      </span>
-                    </div>
-                  </div>
+                  )}
                   
                   <Button
                     variant="destructive"
@@ -722,7 +490,7 @@ const TradeGamePanel = () => {
                           key={position.id} 
                           className={`
                             border-t border-dream-accent1/10 
-                            ${position.id === userProfile?.id ? 'bg-purple-900/20' : ''}
+                            ${position.userId === userProfile?.id ? 'bg-purple-900/20' : ''}
                           `}
                         >
                           <td className="px-2 py-3 font-medium">
@@ -737,7 +505,7 @@ const TradeGamePanel = () => {
                           </td>
                           <td className="px-2 py-3 font-medium">
                             {position.username}
-                            {position.id === userProfile?.id && (
+                            {position.userId === userProfile?.id && (
                               <span className="text-xs ml-1 text-purple-400">(You)</span>
                             )}
                           </td>
@@ -772,7 +540,7 @@ const TradeGamePanel = () => {
           <Button 
             variant="link" 
             className="text-dream-foreground/70 p-0 h-auto text-xs"
-            onClick={() => fetchLeaderboard()}
+            onClick={() => loadLeaderboard()}
           >
             Refresh data
           </Button>

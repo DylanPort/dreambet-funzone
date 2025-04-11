@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -47,6 +46,9 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     sendPoints, 
     purchaseToken,
     sellToken,
+    participateInTradingPool,
+    executeTradeInPool,
+    withdrawFromPool,
     generatePxbId,
     mintingPoints,
     transferFeature
@@ -165,6 +167,9 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         sendPoints,
         purchaseToken: purchaseTokenWrapper,
         sellToken: sellTokenWrapper,
+        participateInTradingPool,
+        executeTradeInPool,
+        withdrawFromPool,
         generatePxbId,
         fetchUserProfile,
         fetchUserBets,

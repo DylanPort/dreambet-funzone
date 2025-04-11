@@ -57,3 +57,20 @@ export const prefetchTokenData = async (tokenId: string) => {
     console.error('Error prefetching token data:', error);
   }
 };
+
+// Helper function to invalidate trading pool data
+export const invalidateTradingPoolData = () => {
+  queryClient.invalidateQueries({ queryKey: ['tradingPool'] });
+  queryClient.invalidateQueries({ queryKey: ['tradingLeaderboard'] });
+  queryClient.invalidateQueries({ queryKey: ['userTradingPosition'] });
+};
+
+// Helper function for error handling in trading operations
+export const handleTradingError = (error: any, operation: string) => {
+  console.error(`Error in ${operation}:`, error);
+  return {
+    success: false,
+    message: `Failed to ${operation.toLowerCase()}. Please try again.`,
+    error
+  };
+};
