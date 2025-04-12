@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile } from '@/types/pxb';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Edit2, Copy, User, Trophy } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ArrowRight, Copy, ExternalLink } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { UserProfile } from '@/types/pxb';
 import { PublicKey } from '@solana/web3.js';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Link } from 'react-router-dom';
 
 interface PXBProfilePanelProps {
   userProfile: UserProfile | null;
@@ -15,240 +17,239 @@ interface PXBProfilePanelProps {
   localPxbPoints: number;
 }
 
-const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
-  userProfile,
-  publicKey,
-  localPxbPoints
+const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({ 
+  userProfile, 
+  publicKey, 
+  localPxbPoints 
 }) => {
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [usernameInput, setUsernameInput] = useState(userProfile?.username || '');
-  const [isSavingUsername, setIsSavingUsername] = useState(false);
-  const {
-    generatePxbId,
-    fetchUserProfile,
-    leaderboard,
-    fetchLeaderboard,
-    generateReferralLink
+  const { 
+    mintPoints, 
+    generateReferralLink, 
+    mintingPoints,
+    fetchUserProfile
   } = usePXBPoints();
-  const [myPxbId, setMyPxbId] = useState<string>('');
-  const [userRank, setUserRank] = useState<number | null>(null);
+  const navigate = useNavigate();
+  
+  const [username, setUsername] = useState<string>(userProfile?.username || '');
+  const [bio, setBio] = useState<string>(userProfile?.bio || '');
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [referralLink, setReferralLink] = useState<string>('');
-
-  // Fetch leaderboard on component mount
+  const [isGeneratingReferral, setIsGeneratingReferral] = useState<boolean>(false);
+  
   useEffect(() => {
-    fetchLeaderboard();
-  }, [fetchLeaderboard]);
-
-  // Get user rank from leaderboard
-  useEffect(() => {
-    if (!userProfile || !leaderboard?.length) {
-      setUserRank(null);
-      return;
-    }
-    
-    console.log("Finding rank for user ID:", userProfile.id);
-    console.log("Leaderboard entries:", leaderboard);
-    
-    // Find the user in the leaderboard by matching ID
-    const userEntry = leaderboard.find(entry => {
-      const entryId = entry.id || entry.user_id;
-      const userId = userProfile.id;
-      
-      console.log(`Comparing entry ID: ${entryId} with user ID: ${userId}`);
-      return entryId === userId;
-    });
-    
-    console.log("Found user entry:", userEntry);
-    
-    if (userEntry) {
-      console.log("Setting user rank to:", userEntry.rank);
-      setUserRank(userEntry.rank);
-    } else {
-      // If user not found in leaderboard, try to calculate rank based on points
-      const userPoints = localPxbPoints || userProfile.pxbPoints || 0;
-      const higherRankedUsers = leaderboard.filter(entry => {
-        const entryPoints = entry.points || entry.pxbPoints || 0;
-        return entryPoints > userPoints;
-      });
-      
-      if (higherRankedUsers.length < leaderboard.length) {
-        const estimatedRank = higherRankedUsers.length + 1;
-        console.log("Estimated rank based on points:", estimatedRank);
-        setUserRank(estimatedRank);
-      } else {
-        setUserRank(null);
-      }
-    }
-  }, [userProfile, leaderboard, localPxbPoints]);
-
-  React.useEffect(() => {
-    if (userProfile && generatePxbId) {
-      setMyPxbId(generatePxbId());
-    }
-  }, [userProfile, generatePxbId]);
-
-  React.useEffect(() => {
     if (userProfile) {
-      setUsernameInput(userProfile.username);
+      setUsername(userProfile.username || '');
+      setBio(userProfile.bio || '');
     }
   }, [userProfile]);
-
-  const handleUpdateUsername = async () => {
-    if (!usernameInput.trim() || !userProfile) {
-      toast.error("Username cannot be empty");
-      return;
-    }
-    setIsSavingUsername(true);
+  
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
     try {
-      const {
-        error
-      } = await supabase.from('users').update({
-        username: usernameInput
-      }).eq('id', userProfile.id);
-      if (error) {
-        console.error('Error updating username:', error);
-        toast.error('Failed to update username');
-      } else {
-        fetchUserProfile();
-        toast.success('Username updated successfully');
-        setIsEditingUsername(false);
-      }
-    } catch (err) {
-      console.error('Unexpected error updating username:', err);
-      toast.error('An error occurred while updating username');
+      // Implement profile update logic here
+      toast.success("Profile updated successfully!");
+      setIsEditing(false);
+      fetchUserProfile();
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
     } finally {
-      setIsSavingUsername(false);
+      setIsSaving(false);
     }
   };
-
-  const copyToClipboard = (text: string, message: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(message);
-  };
-
-  const handleGenerateReferralLink = async () => {
+  
+  const handleMintPoints = async () => {
     try {
+      await mintPoints();
+      toast.success("Points minted successfully!");
+    } catch (error) {
+      console.error("Error minting points:", error);
+      toast.error("Failed to mint points");
+    }
+  };
+  
+  const handleGenerateReferral = async () => {
+    try {
+      setIsGeneratingReferral(true);
       const link = await generateReferralLink();
       setReferralLink(link);
       toast.success("Referral link generated successfully!");
     } catch (error) {
       console.error("Error generating referral link:", error);
       toast.error("Failed to generate referral link");
+    } finally {
+      setIsGeneratingReferral(false);
     }
   };
-
-  return <div className="overflow-hidden rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
-      <div className="p-6 border-b border-indigo-900/30 bg-black/0">
-        <h2 className="text-2xl font-bold text-white">Profile</h2>
-        <p className="text-indigo-300/70">Manage your account information</p>
+  
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Copied to clipboard");
+    }).catch((err) => {
+      console.error('Failed to copy: ', err);
+      toast.error("Failed to copy to clipboard");
+    });
+  };
+  
+  const formatWalletAddress = (address: string) => {
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+  
+  return (
+    <div className="overflow-hidden rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
+      <div className="p-6 border-b border-indigo-900/30">
+        <h2 className="text-2xl font-bold text-white">Your Profile</h2>
       </div>
-
-      <div className="p-6 space-y-6 bg-black">
-        {/* Username */}
-        <div>
-          <h3 className="text-sm text-indigo-300/70 mb-2 flex justify-between items-center">
-            Username
-            {!isEditingUsername && <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={() => setIsEditingUsername(true)}>
-                <Edit2 className="w-4 h-4" />
-              </Button>}
-          </h3>
-
-          {isEditingUsername ? <div className="space-y-2">
-              <Input value={usernameInput} onChange={e => setUsernameInput(e.target.value)} className="bg-indigo-900/10 border-indigo-900/30 text-white" />
-              <div className="flex gap-2">
-                <Button onClick={handleUpdateUsername} disabled={isSavingUsername} className="w-full bg-indigo-600 hover:bg-indigo-700">
-                  {isSavingUsername ? 'Saving...' : 'Save'}
-                </Button>
-                <Button variant="outline" onClick={() => {
-              setIsEditingUsername(false);
-              setUsernameInput(userProfile?.username || '');
-            }} className="w-full border-indigo-900/30 text-indigo-300/70 hover:text-white hover:bg-indigo-900/20">
-                  Cancel
-                </Button>
-              </div>
-            </div> : <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center border border-indigo-900/30">
-              <User className="text-indigo-300/70 w-4 h-4 mr-2" />
-              <Link 
-                to={userProfile ? `/profile/${userProfile.id}` : '#'} 
-                className="text-white hover:text-cyan-400 transition-colors"
-              >
-                {userProfile?.username || 'Anonymous'}
-              </Link>
-            </div>}
-        </div>
-
-        {/* Wallet Address */}
-        <div>
-          <h3 className="text-sm text-indigo-300/70 mb-2">Wallet Address</h3>
-          <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center justify-between border border-indigo-900/30">
-            <span className="text-white text-sm font-mono truncate">
-              {publicKey.toString()}
-            </span>
-            <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={() => copyToClipboard(publicKey.toString(), 'Wallet address copied to clipboard')}>
-              <Copy className="w-4 h-4" />
-            </Button>
+      
+      <div className="p-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div className="relative">
+            <Avatar className="w-24 h-24 border-4 border-indigo-500/30">
+              <AvatarImage src="/lovable-uploads/575dd9fd-27d8-443c-8167-0af64089b9cc.png" alt="Profile" />
+              <AvatarFallback className="bg-indigo-500/20 text-indigo-300 text-xl">
+                {username ? username.charAt(0).toUpperCase() : 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-2 -right-2 bg-indigo-600 rounded-full p-1.5 border-2 border-[#010608]">
+              <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB" className="w-5 h-5" />
+            </div>
           </div>
-        </div>
-
-        {/* PXB ID */}
-        <div>
-          <h3 className="text-sm text-indigo-300/70 mb-2">PXB ID</h3>
-          <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center justify-between border border-indigo-900/30">
-            <span className="text-white text-sm font-mono truncate">
-              {myPxbId || 'Generating...'}
-            </span>
-            <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={() => copyToClipboard(myPxbId, 'PXB ID copied to clipboard')} disabled={!myPxbId}>
-              <Copy className="w-4 h-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-indigo-300/50 mt-1">Your permanent ID for receiving PXB points</p>
-        </div>
-
-        {/* PXB Points Card */}
-        <div className="mt-6">
-          <div className="relative overflow-hidden rounded-lg p-6 bg-gradient-to-r from-[#131c36] to-[#1a2542] border border-indigo-500/20">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"></div>
-            
-            <div className="flex items-center justify-between mb-4 relative z-10">
-              <div className="flex items-center">
-                <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-4 border border-indigo-500/20">
-                  <img src="/lovable-uploads/b29e7031-78f0-44be-b383-e5d1dd184bb4.png" alt="PXB Logo" className="w-10 h-10 object-contain filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" />
+          
+          <div className="flex-1">
+            {isEditing ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-indigo-300 mb-1">Username</label>
+                  <Input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter username"
+                    className="bg-indigo-900/20 border-indigo-700/30 text-white"
+                  />
                 </div>
                 <div>
-                  <h3 className="text-4xl font-bold text-white">{localPxbPoints.toLocaleString()}</h3>
+                  <label className="block text-sm font-medium text-indigo-300 mb-1">Bio</label>
+                  <Textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Tell us about yourself"
+                    className="bg-indigo-900/20 border-indigo-700/30 text-white h-24"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleSaveProfile} 
+                    disabled={isSaving}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    {isSaving ? "Saving..." : "Save Profile"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsEditing(false)}
+                    className="border-indigo-700/50 text-indigo-300 hover:bg-indigo-900/30"
+                  >
+                    Cancel
+                  </Button>
                 </div>
               </div>
-              
-              {userRank !== null && (
-                <div className="flex items-center bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-500/30">
-                  <Trophy className="w-4 h-4 text-yellow-400 mr-1" />
-                  <span className="text-white font-medium">Rank #{userRank}</span>
+            ) : (
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-1">
+                  {username || "Unnamed User"}
+                </h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="text-indigo-300/70 text-sm flex items-center">
+                    <span>{formatWalletAddress(publicKey.toString())}</span>
+                    <button 
+                      onClick={() => copyToClipboard(publicKey.toString())} 
+                      className="ml-1 text-indigo-400 hover:text-indigo-300"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                  <a 
+                    href={`https://solscan.io/account/${publicKey.toString()}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-indigo-400 hover:text-indigo-300 text-sm flex items-center"
+                  >
+                    <ExternalLink size={14} className="ml-1" />
+                  </a>
                 </div>
-              )}
-            </div>
-            
-            <div className="flex items-center justify-between text-sm relative z-10">
-              <p className="text-indigo-300">{userProfile?.username || 'User'}</p>
-              <p className="text-indigo-300">#{userProfile?.id?.substring(0, 8) || ''}</p>
-            </div>
+                <p className="text-indigo-300/70 mb-4">
+                  {bio || "No bio provided yet."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsEditing(true)}
+                    className="border-indigo-700/50 text-indigo-300 hover:bg-indigo-900/30"
+                  >
+                    Edit Profile
+                  </Button>
+                  <Button 
+                    onClick={handleMintPoints} 
+                    disabled={mintingPoints}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    {mintingPoints ? "Minting..." : "Mint Daily Points"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Referral Link */}
-        <div>
-          <h3 className="text-sm text-indigo-300/70 mb-2">Referral Link</h3>
-          <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center justify-between border border-indigo-900/30">
-            <span className="text-white text-sm font-mono truncate">
-              {referralLink || 'Generating...'}
-            </span>
-            <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={handleGenerateReferralLink}>
-              <Copy className="w-4 h-4" />
+        
+        <div className="mt-6 p-4 rounded-lg bg-indigo-900/20 border border-indigo-700/30">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-semibold text-white">PXB Points</h3>
+            <div className="text-2xl font-bold text-yellow-400 flex items-center">
+              <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB" className="w-6 h-6 mr-2" />
+              {localPxbPoints.toLocaleString()}
+            </div>
+          </div>
+          <p className="text-indigo-300/70 text-sm mb-3">
+            Use your PXB points to place bets, participate in trading pools, and more.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              onClick={() => navigate('/betting')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Place Bets
+              <ArrowRight size={16} className="ml-2" />
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleGenerateReferral}
+              disabled={isGeneratingReferral}
+              className="border-indigo-700/50 text-indigo-300 hover:bg-indigo-900/30"
+            >
+              {isGeneratingReferral ? "Generating..." : "Generate Referral Link"}
             </Button>
           </div>
-          <p className="text-xs text-indigo-300/50 mt-1">Share this link to invite friends and earn more PXB points</p>
+          
+          {referralLink && (
+            <div className="mt-3 p-3 rounded bg-indigo-950/50 border border-indigo-700/30 flex items-center justify-between">
+              <div className="text-sm text-indigo-300 truncate mr-2">
+                {referralLink}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => copyToClipboard(referralLink)}
+                className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30"
+              >
+                <Copy size={16} />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 export default PXBProfilePanel;

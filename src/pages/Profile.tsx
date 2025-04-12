@@ -1,15 +1,16 @@
-
-import React, { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import Navbar from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
-import { usePXBPoints } from '@/contexts/PXBPointsContext';
-import { formatTimeRemaining } from '@/utils/betUtils';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useEffect } from 'react';
+import { Container } from '@/components/ui/container';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import PXBProfilePanel from '@/components/PXBProfilePanel';
-import PXBStatsPanel from '@/components/PXBStatsPanel';
+import PXBUserStats from '@/components/PXBUserStats';
 import PXBBetsHistory from '@/components/PXBBetsHistory';
-import { PXBWallet } from '@/components/PXBWallet';
+import PXBLeaderboard from '@/components/PXBLeaderboard';
+import PXBOnboarding from '@/components/PXBOnboarding';
+import Layout from '@/components/Layout';
+import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
+import PXBWallet from '@/components/PXBWallet';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const Profile = () => {
   const { connected, publicKey } = useWallet();
@@ -111,7 +112,7 @@ const Profile = () => {
             
             <div className="lg:col-span-4">
               <div className="w-full">
-                <PXBStatsPanel userProfile={userProfile} />
+                <PXBUserStats userProfile={userProfile} />
               </div>
             </div>
           </div>
