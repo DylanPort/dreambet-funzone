@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/pxb';
 import { invalidateTradingPoolData, handleTradingError } from './queryClient';
@@ -69,8 +70,9 @@ export const fetchPoolConfig = async (): Promise<PoolConfig> => {
           return defaultConfig;
         }
       } else if (typeof data.config === 'object') {
-        // If it's already an object
+        // If it's already an object, cast and merge
         const configObj = data.config as Record<string, any>;
+        
         return { 
           ...defaultConfig, 
           pool_size: configObj.pool_size || defaultConfig.pool_size,
@@ -100,10 +102,19 @@ export const updatePoolConfig = async (config: Partial<PoolConfig>): Promise<boo
     // Merge with updates
     const updatedConfig = { ...currentConfig, ...config };
     
+    // Convert to a JSON object for storage
+    const configForStorage = {
+      pool_size: updatedConfig.pool_size,
+      vault_balance: updatedConfig.vault_balance,
+      cap_multiplier: updatedConfig.cap_multiplier,
+      minimum_guarantee: updatedConfig.minimum_guarantee,
+      vault_rate: updatedConfig.vault_rate
+    };
+    
     const { error } = await supabase
       .from('app_features')
       .update({ 
-        config: updatedConfig as Record<string, any>
+        config: configForStorage
       })
       .eq('feature_name', TRADING_CONFIG.FEATURE_NAME);
       
@@ -619,7 +630,7 @@ export const initializeTradingPool = async (): Promise<void> => {
     
     // If it doesn't exist, create it
     if (!data) {
-      const initialConfig: PoolConfig = {
+      const initialConfig = {
         pool_size: 10000,
         vault_balance: 0,
         cap_multiplier: TRADING_CONFIG.CAP_MULTIPLIER,
@@ -631,7 +642,7 @@ export const initializeTradingPool = async (): Promise<void> => {
         .from('app_features')
         .insert({
           feature_name: TRADING_CONFIG.FEATURE_NAME,
-          config: initialConfig as Record<string, any>,
+          config: initialConfig,
           is_active: true,
           end_date: '2099-12-31' // Set a far future end date
         });

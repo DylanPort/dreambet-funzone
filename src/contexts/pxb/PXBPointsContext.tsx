@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -82,6 +83,11 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [connected, publicKey, fetchUserProfile, setUserProfile]);
 
+  // Generate a PXB ID for users
+  const generatePxbIdWrapper = async (): Promise<string> => {
+    return await generatePxbId();
+  };
+
   const mintPointsWrapper = async (amount?: number) => {
     if (amount) {
       await mintPoints(amount);
@@ -97,7 +103,8 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     percentageChange: number,
     duration: number
   ) => {
-    return placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
+    const result = await placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
+    return result || null;
   };
 
   const purchaseTokenWrapper = async (
@@ -174,7 +181,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         participateInTradingPool,
         executeTradeInPool,
         withdrawFromPool,
-        generatePxbId,
+        generatePxbId: generatePxbIdWrapper,
         fetchUserProfile,
         fetchUserBets,
         fetchLeaderboard,

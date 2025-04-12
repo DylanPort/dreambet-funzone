@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/pxb';
 import { Button } from '@/components/ui/button';
@@ -28,10 +27,12 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
     generatePxbId,
     fetchUserProfile,
     leaderboard,
-    fetchLeaderboard
+    fetchLeaderboard,
+    generateReferralLink
   } = usePXBPoints();
   const [myPxbId, setMyPxbId] = useState<string>('');
   const [userRank, setUserRank] = useState<number | null>(null);
+  const [referralLink, setReferralLink] = useState<string>('');
 
   // Fetch leaderboard on component mount
   useEffect(() => {
@@ -123,6 +124,17 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
   const copyToClipboard = (text: string, message: string) => {
     navigator.clipboard.writeText(text);
     toast.success(message);
+  };
+
+  const handleGenerateReferralLink = async () => {
+    try {
+      const link = await generateReferralLink();
+      setReferralLink(link);
+      toast.success("Referral link generated successfully!");
+    } catch (error) {
+      console.error("Error generating referral link:", error);
+      toast.error("Failed to generate referral link");
+    }
   };
 
   return <div className="overflow-hidden rounded-xl border border-indigo-900/30 backdrop-blur-lg bg-[#010608]">
@@ -220,6 +232,20 @@ const PXBProfilePanel: React.FC<PXBProfilePanelProps> = ({
               <p className="text-indigo-300">#{userProfile?.id?.substring(0, 8) || ''}</p>
             </div>
           </div>
+        </div>
+
+        {/* Referral Link */}
+        <div>
+          <h3 className="text-sm text-indigo-300/70 mb-2">Referral Link</h3>
+          <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center justify-between border border-indigo-900/30">
+            <span className="text-white text-sm font-mono truncate">
+              {referralLink || 'Generating...'}
+            </span>
+            <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white hover:bg-indigo-500/10" onClick={handleGenerateReferralLink}>
+              <Copy className="w-4 h-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-indigo-300/50 mt-1">Share this link to invite friends and earn more PXB points</p>
         </div>
       </div>
     </div>;
