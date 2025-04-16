@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Twitter, Globe, GitHub, ExternalLink } from 'lucide-react';
+import { Twitter, Globe, ExternalLink } from 'lucide-react';
 
 interface SocialLink {
   name: string;
@@ -33,7 +33,7 @@ const SocialLinks = () => {
     {
       name: 'GitHub',
       url: 'https://github.com/pumpxbounty',
-      icon: <GitHub className="h-5 w-5" />,
+      icon: <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" className="h-5 w-5 rounded-full" alt="GitHub" />,
       color: 'bg-gray-700 hover:bg-gray-800'
     }
   ];
