@@ -219,7 +219,6 @@ const Home = () => {
             
             <div className="relative">
               <h2 className="text-2xl font-bold mb-6 flex items-center">
-                <Coins className="mr-2 h-6 w-6 text-purple-400" />
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-cyan-300 to-purple-300">
                   PXB Token Supply
                 </span>
