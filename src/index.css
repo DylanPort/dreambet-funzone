@@ -5,31 +5,48 @@
 
 @layer base {
   :root {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
-    --dream-background: #050814;
-    --dream-foreground: #f8f9fa;
-    --dream-accent1: #ff3dfc;
-    --dream-accent2: #00ffe0;
-    --dream-accent3: #7b61ff;
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
 }
 
@@ -38,279 +55,40 @@
     @apply border-border;
   }
   body {
-    @apply bg-dream-background text-dream-foreground;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-@layer components {
+@layer utilities {
   .glass-panel {
-    @apply border border-white/10 bg-white/5 backdrop-blur-lg rounded-xl shadow-xl relative overflow-hidden;
+    @apply bg-[#0f1628]/80 backdrop-blur-lg border border-indigo-900/30 rounded-xl;
   }
   
-  .text-gradient {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-dream-accent2 via-dream-accent1 to-dream-accent3;
+  .animation-delay-2000 {
+    animation-delay: 2s;
   }
   
-  .text-gradient-active {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-dream-accent1 via-dream-accent2 to-dream-accent1 animate-text-shimmer;
+  .animation-delay-4000 {
+    animation-delay: 4s;
   }
   
-  .btn-gradient {
-    @apply relative z-10 overflow-hidden rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-dream-foreground transition-all duration-300;
-  }
-  
-  /* Futuristic glassmorphic card */
-  .futuristic-card {
-    @apply relative overflow-hidden backdrop-blur-lg bg-black/20 border rounded-xl shadow-xl transition-all;
-  }
-  
-  /* Animation for the token card flipping */
-  @keyframes flip {
+  @keyframes blob {
     0% {
-      transform: perspective(1000px) rotateY(0);
+      transform: translate(0px, 0px) scale(1);
     }
-    50% {
-      transform: perspective(1000px) rotateY(90deg);
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
     }
     100% {
-      transform: perspective(1000px) rotateY(0);
+      transform: translate(0px, 0px) scale(1);
     }
   }
   
-  .animate-flip {
-    animation: flip 1s cubic-bezier(0.455, 0.03, 0.515, 0.955) forwards;
-  }
-
-  /* New animation for progress bar stripes */
-  @keyframes progress-stripe {
-    0% {
-      background-position: 0 0;
-    }
-    100% {
-      background-position: 20px 0;
-    }
-  }
-
-  /* Other existing animations */
-  @keyframes shine {
-    0% {
-      left: -100%;
-    }
-    100% {
-      left: 100%;
-    }
-  }
-  
-  .animate-shine {
-    animation: shine 3s linear infinite;
-    position: absolute;
-    top: 0;
-    height: 100%;
-    width: 50%;
-  }
-  
-  @keyframes scan-line {
-    0% {
-      top: 0%;
-    }
-    100% {
-      top: 100%;
-    }
-  }
-  
-  @keyframes border-flow {
-    0% {
-      background-position: 0% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
-  }
-  
-  @keyframes pulse-glow {
-    0%, 100% {
-      opacity: 0.8;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
-  
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-  
-  @keyframes gradient-move {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-  
-  .animate-gradient-move {
-    animation: gradient-move 3s ease infinite;
-  }
-  
-  @keyframes spin-slow {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  
-  .animate-spin-slow {
-    animation: spin-slow 8s linear infinite;
-  }
-  
-  @keyframes float {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-  
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-  
-  .animate-float-delayed {
-    animation: float 3s ease-in-out 1s infinite;
-  }
-  
-  .animate-float-delayed-2 {
-    animation: float 3s ease-in-out 2s infinite;
-  }
-  
-  @keyframes bob {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-5px);
-    }
-  }
-  
-  .animate-bob {
-    animation: bob 2s ease-in-out infinite;
-  }
-  
-  .animate-pulse-subtle {
-    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-  
-  /* New pulse animation for active bets */
-  @keyframes pulse-slow {
-    0%, 100% {
-      opacity: 1;
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
-    }
-    50% {
-      opacity: 0.9;
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
-    }
-  }
-  
-  .animate-pulse-slow {
-    animation: pulse-slow 3s ease-in-out infinite;
-  }
-  
-  @keyframes text-shimmer {
-    0% {
-      background-position: 0% 50%;
-    }
-    100% {
-      background-position: 100% 50%;
-    }
-  }
-  
-  .animate-text-shimmer {
-    animation: text-shimmer 2s linear infinite;
-    background-size: 200% auto;
-  }
-  
-  /* New animations for trending tokens section */
-  @keyframes scroll {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-50%);
-    }
-  }
-  
-  .animate-scroll {
-    display: flex;
-    animation: scroll 40s linear infinite; /* Changed from 20s to 40s to slow it down */
-    width: max-content;
-    padding-right: 1rem;
-  }
-  
-  .animate-scroll-slow {
-    display: flex;
-    animation: scroll 80s linear infinite; /* Changed from 40s to 80s to slow it down */
-    width: max-content;
-    padding-right: 1rem;
-  }
-  
-  .animate-scroll:hover,
-  .animate-scroll-slow:hover {
-    animation-play-state: paused;
-  }
-  
-  /* Custom scrollbar for horizontal scroll areas */
-  .horizontal-scroll::-webkit-scrollbar {
-    height: 6px;
-  }
-  
-  .horizontal-scroll::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-  }
-  
-  .horizontal-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-  }
-  
-  .horizontal-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-  
-  /* Animation for the scrollable content */
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-out forwards;
-  }
-
-  /* Scroll button styles */
-  .scroll-button {
-    @apply absolute top-1/2 -translate-y-1/2 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-dream-background/80 border border-dream-accent1/30 text-dream-accent2 hover:bg-dream-background/95 hover:text-dream-accent1 transition-colors;
-  }
-  
-  .scroll-button-left {
-    @apply left-0 -ml-4 focus:outline-none focus:ring-1 focus:ring-dream-accent1;
-  }
-  
-  .scroll-button-right {
-    @apply right-0 -mr-4 focus:outline-none focus:ring-1 focus:ring-dream-accent1;
+  .animate-blob {
+    animation: blob 7s infinite;
   }
 }

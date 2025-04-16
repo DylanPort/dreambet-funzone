@@ -7,6 +7,7 @@ import { createQueryClient } from "./services/queryClient";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SolanaWalletProvider from "./providers/SolanaWalletProvider";
 import { PXBPointsProvider } from "./contexts/pxb/PXBPointsContext";
+import Home from "./pages/Home";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
@@ -33,7 +34,8 @@ function App() {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Home />} />
+                <Route path="/dashboard" element={<Index />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/profile/:userId" element={<UserProfile />} />
                 <Route path="/token/:id" element={<TokenDetail />} />

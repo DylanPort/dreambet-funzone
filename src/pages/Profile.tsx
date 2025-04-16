@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { Container } from '@/components/ui/container';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import PXBProfilePanel from '@/components/PXBProfilePanel';
 import PXBUserStats from '@/components/PXBUserStats';
 import PXBBetsHistory from '@/components/PXBBetsHistory';
@@ -11,6 +13,8 @@ import Layout from '@/components/Layout';
 import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
 import PXBWallet from '@/components/PXBWallet';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { supabase } from '@/integrations/supabase/client';
+import Navbar from '@/components/Navbar';
 
 const Profile = () => {
   const { connected, publicKey } = useWallet();

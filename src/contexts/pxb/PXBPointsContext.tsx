@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { PXBPointsContextType } from './types';
 import { useProfileData } from './useProfileData';
@@ -163,6 +164,11 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return true;
   };
 
+  // Make sure transferFeature is the correct type
+  const transferFeatureObject = typeof transferFeature === 'string' 
+    ? { enabled: false, fee: 0 } 
+    : transferFeature;
+
   return (
     <PXBPointsContext.Provider
       value={{
@@ -187,7 +193,7 @@ export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fetchWinRateLeaderboard,
         addPointsToUser: addPointsWrapper,
         mintingPoints,
-        transferFeature: transferFeature as { enabled: boolean; fee: number },
+        transferFeature: transferFeatureObject,
         isLeaderboardLoading,
         isLoadingWinRate,
         isLoadingBets,
