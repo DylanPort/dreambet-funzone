@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Twitter, Globe, GitHub, Discord, ExternalLink } from 'lucide-react';
+import { Twitter, Globe, GitHub, ExternalLink } from 'lucide-react';
 
 interface SocialLink {
   name: string;
@@ -27,7 +27,7 @@ const SocialLinks = () => {
     {
       name: 'Discord',
       url: 'https://discord.gg/pumpxbounty',
-      icon: <Discord className="h-5 w-5" />,
+      icon: <img src="/lovable-uploads/81fb2dc7-59da-424e-8569-4202a7967758.png" className="h-5 w-5" alt="Discord" />,
       color: 'bg-indigo-500 hover:bg-indigo-600'
     },
     {
