@@ -51,4 +51,7 @@ export interface PXBPointsContextType {
   fetchReferralStats: () => Promise<void>;
   isLoadingReferrals: boolean;
   fetchTokenTransactions: (tokenId: string) => Promise<any[]>;
+  participateInTradingPool?: (amount: number) => Promise<any>;
+  executeTradeInPool?: (tradeType: 'up' | 'down', position: any) => Promise<any>;
+  withdrawFromPool?: (position: any) => Promise<any>;
 }
