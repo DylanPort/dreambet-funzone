@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,18 +57,18 @@ const TrendingBetsList = () => {
     const fetchTrendingTokens = async () => {
       setIsLoading(true);
       try {
-        const {
-          data,
-          error
-        } = await supabase.from('bets').select('token_mint, token_name, token_symbol, sol_amount, prediction_bettor1').order('created_at', {
-          ascending: false
-        });
+        const { data, error } = await supabase
+          .from('token_transactions')
+          .select('tokenid, tokenname, tokensymbol, price, pxbamount, type')
+          .order('created_at', { ascending: false });
+          
         if (error) {
           console.error('Error fetching trending tokens:', error);
           toast.error('Failed to load trending tokens');
           setIsLoading(false);
           return;
         }
+        
         const tokenMap = new Map<string, {
           token_mint: string;
           token_name: string;
@@ -77,37 +78,45 @@ const TrendingBetsList = () => {
           moon_bets: number;
           die_bets: number;
         }>();
-        data.forEach(bet => {
-          if (!bet.token_mint) return;
-          const existing = tokenMap.get(bet.token_mint);
+        
+        data.forEach(tx => {
+          if (!tx.tokenid) return;
+          
+          const existing = tokenMap.get(tx.tokenid);
           if (existing) {
             existing.bet_count += 1;
-            existing.total_amount += Number(bet.sol_amount) || 0;
-            if (bet.prediction_bettor1 === 'up') {
+            existing.total_amount += Number(tx.pxbamount) || 0;
+            
+            if (tx.type === 'buy') {
               existing.moon_bets += 1;
-            } else if (bet.prediction_bettor1 === 'down') {
+            } else if (tx.type === 'sell') {
               existing.die_bets += 1;
             }
           } else {
             let moonBets = 0;
             let dieBets = 0;
-            if (bet.prediction_bettor1 === 'up') {
+            
+            if (tx.type === 'buy') {
               moonBets = 1;
-            } else if (bet.prediction_bettor1 === 'down') {
+            } else if (tx.type === 'sell') {
               dieBets = 1;
             }
-            tokenMap.set(bet.token_mint, {
-              token_mint: bet.token_mint,
-              token_name: bet.token_name || 'Unknown Token',
-              token_symbol: bet.token_symbol || 'UNKNOWN',
+            
+            tokenMap.set(tx.tokenid, {
+              token_mint: tx.tokenid,
+              token_name: tx.tokenname || 'Unknown Token',
+              token_symbol: tx.tokensymbol || 'UNKNOWN',
               bet_count: 1,
-              total_amount: Number(bet.sol_amount) || 0,
+              total_amount: Number(tx.pxbamount) || 0,
               moon_bets: moonBets,
               die_bets: dieBets
             });
           }
         });
-        const sortedTokens = Array.from(tokenMap.values()).sort((a, b) => b.bet_count - a.bet_count);
+        
+        const sortedTokens = Array.from(tokenMap.values())
+          .sort((a, b) => b.bet_count - a.bet_count);
+          
         setTrendingTokens(sortedTokens);
         
         const newImagesLoading: Record<string, boolean> = {};
@@ -142,13 +151,17 @@ const TrendingBetsList = () => {
         setIsLoading(false);
       }
     };
+    
     fetchTrendingTokens();
+    
     const interval = setInterval(() => {
       if (trendingTokens.length > 0) {
         setCurrentIndex(prev => (prev + 1) % trendingTokens.length);
       }
     }, 5000);
+    
     return () => clearInterval(interval);
+    
   }, []);
 
   const visibleTokens = isExpanded ? trendingTokens : trendingTokens.slice(0, 5);
@@ -193,7 +206,7 @@ const TrendingBetsList = () => {
   if (trendingTokens.length === 0) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <p className="text-center text-dream-foreground/60">
-          No bet data available yet
+          No trading data available yet
         </p>
       </Card>;
   }
@@ -224,7 +237,7 @@ const TrendingBetsList = () => {
                   {renderTokenAvatar(token)}
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold">{token.token_symbol}</span>
-                    <span className="text-[10px] text-dream-foreground/60">{token.bet_count} bets</span>
+                    <span className="text-[10px] text-dream-foreground/60">{token.bet_count} trades</span>
                   </div>
                 </div>)}
             </div>
@@ -235,7 +248,7 @@ const TrendingBetsList = () => {
       <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
         <div className="flex items-center justify-between mb-4">
           <CardTitle className="text-xl text-dream-foreground flex items-center gap-2">
-            <span>TRENDING BETS</span>
+            <span>TRENDING TOKENS</span>
           </CardTitle>
           
           <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="text-xs bg-dream-background/40 border-dream-accent1/20 hover:bg-dream-background/60 hover:border-dream-accent1/40">
@@ -261,7 +274,7 @@ const TrendingBetsList = () => {
                           </div>
                           <div className="flex items-center gap-1 text-xs bg-dream-accent3/20 px-2 py-1 rounded-full">
                             <BarChart className="h-3 w-3 text-dream-accent3" />
-                            <span>{token.bet_count} bets</span>
+                            <span>{token.bet_count} trades</span>
                           </div>
                         </div>
                     
@@ -285,14 +298,14 @@ const TrendingBetsList = () => {
                               <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
                                 <div className="flex items-center gap-1">
                                   <ArrowUp className="h-3 w-3 text-green-400" />
-                                  <span className="text-dream-foreground/60">Moon</span>
+                                  <span className="text-dream-foreground/60">Buys</span>
                                 </div>
                                 <span className="font-medium text-green-400">{token.moon_bets}</span>
                               </div>
                               <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
                                 <div className="flex items-center gap-1">
                                   <ArrowDown className="h-3 w-3 text-red-400" />
-                                  <span className="text-dream-foreground/60">Die</span>
+                                  <span className="text-dream-foreground/60">Sells</span>
                                 </div>
                                 <span className="font-medium text-red-400">{token.die_bets}</span>
                               </div>
@@ -301,8 +314,8 @@ const TrendingBetsList = () => {
                         
                           <div className="flex items-center justify-between gap-2">
                             <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
-                              <div className="text-xs text-dream-foreground/60 mb-1">Total Bet Amount</div>
-                              <div className="text-sm font-medium text-dream-accent2 bg-[#022202]">
+                              <div className="text-xs text-dream-foreground/60 mb-1">Total Volume</div>
+                              <div className="text-sm font-medium text-dream-accent2">
                                 {token.total_amount.toFixed(2)} PXB
                               </div>
                             </div>
@@ -349,7 +362,7 @@ const TrendingBetsList = () => {
                         </div>
                         <div className="flex items-center gap-1 text-xs bg-dream-accent3/20 px-2 py-1 rounded-full">
                           <BarChart className="h-3 w-3 text-dream-accent3" />
-                          <span>{token.bet_count} bets</span>
+                          <span>{token.bet_count} trades</span>
                         </div>
                       </div>
                       
@@ -373,14 +386,14 @@ const TrendingBetsList = () => {
                             <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
                               <div className="flex items-center gap-1">
                                 <ArrowUp className="h-3 w-3 text-green-400" />
-                                <span className="text-dream-foreground/60">Moon</span>
+                                <span className="text-dream-foreground/60">Buys</span>
                               </div>
                               <span className="font-medium text-green-400">{token.moon_bets}</span>
                             </div>
                             <div className="bg-dream-background/20 p-2 rounded-lg flex flex-col items-center">
                               <div className="flex items-center gap-1">
                                 <ArrowDown className="h-3 w-3 text-red-400" />
-                                <span className="text-dream-foreground/60">Die</span>
+                                <span className="text-dream-foreground/60">Sells</span>
                               </div>
                               <span className="font-medium text-red-400">{token.die_bets}</span>
                             </div>
@@ -389,7 +402,7 @@ const TrendingBetsList = () => {
                       
                         <div className="flex items-center justify-between gap-2">
                           <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
-                            <div className="text-xs text-dream-foreground/60 mb-1">Total Bet Amount</div>
+                            <div className="text-xs text-dream-foreground/60 mb-1">Total Volume</div>
                             <div className="text-sm font-medium text-dream-accent2">
                               {token.total_amount.toFixed(2)} PXB
                             </div>

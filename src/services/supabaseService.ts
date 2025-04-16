@@ -201,6 +201,42 @@ export const fetchTrendingTokens = async (limit = 10) => {
   }
 };
 
+// Fetch token transactions
+export interface TokenTransaction {
+  id: string;
+  tokenid: string;
+  tokenname: string;
+  tokensymbol: string;
+  type: 'buy' | 'sell';
+  price: number;
+  quantity: number;
+  pxbamount: number;
+  timestamp: string;
+  userid: string;
+}
+
+export const fetchTokenTransactions = async (tokenId: string) => {
+  try {
+    console.log(`Fetching transactions for token: ${tokenId}`);
+    
+    const { data, error } = await supabase
+      .from('token_transactions')
+      .select('*')
+      .eq('tokenid', tokenId)
+      .order('timestamp', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching token transactions:', error);
+      throw error;
+    }
+    
+    return data as TokenTransaction[];
+  } catch (error) {
+    console.error('Error in fetchTokenTransactions:', error);
+    return [];
+  }
+};
+
 // Bet related functions
 export const fetchOpenBets = async () => {
   try {
