@@ -353,32 +353,32 @@ const ActiveBetsList = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40 bg-dream-background/95 backdrop-blur-md border border-dream-accent1/20 rounded-md">
                 <DropdownMenuItem 
-                  onClick={() => setSortBy('newest')}
                   className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'newest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('newest')}
                 >
                   Newest First
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => setSortBy('oldest')}
                   className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'oldest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('oldest')}
                 >
                   Oldest First
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => setSortBy('amount-high')}
                   className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'amount-high' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('amount-high')}
                 >
                   Amount: High to Low
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => setSortBy('amount-low')}
                   className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'amount-low' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('amount-low')}
                 >
                   Amount: Low to High
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => setSortBy('expiring-soon')}
                   className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'expiring-soon' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
+                  onClick={() => setSortBy('expiring-soon')}
                 >
                   Expiring Soon
                 </DropdownMenuItem>

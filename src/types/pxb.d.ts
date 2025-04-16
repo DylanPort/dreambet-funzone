@@ -61,28 +61,3 @@ export interface Referral {
   status: 'active' | 'inactive';
   pointsEarned: number;
 }
-
-export interface TradingPosition {
-  id: string;
-  userId: string;
-  username: string;
-  initialPXB: number;
-  currentPXB: number;
-  percentChange: number;
-  timestamp: string;
-}
-
-export interface PoolConfig {
-  pool_size: number;
-  vault_balance?: number;
-  cap_multiplier?: number;
-  minimum_guarantee?: number;
-  vault_rate?: number;
-}
-
-export interface TradingPoolStats {
-  totalUsers: number;
-  averageReturn: number;
-  totalVolume: number;
-  vaultSize: number;
-}

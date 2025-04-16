@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from './ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
 interface TokenData {
   mint: string;
   symbol: string;
@@ -22,7 +21,6 @@ interface TokenData {
   supply?: number;
   timestamp?: string;
 }
-
 const OpenBetsList = () => {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -33,7 +31,6 @@ const OpenBetsList = () => {
   } = usePumpPortal();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-
   const sortTokens = (tokensToSort: TokenData[]) => {
     const tokens = [...tokensToSort];
     switch (sortBy) {
@@ -57,29 +54,11 @@ const OpenBetsList = () => {
         return tokens.sort((a, b) => (b.supply || 0) - (a.supply || 0));
       case 'supply-low':
         return tokens.sort((a, b) => (a.supply || 0) - (b.supply || 0));
-      case 'amount-high':
-        return tokens.sort((a, b) => (b.supply || 0) - (a.supply || 0));
-      case 'amount-low':
-        return tokens.sort((a, b) => (a.supply || 0) - (b.supply || 0));
-      case 'expiring-soon':
-        return tokens.sort((a, b) => {
-          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-          return dateA - dateB;
-        });
-      case 'creator':
-        return tokens.sort((a, b) => {
-          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-          return dateA - dateB;
-        });
       default:
         return tokens;
     }
   };
-
   const visibleTokens = isExpanded ? sortTokens(rawTokens) : sortTokens(rawTokens).slice(0, 5);
-
   const copyToClipboard = async (text: string, index: number) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -106,11 +85,9 @@ const OpenBetsList = () => {
       });
     }
   };
-
   const navigateToTokenDetail = (tokenMint: string) => {
     navigate(`/token/${tokenMint}`);
   };
-
   if (!rawTokens || rawTokens.length === 0) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <p className="text-center text-dream-foreground/60">
@@ -118,7 +95,6 @@ const OpenBetsList = () => {
         </p>
       </Card>;
   }
-
   return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20 space-y-4">
       <div className="flex items-center justify-between mb-4">
         <CardTitle className="text-xl text-dream-foreground">RECENT TOKENS</CardTitle>
@@ -132,42 +108,24 @@ const OpenBetsList = () => {
               <ChevronDown className="w-3.5 h-3.5 ml-1" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40 bg-dream-background/90 border border-dream-accent1/20 rounded-md">
-            <DropdownMenuItem 
-              onClick={() => setSortBy('newest')}
-              className={`text-xs px-2 py-1 ${sortBy === 'newest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
-            >
+          <DropdownMenuContent align="end" className="w-48 bg-dream-background/95 backdrop-blur-md border border-dream-accent1/20 rounded-md">
+            <DropdownMenuItem className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'newest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`} onClick={() => setSortBy('newest')}>
               Newest First
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => setSortBy('oldest')}
-              className={`text-xs px-2 py-1 ${sortBy === 'oldest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
-            >
+            <DropdownMenuItem className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'oldest' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`} onClick={() => setSortBy('oldest')}>
               Oldest First
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => setSortBy('amount-high')}
-              className={`text-xs px-2 py-1 ${sortBy === 'amount-high' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
-            >
-              Amount (High to Low)
+            <DropdownMenuItem className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'market-cap-high' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`} onClick={() => setSortBy('market-cap-high')}>
+              Market Cap: High to Low
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => setSortBy('amount-low')}
-              className={`text-xs px-2 py-1 ${sortBy === 'amount-low' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
-            >
-              Amount (Low to High)
+            <DropdownMenuItem className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'market-cap-low' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`} onClick={() => setSortBy('market-cap-low')}>
+              Market Cap: Low to High
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => setSortBy('expiring-soon')}
-              className={`text-xs px-2 py-1 ${sortBy === 'expiring-soon' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
-            >
-              Expiring Soon
+            <DropdownMenuItem className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'supply-high' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`} onClick={() => setSortBy('supply-high')}>
+              Supply: High to Low
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => setSortBy('creator')}
-              className={`text-xs px-2 py-1 ${sortBy === 'creator' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`}
-            >
-              By Creator
+            <DropdownMenuItem className={`text-xs px-4 py-2 cursor-pointer ${sortBy === 'supply-low' ? 'bg-dream-accent1/20 text-dream-accent1' : 'text-dream-foreground/80'}`} onClick={() => setSortBy('supply-low')}>
+              Supply: Low to High
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -291,5 +249,4 @@ const OpenBetsList = () => {
         </div>}
     </Card>;
 };
-
 export default OpenBetsList;

@@ -4,7 +4,6 @@ export interface UserProfile {
   pxbPoints: number;
   createdAt: string;
   isTemporary?: boolean; // Add this flag to identify temporary profiles
-  bio?: string; // Added missing bio property
 }
 
 // Updated PXBBet interface with all required fields

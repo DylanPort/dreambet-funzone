@@ -1,369 +1,533 @@
 import React, { useState, useEffect } from 'react';
+import { usePXBPoints } from '@/contexts/PXBPointsContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Send, Copy, RefreshCw, QrCode, Clock, ArrowUpRight, ArrowDownLeft, Gift, Users, Link as LinkIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow } from 'date-fns';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { usePXBPoints } from '@/contexts/pxb/PXBPointsContext';
-import { formatAddress } from '@/utils/betUtils';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { toast } from "sonner";
-import { Copy, CheckCircle, AlertTriangle, ArrowRight, ArrowLeft } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Referral } from '@/types/pxb';
+import { useSearchParams } from 'react-router-dom';
 
-const PXBWallet = () => {
-  const { 
-    userProfile, 
-    sendPoints, 
-    generatePxbId, 
-    generateReferralLink, 
-    checkAndProcessReferral,
-    transferFeature,
+interface Transaction {
+  id: string;
+  amount: number;
+  action: string;
+  created_at: string;
+  reference_id: string;
+  reference_name?: string;
+}
+
+export const PXBWallet: React.FC = () => {
+  const {
+    userProfile,
+    isLoading,
+    sendPoints,
+    generatePxbId,
+    fetchUserProfile,
+    generateReferralLink,
     referralStats,
-    fetchReferralStats
+    fetchReferralStats,
+    isLoadingReferrals,
+    transferFeature
   } = usePXBPoints();
-  const { publicKey, connected } = useWallet();
+  const {
+    connected
+  } = useWallet();
+  const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'activity' | 'claim' | 'referrals'>('send');
   const [recipientId, setRecipientId] = useState('');
-  const [transferAmount, setTransferAmount] = useState(0);
-  const [isTransferring, setIsTransferring] = useState(false);
-  const [pxbId, setPxbId] = useState('');
-  const [referralLink, setReferralLink] = useState('');
-  const [referralCode, setReferralCode] = useState('');
-  const [isProcessingReferral, setIsProcessingReferral] = useState(false);
-  const [isGeneratingId, setIsGeneratingId] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [myPxbId, setMyPxbId] = useState('');
+  const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
+  const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [referralLink, setReferralLink] = useState<string>('');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const [showReferrals, setShowReferrals] = useState(false);
-  const [showReferralStats, setShowReferralStats] = useState(false);
-  const [showTransfer, setShowTransfer] = useState(false);
-  const [showGenerateId, setShowGenerateId] = useState(false);
+  const COOLDOWN_TIME = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const fetchId = async () => {
-      if (userProfile && !userProfile.isTemporary) {
-        setPxbId(userProfile.id);
-      }
-    };
-    fetchId();
-  }, [userProfile]);
-
-  useEffect(() => {
-    if (connected) {
-      fetchReferralStats && fetchReferralStats();
+    if (userProfile && generatePxbId) {
+      const id = generatePxbId();
+      setMyPxbId(id);
     }
-  }, [connected, fetchReferralStats]);
+  }, [userProfile, generatePxbId]);
 
-  const handleGeneratePxbId = async () => {
-    setIsGeneratingId(true);
+  useEffect(() => {
+    const storedLastClaimTime = localStorage.getItem('lastPxbClaim');
+    if (storedLastClaimTime) {
+      const lastTime = parseInt(storedLastClaimTime, 10);
+      setLastClaimTime(lastTime);
+      const updateCooldown = () => {
+        const now = Date.now();
+        const elapsed = now - lastTime;
+        if (elapsed < COOLDOWN_TIME) {
+          setCooldownRemaining(COOLDOWN_TIME - elapsed);
+        } else {
+          setCooldownRemaining(null);
+        }
+      };
+      updateCooldown();
+      const interval = setInterval(updateCooldown, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [lastClaimTime]);
+
+  useEffect(() => {
+    if (activeTab === 'activity' && userProfile) {
+      fetchTransactionHistory();
+    }
+    if (activeTab === 'referrals' && userProfile) {
+      fetchReferralStats();
+      handleGenerateReferralLink();
+    }
+  }, [activeTab, userProfile, fetchReferralStats]);
+
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode && activeTab !== 'referrals') {
+      setActiveTab('referrals');
+    }
+  }, [searchParams]);
+
+  const fetchTransactionHistory = async () => {
+    if (!userProfile) return;
+    setIsLoadingTransactions(true);
     try {
-      const newId = await generatePxbId();
-      setPxbId(newId);
-      toast.success("PXB ID generated successfully!");
+      const {
+        data,
+        error
+      } = await supabase.from('points_history').select('*').eq('user_id', userProfile.id).order('created_at', {
+        ascending: false
+      }).limit(10);
+      if (error) {
+        console.error('Error fetching transaction history:', error);
+        toast.error('Failed to load transaction history');
+        return;
+      }
+      setTransactions(data || []);
     } catch (error) {
-      console.error("Error generating PXB ID:", error);
-      toast.error("Failed to generate PXB ID");
+      console.error('Unexpected error fetching transactions:', error);
     } finally {
-      setIsGeneratingId(false);
+      setIsLoadingTransactions(false);
     }
   };
 
-  // Function to properly handle async referral link generation
+  const handleSendPoints = async () => {
+    if (!sendPoints) return;
+    if (!recipientId.trim()) {
+      toast.error('Please enter a recipient PXB ID');
+      return;
+    }
+    const amountNumber = parseFloat(amount);
+    if (isNaN(amountNumber) || amountNumber <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    setIsSending(true);
+    try {
+      let actualUserId = recipientId;
+      if (recipientId.startsWith('PXB-')) {
+        const parts = recipientId.split('-');
+        if (parts.length >= 2) {
+          actualUserId = parts[1];
+        }
+      }
+      console.log('Extracted user ID for sending:', actualUserId);
+      const success = await sendPoints(actualUserId, amountNumber);
+      if (success) {
+        setRecipientId('');
+        setAmount('');
+        toast.success(`Successfully sent ${amountNumber} PXB points!`);
+      }
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleGenerateId = () => {
+    if (!generatePxbId) return;
+    const newId = generatePxbId();
+    setMyPxbId(newId);
+  };
+
   const handleGenerateReferralLink = async () => {
+    if (!generateReferralLink || !userProfile) return;
     setIsGeneratingLink(true);
     try {
       const link = await generateReferralLink();
       setReferralLink(link);
-      toast.success("Referral link generated successfully!");
     } catch (error) {
-      console.error("Error generating referral link:", error);
-      toast.error("Failed to generate referral link");
+      console.error('Error generating referral link:', error);
+      toast.error('Failed to generate referral link');
     } finally {
       setIsGeneratingLink(false);
     }
   };
 
-  const handleCheckAndProcessReferral = async () => {
-    setIsProcessingReferral(true);
-    try {
-      if (referralCode) {
-        const success = await checkAndProcessReferral(referralCode);
-        if (success) {
-          toast.success("Referral processed successfully!");
-          fetchReferralStats && fetchReferralStats();
-        } else {
-          toast.error("Invalid referral code or already processed.");
-        }
-      } else {
-        toast.error("Please enter a referral code.");
-      }
-    } catch (error) {
-      console.error("Error processing referral:", error);
-      toast.error("Failed to process referral");
-    } finally {
-      setIsProcessingReferral(false);
-    }
-  };
-
-  const handleSendPoints = async () => {
-    setIsTransferring(true);
-    try {
-      if (!recipientId || !transferAmount) {
-        toast.error("Please enter recipient ID and amount.");
-        return;
-      }
-      if (transferAmount <= 0) {
-        toast.error("Amount must be greater than zero.");
-        return;
-      }
-      if (!userProfile) {
-        toast.error("Please connect your wallet.");
-        return;
-      }
-      if (userProfile.pxbPoints < transferAmount) {
-        toast.error("Insufficient PXB points.");
-        return;
-      }
-
-      const success = await sendPoints(recipientId, transferAmount);
-      if (success) {
-        toast.success(`Successfully sent ${transferAmount} PXB points to ${recipientId}!`);
-      } else {
-        toast.error("Failed to send PXB points.");
-      }
-    } catch (error) {
-      console.error("Error sending PXB points:", error);
-      toast.error("Failed to send PXB points.");
-    } finally {
-      setIsTransferring(false);
-    }
-  };
-
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast.success("Copied to clipboard");
-    }).catch((err) => {
-      console.error('Failed to copy: ', err);
-      toast.error("Failed to copy to clipboard");
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
+  const formatCooldownTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor(totalSeconds % 3600 / 60);
+    const seconds = totalSeconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleClaimPoints = async () => {
+    if (!userProfile) return;
+    setIsClaiming(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const now = Date.now();
+      localStorage.setItem('lastPxbClaim', now.toString());
+      setLastClaimTime(now);
+      setCooldownRemaining(COOLDOWN_TIME);
+      toast.success('Successfully claimed 100 PXB points!');
+      fetchUserProfile();
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
+  const getTransactionDescription = (transaction: Transaction) => {
+    switch (transaction.action) {
+      case 'bet_placed':
+        return 'Placed bet';
+      case 'bet_won':
+        return 'Won bet';
+      case 'bet_lost':
+        return 'Lost bet';
+      case 'mint':
+        return 'Claimed points';
+      case 'transfer_sent':
+        return 'Sent points';
+      case 'transfer_received':
+        return 'Received points';
+      case 'referral_reward':
+        return 'Referral reward';
+      default:
+        return transaction.action.replace(/_/g, ' ');
+    }
+  };
+
+  const formatTransactionTime = (timestamp: string) => {
+    return formatDistanceToNow(new Date(timestamp), {
+      addSuffix: true
     });
   };
 
-  return (
-    <div className="space-y-6">
-      {/* PXB ID Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center">
-            <span className="mr-2">PXB ID</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">Your unique PXB identifier</div>
-            <Button variant="secondary" size="sm" onClick={() => setShowGenerateId(!showGenerateId)}>
-              {showGenerateId ? <ArrowLeft className="w-4 h-4 mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
-              {showGenerateId ? "Hide" : "Show"}
-            </Button>
+  if (isLoading) {
+    return <div className="glass-panel p-6 mb-6 animate-pulse bg-gray-900/50 rounded-lg border border-gray-800">
+        <div className="w-full h-12 bg-gray-800 rounded-lg mb-4"></div>
+        <div className="w-1/2 h-8 bg-gray-800 rounded-lg"></div>
+      </div>;
+  }
+
+  if (!connected) {
+    return <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
+        <p className="text-center text-gray-400">Connect your wallet to view your PXB balance</p>
+      </div>;
+  }
+
+  if (!userProfile) {
+    return <div className="glass-panel p-6 mb-6 bg-gray-900/50 rounded-lg border border-gray-800">
+        <div className="text-center space-y-4">
+          <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-400">Loading your profile data...</p>
+        </div>
+      </div>;
+  }
+
+  return <div className="mb-6 overflow-hidden relative rounded-lg bg-[#0f1628] border border-indigo-900/30 backdrop-blur-lg">
+      <div className="p-6 flex justify-between items-center bg-gradient-to-r from-[#131c36] to-[#1a2542]">
+        <div className="flex items-center">
+          <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mr-3 border border-indigo-500/20">
+            <img alt="PXB Coin" className="w-8 h-8" src="/lovable-uploads/312f3991-0648-4df9-8e4e-cab5c3683d64.png" />
           </div>
-          {showGenerateId && (
-            <div className="space-y-2">
-              {pxbId ? (
-                <div className="flex items-center justify-between p-2 rounded-md bg-gray-100 dark:bg-gray-800">
-                  <div className="text-sm font-medium">{pxbId}</div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={() => copyToClipboard(pxbId)}>
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Copy ID</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500">No PXB ID generated yet.</div>
-              )}
-              <Button 
-                className="w-full" 
-                onClick={handleGeneratePxbId} 
-                disabled={isGeneratingId}
-                size="sm"
-              >
-                {isGeneratingId ? "Generating..." : "Generate PXB ID"}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Referral System Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center">
-            <span className="mr-2">Referral System</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">Share your referral link to earn rewards</div>
-            <div className="space-x-2">
-              <Button variant="secondary" size="sm" onClick={() => setShowReferralStats(!showReferralStats)}>
-                {showReferralStats ? <ArrowLeft className="w-4 h-4 mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
-                {showReferralStats ? "Hide Stats" : "Show Stats"}
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setShowReferrals(!showReferrals)}>
-                {showReferrals ? <ArrowLeft className="w-4 h-4 mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
-                {showReferrals ? "Hide Referrals" : "Show Referrals"}
-              </Button>
-            </div>
+          <div>
+            <h2 className="text-xl font-bold text-white">PXB Wallet</h2>
+            <p className="text-indigo-300/70 text-sm">Send and receive PXB points</p>
           </div>
+        </div>
+        <div className="text-right">
+          <p className="text-3xl font-bold text-white">{userProfile.pxbPoints.toLocaleString()}</p>
+          <p className="text-indigo-300/70 text-sm">PXB Points</p>
+        </div>
+      </div>
 
-          {showReferralStats && referralStats && (
-            <div className="p-3 rounded-md bg-gray-100 dark:bg-gray-800 space-y-2">
-              <div className="text-sm font-medium">Total Referrals: {referralStats.totalReferrals}</div>
-              <div className="text-sm font-medium">Active Referrals: {referralStats.activeReferrals}</div>
-              <div className="text-sm font-medium">Points Earned: {referralStats.pointsEarned}</div>
-            </div>
-          )}
+      <div className="flex border-b border-indigo-900/30 overflow-x-auto">
+        <button className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'send' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} onClick={() => setActiveTab('send')}>
+          <Send className="w-4 h-4" />
+          Send
+        </button>
+        <button className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'receive' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} onClick={() => setActiveTab('receive')}>
+          <QrCode className="w-4 h-4" />
+          Receive
+        </button>
+        
+        
+        <button className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 ${activeTab === 'activity' ? 'bg-indigo-500/10 text-white border-b border-indigo-500' : 'text-indigo-300/70 hover:text-white hover:bg-indigo-500/5'}`} onClick={() => setActiveTab('activity')}>
+          <Clock className="w-4 h-4" />
+          Activity
+        </button>
+      </div>
 
-          {showReferrals && referralStats && referralStats.referrals && referralStats.referrals.length > 0 ? (
-            <div className="space-y-2">
-              {referralStats.referrals.map((referral: Referral) => (
-                <div key={referral.referee} className="p-2 rounded-md bg-gray-100 dark:bg-gray-800">
-                  <div className="text-sm">Referred: {referral.referredUsername || formatAddress(referral.referee)}</div>
-                  <div className="text-xs text-gray-500">Date: {new Date(referral.date || referral.createdAt || '').toLocaleDateString()}</div>
-                  <div className="text-xs text-gray-500">Status: {referral.status}</div>
-                  <div className="text-xs text-gray-500">Points Earned: {referral.pointsEarned}</div>
-                </div>
-              ))}
-            </div>
-          ) : showReferrals && referralStats ? (
-            <div className="text-sm text-gray-500">No referrals yet.</div>
-          ) : null}
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="referralLink">Referral Link</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(referralLink)}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">Copy link</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Input
-              id="referralLink"
-              type="text"
-              value={referralLink}
-              readOnly
-              className="cursor-not-allowed"
-            />
-            <Button 
-              className="w-full" 
-              onClick={handleGenerateReferralLink} 
-              disabled={isGeneratingLink}
-              size="sm"
-            >
-              {isGeneratingLink ? "Generating..." : "Generate Referral Link"}
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="referralCode">Enter Referral Code</Label>
-            <Input
-              id="referralCode"
-              type="text"
-              placeholder="Referral Code"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value)}
-            />
-            <Button 
-              className="w-full" 
-              onClick={handleCheckAndProcessReferral} 
-              disabled={isProcessingReferral}
-              size="sm"
-            >
-              {isProcessingReferral ? "Processing..." : "Apply Referral Code"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Transfer Points Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center">
-            <span className="mr-2">Transfer PXB Points</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {transferFeature && !transferFeature.enabled ? (
-            <div className="text-red-500 flex items-center">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Transfer feature is currently disabled.
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500">Send PXB points to another user</div>
-                <Button variant="secondary" size="sm" onClick={() => setShowTransfer(!showTransfer)}>
-                  {showTransfer ? <ArrowLeft className="w-4 h-4 mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
-                  {showTransfer ? "Hide Transfer" : "Show Transfer"}
-                </Button>
+      <div className="p-6 bg-slate-950">
+        {activeTab === 'send' && <motion.div initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} transition={{
+        duration: 0.3
+      }}>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-indigo-300/70 mb-1 block">Recipient PXB ID</label>
+                <Input value={recipientId} onChange={e => setRecipientId(e.target.value)} placeholder="Enter PXB ID (e.g., PXB-12345678-abc123)" className="bg-indigo-900/10 border-indigo-900/30 text-white" />
               </div>
-              {showTransfer && (
-                <div className="space-y-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="recipientId">Recipient PXB ID</Label>
-                    <Input
-                      id="recipientId"
-                      type="text"
-                      placeholder="Recipient ID"
-                      value={recipientId}
-                      onChange={(e) => setRecipientId(e.target.value)}
-                    />
+              
+              <div>
+                <label className="text-sm text-indigo-300/70 mb-1 block">Amount</label>
+                <div className="relative">
+                  <Input value={amount} onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0" type="number" min="1" className="bg-indigo-900/10 border-indigo-900/30 text-white pr-12" />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-indigo-300/70">
+                    PXB
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="transferAmount">Amount to Transfer</Label>
-                    <Input
-                      id="transferAmount"
-                      type="number"
-                      placeholder="Amount"
-                      value={transferAmount}
-                      onChange={(e) => setTransferAmount(Number(e.target.value))}
-                    />
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center py-2 px-3 bg-indigo-900/10 rounded-lg">
+                <span className="text-sm text-indigo-300/70">Available</span>
+                <span className="font-medium text-white">{userProfile.pxbPoints.toLocaleString()} PXB</span>
+              </div>
+              
+              <Button onClick={transferFeature === 'coming-soon' ? () => toast.info('Send/receive feature coming soon!') : handleSendPoints} disabled={isSending || !recipientId || !amount} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white">
+                {isSending ? <div className="flex items-center">
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <span>Sending...</span>
+                  </div> : <div className="flex items-center">
+                    <Send className="w-4 h-4 mr-2" />
+                    {transferFeature === 'coming-soon' ? 'Coming Soon!' : 'Send PXB Points'}
+                  </div>}
+              </Button>
+            </div>
+          </motion.div>}
+
+        {activeTab === 'receive' && <motion.div initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} transition={{
+        duration: 0.3
+      }} className="flex flex-col items-center">
+            <div className="w-40 h-40 bg-indigo-900/10 rounded-lg mb-4 flex items-center justify-center border border-indigo-500/20">
+              <QrCode className="w-20 h-20 text-indigo-400" />
+            </div>
+            
+            <p className="text-sm text-indigo-300/70 mb-2">Your PXB ID</p>
+            <div className="w-full bg-indigo-900/10 rounded-lg p-3 flex justify-between items-center mb-6 border border-indigo-900/30">
+              <code className="text-sm text-indigo-100 font-mono">{myPxbId || 'Generating...'}</code>
+              <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white" onClick={() => copyToClipboard(myPxbId)} disabled={!myPxbId}>
+                <Copy className="w-4 h-4" />
+                <span className="sr-only">Copy ID</span>
+              </Button>
+            </div>
+            
+            <div className="text-center mb-6">
+              <p className="text-sm text-indigo-300/70">
+                {transferFeature === 'coming-soon' 
+                  ? 'Send/receive feature coming soon! Your PXB ID will be available for sharing once this feature is activated.' 
+                  : 'Share your PXB ID with others to receive PXB points'}
+              </p>
+            </div>
+            
+            <Button onClick={handleGenerateId} disabled={transferFeature === 'coming-soon'} className="bg-indigo-500 hover:bg-indigo-600 text-white">
+              {transferFeature === 'coming-soon' 
+                ? 'Coming Soon!' 
+                : <><RefreshCw className="w-4 h-4 mr-2" />Generate New ID</>}
+            </Button>
+          </motion.div>}
+
+        {activeTab === 'claim' && <motion.div initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} transition={{
+        duration: 0.3
+      }}>
+            <div className="flex flex-col items-center py-6">
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 rounded-full bg-indigo-500/10 flex items-center justify-center mx-auto mb-4 border border-indigo-500/20">
+                  <Gift className="w-10 h-10 text-indigo-400" />
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-white">Daily PXB Points</h3>
+                <p className="text-indigo-300/70">
+                  Claim free PXB points once every 48 hours
+                </p>
+              </div>
+              
+              {cooldownRemaining ? <div className="text-center mb-6 p-6 bg-indigo-900/10 rounded-lg w-full max-w-md border border-indigo-900/30">
+                  <p className="text-lg font-medium mb-4 text-white">Next claim available in</p>
+                  <div className="flex items-center justify-center space-x-2">
+                    <Clock className="w-5 h-5 text-indigo-400" />
+                    <span className="text-2xl font-mono text-white">{formatCooldownTime(cooldownRemaining)}</span>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    A fee of {transferFeature ? transferFeature.fee : 0}% will be applied to each transfer.
-                  </div>
-                  <Button 
-                    className="w-full" 
-                    onClick={handleSendPoints} 
-                    disabled={isTransferring || !transferFeature || !transferFeature.enabled}
-                    size="sm"
-                  >
-                    {isTransferring ? "Transferring..." : "Send PXB Points"}
+                </div> : <Button onClick={handleClaimPoints} disabled={isClaiming} className="w-full max-w-md bg-indigo-500 hover:bg-indigo-600 text-white mb-4" size="lg">
+                  {isClaiming ? <div className="flex items-center">
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <span>Claiming...</span>
+                    </div> : <div className="flex items-center">
+                      <img src="/lovable-uploads/be886d35-fbcb-4675-926c-38691ad3e311.png" alt="PXB Coin" className="w-5 h-5 mr-2" />
+                      Claim 100 PXB Points
+                    </div>}
+                </Button>}
+              
+              <div className="text-center text-indigo-300/70 text-sm mt-6 max-w-md">
+                <p>Regularly claim your free PXB points to increase your betting power and climb the leaderboards!</p>
+              </div>
+            </div>
+          </motion.div>}
+
+        {activeTab === 'referrals' && <motion.div initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} transition={{
+        duration: 0.3
+      }}>
+            <div className="flex flex-col">
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 rounded-full bg-indigo-500/10 flex items-center justify-center mx-auto mb-4 border border-indigo-500/20">
+                  <Users className="w-10 h-10 text-indigo-400" />
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-white">Referral Program</h3>
+                <p className="text-indigo-300/70 max-w-md mx-auto">
+                  Earn 10,000 PXB points for each friend who mints PXB using your referral link
+                </p>
+              </div>
+              
+              {/* Referral link section */}
+              <div className="glass-panel p-6 rounded-lg border border-indigo-900/30 mb-6 bg-indigo-900/10">
+                <h4 className="text-lg font-medium mb-4 text-white">Your Referral Link</h4>
+                
+                <div className="bg-indigo-900/10 p-3 rounded-lg flex items-center justify-between border border-indigo-900/30 mb-4">
+                  <input type="text" value={referralLink} readOnly className="bg-transparent w-full text-indigo-100 text-sm overflow-ellipsis" />
+                  <Button variant="ghost" size="sm" className="text-indigo-300/70 hover:text-white" onClick={() => copyToClipboard(referralLink)} disabled={!referralLink}>
+                    <Copy className="w-4 h-4" />
+                    <span className="sr-only">Copy Link</span>
                   </Button>
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+                
+                <Button onClick={handleGenerateReferralLink} disabled={isGeneratingLink} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white">
+                  {isGeneratingLink ? <div className="flex items-center">
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <span>Generating...</span>
+                    </div> : <div className="flex items-center">
+                      <LinkIcon className="w-4 h-4 mr-2" />
+                      {referralLink ? 'Refresh Link' : 'Generate Link'}
+                    </div>}
+                </Button>
+              </div>
+              
+              {/* Referral stats section */}
+              <div className="glass-panel p-6 rounded-lg border border-indigo-900/30 mb-6 bg-indigo-900/10">
+                <h4 className="text-lg font-medium mb-4 text-white">Your Referral Stats</h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-900/30">
+                    <p className="text-sm text-indigo-300/70 mb-1">Total Referrals</p>
+                    <p className="text-2xl font-bold text-white">{referralStats.totalReferrals}</p>
+                  </div>
+                  
+                  <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-900/30">
+                    <p className="text-sm text-indigo-300/70 mb-1">Points Earned</p>
+                    <p className="text-2xl font-bold text-white">{referralStats.pointsEarned.toLocaleString()} PXB</p>
+                  </div>
+                </div>
+                
+                <h5 className="font-medium text-white mb-3">Recent Referrals</h5>
+                
+                {isLoadingReferrals ? <div className="flex justify-center py-8">
+                    <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div> : referralStats.referrals && referralStats.referrals.length > 0 ? <div className="space-y-3">
+                    {referralStats.referrals.map(referral => <div key={referral.id} className="flex items-center justify-between p-3 bg-indigo-900/10 rounded-lg hover:bg-indigo-900/20 transition-colors border border-indigo-900/20">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                            <Users className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm text-white">{referral.referredUsername}</p>
+                            <p className="text-xs text-indigo-300/70">{formatDistanceToNow(new Date(referral.date), {
+                        addSuffix: true
+                      })}</p>
+                          </div>
+                        </div>
+                        <div className="font-medium text-indigo-400">
+                          +{referral.pointsEarned.toLocaleString()} PXB
+                        </div>
+                      </div>)}
+                  </div> : <div className="text-center py-6 text-indigo-300/50 bg-indigo-900/10 rounded-lg border border-indigo-900/20">
+                    <p>No referrals yet. Share your link to start earning!</p>
+                  </div>}
+                
+                <Button variant="outline" className="w-full mt-4 border-indigo-900/30 text-indigo-300/70 hover:text-white hover:bg-indigo-900/20" onClick={fetchReferralStats} disabled={isLoadingReferrals}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh Stats
+                </Button>
+              </div>
+              
+              <div className="text-center text-indigo-300/70 text-sm mt-2 max-w-lg mx-auto">
+                <p>Invite friends to join PumpXBounty and earn 10,000 PXB points for each person who mints PXB through your referral link!</p>
+              </div>
+            </div>
+          </motion.div>}
 
-export default PXBWallet;
+        {activeTab === 'activity' && <motion.div initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} transition={{
+        duration: 0.3
+      }}>
+            <div>
+              <h3 className="text-lg font-medium mb-4 text-white">Recent Activity</h3>
+              
+              {isLoadingTransactions ? <div className="flex justify-center py-8">
+                  <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                </div> : transactions.length > 0 ? <div className="space-y-3">
+                  {transactions.map(tx => <div key={tx.id} className="flex items-center justify-between p-3 bg-indigo-900/10 rounded-lg hover:bg-indigo-900/20 transition-colors border border-indigo-900/20">
+                      <div className="flex items-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${tx.amount >= 0 ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-500/10 text-indigo-400'} border border-indigo-500/20`}>
+                          {tx.amount >= 0 ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm text-white">{getTransactionDescription(tx)}</p>
+                          <p className="text-xs text-indigo-300/70">{formatTransactionTime(tx.created_at)}</p>
+                        </div>
+                      </div>
+                      <div className={`font-medium ${tx.amount >= 0 ? 'text-indigo-400' : 'text-indigo-400'}`}>
+                        {tx.amount >= 0 ? '+' : ''}{tx.amount} PXB
+                      </div>
+                    </div>)}
+                </div> : <div className="text-center py-6 text-indigo-300/50 bg-indigo-900/10 rounded-lg border border-indigo-900/20">
+                  <p>No recent transactions</p>
+                </div>}
+              
+              <Button variant="outline" className="w-full mt-4 border-indigo-900/30 text-indigo-300/70 hover:text-white hover:bg-indigo-900/20" onClick={fetchTransactionHistory} disabled={isLoadingTransactions}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh Activity
+              </Button>
+            </div>
+          </motion.div>}
+      </div>
+    </div>;
+};
