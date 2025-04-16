@@ -1,211 +1,213 @@
 
-import React, { createContext, useContext, useEffect } from 'react';
-import { PXBPointsContextType } from './types';
-import { useProfileData } from './useProfileData';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { PXBBet, UserProfile, LeaderboardEntry } from '@/types/pxb';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
+import { toast } from 'sonner';
 import { useBetsData } from './useBetsData';
 import { useLeaderboardData } from './useLeaderboardData';
-import { usePointOperations } from './usePointOperations';
-import { useBetProcessor } from './useBetProcessor';
-import { useReferralSystem } from './useReferralSystem';
 import { useTradingPool } from './useTradingPool';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useBetProcessor } from './useBetProcessor';
+import { usePointOperations } from './usePointOperations';
+import { useReferralSystem } from './useReferralSystem';
+import { useProfileData } from './useProfileData';
 
-const PXBPointsContext = createContext<PXBPointsContextType | undefined>(undefined);
-
-export const usePXBPoints = () => {
-  const context = useContext(PXBPointsContext);
-  if (context === undefined) {
-    throw new Error('usePXBPoints must be used within a PXBPointsProvider');
-  }
-  return context;
-};
-
-export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { connected, publicKey } = useWallet();
-  
-  const { 
-    userProfile, 
-    setUserProfile, 
-    isLoading, 
-    setIsLoading, 
-    fetchUserProfile,
-    addPointsToUser
-  } = useProfileData();
-  
-  const { bets, setBets, fetchUserBets, isLoading: isLoadingBets } = useBetsData(userProfile);
-  const { 
-    leaderboard, 
-    winRateLeaderboard,
-    fetchLeaderboard,
-    fetchWinRateLeaderboard,
-    isLoading: isLeaderboardLoading,
-    isLoadingWinRate
-  } = useLeaderboardData();
-  
-  const { 
-    mintPoints, 
-    placeBet, 
-    sendPoints, 
-    purchaseToken,
-    sellToken,
-    generatePxbId,
-    mintingPoints,
-    transferFeature
-  } = usePointOperations(
-    userProfile,
-    setUserProfile,
-    setBets,
-    fetchUserProfile,
-    setIsLoading
-  );
-
-  const {
-    participateInTradingPool,
-    executeTradeInPool,
-    withdrawFromPool
-  } = useTradingPool(userProfile, fetchUserProfile);
-
-  const {
-    generateReferralLink,
-    checkAndProcessReferral,
-    referralStats,
-    fetchReferralStats,
-    isLoadingReferrals
-  } = useReferralSystem(userProfile, fetchUserProfile);
-  
-  useBetProcessor(bets, userProfile, setUserProfile, setBets);
-  
-  useEffect(() => {
-    if (connected && publicKey) {
-      fetchUserProfile();
-    } else {
-      setUserProfile(null);
-    }
-  }, [connected, publicKey, fetchUserProfile, setUserProfile]);
-
-  // Generate a PXB ID for users
-  const generatePxbIdWrapper = async (): Promise<string> => {
-    return await generatePxbId();
-  };
-
-  const mintPointsWrapper = async (amount?: number) => {
-    if (amount) {
-      await mintPoints(amount);
-    }
-  };
-
-  const placeBetWrapper = async (
-    tokenMint: string, 
-    tokenName: string, 
-    tokenSymbol: string, 
-    betAmount: number, 
-    betType: 'up' | 'down', 
+// Define the context interface
+interface PXBPointsContextType {
+  userProfile: UserProfile | null;
+  allUserProfiles: UserProfile[];
+  userBets: PXBBet[];
+  leaderboard: LeaderboardEntry[];
+  winRateLeaderboard: LeaderboardEntry[];
+  isLoading: boolean;
+  error: string | null;
+  refreshUserProfile: () => Promise<void>;
+  createTemporaryProfile: () => Promise<UserProfile>;
+  createBet: (
+    tokenMint: string,
+    tokenName: string,
+    tokenSymbol: string,
+    betAmount: number,
+    betType: 'up' | 'down',
     percentageChange: number,
     duration: number
-  ) => {
-    const result = await placeBet(tokenMint, tokenName, tokenSymbol, betAmount, betType, percentageChange, duration);
-    return result || null;
-  };
+  ) => Promise<PXBBet>;
+  resolveBet: (betId: string) => Promise<void>;
+  transferPoints: (receiverWallet: string, amount: number) => Promise<void>;
+  generateReferralCode: () => Promise<string>;
+  useReferralCode: (code: string) => Promise<boolean>;
+  checkReferralCodeValid: (code: string) => Promise<boolean>;
+  transferFeature: { enabled: boolean; fee: number };
+  refreshLeaderboards: () => Promise<void>;
+  claimDailyBonus: () => Promise<void>;
+  enterTradingPool: (amount: number) => Promise<void>;
+  leaveTradingPool: (amount: number) => Promise<void>;
+  tradingPoolBalance: number;
+  tradingPoolRewards: number;
+}
 
-  const purchaseTokenWrapper = async (
-    tokenMint: string,
-    tokenName: string,
-    tokenSymbol: string,
-    pxbAmount: number,
-    tokenQuantity: number,
-    price: number
-  ) => {
-    return purchaseToken(tokenMint, tokenName, tokenSymbol, pxbAmount, tokenQuantity, price);
-  };
+// Create context with default values
+const PXBPointsContext = createContext<PXBPointsContextType>({
+  userProfile: null,
+  allUserProfiles: [],
+  userBets: [],
+  leaderboard: [],
+  winRateLeaderboard: [],
+  isLoading: true,
+  error: null,
+  refreshUserProfile: async () => {},
+  createTemporaryProfile: async () => ({ id: '', username: '', pxbPoints: 0, createdAt: '' }),
+  createBet: async () => ({
+    id: '',
+    userId: '',
+    tokenMint: '',
+    tokenName: '',
+    tokenSymbol: '',
+    betAmount: 0,
+    betType: 'up',
+    percentageChange: 0,
+    status: 'pending',
+    pointsWon: 0,
+    createdAt: '',
+    expiresAt: ''
+  }),
+  resolveBet: async () => {},
+  transferPoints: async () => {},
+  generateReferralCode: async () => '',
+  useReferralCode: async () => false,
+  checkReferralCodeValid: async () => false,
+  transferFeature: { enabled: true, fee: 2 },
+  refreshLeaderboards: async () => {},
+  claimDailyBonus: async () => {},
+  enterTradingPool: async () => {},
+  leaveTradingPool: async () => {},
+  tradingPoolBalance: 0,
+  tradingPoolRewards: 0
+});
 
-  const sellTokenWrapper = async (
-    tokenMint: string,
-    tokenName: string,
-    tokenSymbol: string,
-    tokenQuantity: number,
-    price: number
-  ) => {
-    return sellToken(tokenMint, tokenName, tokenSymbol, tokenQuantity, price);
-  };
+// Provider component
+export const PXBPointsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Use the wallet connection
+  const { publicKey, connected } = useWallet();
+  
+  // State for the user profile
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [allUserProfiles, setAllUserProfiles] = useState<UserProfile[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Custom hooks for functionality
+  const {
+    userBets,
+    refreshUserBets
+  } = useBetsData(userProfile?.id);
+  
+  const {
+    leaderboard,
+    winRateLeaderboard,
+    refreshLeaderboards
+  } = useLeaderboardData();
+  
+  const {
+    tradingPoolBalance,
+    tradingPoolRewards,
+    enterTradingPool,
+    leaveTradingPool
+  } = useTradingPool(userProfile?.id);
+  
+  const {
+    createBet,
+    resolveBet
+  } = useBetProcessor(userProfile?.id, refreshUserBets);
+  
+  const {
+    transferPoints,
+    claimDailyBonus
+  } = usePointOperations(userProfile?.id, refreshUserProfile);
+  
+  const {
+    generateReferralCode,
+    useReferralCode,
+    checkReferralCodeValid
+  } = useReferralSystem(userProfile?.id);
+  
+  const {
+    fetchUserProfile,
+    fetchAllProfiles,
+    createTemporaryProfile
+  } = useProfileData();
+  
+  const transferFeature = { enabled: true, fee: 2 };
 
-  const fetchTokenTransactions = async (tokenId: string) => {
+  // Function to refresh the user profile
+  const refreshUserProfile = async () => {
+    if (!publicKey) {
+      setUserProfile(null);
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      if (bets && bets.length > 0) {
-        return bets
-          .filter(bet => bet.tokenMint === tokenId)
-          .map(bet => ({
-            id: bet.id,
-            timestamp: bet.createdAt,
-            type: 'buy',
-            tokenAmount: bet.betAmount * 10,
-            price: 0.001,
-            pxbAmount: bet.betAmount,
-            userId: bet.userId,
-            tokenId: bet.tokenMint,
-            tokenName: bet.tokenName || '',
-            tokenSymbol: bet.tokenSymbol || ''
-          }));
-      }
-      return [];
-    } catch (error) {
-      console.error("Error fetching token transactions:", error);
-      return [];
+      setIsLoading(true);
+      
+      const profile = await fetchUserProfile(publicKey.toString());
+      setUserProfile(profile);
+      
+      const allProfiles = await fetchAllProfiles();
+      setAllUserProfiles(allProfiles);
+      
+    } catch (err) {
+      console.error('Error refreshing user profile:', err);
+      setError('Failed to load user profile');
+      toast.error('Failed to load profile');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Create wrapper function to match expected signature (amount: number) => Promise<void>
-  const addPointsWrapper = async (amount: number): Promise<void> => {
-    await addPointsToUser(amount, "Points operation");
+  // Load the user profile when the wallet connects
+  useEffect(() => {
+    if (connected && publicKey) {
+      refreshUserProfile();
+    } else {
+      setUserProfile(null);
+      setIsLoading(false);
+    }
+  }, [connected, publicKey]);
+  
+  // Context value
+  const value = {
+    userProfile,
+    allUserProfiles,
+    userBets,
+    leaderboard,
+    winRateLeaderboard,
+    isLoading,
+    error,
+    refreshUserProfile,
+    createTemporaryProfile,
+    createBet,
+    resolveBet,
+    transferPoints,
+    generateReferralCode,
+    useReferralCode,
+    checkReferralCodeValid,
+    transferFeature,
+    refreshLeaderboards,
+    claimDailyBonus,
+    enterTradingPool,
+    leaveTradingPool,
+    tradingPoolBalance,
+    tradingPoolRewards
   };
-
-  // Create wrapper function to match expected signature for checkAndProcessReferral
-  const checkAndProcessReferralWrapper = async (referralCode: string): Promise<boolean> => {
-    await checkAndProcessReferral(referralCode);
-    return true;
-  };
-
-  // Make sure transferFeature is the correct type
-  const transferFeatureObject = typeof transferFeature === 'string' 
-    ? { enabled: false, fee: 0 } 
-    : transferFeature;
 
   return (
-    <PXBPointsContext.Provider
-      value={{
-        userProfile,
-        isLoading,
-        bets,
-        userBets: bets,
-        leaderboard,
-        winRateLeaderboard,
-        mintPoints: mintPointsWrapper,
-        placeBet: placeBetWrapper,
-        sendPoints,
-        purchaseToken: purchaseTokenWrapper,
-        sellToken: sellTokenWrapper,
-        participateInTradingPool,
-        executeTradeInPool,
-        withdrawFromPool,
-        generatePxbId: generatePxbIdWrapper,
-        fetchUserProfile,
-        fetchUserBets,
-        fetchLeaderboard,
-        fetchWinRateLeaderboard,
-        addPointsToUser: addPointsWrapper,
-        mintingPoints,
-        transferFeature: transferFeatureObject,
-        isLeaderboardLoading,
-        isLoadingWinRate,
-        isLoadingBets,
-        generateReferralLink,
-        checkAndProcessReferral: checkAndProcessReferralWrapper,
-        referralStats,
-        fetchReferralStats,
-        isLoadingReferrals,
-        fetchTokenTransactions
-      }}
-    >
+    <PXBPointsContext.Provider value={value}>
       {children}
     </PXBPointsContext.Provider>
   );
 };
+
+// Custom hook to use the PXBPoints context
+export const usePXBPoints = () => useContext(PXBPointsContext);

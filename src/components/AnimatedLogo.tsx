@@ -59,8 +59,7 @@ const AnimatedLogo = () => {
             }
           }}
           style={{
-            transformStyle: "preserve-3d",
-            perspective: "1000px"
+            transform: "perspective(1000px)"
           }}
         />
         
@@ -70,8 +69,8 @@ const AnimatedLogo = () => {
             key={i}
             className="absolute rounded-full bg-[#33C3F0]"
             style={{
-              width: Math.random() * 8 + 2,
-              height: Math.random() * 8 + 2,
+              height: `${Math.random() * 8 + 2}px`,
+              width: `${Math.random() * 8 + 2}px`,
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               zIndex: Math.random() > 0.5 ? 1 : -1
