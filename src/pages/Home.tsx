@@ -29,6 +29,34 @@ import Footer from '@/components/Footer';
 import { usePXBTotalSupply } from '@/hooks/usePXBTotalSupply';
 import { confetti } from '@/lib/utils';
 
+// Define interfaces for the different example data types
+interface BaseExampleData {
+  title: string;
+  description: string;
+  users: Array<{
+    name: string;
+    deposit: number;
+    pxb: number;
+    change: number;
+    color: string;
+    rank?: number;
+    payout?: number;
+  }>;
+}
+
+interface PayoutExampleData extends BaseExampleData {
+  pool: number;
+  requested: number;
+  factor: number;
+}
+
+type ExampleDataType = BaseExampleData | PayoutExampleData;
+
+// Type guard to check if data is PayoutExampleData
+const isPayoutData = (data: ExampleDataType): data is PayoutExampleData => {
+  return 'pool' in data && 'requested' in data && 'factor' in data;
+};
+
 const Home = () => {
   // Supply data from hook
   const { supplyData, isLoading } = usePXBTotalSupply();
@@ -61,7 +89,7 @@ const Home = () => {
   const animatedPercentage = supplyPercentage;
 
   // Ecosystem example data
-  const exampleData = {
+  const exampleData: Record<string, ExampleDataType> = {
     start: {
       title: "Starting Positions",
       description: "Three friends deposit $POINTS into the pool and receive PXB points to trade with.",
@@ -480,7 +508,7 @@ const Home = () => {
                         <h3 className="text-xl font-bold mb-2">{data.title}</h3>
                         <p className="text-gray-400 mb-6">{data.description}</p>
                         
-                        {key === 'payout' ? (
+                        {key === 'payout' && isPayoutData(data) ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <motion.div 
                               className="bg-gray-900/50 rounded-lg p-6 border border-gray-800"
@@ -554,7 +582,7 @@ const Home = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 + idx * 0.1 }}
                               >
-                                {key === 'leaderboard' && (
+                                {key === 'leaderboard' && user.rank && (
                                   <motion.div 
                                     className={`absolute -left-2 -top-2 w-8 h-8 rounded-full flex items-center justify-center 
                                               ${user.rank === 1 ? 'bg-yellow-500' : user.rank === 2 ? 'bg-gray-400' : 'bg-amber-700'} 
@@ -732,3 +760,4 @@ const Home = () => {
 };
 
 export default Home;
+
