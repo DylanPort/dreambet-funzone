@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -29,7 +28,6 @@ import Footer from '@/components/Footer';
 import { usePXBTotalSupply } from '@/hooks/usePXBTotalSupply';
 import { confetti } from '@/lib/utils';
 
-// Define interfaces for the different example data types
 interface BaseExampleData {
   title: string;
   description: string;
@@ -52,13 +50,11 @@ interface PayoutExampleData extends BaseExampleData {
 
 type ExampleDataType = BaseExampleData | PayoutExampleData;
 
-// Type guard to check if data is PayoutExampleData
 const isPayoutData = (data: ExampleDataType): data is PayoutExampleData => {
   return 'pool' in data && 'requested' in data && 'factor' in data;
 };
 
 const Home = () => {
-  // Supply data from hook
   const { supplyData, isLoading } = usePXBTotalSupply();
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -66,7 +62,6 @@ const Home = () => {
   const [activeExample, setActiveExample] = useState('start');
 
   useEffect(() => {
-    // Trigger confetti effect when the component mounts
     if (!triggeredConfetti) {
       setTimeout(() => {
         confetti({
@@ -79,16 +74,13 @@ const Home = () => {
     }
   }, [triggeredConfetti]);
 
-  // Format large numbers with commas
   const formatNumber = (num: number): string => {
     return num.toLocaleString();
   };
 
-  // Calculate completion percentage
   const supplyPercentage = 100;
   const animatedPercentage = supplyPercentage;
 
-  // Ecosystem example data
   const exampleData: Record<string, ExampleDataType> = {
     start: {
       title: "Starting Positions",
@@ -139,7 +131,6 @@ const Home = () => {
       <Navbar />
 
       <main className="relative z-10 container mx-auto px-4 pt-20 pb-10">
-        {/* Hero Section */}
         <section className="flex flex-col items-center justify-center text-center pt-10 pb-14">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -216,7 +207,6 @@ const Home = () => {
           </motion.div>
         </section>
 
-        {/* Supply Stats Section */}
         <motion.section 
           className="py-12 mb-10"
           initial={{ opacity: 0 }}
@@ -230,7 +220,14 @@ const Home = () => {
             <div className="relative">
               <h2 className="text-2xl font-bold mb-6 flex items-center">
                 <Coins className="mr-2 h-6 w-6 text-purple-400" />
-                PXB Token Supply
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-cyan-300 to-purple-300">
+                  PXB Token Supply
+                </span>
+                <img 
+                  src="/lovable-uploads/17d9567f-2809-4750-98f3-f47552d5c62c.png" 
+                  alt="PXB Logo" 
+                  className="h-8 w-16 ml-3 object-contain"
+                />
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -296,7 +293,6 @@ const Home = () => {
                   transition={{ duration: 1.5, ease: "easeOut" }}
                 />
                 
-                {/* Animated particles effect */}
                 <div className="absolute inset-0 overflow-hidden">
                   {[...Array(5)].map((_, i) => (
                     <motion.div
@@ -409,7 +405,6 @@ const Home = () => {
           </div>
         </motion.section>
 
-        {/* Roadmap Section */}
         <AnimatePresence>
           {showRoadmap && (
             <motion.section 
@@ -425,7 +420,6 @@ const Home = () => {
           )}
         </AnimatePresence>
 
-        {/* User Search Section */}
         <AnimatePresence>
           {showSearch && (
             <motion.section 
@@ -441,7 +435,6 @@ const Home = () => {
           )}
         </AnimatePresence>
 
-        {/* Social Links */}
         <section className="py-10 mb-6">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold">Connect With Us</h2>
@@ -450,7 +443,6 @@ const Home = () => {
           <SocialLinks />
         </section>
         
-        {/* Interactive Trading System Example */}
         <section className="py-10 mb-10">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-300 via-cyan-200 to-purple-300 bg-clip-text text-transparent">
@@ -465,7 +457,6 @@ const Home = () => {
             <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-32 h-32 bg-cyan-500/20 rounded-full blur-3xl"></div>
             
-            {/* Example Navigation */}
             <Tabs value={activeExample} onValueChange={setActiveExample} className="w-full">
               <TabsList className="grid grid-cols-4 mb-6">
                 <TabsTrigger value="start" className="data-[state=active]:bg-blue-900/30">
@@ -494,7 +485,6 @@ const Home = () => {
                 </TabsTrigger>
               </TabsList>
               
-              {/* Example Content */}
               <AnimatePresence mode="wait">
                 {Object.entries(exampleData).map(([key, data]) => (
                   <TabsContent key={key} value={key} className="relative overflow-hidden">
@@ -653,7 +643,6 @@ const Home = () => {
                           </div>
                         )}
                         
-                        {/* Navigation Buttons */}
                         <div className="flex justify-between mt-8">
                           <Button 
                             variant="outline" 
@@ -695,7 +684,6 @@ const Home = () => {
             </Tabs>
           </div>
           
-          {/* Token Summary Cards Carousel */}
           <div className="mt-16">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold">PXB Ecosystem Highlights</h2>
@@ -760,4 +748,3 @@ const Home = () => {
 };
 
 export default Home;
-
