@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Twitter, Globe, ExternalLink } from 'lucide-react';
+import { Twitter, ExternalLink } from 'lucide-react';
 
 interface SocialLink {
   name: string;
@@ -14,34 +14,22 @@ const SocialLinks = () => {
   const socialLinks: SocialLink[] = [
     {
       name: 'Twitter',
-      url: 'https://twitter.com/pumpxbounty',
+      url: 'https://x.com/PumpXBounty',
       icon: <Twitter className="h-5 w-5" />,
       color: 'bg-blue-500 hover:bg-blue-600'
     },
     {
-      name: 'Website',
-      url: 'https://pumpxbounty.com',
-      icon: <Globe className="h-5 w-5" />,
-      color: 'bg-purple-500 hover:bg-purple-600'
-    },
-    {
-      name: 'Discord',
-      url: 'https://discord.gg/pumpxbounty',
-      icon: <img src="/lovable-uploads/81fb2dc7-59da-424e-8569-4202a7967758.png" className="h-5 w-5" alt="Discord" />,
-      color: 'bg-indigo-500 hover:bg-indigo-600'
-    },
-    {
-      name: 'GitHub',
-      url: 'https://github.com/pumpxbounty',
-      icon: <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" className="h-5 w-5 rounded-full" alt="GitHub" />,
-      color: 'bg-gray-700 hover:bg-gray-800'
+      name: 'Telegram',
+      url: 'https://t.me/PumpXBounty',
+      icon: <img src="/lovable-uploads/5e3244ff-5cfc-4b57-932a-2befcc6c5ab4.png" className="h-5 w-5" alt="Telegram" />,
+      color: 'bg-blue-400 hover:bg-blue-500'
     }
   ];
 
   return (
     <div className="w-full max-w-xl mx-auto">
       <motion.div
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        className="grid grid-cols-2 gap-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
