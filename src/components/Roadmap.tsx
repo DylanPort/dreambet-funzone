@@ -9,16 +9,16 @@ const Roadmap = () => {
       end: new Date('2025-04-01')
     },
     phase2: {
-      start: new Date('2025-04-25'),
+      start: new Date('2025-04-02'),
       end: new Date('2025-05-15')
     },
     phase3: {
-      start: new Date('2025-05-28'),
-      end: new Date('2025-06-15')
+      start: new Date('2025-05-16'),
+      end: new Date('2025-06-30')
     },
     phase4: {
-      start: new Date('2025-06-28'),
-      end: new Date('2025-07-15')
+      start: new Date('2025-07-01'),
+      end: new Date('2025-12-31')
     }
   };
 
@@ -70,12 +70,12 @@ const Roadmap = () => {
       title: 'Phase 4: Maturity',
       status: 'upcoming',
       description: 'Establishing PXB as a key player in the ecosystem',
-      timeframe: 'To Be Announced',
+      timeframe: `${formatDate(phaseDates.phase4.start)} - ${formatDate(phaseDates.phase4.end)}`,
       milestones: [
-        { id: 1, text: 'Marketing and Expansion', complete: false, date: 'TBA' },
-        { id: 2, text: 'Financial Products and Ads', complete: false, date: 'TBA' },
-        { id: 3, text: 'Enterprise Partnerships', complete: false, date: 'TBA' },
-        { id: 4, text: 'Ecosystem Fund Launch', complete: false, date: 'TBA' }
+        { id: 1, text: 'Marketing and Expansion', complete: false, date: '2025-07-01' },
+        { id: 2, text: 'Financial Products and Ads', complete: false, date: '2025-09-01' },
+        { id: 3, text: 'Enterprise Partnerships', complete: false, date: '2025-11-01' },
+        { id: 4, text: 'Ecosystem Fund Launch', complete: false, date: '2025-12-31' }
       ],
       icon: <Trophy className="w-6 h-6" />
     }
