@@ -1,3 +1,26 @@
+import React from 'react';
+import { formatDate, isCurrentPhase, getDateStatus } from '@/lib/dateUtils';
+import { Rocket, Zap, Star, Trophy } from 'lucide-react';
+
+const Roadmap = () => {
+  const phaseDates = {
+    phase1: {
+      start: new Date('2025-01-15'),
+      end: new Date('2025-04-01')
+    },
+    phase2: {
+      start: new Date('2025-04-25'),
+      end: new Date('2025-05-15')
+    },
+    phase3: {
+      start: new Date('2025-05-28'),
+      end: new Date('2025-06-15')
+    },
+    phase4: {
+      start: new Date('2025-06-28'),
+      end: new Date('2025-07-15')
+    }
+  };
 
   const phases = [
     {
@@ -57,3 +80,26 @@
       icon: <Trophy className="w-6 h-6" />
     }
   ];
+
+  return (
+    <div>
+      {phases.map(phase => (
+        <div key={phase.id}>
+          <h2>{phase.title}</h2>
+          <p>{phase.description}</p>
+          <p>Timeframe: {phase.timeframe}</p>
+          <ul>
+            {phase.milestones.map(milestone => (
+              <li key={milestone.id}>
+                {milestone.text} - {milestone.complete ? 'Completed' : 'Pending'}
+              </li>
+            ))}
+          </ul>
+          <div>{phase.icon}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Roadmap;
