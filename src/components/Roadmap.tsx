@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -41,15 +40,13 @@ const Roadmap = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
-  // Define phase dates
   const phaseDates = {
-    phase1: { start: '2024-01-01', end: '2024-04-16' },
-    phase2: { start: '2024-04-17', end: '2024-05-20' },
-    phase3: { start: '2024-05-26', end: '2024-06-15' },
-    phase4: { start: '2024-06-16', end: '2024-12-31' }, // End date to be announced
+    phase1: { start: '2025-03-01', end: '2025-04-16' },
+    phase2: { start: '2025-04-17', end: '2025-05-20' },
+    phase3: { start: '2025-05-26', end: '2025-06-15' },
+    phase4: { start: '2025-06-16', end: '2025-12-31' }, // End date to be announced
   };
 
-  // Check if a date is in the future, past, or current
   const getDateStatus = (dateString: string) => {
     if (!dateString) return 'tba';
     try {
@@ -62,7 +59,6 @@ const Roadmap = () => {
     }
   };
 
-  // Check if we're currently in a phase
   const isCurrentPhase = (phaseId: string) => {
     const { start, end } = phaseDates[phaseId as keyof typeof phaseDates];
     if (!start || !end) return false;
@@ -93,10 +89,10 @@ const Roadmap = () => {
       description: 'Establishing the PXB platform and token distribution',
       timeframe: `${formatDate(phaseDates.phase1.start)} - ${formatDate(phaseDates.phase1.end)}`,
       milestones: [
-        { id: 1, text: 'Platform MVP Launch', complete: true, date: '2024-01-15' },
-        { id: 2, text: 'Complete Token Minting', complete: true, date: '2024-02-10' },
-        { id: 3, text: 'Initial User Onboarding', complete: true, date: '2024-03-05' },
-        { id: 4, text: 'Basic Trading Functionality', complete: true, date: '2024-04-01' }
+        { id: 1, text: 'Platform MVP Launch', complete: true, date: '2025-01-15' },
+        { id: 2, text: 'Complete Token Minting', complete: true, date: '2025-02-10' },
+        { id: 3, text: 'Initial User Onboarding', complete: true, date: '2025-03-05' },
+        { id: 4, text: 'Basic Trading Functionality', complete: true, date: '2025-04-01' }
       ],
       icon: <Rocket className="w-6 h-6" />
     },
@@ -107,10 +103,10 @@ const Roadmap = () => {
       description: 'Expanding platform capabilities and user base',
       timeframe: `${formatDate(phaseDates.phase2.start)} - ${formatDate(phaseDates.phase2.end)}`,
       milestones: [
-        { id: 1, text: 'Enhanced Trading Simulator', complete: false, date: '2024-04-25' },
-        { id: 2, text: '$POINT Pool Integration', complete: false, date: '2024-05-15' },
-        { id: 3, text: 'Community Engagement Programs', complete: false, date: '2024-04-30' },
-        { id: 4, text: 'Partner Integrations', complete: false, date: '2024-05-10' }
+        { id: 1, text: 'Enhanced Trading Simulator', complete: false, date: '2025-04-25' },
+        { id: 2, text: '$POINT Pool Integration', complete: false, date: '2025-05-15' },
+        { id: 3, text: 'Community Engagement Programs', complete: false, date: '2025-04-30' },
+        { id: 4, text: 'Partner Integrations', complete: false, date: '2025-05-10' }
       ],
       icon: <Zap className="w-6 h-6" />
     },
@@ -121,10 +117,10 @@ const Roadmap = () => {
       description: 'Scaling the ecosystem and introducing advanced features',
       timeframe: `${formatDate(phaseDates.phase3.start)} - ${formatDate(phaseDates.phase3.end)}`,
       milestones: [
-        { id: 1, text: 'Cross-chain Paper Trading', complete: false, date: '2024-05-28' },
-        { id: 2, text: 'Leverage Trading Simulator', complete: false, date: '2024-06-05' },
-        { id: 3, text: 'Advanced Analytics Dashboard', complete: false, date: '2024-06-10' },
-        { id: 4, text: 'DEX Simulator', complete: false, date: '2024-06-15' }
+        { id: 1, text: 'Cross-chain Paper Trading', complete: false, date: '2025-05-28' },
+        { id: 2, text: 'Leverage Trading Simulator', complete: false, date: '2025-06-05' },
+        { id: 3, text: 'Advanced Analytics Dashboard', complete: false, date: '2025-06-10' },
+        { id: 4, text: 'DEX Simulator', complete: false, date: '2025-06-15' }
       ],
       icon: <Star className="w-6 h-6" />
     },
@@ -144,7 +140,6 @@ const Roadmap = () => {
     }
   ];
 
-  // Custom icons for milestones to make them more visually distinct
   const getMilestoneIcon = (phaseId: string, milestoneIndex: number) => {
     const iconMap: Record<string, React.ReactNode[]> = {
       phase1: [
@@ -212,7 +207,6 @@ const Roadmap = () => {
     })
   };
 
-  // Timeline component to visualize the phases
   const Timeline = () => {
     return (
       <div className="relative mt-12 mb-8 px-4">
@@ -249,7 +243,6 @@ const Roadmap = () => {
                     <span className="text-sm font-bold">{i + 1}</span>
                   )}
                   
-                  {/* Connection line to next node */}
                   {i < phases.length - 1 && (
                     <motion.div 
                       className={`absolute left-full top-1/2 h-0.5 -translate-y-1/2 ${
@@ -333,7 +326,6 @@ const Roadmap = () => {
         </motion.div>
       </motion.div>
       
-      {/* Timeline visualization */}
       <Timeline />
 
       <Tabs
@@ -383,7 +375,6 @@ const Roadmap = () => {
               
               <span className="text-xs font-medium md:block hidden">{phase.title.split(':')[0]}</span>
               
-              {/* Animated underline effect on hover */}
               <motion.div 
                 className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-purple-500 via-cyan-400 to-purple-500 opacity-0 group-hover:opacity-100"
                 initial={{ scaleX: 0 }}
@@ -403,7 +394,6 @@ const Roadmap = () => {
               animate={activePhase === phase.id ? "visible" : "hidden"}
               variants={staggerChildren}
             >
-              {/* Animated background elements */}
               <motion.div 
                 className="absolute -right-20 -top-20 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl"
                 animate={{
@@ -483,7 +473,6 @@ const Roadmap = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                   {phase.milestones.map((milestone, idx) => {
-                    // Calculate if the milestone is current, upcoming or past
                     const milestoneDate = milestone.date ? parseISO(milestone.date) : null;
                     const isPast = milestoneDate && isBefore(milestoneDate, currentDate);
                     const isCurrent = milestoneDate && 
@@ -509,7 +498,6 @@ const Roadmap = () => {
                         }}
                         transition={{ duration: 0.2 }}
                       >
-                        {/* Animated highlight effect for current milestone */}
                         {isCurrent && (
                           <motion.div 
                             className="absolute inset-0 bg-yellow-400/5"
@@ -562,7 +550,6 @@ const Roadmap = () => {
                             )}
                           </div>
                           
-                          {/* Progress bar for completed milestones */}
                           {milestone.complete ? (
                             <motion.div 
                               className="w-full h-1 bg-gray-800 rounded-full mt-3 overflow-hidden"
@@ -594,7 +581,6 @@ const Roadmap = () => {
                             </motion.div>
                           ) : null}
                           
-                          {/* Connection lines between milestones */}
                           {idx < phase.milestones.length - 1 && idx % 2 === 0 && (
                             <motion.div
                               className="absolute bottom-0 right-1/4 w-0.5 h-6 bg-gradient-to-b from-gray-600/50 to-transparent"
@@ -609,7 +595,6 @@ const Roadmap = () => {
                   })}
                 </div>
                 
-                {/* Animated call to action for current phase */}
                 {phase.status === 'in-progress' && (
                   <motion.div
                     className="mt-8 text-center"
