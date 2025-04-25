@@ -273,22 +273,7 @@ const TrendingBetsList = () => {
                             </div>
                           </div>
                         
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
-                              
-                              <div className="text-sm font-medium text-dream-accent2 bg-[#022202]">
-                                {token.total_amount.toFixed(2)} PXB
-                              </div>
-                            </div>
-                        
-                            <div className="bg-dream-background/30 p-3 rounded-lg flex-1">
-                              
-                              <div className="flex items-center gap-1.5">
-                                <div className={`flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-r ${getHeatColor(token.bet_count)}`}></div>
-                                <span className="text-sm font-medium">{getHeatText(token.bet_count)}</span>
-                              </div>
-                            </div>
-                          </div>
+                          
                         </div>
                       </div>
                     </Link>
