@@ -1,5 +1,5 @@
-
 import { Bet } from '@/types/bet';
+import { fetchTrendingTokensFromApify } from '@/services/apifyService';
 
 export const fetchTrendingBets = async (): Promise<Bet[]> => {
   // Mock data for trending bets
@@ -107,9 +107,26 @@ export const fetchTrendingBets = async (): Promise<Bet[]> => {
   return trendingBets;
 };
 
-// Mock data for token details
 export const fetchTokenDetails = async (tokenId: string) => {
-  // Mock data for token details
+  try {
+    // Try to get real data from Apify first
+    const trendingTokens = await fetchTrendingTokensFromApify();
+    const token = trendingTokens.find(t => t.address === tokenId);
+    
+    if (token) {
+      return {
+        name: token.name,
+        symbol: token.symbol,
+        price: token.priceUsd,
+        volume: token.volume24h,
+        change: token.priceChange24h,
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching token details from Apify:', error);
+  }
+
+  // Fallback to mock data if Apify fails or token not found
   const tokenDetails = {
     '1': {
       name: 'Wrapped SOL',
@@ -154,9 +171,6 @@ export const fetchTokenDetails = async (tokenId: string) => {
   return tokenDetails[tokenId] || null;
 };
 
-// Add the missing functions that are imported in other files
-
-// Mock function to fetch user bets
 export const fetchUserBets = async (walletAddress: string): Promise<Bet[]> => {
   console.log(`Fetching bets for wallet: ${walletAddress}`);
   
@@ -209,7 +223,6 @@ export const fetchUserBets = async (walletAddress: string): Promise<Bet[]> => {
   return userBets;
 };
 
-// Mock function to fetch migrating tokens
 export const fetchMigratingTokens = async () => {
   const tokens = [
     {
@@ -265,7 +278,6 @@ export const fetchMigratingTokens = async () => {
   return tokens;
 };
 
-// Mock function to fetch bets by token
 export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
   console.log(`Fetching bets for token: ${tokenId}`);
   
@@ -279,7 +291,6 @@ export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
   return tokenBets;
 };
 
-// Mock function to accept a bet
 export const acceptBet = async (bet: Bet, counterPartyAddress: string, wallet: any): Promise<Bet> => {
   console.log(`Accepting bet ${bet.id} by ${counterPartyAddress}`);
   
