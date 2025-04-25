@@ -1,14 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Button } from '@/components/ui/button';
-import { Home, ArrowRightLeft, Trophy, Wallet, Wrench, Settings } from 'lucide-react';
+import { Home, ArrowRightLeft, Trophy, Wallet, Wrench, Settings, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import TokenSearchBar from '@/components/TokenSearchBar';
 import BetReel from '@/components/BetReel';
 import PriceChart from '@/components/PriceChart';
 import TokenMarketCap from '@/components/TokenMarketCap';
+import TokenVolume from '@/components/TokenVolume';
+import TokenTransactions from '@/components/TokenTransactions';
+
+const DEFAULT_TOKEN = "FZLJm7M2vmHuuEqtRu96xLXP9NrHyhZYebbQBdqqpump";
 
 const TradingSimulator = () => {
+  const [selectedToken, setSelectedToken] = useState(DEFAULT_TOKEN);
   const { rawTokens, isConnected } = usePumpPortal();
   
   const sidebarItems = [
@@ -19,6 +25,10 @@ const TradingSimulator = () => {
     { icon: Wrench, label: 'Utility', path: '/utility' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
+
+  const handleTokenSelect = (tokenId: string) => {
+    setSelectedToken(tokenId);
+  };
 
   return (
     <div className="min-h-screen bg-[#06070A] text-white flex">
@@ -50,7 +60,7 @@ const TradingSimulator = () => {
         
         <div className="flex items-center justify-between mb-8">
           <div className="w-[600px]">
-            <TokenSearchBar />
+            <TokenSearchBar onTokenSelect={handleTokenSelect} />
           </div>
           <Button 
             className="bg-gradient-to-r from-[#0066FF] to-[#0098FF] text-white px-8 py-6 rounded-xl hover:opacity-90 transition-opacity"
@@ -61,55 +71,40 @@ const TradingSimulator = () => {
 
         <div className="border border-[#1a2e44] rounded-2xl bg-[#0A1018]/80 p-8 backdrop-blur-sm">
           <div className="space-y-6">
-            <div>
-              <h2 className="text-[#00E6FD] text-4xl mb-2">POINT$</h2>
-              <h3 className="text-3xl font-bold">$0.000000</h3>
-              <p className="text-gray-400 text-sm mt-2">Last updated: {new Date().toLocaleTimeString()}</p>
-            </div>
-
-            <div className="h-[400px] w-full">
-              <PriceChart />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TokenMarketCap tokenId="point" />
-              <div className="glass-panel p-4 relative overflow-hidden">
-                <h4 className="text-[#00E6FD] mb-2">24h Volume</h4>
-                <p className="text-2xl">$72.50</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-[#00E6FD] text-4xl mb-2">
+                  {rawTokens.find(t => t.mint === selectedToken)?.name || 'Loading...'}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">
+                    {rawTokens.find(t => t.mint === selectedToken)?.symbol || ''}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedToken);
+                      toast.success("Token address copied to clipboard");
+                    }}
+                    className="text-xs text-[#00E6FD] hover:text-[#00E6FD]/80 flex items-center"
+                  >
+                    {selectedToken.substring(0, 4)}...{selectedToken.substring(selectedToken.length - 4)}
+                    <Copy className="w-3 h-3 ml-1" />
+                  </button>
+                </div>
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 mb-8">
+              <TokenMarketCap tokenId={selectedToken} />
+              <TokenVolume tokenId={selectedToken} />
+            </div>
+
+            <div className="h-[400px] w-full mb-8">
+              <PriceChart tokenId={selectedToken} />
             </div>
 
             <div className="mt-8">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="text-[#00E6FD]">Recent Transactions</h4>
-                <div className="flex gap-4">
-                  <div className="text-center">
-                    <p className="text-[#00E6FD]">Buys</p>
-                    <p className="text-2xl">3</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[#FF3B3B]">Sells</p>
-                    <p className="text-2xl">3</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-[#0A1018] rounded-lg p-4">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <div className="text-gray-400">Time</div>
-                    <div>12:30</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-400">Type</div>
-                    <div className="text-[#00E6FD]">Buy</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-400">Amount</div>
-                    <div>0.5 SOL</div>
-                  </div>
-                </div>
-              </div>
+              <TokenTransactions tokenId={selectedToken} />
             </div>
           </div>
         </div>
