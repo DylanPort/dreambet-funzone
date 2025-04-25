@@ -1,4 +1,3 @@
-
 declare module 'sonner' {
   import { ReactNode } from 'react';
 
@@ -428,10 +427,7 @@ declare module 'chart.js' {
       label?: React.ReactNode;
       icon?: React.ComponentType;
       color?: string;
-      theme?: {
-        light: string;
-        dark: string;
-      };
+      theme?: Record<keyof typeof THEMES, string>;
     };
   }
 }
