@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Wallet, HelpCircle, Rocket, Skull, Trophy, Zap, Check, Gift, Star, Hand, HandMetal, Sparkles } from 'lucide-react';
+import { Wallet, Search, Zap, Trophy, Sparkles, ArrowUp, BarChart3 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import MigratingTokenList from '@/components/MigratingTokenList';
@@ -13,100 +14,174 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Footer from '@/components/Footer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const BettingDashboard = () => {
-  const {
-    connected
-  } = useWallet();
-  const {
-    toast
-  } = useToast();
+  const { connected } = useWallet();
+  const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [readSteps, setReadSteps] = useState({
-    selectToken: false,
-    placeBet: false,
-    collectRewards: false
-  });
-  const [showGift, setShowGift] = useState(false);
-  const [unlockAnimation, setUnlockAnimation] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
-  const [pulseEffect, setPulseEffect] = useState(false);
-  const [glowIntensity, setGlowIntensity] = useState(10);
+  const [activeTab, setActiveTab] = useState("discover");
+  
   console.log("BettingDashboard rendering, wallet connected:", connected);
-  const allStepsCompleted = Object.values(readSteps).every(step => step);
 
-  useEffect(() => {
-    if (allStepsCompleted && !showGift) {
-      setTimeout(() => {
-        setShowGift(true);
-        setUnlockAnimation(true);
-        toast({
-          title: "🎉 Tutorial Completed!",
-          description: "You've unlocked the ultimate betting experience!"
-        });
-      }, 500);
-    }
-  }, [readSteps, showGift, toast]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPulseEffect(prev => !prev);
-      setGlowIntensity(prev => prev === 10 ? 20 : 10);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return <>
+  return (
+    <div className="relative min-h-screen bg-gradient-to-b from-black to-gray-900">
       <OrbitingParticles />
       <Navbar />
 
-      <main className="pt-24 min-h-screen overflow-hidden px-4 pb-16">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
-          {/* Add search bar section */}
-          <section className="mb-8 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/5 via-transparent to-dream-accent3/5 blur-xl"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] bg-dream-accent2/10 rounded-full blur-3xl"></div>
-            
-            <div className="relative z-10 text-center mb-8">
-              <h2 className="text-2xl sm:text-3xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-[#00ffe0] to-[#4b8ef3]">
-                Find Any Solana Token
-              </h2>
-              <p className="text-dream-foreground/60 mt-2 max-w-xl mx-auto">
-                Enter a token contract address to instantly start betting on any token on Solana
+      <main className="container mx-auto px-4 pt-24 pb-16">
+        {/* Hero Section with Search */}
+        <section className="relative mb-10">
+          <div className="absolute inset-0 bg-gradient-to-r from-dream-accent1/10 to-dream-accent3/10 rounded-3xl blur-xl"></div>
+          
+          <div className="relative z-10 py-8 px-6 sm:px-10 rounded-3xl border border-white/10 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-6"
+            >
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-[#00ffe0] to-[#4b8ef3] mb-4">
+                Trading Playground
+              </h1>
+              <p className="text-dream-foreground/60 max-w-2xl mx-auto">
+                Find any Solana token and start trading instantly
               </p>
-            </div>
+            </motion.div>
             
             <TokenSearchBar />
-          </section>
+            
+            {!connected && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="mt-6 flex justify-center"
+              >
+                <div className="glass-panel inline-flex items-center gap-3 p-4 rounded-xl">
+                  <Wallet className="text-green-400" />
+                  <span>Connect your wallet to start trading</span>
+                  <WalletConnectButton />
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </section>
         
-          <section className="mb-6 text-center py-0 my-0 mx-0 sm:mx-4 md:mx-8 lg:mx-[240px] px-1 sm:px-[11px]">
-            {!connected && <div className="mt-8 glass-panel inline-flex flex-col sm:flex-row items-center gap-3 p-4">
-                <Wallet className="text-green-400" />
-                <span>Connect your Solana wallet to start betting</span>
-                <WalletConnectButton />
-              </div>}
-          </section>
-          
-          <div className="mb-6">
-            <TrendingBetsList />
+        {/* Main Content Tabs */}
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="mb-10">
+          <div className="flex justify-center mb-6">
+            <TabsList className="bg-black/40 border border-white/10">
+              <TabsTrigger value="discover" className="data-[state=active]:bg-dream-accent2/20">
+                <Search className="w-4 h-4 mr-2" />
+                Discover
+              </TabsTrigger>
+              <TabsTrigger value="trending" className="data-[state=active]:bg-dream-accent2/20">
+                <Zap className="w-4 h-4 mr-2" />
+                Trending
+              </TabsTrigger>
+              <TabsTrigger value="trades" className="data-[state=active]:bg-dream-accent2/20">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Active Trades
+              </TabsTrigger>
+            </TabsList>
           </div>
           
-          {/* Add the SearchedTokensReel component here */}
-          <div className="mb-6">
-            <SearchedTokensReel />
+          <TabsContent value="discover" className="mt-0 space-y-6">
+            <div className="space-y-6">
+              <Card className="bg-black/40 border-white/10">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Sparkles className="w-5 h-5 mr-2 text-dream-accent2" />
+                    Recently Searched Tokens
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SearchedTokensReel />
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-black/40 border-white/10">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <ArrowUp className="w-5 h-5 mr-2 text-green-400" />
+                    Migrating Tokens
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <MigratingTokenList />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="trending" className="mt-0">
+            <Card className="bg-black/40 border-white/10">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-amber-500" /> 
+                  Trending Trades
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TrendingBetsList />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="trades" className="mt-0">
+            <Card className="bg-black/40 border-white/10">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BarChart3 className="w-5 h-5 mr-2 text-blue-400" />
+                  Open Trades
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OpenBetsList />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        
+        {/* Stats Cards */}
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10"
+        >
+          <div className="glass-panel p-6 text-center">
+            <div className="text-4xl font-bold text-dream-accent1 mb-2">24h</div>
+            <div className="text-lg font-medium">Trading Window</div>
+            <p className="text-sm text-dream-foreground/60 mt-2">
+              Make your predictions within 24 hours
+            </p>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">
-            <MigratingTokenList />
-            <OpenBetsList />
+          <div className="glass-panel p-6 text-center">
+            <div className="text-4xl font-bold text-dream-accent2 mb-2">100%</div>
+            <div className="text-lg font-medium">On-chain Trades</div>
+            <p className="text-sm text-dream-foreground/60 mt-2">
+              All trades are recorded on Solana blockchain
+            </p>
           </div>
-        </div>
+          
+          <div className="glass-panel p-6 text-center">
+            <div className="text-4xl font-bold text-dream-accent3 mb-2">0 Fee</div>
+            <div className="text-lg font-medium">Trade Commission</div>
+            <p className="text-sm text-dream-foreground/60 mt-2">
+              Trade with zero platform fees
+            </p>
+          </div>
+        </motion.section>
       </main>
       
       <Footer />
-    </>;
+    </div>
+  );
 };
 
 export default BettingDashboard;

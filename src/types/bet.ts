@@ -1,5 +1,5 @@
 
-export type BetPrediction = 'migrate' | 'die' | 'moon' | 'up' | 'down';
+export type BetPrediction = 'up' | 'down';
 
 export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed' | 'pending';
 
@@ -8,7 +8,7 @@ export interface Bet {
   tokenId: string;
   tokenName: string;
   tokenSymbol: string;
-  tokenMint: string; // Required field that was missing
+  tokenMint: string;
   initiator: string;
   counterParty?: string;
   amount: number;
@@ -22,12 +22,10 @@ export interface Bet {
   winner?: string;
   onChainBetId: string;
   transactionSignature: string;
-  outcome?: 'win' | 'loss'; // Add outcome field to track bet result
+  outcome?: 'win' | 'loss';
 }
 
 export enum SolanaContractPrediction {
-  Migrate = 0,
-  Die = 1,
   Up = 2,
   Down = 3,
 }

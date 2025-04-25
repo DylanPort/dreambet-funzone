@@ -1,3 +1,4 @@
+
 import React from 'react';
 import BetCard from './BetCard';
 import { Bet } from '@/types/bet';
@@ -68,7 +69,7 @@ const BetsListView: React.FC<BetsListViewProps> = ({
       
       {validBets.length > 10 && (
         <div className="text-center mt-4 text-sm text-dream-foreground/70">
-          Showing top 10 of {validBets.length} bets
+          Showing top 10 of {validBets.length} trades
         </div>
       )}
     </div>
