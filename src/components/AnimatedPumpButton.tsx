@@ -13,7 +13,7 @@ const AnimatedPumpButton = () => {
       <motion.div 
         className="absolute inset-0 bg-gradient-to-r from-purple-600 via-cyan-500 to-purple-600 rounded-lg blur-md opacity-75"
         animate={{
-          background: [
+          backgroundImage: [
             'linear-gradient(to right, #9333ea, #06b6d4, #9333ea)',
             'linear-gradient(to right, #06b6d4, #9333ea, #06b6d4)',
           ],
