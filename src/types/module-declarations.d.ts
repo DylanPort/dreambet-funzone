@@ -1,3 +1,4 @@
+
 declare module 'sonner' {
   import { ReactNode } from 'react';
 
@@ -412,12 +413,12 @@ import * as React from "react";
 const THEMES = { light: "", dark: ".dark" } as const;
 
 export interface ChartConfig {
-  [k in string]: {
+  [k: string]: {
     label?: React.ReactNode;
     icon?: React.ComponentType;
   } & (
-    | { color?: string; theme?: never }
-    | { color?: never; theme: Record<keyof typeof THEMES, string> }
+    { color?: string; theme?: never } |
+    { color?: never; theme: Record<keyof typeof THEMES, string> }
   );
 }
 
