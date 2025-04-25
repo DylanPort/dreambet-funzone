@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,8 +18,8 @@ import PXBSpace from "./pages/MyBets";
 import BetDetails from "./pages/BetDetails";
 import UserProfile from "./pages/UserProfile";
 import Community from "./pages/Community";
+import TradingSimulator from "./pages/TradingSimulator";
 
-// Use the createQueryClient function for better error handling
 const queryClient = createQueryClient();
 
 function App() {
@@ -47,6 +46,7 @@ function App() {
                 <Route path="/betting/my-bets" element={<RouteGuard><PXBSpace /></RouteGuard>} />
                 <Route path="/betting/bet/:id" element={<RouteGuard><BetDetails /></RouteGuard>} />
                 <Route path="/community" element={<RouteGuard><Community /></RouteGuard>} />
+                <Route path="/simulator" element={<RouteGuard><TradingSimulator /></RouteGuard>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
