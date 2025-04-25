@@ -1,364 +1,153 @@
+import { Bet } from '@/types/bet';
 
-import { Bet, BetPrediction } from '@/types/bet';
-import { 
-  fetchTokens as fetchSupabaseTokens, 
-  fetchOpenBets as fetchSupabaseOpenBets, 
-  fetchUserBets as fetchSupabaseUserBets, 
-  createSupabaseBet, 
-  acceptBet as acceptSupabaseBet,
-  fetchTokenById
-} from '@/services/supabaseService';
-import {
-  createSolanaBet,
-  acceptSolanaBet,
-  getSolanaBetData
-} from '@/services/solanaBetService';
-import { toast } from '@/hooks/use-toast';
+export const fetchTrendingBets = async (): Promise<Bet[]> => {
+  // Mock data for trending bets
+  const trendingBets: Bet[] = [
+    {
+      id: '1',
+      tokenId: '1',
+      tokenMint: 'EPjFWdd5AufqALUs2vL433mW813sgCpG45GRm1CaWvgP',
+      tokenName: 'Wrapped SOL',
+      tokenSymbol: 'SOL',
+      initiator: 'wallet1',
+      amount: 10,
+      prediction: 'migrate',
+      timestamp: Date.now() - 86400000, // 24 hours ago
+      expiresAt: Date.now() + 3600000, // Expires in 1 hour
+      status: 'open',
+      duration: 24,
+      initialMarketCap: 500000000,
+      currentMarketCap: 550000000,
+      percentageChange: 10,
+      onChainBetId: '12345',
+      transactionSignature: 'signature1'
+    },
+    {
+      id: '2',
+      tokenId: '2',
+      tokenMint: 'Es9xMvGepamkVMwnwQingv5FG6gES24vQLgJv7Ve8fEX',
+      tokenName: 'Bonk',
+      tokenSymbol: 'BONK',
+      initiator: 'wallet2',
+      amount: 5,
+      prediction: 'die',
+      timestamp: Date.now() - 43200000, // 12 hours ago
+      expiresAt: Date.now() + 1800000, // Expires in 30 minutes
+      status: 'matched',
+      duration: 24,
+      initialMarketCap: 25000000,
+      currentMarketCap: 20000000,
+      percentageChange: -20,
+      onChainBetId: '67890',
+      transactionSignature: 'signature2'
+    },
+    {
+      id: '3',
+      tokenId: '3',
+      tokenMint: '7xKXtg2CWj7X5EcQnFcYpEkzgczdVsLMnA8jYwiA9W6P',
+      tokenName: 'Dogwifhat',
+      tokenSymbol: 'WIF',
+      initiator: 'wallet3',
+      amount: 8,
+      prediction: 'migrate',
+      timestamp: Date.now() - 21600000, // 6 hours ago
+      expiresAt: Date.now() + 7200000, // Expires in 2 hours
+      status: 'completed',
+      duration: 24,
+      initialMarketCap: 100000000,
+      currentMarketCap: 110000000,
+      percentageChange: 10,
+      onChainBetId: 'abcde',
+      transactionSignature: 'signature3'
+    },
+    {
+      id: '4',
+      tokenId: '4',
+      tokenMint: 'DezXAZ8z7PnzjzU6zUq6z5MumWNWMLrqv7nJphXXvnEH',
+      tokenName: 'Popcat',
+      tokenSymbol: 'POPCAT',
+      initiator: 'wallet4',
+      amount: 3,
+      prediction: 'die',
+      timestamp: Date.now() - 10800000, // 3 hours ago
+      expiresAt: Date.now() + 3600000, // Expires in 1 hour
+      status: 'expired',
+      duration: 24,
+      initialMarketCap: 5000000,
+      currentMarketCap: 4000000,
+      percentageChange: -20,
+      onChainBetId: 'fghij',
+      transactionSignature: 'signature4'
+    },
+    {
+      id: '5',
+      tokenId: '5',
+      tokenMint: 'mSoLzYCxHdYgdzU16g5QShvWztf3zQz4tigerVHyjojv6KrtnnzU6zUq6z5MumWNWMLrqv7nJphXXvnEH',
+      tokenName: 'Marinade Staked SOL',
+      tokenSymbol: 'mSOL',
+      initiator: 'wallet5',
+      amount: 12,
+      prediction: 'migrate',
+      timestamp: Date.now() - 5400000, // 1.5 hours ago
+      expiresAt: Date.now() + 1800000, // Expires in 30 minutes
+      status: 'open',
+      duration: 24,
+      initialMarketCap: 750000000,
+      currentMarketCap: 825000000,
+      percentageChange: 10,
+      onChainBetId: 'klmno',
+      transactionSignature: 'signature5'
+    },
+  ];
 
-const FALLBACK_BETS_KEY = 'pumpxbounty_fallback_bets';
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
 
-const storeFallbackBet = (bet: Bet) => {
-  try {
-    const storedBets = localStorage.getItem(FALLBACK_BETS_KEY);
-    let bets: Bet[] = storedBets ? JSON.parse(storedBets) : [];
-    
-    const exists = bets.some(
-      existingBet => existingBet.id === bet.id || 
-      (existingBet.onChainBetId && bet.onChainBetId && existingBet.onChainBetId === bet.onChainBetId)
-    );
-    
-    if (!exists) {
-      bets.push(bet);
-      localStorage.setItem(FALLBACK_BETS_KEY, JSON.stringify(bets));
-      console.log("Stored fallback bet:", bet);
-    }
-  } catch (error) {
-    console.error("Error storing fallback bet:", error);
-  }
+  return trendingBets;
 };
 
-const getFallbackBets = (): Bet[] => {
-  try {
-    const storedBets = localStorage.getItem(FALLBACK_BETS_KEY);
-    if (storedBets) {
-      const bets: Bet[] = JSON.parse(storedBets);
-      
-      const now = Date.now();
-      return bets.filter(bet => bet.expiresAt > now).map(bet => ({
-        ...bet,
-        tokenMint: bet.tokenMint || bet.tokenId, // Ensure tokenMint is present
-        onChainBetId: bet.onChainBetId || '',
-        transactionSignature: bet.transactionSignature || ''
-      }));
-    }
-  } catch (error) {
-    console.error("Error getting fallback bets:", error);
-  }
-  return [];
-};
+export const fetchTokenDetails = async (tokenId: string) => {
+  // Mock data for token details
+  const tokenDetails = {
+    '1': {
+      name: 'Wrapped SOL',
+      symbol: 'SOL',
+      price: 190,
+      volume: 1000000,
+      change: 5.2,
+    },
+    '2': {
+      name: 'Bonk',
+      symbol: 'BONK',
+      price: 0.00002,
+      volume: 50000000,
+      change: -8.5,
+    },
+    '3': {
+      name: 'Dogwifhat',
+      symbol: 'WIF',
+      price: 3.10,
+      volume: 7500000,
+      change: 12.3,
+    },
+    '4': {
+      name: 'Popcat',
+      symbol: 'POPCAT',
+      price: 0.05,
+      volume: 2000000,
+      change: -2.0,
+    },
+    '5': {
+      name: 'Marinade Staked SOL',
+      symbol: 'mSOL',
+      price: 195.50,
+      volume: 3000000,
+      change: 2.8,
+    },
+  };
 
-export const fetchMigratingTokens = async () => {
-  try {
-    const tokens = await fetchSupabaseTokens();
-    
-    return tokens.map(token => ({
-      id: token.token_mint,
-      name: token.token_name,
-      symbol: token.token_symbol || '',
-      logo: '🪙', // Default logo
-      currentPrice: token.last_trade_price,
-      change24h: 0, // We don't have historical data yet
-      migrationTime: new Date(token.last_updated_time).getTime(),
-    }));
-  } catch (error) {
-    console.error('Error fetching tokens:', error);
-    return [];
-  }
-};
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
 
-export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
-  try {
-    const openBets = await fetchSupabaseOpenBets();
-    const filteredBets = openBets.filter(bet => bet.tokenId === tokenId);
-    
-    const fallbackBets = getFallbackBets().filter(bet => bet.tokenId === tokenId);
-    
-    const allBets = [...filteredBets];
-    
-    for (const fallbackBet of fallbackBets) {
-      const exists = allBets.some(
-        bet => bet.id === fallbackBet.id || 
-        (bet.onChainBetId && fallbackBet.onChainBetId && bet.onChainBetId === fallbackBet.onChainBetId)
-      );
-      
-      if (!exists) {
-        allBets.push(fallbackBet);
-      }
-    }
-    
-    return allBets.map(bet => ({
-      ...bet,
-      tokenMint: bet.tokenMint || bet.tokenId, // Ensure tokenMint is present
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
-    }));
-  } catch (error) {
-    console.error('Error fetching bets by token:', error);
-    return getFallbackBets().filter(bet => bet.tokenId === tokenId);
-  }
-};
-
-export const fetchOpenBets = async (): Promise<Bet[]> => {
-  try {
-    console.log('Fetching open bets from Supabase...');
-    const bets = await fetchSupabaseOpenBets();
-    console.log('Retrieved bets from Supabase:', bets);
-    
-    const fallbackBets = getFallbackBets();
-    console.log('Fallback bets from localStorage:', fallbackBets);
-    
-    const allBets = [...bets];
-    
-    for (const fallbackBet of fallbackBets) {
-      const exists = allBets.some(
-        bet => bet.id === fallbackBet.id || 
-        (bet.onChainBetId && fallbackBet.onChainBetId && bet.onChainBetId === fallbackBet.onChainBetId)
-      );
-      
-      if (!exists) {
-        allBets.push(fallbackBet);
-      }
-    }
-    
-    console.log('Final combined bets:', allBets);
-    
-    return allBets.map(bet => ({
-      ...bet,
-      tokenMint: bet.tokenMint || bet.tokenId, // Ensure tokenMint is present
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
-    }));
-  } catch (error) {
-    console.error('Error fetching open bets:', error);
-    return getFallbackBets();
-  }
-};
-
-export const fetchUserBets = async (userAddress: string): Promise<Bet[]> => {
-  try {
-    const bets = await fetchSupabaseUserBets(userAddress);
-    return bets.map(bet => ({
-      ...bet,
-      tokenMint: bet.tokenMint || bet.tokenId, // Ensure tokenMint is present
-      status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
-    }));
-  } catch (error) {
-    console.error('Error fetching user bets:', error);
-    return [];
-  }
-};
-
-export const createBet = async (
-  tokenId: string,
-  tokenName: string,
-  tokenSymbol: string,
-  initiator: string,
-  amount: number,
-  prediction: BetPrediction,
-  wallet: any,
-  duration: number = 60 // Default to 60 minutes if not provided
-): Promise<Bet> => {
-  try {
-    console.log(`Creating bet with tokenId=${tokenId}, amount=${amount}, prediction=${prediction}, duration=${duration}`);
-    
-    if (!wallet) {
-      console.error("Wallet object is null or undefined");
-      throw new Error("Wallet not connected. Please connect your wallet and try again.");
-    }
-    
-    const walletAdapter = wallet.adapter;
-    const adapterConnected = walletAdapter?.connected || false;
-    const adapterPublicKey = walletAdapter?.publicKey;
-    const walletPublicKey = wallet.publicKey;
-    
-    console.log("Detailed wallet status:", {
-      hasAdapter: !!walletAdapter,
-      adapterConnected,
-      hasAdapterPublicKey: !!adapterPublicKey,
-      adapterPublicKeyString: adapterPublicKey?.toString(),
-      hasWalletPublicKey: !!walletPublicKey,
-      walletPublicKeyString: walletPublicKey?.toString()
-    });
-    
-    const effectivePublicKey = wallet.publicKey || wallet.adapter?.publicKey;
-    
-    if (!effectivePublicKey) {
-      console.error("No public key found in wallet or adapter");
-      throw new Error("Wallet connection issue: No public key found. Please reconnect your wallet.");
-    }
-    
-    console.log(`Initiating Solana transaction on Devnet...`);
-    
-    let betId;
-    let txSignature;
-    try {
-      const result = await createSolanaBet(
-        wallet,
-        tokenId,
-        tokenName,
-        tokenSymbol,
-        prediction,
-        duration,
-        amount
-      );
-      betId = result.betId;
-      txSignature = result.txSignature;
-      console.log(`Solana bet created with ID: ${betId}, transaction: ${txSignature}`);
-      
-      toast({
-        title: `New ${prediction.toUpperCase()} Bet Created!`,
-        description: `${amount} SOL bet on ${tokenSymbol || 'token'} is now active for ${duration} minutes`,
-      });
-    } catch (solanaBetError: any) {
-      console.error("Error creating bet on Solana:", solanaBetError);
-      if (solanaBetError.message && solanaBetError.message.includes("'emit'")) {
-        throw new Error("Wallet adapter error: Please refresh the page and reconnect your wallet.");
-      }
-      throw solanaBetError;
-    }
-    
-    const fallbackBet: Bet = {
-      id: `local-${Date.now()}`,
-      tokenId,
-      tokenName,
-      tokenSymbol,
-      tokenMint: tokenId, // Add tokenMint field
-      initiator: effectivePublicKey.toString(),
-      amount,
-      prediction,
-      timestamp: Date.now(),
-      expiresAt: Date.now() + (duration * 60 * 1000),
-      status: "open",
-      duration,
-      onChainBetId: betId?.toString() || '',
-      transactionSignature: txSignature || ''
-    };
-    
-    storeFallbackBet(fallbackBet);
-    
-    const eventData = {
-      amount,
-      prediction,
-      tokenId,
-      tokenName,
-      tokenSymbol,
-      bet: fallbackBet
-    };
-    
-    try {
-      const event = new CustomEvent('newBetCreated', { detail: eventData });
-      window.dispatchEvent(event);
-      console.log("Dispatched newBetCreated event:", eventData);
-    } catch (eventError) {
-      console.error("Error dispatching newBetCreated event:", eventError);
-    }
-    
-    try {
-      const bet = await createSupabaseBet(
-        tokenId, 
-        tokenName,
-        tokenSymbol,
-        prediction, 
-        duration, 
-        amount,
-        effectivePublicKey.toString(),
-        betId?.toString() || '',
-        txSignature || ''
-      );
-      
-      console.log(`Supabase bet created: ${bet.id}`);
-      
-      return {
-        ...bet,
-        tokenMint: bet.tokenMint || tokenId, // Ensure tokenMint is present
-        onChainBetId: betId?.toString() || '',
-        transactionSignature: txSignature || '',
-        status: bet.status as "open" | "matched" | "completed" | "expired" | "closed"
-      };
-    } catch (supabaseError) {
-      console.warn("Failed to create bet in Supabase, using fallback data:", supabaseError);
-      
-      return fallbackBet;
-    }
-  } catch (error: any) {
-    console.error('Error creating bet:', error);
-    
-    if (error.name === 'WalletSignTransactionError') {
-      throw new Error("Transaction signing failed. Please check your wallet connection.");
-    } else if (error.name === 'WalletNotConnectedError') {
-      throw new Error("Wallet not connected. Please reconnect your wallet.");
-    } else if (error.message?.includes('User rejected')) {
-      throw new Error("Transaction rejected. Please approve the transaction in your wallet.");
-    } else if (error.message?.includes('Blockhash not found')) {
-      throw new Error("Network error: Blockhash not found. Devnet may be experiencing issues, please try again.");
-    } else if (error.message?.includes('insufficient funds')) {
-      throw new Error("Insufficient funds in your Devnet wallet. Please request SOL from the Devnet faucet.");
-    }
-    
-    throw error;
-  }
-};
-
-export const acceptBet = async (
-  bet: Bet,
-  counterParty: string,
-  wallet: any
-): Promise<Bet> => {
-  try {
-    console.log(`Accepting bet: ${bet.id}, onChainBetId: ${bet.onChainBetId}`);
-    
-    if (!wallet || !wallet.publicKey) {
-      console.error("Wallet not properly connected - missing publicKey");
-      throw new Error("Wallet not properly connected. Please reconnect your wallet.");
-    }
-    
-    if (!wallet.signTransaction || !wallet.signAllTransactions) {
-      console.error("Wallet missing required signing capabilities");
-      throw new Error("Your wallet doesn't support the required signing methods.");
-    }
-    
-    if (bet.onChainBetId) {
-      await acceptSolanaBet(wallet, parseInt(bet.onChainBetId));
-      console.log(`Solana bet accepted: ${bet.onChainBetId}`);
-      
-      toast({
-        title: "Bet Accepted!",
-        description: `A ${bet.amount} SOL bet on ${bet.tokenSymbol || 'a token'} is now active!`,
-      });
-    } else {
-      throw new Error("Missing on-chain bet ID");
-    }
-    
-    const updatedBet = await acceptSupabaseBet(bet.id);
-    console.log(`Supabase bet updated: ${updatedBet.id}`);
-    
-    return {
-      ...updatedBet,
-      tokenMint: updatedBet.tokenMint || updatedBet.tokenId, // Ensure tokenMint is present 
-      status: updatedBet.status as "open" | "matched" | "completed" | "expired" | "closed"
-    };
-  } catch (error) {
-    console.error('Error accepting bet:', error);
-    throw error;
-  }
-};
-
-export const fetchSolanaBet = async (onChainBetId: string): Promise<Bet | null> => {
-  if (!onChainBetId) return null;
-  
-  try {
-    console.log(`Fetching Solana bet data for ID: ${onChainBetId}`);
-    return await getSolanaBetData(parseInt(onChainBetId));
-  } catch (error) {
-    console.error('Error fetching Solana bet:', error);
-    return null;
-  }
+  return tokenDetails[tokenId] || null;
 };

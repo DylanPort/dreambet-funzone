@@ -7,6 +7,7 @@ import { Bet } from '@/types/bet';
 import { Link } from 'react-router-dom';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TrendingBetsListProps {
   // No props needed for now
@@ -20,6 +21,7 @@ const TrendingBetsList: React.FC<TrendingBetsListProps> = () => {
     message: ''
   });
   const { connected, publicKey } = useWallet();
+  const isMobile = useIsMobile();
   const [activeBetsCount, setActiveBetsCount] = useState(0);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
@@ -166,7 +168,7 @@ const TrendingBetsList: React.FC<TrendingBetsListProps> = () => {
           {bets.length === 0 ? (
             <div className="text-center py-6">
               <p className="text-dream-foreground/70">No trending bets found</p>
-              <p className="text-sm mt-2">Start betting on migrating tokens now!</p>
+              <p className="text-sm mt-2">Start betting on trending tokens now!</p>
             </div>
           ) : (
             <div className="space-y-3">
