@@ -16,14 +16,20 @@ interface DexScreenerToken {
 export async function fetchTrendingTokensFromApify(): Promise<DexScreenerToken[]> {
   try {
     // Get the API key from Supabase
-    const { data: config, error: configError } = await supabase
+    const { data: feature, error: configError } = await supabase
       .from('app_features')
       .select('config')
       .eq('feature_name', 'apify')
       .single();
 
-    if (configError || !config) {
+    if (configError || !feature || !feature.config) {
       console.error('Error fetching Apify API key:', configError);
+      return [];
+    }
+
+    const apiKey = feature.config.api_key as string;
+    if (!apiKey) {
+      console.error('Apify API key not found in config');
       return [];
     }
 
@@ -34,7 +40,7 @@ export async function fetchTrendingTokensFromApify(): Promise<DexScreenerToken[]
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.config.api_key}`,
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           chain: 'solana',
@@ -61,7 +67,7 @@ export async function fetchTrendingTokensFromApify(): Promise<DexScreenerToken[]
         `https://api.apify.com/v2/actor-runs/${runId}`,
         {
           headers: {
-            'Authorization': `Bearer ${config.config.api_key}`,
+            'Authorization': `Bearer ${apiKey}`,
           },
         }
       );
@@ -79,7 +85,7 @@ export async function fetchTrendingTokensFromApify(): Promise<DexScreenerToken[]
           `https://api.apify.com/v2/actor-runs/${runId}/dataset/items`,
           {
             headers: {
-              'Authorization': `Bearer ${config.config.api_key}`,
+              'Authorization': `Bearer ${apiKey}`,
             },
           }
         );
