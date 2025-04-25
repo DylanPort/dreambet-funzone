@@ -27,7 +27,7 @@ export async function fetchTrendingTokensFromApify(): Promise<DexScreenerToken[]
       return [];
     }
 
-    const apiKey = feature.config.api_key as string;
+    const apiKey = (feature.config as { api_key: string }).api_key;
     if (!apiKey) {
       console.error('Apify API key not found in config');
       return [];

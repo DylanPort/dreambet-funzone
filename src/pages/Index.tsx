@@ -114,14 +114,10 @@ const Index = () => {
             </div>
           </div>
           
-          {!isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
-              bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
-              backdrop-blur-[1px] rounded-xl border border-white/5
-              animate-entrance overflow-hidden
-              before:content-[''] before:absolute before:inset-0 
-              before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
-              before:animate-pulse-glow">
-            </div>}
+          <div className="max-w-7xl mx-auto mb-16">
+            <h2 className="text-2xl font-bold mb-6">Trending Tokens</h2>
+            <TrendingTokens />
+          </div>
           
           <div className="flex justify-center gap-4 mt-10 mb-16">
             <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
