@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Wallet, Search, Zap, Trophy, Sparkles, ArrowUp, BarChart3 } from 'lucide-react';
+import { Wallet, Search, Zap, Trophy, Sparkles, BarChart3 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import WalletConnectButton from '@/components/WalletConnectButton';
-import MigratingTokenList from '@/components/MigratingTokenList';
 import OpenBetsList from '@/components/OpenBetsList';
 import TrendingBetsList from '@/components/TrendingBetsList';
 import SearchedTokensReel from '@/components/SearchedTokensReel';
@@ -100,18 +99,6 @@ const BettingDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <SearchedTokensReel />
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-black/40 border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <ArrowUp className="w-5 h-5 mr-2 text-green-400" />
-                    Migrating Tokens
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <MigratingTokenList />
                 </CardContent>
               </Card>
             </div>
