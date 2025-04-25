@@ -55,7 +55,7 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
               {isLoadingBets ? (
                 <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
               ) : (
-                <div className="text-sm text-indigo-300/70">{totalBets} bets</div>
+                <div className="text-sm text-indigo-300/70">{totalBets} trades</div>
               )}
             </div>
             <Progress value={winRate} className="h-1 mt-2" />
@@ -107,7 +107,7 @@ const PXBStatsPanel: React.FC<PXBStatsPanelProps> = ({ userProfile }) => {
               {isLoadingBets ? (
                 <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></div>
               ) : (
-                <div className="text-sm text-indigo-300/70">Bets</div>
+                <div className="text-sm text-indigo-300/70">Trades</div>
               )}
             </div>
           </div>

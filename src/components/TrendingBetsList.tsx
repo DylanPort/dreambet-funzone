@@ -193,7 +193,7 @@ const TrendingBetsList = () => {
   if (trendingTokens.length === 0) {
     return <Card className="p-6 rounded-xl backdrop-blur-sm bg-dream-background/30 border border-dream-accent1/20">
         <p className="text-center text-dream-foreground/60">
-          No bet data available yet
+          No trade data available yet
         </p>
       </Card>;
   }
@@ -210,7 +210,8 @@ const TrendingBetsList = () => {
     return "Warming Up";
   };
 
-  return <>
+  return (
+    <>
       <div className="mb-2 overflow-hidden bg-gradient-to-r from-dream-accent3/20 to-dream-accent1/20 rounded-lg border border-dream-accent1/30 backdrop-blur-lg">
         <div className="flex items-center gap-1 px-1">
           <div className="flex-shrink-0 py-1 px-2 bg-dream-accent3/40 rounded-lg flex items-center">
@@ -220,13 +221,15 @@ const TrendingBetsList = () => {
           
           <div className="overflow-hidden flex-1">
             <div className="flex animate-scroll-slow items-center gap-2">
-              {trendingTokens.map((token, index) => <div key={`${token.token_mint}-${index}`} className="flex-shrink-0 py-1 px-2 bg-dream-background/40 rounded-lg border border-dream-accent1/20 flex items-center gap-1 hover:bg-dream-background/60 transition-all duration-300">
+              {trendingTokens.map((token, index) => (
+                <div key={`${token.token_mint}-${index}`} className="flex-shrink-0 py-1 px-2 bg-dream-background/40 rounded-lg border border-dream-accent1/20 flex items-center gap-1 hover:bg-dream-background/60 transition-all duration-300">
                   {renderTokenAvatar(token)}
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold">{token.token_symbol}</span>
-                    <span className="text-[10px] text-dream-foreground/60">{token.bet_count} bets</span>
+                    <span className="text-[10px] text-dream-foreground/60">{token.bet_count} trades</span>
                   </div>
-                </div>)}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -416,6 +419,8 @@ const TrendingBetsList = () => {
             </Button>
           </div>}
       </Card>
-    </>;
+    </>
+  );
 };
+
 export default TrendingBetsList;

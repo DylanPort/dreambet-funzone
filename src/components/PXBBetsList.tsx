@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -148,7 +147,7 @@ const PXBBetsList = () => {
 
   if (loading) {
     return <div className="glass-panel p-6">
-        <h2 className="font-semibold text-xl mb-4">Your PXB Bets</h2>
+        <h2 className="font-semibold text-xl mb-4">Your PXB Trades</h2>
         <div className="space-y-4">
           {[1, 2].map(i => <div key={i} className="bg-black/40 rounded-lg border border-white/10 p-4">
               <div className="flex justify-between items-center mb-3">
@@ -173,13 +172,13 @@ const PXBBetsList = () => {
 
   return (
     <div className="glass-panel p-6">
-      <h2 className="font-semibold text-xl mb-4">Your PXB Bets</h2>
+      <h2 className="font-semibold text-xl mb-4">Your PXB Trades</h2>
       <div className="space-y-4">
         {bets.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-dream-foreground/70 mb-3">You haven't placed any bets yet</p>
+            <p className="text-dream-foreground/70 mb-3">You haven't placed any trades yet</p>
             <Button asChild variant="outline">
-              <Link to="/betting">Place your first bet</Link>
+              <Link to="/betting">Place your first trade</Link>
             </Button>
           </div>
         ) : (
@@ -189,11 +188,11 @@ const PXBBetsList = () => {
                 key={bet.id} 
                 bet={bet} 
                 marketCapData={marketCapData[bet.tokenMint]} 
-                isLoading={false} // Add the missing isLoading prop
+                isLoading={false}
               />
             ))}
             <Button asChild variant="outline" className="w-full">
-              <Link to="/betting">Place a new bet</Link>
+              <Link to="/betting">Place a new trade</Link>
             </Button>
           </>
         )}
