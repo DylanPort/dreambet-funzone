@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, TrendingUp, ExternalLink, Search, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchTokenImage } from '@/services/moralisService';
 import { formatAddress } from '@/utils/betUtils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ExtendedSearchedToken extends SearchedToken {
   imageUrl?: string | null;
