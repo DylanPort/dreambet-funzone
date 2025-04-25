@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -11,12 +10,15 @@ import PXBBetsHistory from '@/components/PXBBetsHistory';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import OnlineUsersSidebar from '@/components/OnlineUsersSidebar';
+
+type UserProfileParams = {
+  userId: string;
+};
+
 const UserProfilePage = () => {
   const {
     userId
-  } = useParams<{
-    userId: string;
-  }>();
+  } = useParams<UserProfileParams>();
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [winRate, setWinRate] = useState(0);
@@ -24,19 +26,13 @@ const UserProfilePage = () => {
   const [totalBets, setTotalBets] = useState(0);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-  // Fetch the user profile data by ID or wallet address
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!userId) return;
       setIsLoading(true);
       try {
-        // Check if userId is a UUID or wallet address
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
-
-        // Construct query based on whether userId is a UUID or wallet address
         const query = isUuid ? supabase.from('users').select('*').eq('id', userId).single() : supabase.from('users').select('*').eq('wallet_address', userId).single();
-
-        // Fetch user data
         const {
           data: userData,
           error: userError
@@ -46,11 +42,7 @@ const UserProfilePage = () => {
           toast.error('Failed to load user profile');
           return;
         }
-
-        // Set wallet address
         setWalletAddress(userData.wallet_address || null);
-
-        // Fetch user leaderboard position
         const {
           data: leaderboardData,
           error: leaderboardError
@@ -65,8 +57,6 @@ const UserProfilePage = () => {
             setUserRank(userPosition + 1);
           }
         }
-
-        // Fetch user's bet count and calculate win rate
         const {
           data: betsData,
           error: betsError
@@ -97,7 +87,6 @@ const UserProfilePage = () => {
     fetchUserProfile();
   }, [userId]);
 
-  // Function to format the date
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Unknown';
     const date = new Date(dateString);
@@ -149,7 +138,6 @@ const UserProfilePage = () => {
       <Navbar />
       <main className="min-h-screen bg-dream-background">
         <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16">
-          {/* Back button */}
           <div className="mb-6">
             <Link to="/community">
               <Button variant="ghost" className="text-dream-foreground/70 hover:text-dream-foreground">
@@ -161,7 +149,6 @@ const UserProfilePage = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-8">
             <div className="lg:col-span-5">
-              {/* User Profile Header */}
               <Card className="p-6 mb-8 bg-dream-background/30 border border-dream-foreground/10 backdrop-blur-sm">
                 <div className="flex items-start sm:items-center flex-col sm:flex-row gap-6">
                   <div className="w-24 h-24 rounded-full bg-gradient-to-br from-dream-accent1/20 to-dream-accent2/20 flex items-center justify-center border border-dream-foreground/10 overflow-hidden">
@@ -232,7 +219,6 @@ const UserProfilePage = () => {
                 </div>
               </Card>
               
-              {/* User Stats */}
               <Card className="p-6 mb-8 bg-dream-background/30 border border-dream-foreground/10 backdrop-blur-sm">
                 <h2 className="text-xl font-bold text-dream-foreground mb-4 font-display">User Stats</h2>
                 
@@ -265,7 +251,6 @@ const UserProfilePage = () => {
                 </div>
               </Card>
               
-              {/* Bets History */}
               <Card className="bg-dream-background/30 border border-dream-foreground/10 backdrop-blur-sm">
                 <div className="p-6 border-b border-dream-foreground/10">
                   <h2 className="text-xl font-bold text-dream-foreground font-display">{profileData?.username}'s Betting History</h2>
@@ -279,8 +264,6 @@ const UserProfilePage = () => {
             <div className="lg:col-span-2">
               <div className="sticky top-24">
                 <OnlineUsersSidebar className="mb-6" />
-                
-                
               </div>
             </div>
           </div>

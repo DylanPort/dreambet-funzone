@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -13,8 +12,12 @@ import { Bet } from '@/types/bet';
 import { useToast } from '@/hooks/use-toast';
 import { fetchDexScreenerData, startDexScreenerPolling } from '@/services/dexScreenerService';
 
+type TokenParams = {
+  id: string;
+};
+
 const TokenBetting = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<TokenParams>();
   const navigate = useNavigate();
   const [token, setToken] = useState<any>(null);
   const [bets, setBets] = useState<Bet[]>([]);
@@ -193,18 +196,18 @@ const TokenBetting = () => {
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div className="flex items-center mb-4 md:mb-0">
-              <div className="text-4xl mr-3">{token.logo}</div>
+              <div className="text-4xl mr-3">{token?.logo}</div>
               <div>
-                <h1 className="text-3xl font-display font-bold">{token.name}</h1>
-                <p className="text-dream-foreground/70">{token.symbol}</p>
+                <h1 className="text-3xl font-display font-bold">{token?.name}</h1>
+                <p className="text-dream-foreground/70">{token?.symbol}</p>
               </div>
             </div>
             
             <div className="glass-panel p-3">
               <div className="text-sm text-dream-foreground/70">
-                Migrated {migrationTimeAgo()}
+                Migrated {token && migrationTimeAgo()}
               </div>
-              {isBettingOpen() ? (
+              {token && isBettingOpen() ? (
                 <div className="flex items-center text-dream-accent2">
                   <div className="w-2 h-2 bg-dream-accent2 rounded-full mr-2 animate-pulse"></div>
                   Betting Open
@@ -228,7 +231,7 @@ const TokenBetting = () => {
               <div className="text-3xl font-bold relative z-10">{formatLargeNumber(tokenMetrics.marketCap)}</div>
               <div className="absolute top-2 right-2 flex items-center">
                 <a 
-                  href={`https://dexscreener.com/solana/${token.id}`} 
+                  href={`https://dexscreener.com/solana/${token?.id}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
@@ -249,7 +252,7 @@ const TokenBetting = () => {
               <div className="text-3xl font-bold relative z-10">{formatLargeNumber(tokenMetrics.volume24h)}</div>
               <div className="absolute top-2 right-2 flex items-center">
                 <a 
-                  href={`https://dexscreener.com/solana/${token.id}`} 
+                  href={`https://dexscreener.com/solana/${token?.id}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-dream-accent2 hover:text-dream-accent2/80 transition-colors"
@@ -285,18 +288,18 @@ const TokenBetting = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
               <div>
                 <div className="text-sm text-dream-foreground/70 mb-1">Current Price</div>
-                <div className="text-3xl font-bold">${token.currentPrice.toFixed(6)}</div>
-                <div className={`flex items-center text-sm ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {token.change24h >= 0 ? (
+                <div className="text-3xl font-bold">${token?.currentPrice.toFixed(6)}</div>
+                <div className={`flex items-center text-sm ${token?.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {token?.change24h >= 0 ? (
                     <ArrowUpRight className="w-4 h-4 mr-1" />
                   ) : (
                     <ArrowDownRight className="w-4 h-4 mr-1" />
                   )}
-                  {Math.abs(token.change24h).toFixed(1)}% (24h)
+                  {token && Math.abs(token.change24h).toFixed(1)}% (24h)
                 </div>
               </div>
               
-              {isBettingOpen() && (
+              {token && isBettingOpen() && (
                 <div className="mt-4 md:mt-0">
                   <div className="text-sm text-dream-foreground/70 mb-1">Betting closes in</div>
                   <CountdownTimer endTime={countdownEndTime} />
@@ -306,7 +309,7 @@ const TokenBetting = () => {
             
             <div className="w-full h-[300px] bg-black/10 rounded-lg overflow-hidden relative mb-4">
               <iframe 
-                src={`https://dexscreener.com/solana/${token.id}?embed=1&theme=dark&trades=0&info=0`} 
+                src={`https://dexscreener.com/solana/${token?.id}?embed=1&theme=dark&trades=0&info=0`} 
                 className="w-full h-full border-0"
                 title="DexScreener Chart"
               ></iframe>
@@ -314,7 +317,7 @@ const TokenBetting = () => {
             
             <div className="flex justify-end">
               <a 
-                href={`https://dexscreener.com/solana/${token.id}`} 
+                href={`https://dexscreener.com/solana/${token?.id}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-dream-accent2 hover:underline inline-flex items-center text-sm"
@@ -326,7 +329,7 @@ const TokenBetting = () => {
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
-            {isBettingOpen() ? (
+            {token && isBettingOpen() ? (
               <CreateBetForm 
                 tokenId={token.id}
                 tokenName={token.name}
@@ -353,7 +356,7 @@ const TokenBetting = () => {
               {bets.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-dream-foreground/70">No active bets for this token yet.</p>
-                  {isBettingOpen() && (
+                  {token && isBettingOpen() && (
                     <p className="text-sm mt-2">Be the first to create a bet!</p>
                   )}
                 </div>

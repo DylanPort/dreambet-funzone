@@ -70,12 +70,16 @@ import { PXBBet } from '@/types/pxb';
 import { fetchDexScreenerData } from '@/services/dexScreenerService';
 import TokenTrading from '@/components/TokenTrading';
 
+type BetDetailsParams = {
+  id: string;
+};
+
 interface BetDetailsProps {
   // Define any props if needed
 }
 
 const BetDetails: React.FC<BetDetailsProps> = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<BetDetailsParams>();
   const navigate = useNavigate();
   const { userProfile, placeBet, isLoading, userBets } = usePXBPoints();
   const [token, setToken] = useState<any>(null);
@@ -307,7 +311,7 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
     direction: z.enum(["up", "down"]),
     timeframe: z.number(),
     percentageChange: z.number(),
-  })
+  });
 
   const form = useForm<z.infer<typeof BetSchema>>({
     resolver: zodResolver(BetSchema),
@@ -317,7 +321,7 @@ const BetDetails: React.FC<BetDetailsProps> = () => {
       timeframe: 30,
       percentageChange: 10,
     },
-  })
+  });
 
   function onSubmit(values: z.infer<typeof BetSchema>) {
     if (!userProfile) {

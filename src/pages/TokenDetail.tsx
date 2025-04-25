@@ -29,7 +29,20 @@ import TokenTrading from '@/components/TokenTrading';
 import TokenTradeHistory from '@/components/TokenTradeHistory';
 import TokenTransactions from '@/components/TokenTransactions';
 
-const TokenChart = ({
+type TokenParams = {
+  id: string;
+};
+
+interface TokenChartProps {
+  tokenId: string;
+  tokenName: string;
+  refreshData: () => void;
+  loading: boolean;
+  onPriceUpdate: (price: number, change24h: number) => void;
+  setShowCreateBet: (show: boolean) => void;
+}
+
+const TokenChart: React.FC<TokenChartProps> = ({
   tokenId,
   tokenName,
   refreshData,
@@ -43,7 +56,7 @@ const TokenChart = ({
     refreshData();
   };
   useEffect(() => {
-    const handleMessage = event => {
+    const handleMessage = (event: MessageEvent) => {
       try {
         if (event.data && typeof event.data === 'string') {
           const data = JSON.parse(event.data);
@@ -92,17 +105,11 @@ const TokenChart = ({
       <div className="w-full h-[400px] bg-black/10 rounded-lg overflow-hidden relative">
         <iframe src={chartUrl} className="w-full h-full border-0" title="GMGN Price Chart" loading="lazy"></iframe>
       </div>
-      
-      
     </div>;
 };
 
 const TokenDetail = () => {
-  const {
-    id
-  } = useParams<{
-    id: string;
-  }>();
+  const { id } = useParams<TokenParams>();
   const [token, setToken] = useState<any>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +141,7 @@ const TokenDetail = () => {
   const lastPriceUpdateRef = useRef<number>(0);
   const lastMetricsUpdateRef = useRef<number>(0);
   const dexScreenerCleanupRef = useRef<Function | null>(null);
+
   useEffect(() => {
     const loadToken = async () => {
       if (!id) return;
@@ -305,6 +313,7 @@ const TokenDetail = () => {
     };
     loadToken();
   }, [id, toast, pumpPortal.connected, pumpPortal.recentTokens]);
+
   useEffect(() => {
     const loadTokenImage = async () => {
       if (!id || !token) return;
@@ -322,6 +331,7 @@ const TokenDetail = () => {
     };
     loadTokenImage();
   }, [id, token]);
+
   const updateTokenPrice = useCallback((price: number, change24h: number) => {
     const now = Date.now();
     if (now - lastPriceUpdateRef.current > 2000) {
@@ -343,6 +353,7 @@ const TokenDetail = () => {
       });
     }
   }, []);
+
   const handleChartPriceUpdate = useCallback((price: number, change24h: number = 0) => {
     console.log("Received price update from chart:", price, change24h);
     updateTokenPrice(price, change24h);
@@ -356,6 +367,7 @@ const TokenDetail = () => {
       console.error("Error caching price:", error);
     }
   }, [id, updateTokenPrice]);
+
   const updateTokenMetrics = useCallback((newMetrics: any) => {
     const now = Date.now();
     if (now - lastMetricsUpdateRef.current > 2000) {
@@ -366,11 +378,13 @@ const TokenDetail = () => {
       }));
     }
   }, []);
+
   useEffect(() => {
     if (id && pumpPortal.recentTrades[id]) {
       console.log(`Trades updated for ${id}:`, pumpPortal.recentTrades[id]);
     }
   }, [id, pumpPortal.recentTrades]);
+
   useEffect(() => {
     if (id && pumpPortal.tokenMetrics[id]) {
       const metrics = pumpPortal.tokenMetrics[id];
@@ -383,6 +397,7 @@ const TokenDetail = () => {
       console.log("Updated token metrics from WebSocket:", metrics);
     }
   }, [id, pumpPortal.tokenMetrics, updateTokenMetrics]);
+
   useEffect(() => {
     if (id) {
       const stopPolling = startDexScreenerPolling(id, data => {
@@ -404,6 +419,7 @@ const TokenDetail = () => {
       };
     }
   }, [id, updateTokenPrice, updateTokenMetrics]);
+
   useEffect(() => {
     if (bets.length > 0) {
       const activeBets = bets.filter(bet => bet.status === 'open' || bet.status === 'matched');
@@ -419,6 +435,7 @@ const TokenDetail = () => {
       setActiveBetsCount(activeBets.length);
     }
   }, [bets, activeBetsCount, toast, token]);
+
   const refreshData = useCallback(async (betType = null) => {
     if (!id) return;
     try {
@@ -479,6 +496,7 @@ const TokenDetail = () => {
       setLoading(false);
     }
   }, [id, pumpPortal, toast, updateTokenMetrics, token]);
+
   const handleAcceptBet = async (bet: Bet) => {
     if (!connected || !publicKey) {
       toast({
@@ -489,7 +507,7 @@ const TokenDetail = () => {
       return;
     }
     try {
-      await acceptBet(bet, publicKey.toString(), wallet);
+      await acceptBet(bet, publicKey.toString(), wallet!);
       toast({
         title: "Bet accepted!",
         description: `You've successfully accepted the bet on ${bet.tokenSymbol}`
@@ -509,6 +527,7 @@ const TokenDetail = () => {
       });
     }
   };
+
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(numPrice)) return "0.000000";
@@ -519,6 +538,7 @@ const TokenDetail = () => {
       maximumFractionDigits: 2
     });
   };
+
   const formatLargeNumber = (num: number | null) => {
     if (num === null || num === undefined) return "N/A";
     if (num >= 1000000000) {
@@ -531,6 +551,7 @@ const TokenDetail = () => {
       return `$${num.toFixed(2)}`;
     }
   };
+
   const isLive = pumpPortal.connected && id && pumpPortal.recentTrades[id];
   const renderActiveBetBanner = () => {
     if (!newActiveBet) return null;
@@ -547,6 +568,7 @@ const TokenDetail = () => {
         
       </div>;
   };
+
   const {
     userProfile,
     bets: userPXBBets,
@@ -559,6 +581,7 @@ const TokenDetail = () => {
     initialMarketCap: number | null;
     currentMarketCap: number | null;
   }>>({});
+
   useEffect(() => {
     if (userProfile && userPXBBets && userPXBBets.length > 0 && id) {
       const filteredBets = userPXBBets.filter(bet => bet.tokenMint === id);
@@ -567,6 +590,7 @@ const TokenDetail = () => {
       setTokenPXBBets([]);
     }
   }, [userProfile, userPXBBets, id]);
+
   useEffect(() => {
     const fetchMarketCapData = async () => {
       if (!tokenPXBBets || tokenPXBBets.length === 0) return;
@@ -596,18 +620,11 @@ const TokenDetail = () => {
             [bet.id]: false
           }));
         }
-        await new Promise(resolve => setTimeout(resolve, 200));
       }
     };
     fetchMarketCapData();
-    const interval = setInterval(() => {
-      const pendingBets = tokenPXBBets.filter(bet => bet.status === 'pending');
-      if (pendingBets.length > 0) {
-        fetchMarketCapData();
-      }
-    }, 30000);
-    return () => clearInterval(interval);
   }, [tokenPXBBets, marketCapData]);
+
   const calculateProgress = bet => {
     if (bet.status !== 'pending') {
       return bet.status === 'won' ? 100 : 0;
@@ -627,6 +644,7 @@ const TokenDetail = () => {
     }
     return 0;
   };
+
   const calculateTargetMarketCap = bet => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     if (!initialMarketCap) return null;
@@ -636,6 +654,7 @@ const TokenDetail = () => {
       return initialMarketCap * (1 - bet.percentageChange / 100);
     }
   };
+
   const calculateMarketCapChange = bet => {
     const initialMarketCap = bet.initialMarketCap || marketCapData[bet.id]?.initialMarketCap;
     const currentMarketCap = marketCapData[bet.id]?.currentMarketCap || bet.currentMarketCap;
@@ -644,11 +663,13 @@ const TokenDetail = () => {
     }
     return null;
   };
+
   useEffect(() => {
     if (userProfile && id) {
       fetchUserBets();
     }
   }, [userProfile, id, fetchUserBets]);
+
   const renderTokenImage = () => {
     if (imageLoading) {
       return <Skeleton className="w-16 h-16 rounded-full" />;
@@ -661,6 +682,7 @@ const TokenDetail = () => {
         {token?.symbol ? token.symbol.charAt(0) : '🪙'}
       </div>;
   };
+
   const generateColorFromSymbol = (symbol: string) => {
     const colors = ['from-pink-500 to-purple-500', 'from-blue-500 to-cyan-500', 'from-green-500 to-emerald-500', 'from-yellow-500 to-orange-500', 'from-red-500 to-pink-500', 'from-indigo-500 to-blue-500'];
     let hash = 0;
@@ -670,6 +692,7 @@ const TokenDetail = () => {
     const index = Math.abs(hash) % colors.length;
     return colors[index];
   };
+
   return <>
       <OrbitingParticles />
       <Navbar />
