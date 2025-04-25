@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { fetchGMGNChartData } from '@/services/gmgnChartService';
@@ -80,17 +81,29 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
     const fetchData = async () => {
       if (tokenId) {
         try {
+          console.log(`Fetching chart data for token: ${tokenId}`);
           const gmgnData = await fetchGMGNChartData(tokenId);
-          const formattedData = gmgnData.map(item => ({
-            time: new Date(item.timestamp).toISOString(),
-            price: item.close
-          }));
-          setChartData(formattedData);
+          console.log(`Received ${gmgnData.length} data points from GMGN`);
+          
+          if (gmgnData && gmgnData.length > 0) {
+            const formattedData = gmgnData.map(item => ({
+              time: new Date(item.timestamp).toISOString(),
+              price: item.close
+            }));
+            setChartData(formattedData);
+          } else {
+            console.log('No data received from GMGN, falling back to sample data');
+            setChartData(propData || useSampleData());
+          }
         } catch (error) {
           console.error('Error fetching GMGN chart data:', error);
           // Fallback to sample data if GMGN fetch fails
+          console.log('Error fetching GMGN data, falling back to sample data');
           setChartData(propData || useSampleData());
         }
+      } else {
+        console.log('No tokenId provided, falling back to sample data');
+        setChartData(propData || useSampleData());
       }
     };
 
@@ -99,12 +112,6 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
 
   const [purchaseMarkers, setPurchaseMarkers] = useState<PurchaseMarker[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    if (propData) {
-      setData(propData);
-    }
-  }, [propData]);
   
   // Load purchase markers from localStorage on mount
   useEffect(() => {
@@ -166,6 +173,15 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
     return (
       <div className="flex justify-center items-center h-64">
         <div className="w-10 h-10 border-4 border-dream-accent1 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  
+  // If chartData is empty, show a message
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-white">No chart data available</p>
       </div>
     );
   }

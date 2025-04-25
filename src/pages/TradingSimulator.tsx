@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Button } from '@/components/ui/button';
@@ -103,6 +104,7 @@ const TradingSimulator = () => {
               <PriceChart 
                 tokenId={selectedToken}
                 isLoading={false}
+                color="url(#colorGradient)"
               />
             </div>
 

@@ -14,13 +14,23 @@ export const fetchGMGNChartData = async (tokenAddress: string): Promise<GMGNChar
     const apiUrl = `https://www.gmgn.cc/kline/sol/${tokenAddress}`;
     const encodedApiUrl = encodeURIComponent(apiUrl);
     
+    console.log(`Fetching GMGN chart data from: ${apiUrl}`);
+    
     const response = await fetch(`${corsProxyUrl}${encodedApiUrl}`);
     
     if (!response.ok) {
-      throw new Error('Failed to fetch GMGN chart data');
+      throw new Error(`Failed to fetch GMGN chart data: ${response.status}`);
     }
     
     const data = await response.json();
+    
+    if (!Array.isArray(data)) {
+      console.error('Invalid data format received:', data);
+      return [];
+    }
+    
+    console.log(`Received ${data.length} data points from GMGN`);
+    
     return data.map((item: any[]) => ({
       timestamp: item[0],
       open: parseFloat(item[1]),
