@@ -1,4 +1,3 @@
-
 declare module 'sonner' {
   import { ReactNode } from 'react';
 
@@ -11,6 +10,28 @@ declare module 'sonner' {
     position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
     className?: string;
     closeButton?: boolean;
+  }
+
+  export interface ToastOptions extends Omit<ToastProps, 'title'> {
+    promise?: Promise<any>;
+  }
+
+  export function toast(message: ReactNode | ToastProps, options?: ToastOptions): void;
+
+  export namespace toast {
+    function success(message: ReactNode | ToastProps, options?: ToastOptions): void;
+    function error(message: ReactNode | ToastProps, options?: ToastOptions): void;
+    function info(message: ReactNode | ToastProps, options?: ToastOptions): void;
+    function warning(message: ReactNode | ToastProps, options?: ToastOptions): void;
+    
+    function promise<T>(
+      promise: Promise<T>,
+      options: {
+        loading: ReactNode | ToastProps;
+        success: ReactNode | ToastProps | ((data: T) => ReactNode | ToastProps);
+        error: ReactNode | ToastProps | ((error: unknown) => ReactNode | ToastProps);
+      }
+    ): Promise<T>;
   }
 
   export interface ToasterProps {
@@ -26,49 +47,7 @@ declare module 'sonner' {
     className?: string;
   }
 
-  export function toast(
-    message: ReactNode | ToastProps,
-    options?: Omit<ToastProps, 'title'>
-  ): {
-    id: number;
-    dismiss: () => void;
-    update: (props: ToastProps) => void;
-  }
-  
-  export namespace toast {
-    function success(
-      message: ReactNode | ToastProps, 
-      options?: Omit<ToastProps, 'title'>
-    ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
-    
-    function error(
-      message: ReactNode | ToastProps, 
-      options?: Omit<ToastProps, 'title'>
-    ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
-    
-    function info(
-      message: ReactNode | ToastProps, 
-      options?: Omit<ToastProps, 'title'>
-    ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
-    
-    function warning(
-      message: ReactNode | ToastProps, 
-      options?: Omit<ToastProps, 'title'>
-    ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
-    
-    function promise<T>(
-      promise: Promise<T>,
-      options: {
-        loading: ReactNode | ToastProps;
-        success: ReactNode | ToastProps | ((data: T) => ReactNode | ToastProps);
-        error: ReactNode | ToastProps | ((error: unknown) => ReactNode | ToastProps);
-      }
-    ): Promise<T>;
-  }
-
   export function Toaster(props: ToasterProps): JSX.Element;
-  
-  export default { toast, Toaster };
 }
 
 declare module 'vaul' {

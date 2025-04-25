@@ -3,10 +3,17 @@ import React from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { TrendingUp, Loader } from 'lucide-react';
+import { TrendingUp, Loader, ArrowLeft, ArrowRight } from 'lucide-react';
 import { formatAddress } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
 import TokenSearchBar from '@/components/TokenSearchBar';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const TradingSimulator = () => {
   const { rawTokens, isConnected } = usePumpPortal();
@@ -34,51 +41,50 @@ const TradingSimulator = () => {
         <TokenSearchBar />
       </div>
 
-      <div className="space-y-4">
-        {rawTokens.map((token, index) => (
-          <Card 
-            key={token.mint} 
-            className="p-4 bg-dream-background/40 backdrop-blur-sm border border-dream-accent1/20 flex items-center space-x-4 hover:bg-dream-background/60 transition-colors"
-          >
-            <div className="flex-shrink-0">
-              <TrendingUp className="w-6 h-6 text-dream-accent2" />
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold text-dream-foreground">
-                    {token.symbol || 'Unknown'}
-                  </h3>
-                  <p className="text-sm text-dream-foreground/60">{token.name || 'Unknown Token'}</p>
-                </div>
-                
-                <div className="text-right">
-                  <div className="text-xs text-dream-foreground/60 mb-1">Contract Address</div>
-                  <div className="text-sm font-medium">{formatAddress(token.mint)}</div>
-                </div>
-              </div>
-              
-              <div className="mt-3 flex justify-between items-center">
-                <div>
-                  <div className="text-xs text-dream-foreground/60 mb-1">Initial Market Cap</div>
-                  <div className="text-sm font-medium">
-                    {token.marketCapSol ? `${token.marketCapSol.toLocaleString()} SOL` : 'Unknown'}
+      <div className="relative px-12">
+        <Carousel 
+          opts={{
+            align: "start",
+            loop: true,
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-2">
+            {rawTokens.map((token, index) => (
+              <CarouselItem key={token.mint} className="basis-1/3 pl-2">
+                <Card className="overflow-hidden transition-all duration-300 h-24 border border-dream-accent1/20 bg-dream-background/40 backdrop-blur-sm hover:bg-dream-background/60">
+                  <div className="p-4 flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <TrendingUp className="w-6 h-6 text-dream-accent2" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col">
+                        <h3 className="text-sm font-semibold text-dream-foreground truncate">
+                          {token.symbol || 'Unknown'}
+                        </h3>
+                        <p className="text-xs text-dream-foreground/60 truncate">{formatAddress(token.mint)}</p>
+                        <div className="mt-2">
+                          <Button 
+                            size="sm"
+                            className="bg-dream-accent1/20 hover:bg-dream-accent1/30 text-dream-accent1 text-xs px-3 py-1 h-7"
+                            asChild
+                          >
+                            <Link to={`/token/${token.mint}`}>
+                              Trade
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                
-                <Button 
-                  className="bg-dream-accent1/20 hover:bg-dream-accent1/30 text-dream-accent1"
-                  asChild
-                >
-                  <Link to={`/token/${token.mint}`}>
-                    Start Trading
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
+                </Card>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
       </div>
     </div>
   );
