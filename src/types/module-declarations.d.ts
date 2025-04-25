@@ -423,11 +423,14 @@ export interface ChartConfig {
 
 declare module 'chart.js' {
   interface ChartTypeRegistry {
-    [k: string]: {
+    custom: {
       label?: React.ReactNode;
       icon?: React.ComponentType;
       color?: string;
-      theme?: Record<'light' | 'dark', string>;
+      theme?: {
+        light: string;
+        dark: string;
+      };
     };
   }
 }

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { fetchGMGNChartData } from '@/services/gmgnChartService';
 
@@ -19,32 +19,7 @@ interface PurchaseMarker {
   amount: number;
 }
 
-// Generate sample data if none is provided - memoized to prevent regeneration
-const useSampleData = () => {
-  return useMemo(() => {
-    const data = [];
-    let price = 1.0 + Math.random() * 0.5;
-    
-    for (let i = -30; i <= 0; i++) { // Reduced from 60 to 30 points for better performance
-      // Create some random movement
-      price = price + (Math.random() - 0.5) * 0.2;
-      // Make sure price doesn't go below 0.1
-      price = Math.max(0.1, price);
-      
-      const date = new Date();
-      date.setMinutes(date.getMinutes() + i);
-      
-      data.push({
-        time: date.toISOString(),
-        price,
-      });
-    }
-    
-    return data;
-  }, []);
-};
-
-const MemoizedTooltip = React.memo(({ active, payload, label }: any) => {
+const MemoizedTooltip = memo(({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const formatTime = (timeStr: string) => {
       const date = new Date(timeStr);
@@ -69,13 +44,34 @@ const MemoizedTooltip = React.memo(({ active, payload, label }: any) => {
 
 MemoizedTooltip.displayName = 'MemoizedTooltip';
 
-const PriceChart: React.FC<PriceChartProps> = React.memo(({ 
+const generateSampleData = () => {
+  const data = [];
+  let price = 1.0 + Math.random() * 0.5;
+  
+  for (let i = -30; i <= 0; i++) {
+    price = price + (Math.random() - 0.5) * 0.2;
+    price = Math.max(0.1, price);
+    
+    const date = new Date();
+    date.setMinutes(date.getMinutes() + i);
+    
+    data.push({
+      time: date.toISOString(),
+      price,
+    });
+  }
+  
+  return data;
+};
+
+const PriceChart: React.FC<PriceChartProps> = ({ 
   tokenId,
   data: propData, 
   color = "url(#colorGradient)", 
   isLoading = false 
 }) => {
   const [chartData, setChartData] = useState<any[]>([]);
+  const [purchaseMarkers, setPurchaseMarkers] = useState<PurchaseMarker[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -83,7 +79,6 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
         try {
           console.log(`Fetching chart data for token: ${tokenId}`);
           const gmgnData = await fetchGMGNChartData(tokenId);
-          console.log(`Received ${gmgnData.length} data points from GMGN`);
           
           if (gmgnData && gmgnData.length > 0) {
             const formattedData = gmgnData.map(item => ({
@@ -93,27 +88,20 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
             setChartData(formattedData);
           } else {
             console.log('No data received from GMGN, falling back to sample data');
-            setChartData(propData || useSampleData());
+            setChartData(propData || generateSampleData());
           }
         } catch (error) {
           console.error('Error fetching GMGN chart data:', error);
-          // Fallback to sample data if GMGN fetch fails
-          console.log('Error fetching GMGN data, falling back to sample data');
-          setChartData(propData || useSampleData());
+          setChartData(propData || generateSampleData());
         }
       } else {
-        console.log('No tokenId provided, falling back to sample data');
-        setChartData(propData || useSampleData());
+        setChartData(propData || generateSampleData());
       }
     };
 
     fetchData();
   }, [tokenId, propData]);
 
-  const [purchaseMarkers, setPurchaseMarkers] = useState<PurchaseMarker[]>([]);
-  const chartRef = useRef<HTMLDivElement>(null);
-  
-  // Load purchase markers from localStorage on mount
   useEffect(() => {
     if (tokenId) {
       try {
@@ -128,47 +116,7 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
       }
     }
   }, [tokenId]);
-  
-  // Listen for token purchase events to add markers
-  useEffect(() => {
-    const handleTokenPurchase = (event: CustomEvent) => {
-      const { tokenId: eventTokenId, price, timestamp, amount } = event.detail;
-      
-      if (tokenId && eventTokenId === tokenId) {
-        const newMarker = {
-          time: timestamp,
-          price,
-          amount
-        };
-        
-        setPurchaseMarkers(prev => {
-          const updated = [...prev, newMarker];
-          
-          // Save to localStorage
-          try {
-            const storageKey = `purchase_markers_${tokenId}`;
-            localStorage.setItem(storageKey, JSON.stringify(updated));
-          } catch (error) {
-            console.error("Error saving purchase markers to localStorage:", error);
-          }
-          
-          return updated;
-        });
-      }
-    };
-    
-    window.addEventListener('tokenPurchase', handleTokenPurchase as EventListener);
-    
-    return () => {
-      window.removeEventListener('tokenPurchase', handleTokenPurchase as EventListener);
-    };
-  }, [tokenId]);
-  
-  const formatTime = (timeStr: string) => {
-    const date = new Date(timeStr);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-  
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -176,8 +124,7 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
       </div>
     );
   }
-  
-  // If chartData is empty, show a message
+
   if (!chartData || chartData.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -185,17 +132,12 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
       </div>
     );
   }
-  
-  // Performance optimization: Only show a limited subset of points
-  const optimizedData = chartData.length > 30 ? 
-    chartData.filter((_, index) => index % Math.ceil(chartData.length / 30) === 0 || index === chartData.length - 1) : 
-    chartData;
-  
+
   return (
-    <div className="w-full h-64 md:h-80" ref={chartRef}>
+    <div className="w-full h-64 md:h-80">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
-          data={optimizedData}
+          data={chartData}
           margin={{
             top: 20,
             right: 30,
@@ -212,18 +154,18 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
           <XAxis 
             dataKey="time" 
-            tickFormatter={formatTime} 
+            tickFormatter={(timeStr) => {
+              const date = new Date(timeStr);
+              return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }}
             stroke="rgba(255,255,255,0.5)"
             tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
-            interval="preserveStartEnd"
-            minTickGap={30}
           />
           <YAxis 
             tickFormatter={(value) => `$${parseFloat(value).toFixed(2)}`}
             stroke="rgba(255,255,255,0.5)"
             tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
             domain={['auto', 'auto']}
-            width={50}
           />
           <Tooltip content={<MemoizedTooltip />} />
           <Line
@@ -235,46 +177,10 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
             activeDot={{ r: 8, fill: "#FF3DFC", strokeWidth: 0 }}
             isAnimationActive={false}
           />
-          
-          {/* Purchase markers */}
-          {purchaseMarkers.map((marker, index) => {
-            // Find closest data point to marker time
-            const closestDataPoint = optimizedData.reduce((closest, point) => {
-              const closestTime = new Date(closest.time).getTime();
-              const pointTime = new Date(point.time).getTime();
-              const markerTime = new Date(marker.time).getTime();
-              
-              return Math.abs(pointTime - markerTime) < Math.abs(closestTime - markerTime) 
-                ? point 
-                : closest;
-            }, optimizedData[0] || { time: marker.time, price: marker.price });
-            
-            return (
-              <ReferenceDot
-                key={`purchase-marker-${index}`}
-                x={closestDataPoint.time}
-                y={marker.price}
-                r={6}
-                fill="#00FF00"
-                stroke="#FFFFFF"
-                strokeWidth={2}
-              />
-            );
-          })}
         </LineChart>
       </ResponsiveContainer>
-      
-      {/* Purchase markers legend */}
-      {purchaseMarkers.length > 0 && (
-        <div className="mt-2 text-xs text-dream-foreground/70 flex items-center">
-          <div className="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
-          <span>Your purchase points</span>
-        </div>
-      )}
     </div>
   );
-});
+};
 
-PriceChart.displayName = 'PriceChart';
-
-export default PriceChart;
+export default memo(PriceChart);
