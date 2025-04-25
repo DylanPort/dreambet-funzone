@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { TrendingUp, Loader } from 'lucide-react';
 import { formatAddress } from '@/utils/betUtils';
 import { Link } from 'react-router-dom';
+import TokenSearchBar from '@/components/TokenSearchBar';
 
 const TradingSimulator = () => {
   const { rawTokens, isConnected } = usePumpPortal();
@@ -26,6 +28,10 @@ const TradingSimulator = () => {
         <p className="text-dream-foreground/60 mt-2">
           Practice trading with virtual funds on newly listed tokens
         </p>
+      </div>
+
+      <div className="mb-8">
+        <TokenSearchBar />
       </div>
 
       <div className="space-y-4">
