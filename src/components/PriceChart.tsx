@@ -1,15 +1,14 @@
-
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 
 interface PriceChartProps {
+  tokenId?: string;
   data?: {
     time: string;
     price: number;
   }[];
   color?: string;
   isLoading?: boolean;
-  tokenId?: string;
 }
 
 interface PurchaseMarker {
@@ -69,13 +68,34 @@ const MemoizedTooltip = React.memo(({ active, payload, label }: any) => {
 MemoizedTooltip.displayName = 'MemoizedTooltip';
 
 const PriceChart: React.FC<PriceChartProps> = React.memo(({ 
+  tokenId,
   data: propData, 
   color = "url(#colorGradient)", 
-  isLoading = false,
-  tokenId
+  isLoading = false 
 }) => {
-  const sampleData = useSampleData();
-  const [data, setData] = useState(propData || sampleData);
+  const [chartData, setChartData] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (tokenId) {
+        try {
+          const gmgnData = await fetchGMGNChartData(tokenId);
+          const formattedData = gmgnData.map(item => ({
+            time: new Date(item.timestamp).toISOString(),
+            price: item.close
+          }));
+          setChartData(formattedData);
+        } catch (error) {
+          console.error('Error fetching GMGN chart data:', error);
+          // Fallback to sample data if GMGN fetch fails
+          setChartData(propData || useSampleData());
+        }
+      }
+    };
+
+    fetchData();
+  }, [tokenId, propData]);
+
   const [purchaseMarkers, setPurchaseMarkers] = useState<PurchaseMarker[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
   
@@ -150,9 +170,9 @@ const PriceChart: React.FC<PriceChartProps> = React.memo(({
   }
   
   // Performance optimization: Only show a limited subset of points
-  const optimizedData = data.length > 30 ? 
-    data.filter((_, index) => index % Math.ceil(data.length / 30) === 0 || index === data.length - 1) : 
-    data;
+  const optimizedData = chartData.length > 30 ? 
+    chartData.filter((_, index) => index % Math.ceil(chartData.length / 30) === 0 || index === chartData.length - 1) : 
+    chartData;
   
   return (
     <div className="w-full h-64 md:h-80" ref={chartRef}>
