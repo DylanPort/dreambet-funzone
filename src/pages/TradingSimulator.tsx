@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Home, ArrowRightLeft, Trophy, Wallet, Wrench, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import TokenSearchBar from '@/components/TokenSearchBar';
-import { formatNumber } from '@/lib/utils';
+import BetReel from '@/components/BetReel';
 
 const TradingSimulator = () => {
   const { rawTokens, isConnected } = usePumpPortal();
@@ -47,6 +47,9 @@ const TradingSimulator = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6">
+        {/* Add BetReel at the top */}
+        <BetReel />
+        
         {/* Search Bar and Connect Button */}
         <div className="flex items-center justify-between mb-8">
           <div className="w-[600px]">
