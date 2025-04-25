@@ -188,7 +188,7 @@ const TokenBetting = () => {
         <div className="max-w-5xl mx-auto">
           <Link to="/betting" className="inline-flex items-center text-dream-foreground/70 hover:text-dream-foreground mb-6">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Trading Dashboard
+            Back to Dashboard
           </Link>
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
@@ -284,7 +284,7 @@ const TokenBetting = () => {
           <div className="glass-panel p-6 mb-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
               <div>
-                <div className="text-sm text-dream-foreground/70">Current Price</div>
+                <div className="text-sm text-dream-foreground/70 mb-1">Current Price</div>
                 <div className="text-3xl font-bold">${token.currentPrice.toFixed(6)}</div>
                 <div className={`flex items-center text-sm ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {token.change24h >= 0 ? (
@@ -298,7 +298,7 @@ const TokenBetting = () => {
               
               {isBettingOpen() && (
                 <div className="mt-4 md:mt-0">
-                  <div className="text-sm text-dream-foreground/70 mb-1">Trading closes in</div>
+                  <div className="text-sm text-dream-foreground/70 mb-1">Betting closes in</div>
                   <CountdownTimer endTime={countdownEndTime} />
                 </div>
               )}
@@ -335,9 +335,9 @@ const TokenBetting = () => {
               />
             ) : (
               <div className="glass-panel p-6 space-y-4">
-                <h3 className="text-xl font-display font-semibold">Trading Closed</h3>
+                <h3 className="text-xl font-display font-semibold">Betting Closed</h3>
                 <p className="text-dream-foreground/70">
-                  The 1-hour trading window for this token has ended. Check other migrating tokens to place trades.
+                  The 1-hour betting window for this token has ended. Check other migrating tokens to place bets.
                 </p>
                 <Link to="/betting">
                   <Button className="w-full">
@@ -348,13 +348,13 @@ const TokenBetting = () => {
             )}
             
             <div className="glass-panel p-6 space-y-4">
-              <h3 className="text-xl font-display font-semibold">Active Trades</h3>
+              <h3 className="text-xl font-display font-semibold">Active Bets</h3>
               
               {bets.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-dream-foreground/70">No active trades for this token yet.</p>
+                  <p className="text-dream-foreground/70">No active bets for this token yet.</p>
                   {isBettingOpen() && (
-                    <p className="text-sm mt-2">Be the first to create a trade!</p>
+                    <p className="text-sm mt-2">Be the first to create a bet!</p>
                   )}
                 </div>
               ) : (

@@ -24,8 +24,8 @@ const BetsListView: React.FC<BetsListViewProps> = ({
   if (validBets.length === 0) {
     return (
       <div className="backdrop-blur-lg bg-black/20 border border-white/10 rounded-xl p-6 text-center">
-        <p className="text-dream-foreground/70">No trades available in this category.</p>
-        <p className="text-sm mt-2">Check back soon or create your own trade on a Pump Fun token!</p>
+        <p className="text-dream-foreground/70">No bets available in this category.</p>
+        <p className="text-sm mt-2">Check back soon or create your own bet on a Pump Fun token!</p>
       </div>
     );
   }
@@ -69,7 +69,7 @@ const BetsListView: React.FC<BetsListViewProps> = ({
       
       {validBets.length > 10 && (
         <div className="text-center mt-4 text-sm text-dream-foreground/70">
-          Showing top 10 of {validBets.length} trades
+          Showing top 10 of {validBets.length} bets
         </div>
       )}
     </div>

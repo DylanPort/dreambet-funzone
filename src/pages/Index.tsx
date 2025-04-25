@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Clock, ExternalLink, Coins, Sparkles, Zap, Activity, Trophy, Users, Wallet, ShieldCheck, Cake, Gift, Star, PartyPopper, Award, BarChart3 } from 'lucide-react';
@@ -19,7 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
-import TrendingTokens from '@/components/TrendingTokens';
 import Footer from '@/components/Footer';
 
 const Index = () => {
@@ -116,10 +114,14 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="max-w-7xl mx-auto mb-16">
-            <h2 className="text-2xl font-bold mb-6">Trending Tokens</h2>
-            <TrendingTokens />
-          </div>
+          {!isMobile && <div className="relative text-lg md:text-xl max-w-3xl mx-auto md:mx-0 mb-8 
+              bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.05),transparent_80%)]
+              backdrop-blur-[1px] rounded-xl border border-white/5
+              animate-entrance overflow-hidden
+              before:content-[''] before:absolute before:inset-0 
+              before:bg-[radial-gradient(ellipse_at_center,rgba(0,238,255,0.1),transparent_70%)] 
+              before:animate-pulse-glow">
+            </div>}
           
           <div className="flex justify-center gap-4 mt-10 mb-16">
             <div className={`flex ${isMobile ? 'flex-row' : 'flex-col sm:flex-row'} gap-4`}>
