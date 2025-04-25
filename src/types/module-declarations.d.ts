@@ -18,6 +18,7 @@ declare module '@/types/bet' {
     status: BetStatus;
     initialMarketCap?: number;
     currentMarketCap?: number;
+    percentageChange?: number;
     duration: number;
     winner?: string;
     onChainBetId: string;

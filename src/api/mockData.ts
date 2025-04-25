@@ -1,3 +1,4 @@
+
 import { Bet } from '@/types/bet';
 
 export const fetchTrendingBets = async (): Promise<Bet[]> => {
@@ -106,6 +107,7 @@ export const fetchTrendingBets = async (): Promise<Bet[]> => {
   return trendingBets;
 };
 
+// Mock data for token details
 export const fetchTokenDetails = async (tokenId: string) => {
   // Mock data for token details
   const tokenDetails = {
@@ -150,4 +152,156 @@ export const fetchTokenDetails = async (tokenId: string) => {
   await new Promise(resolve => setTimeout(resolve, 500));
 
   return tokenDetails[tokenId] || null;
+};
+
+// Add the missing functions that are imported in other files
+
+// Mock function to fetch user bets
+export const fetchUserBets = async (walletAddress: string): Promise<Bet[]> => {
+  console.log(`Fetching bets for wallet: ${walletAddress}`);
+  
+  // Mock data - in a real application this would be fetched from an API
+  const userBets: Bet[] = [
+    {
+      id: 'user-1',
+      tokenId: '1',
+      tokenMint: 'EPjFWdd5AufqALUs2vL433mW813sgCpG45GRm1CaWvgP',
+      tokenName: 'Wrapped SOL',
+      tokenSymbol: 'SOL',
+      initiator: walletAddress,
+      amount: 5,
+      prediction: 'buy',
+      timestamp: Date.now() - 72000000, // 20 hours ago
+      expiresAt: Date.now() + 18000000, // Expires in 5 hours
+      status: 'open',
+      duration: 24,
+      initialMarketCap: 500000000,
+      currentMarketCap: 520000000,
+      percentageChange: 4,
+      onChainBetId: 'user-bet-1',
+      transactionSignature: 'user-tx-1'
+    },
+    {
+      id: 'user-2',
+      tokenId: '3',
+      tokenMint: '7xKXtg2CWj7X5EcQnFcYpEkzgczdVsLMnA8jYwiA9W6P',
+      tokenName: 'Dogwifhat',
+      tokenSymbol: 'WIF',
+      initiator: walletAddress,
+      amount: 2,
+      prediction: 'sell',
+      timestamp: Date.now() - 36000000, // 10 hours ago
+      expiresAt: Date.now() - 3600000, // Expired 1 hour ago
+      status: 'completed',
+      duration: 8,
+      initialMarketCap: 100000000,
+      currentMarketCap: 95000000,
+      percentageChange: -5,
+      onChainBetId: 'user-bet-2',
+      transactionSignature: 'user-tx-2',
+      outcome: 'win'
+    }
+  ];
+  
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 700));
+  
+  return userBets;
+};
+
+// Mock function to fetch migrating tokens
+export const fetchMigratingTokens = async () => {
+  const tokens = [
+    {
+      id: '1',
+      name: 'Wrapped SOL',
+      symbol: 'SOL',
+      logo: '☀️',
+      currentPrice: 190.25,
+      change24h: 5.2,
+      migrationTime: Date.now() - 3600000 // 1 hour ago
+    },
+    {
+      id: '2',
+      name: 'Bonk',
+      symbol: 'BONK',
+      logo: '🐕',
+      currentPrice: 0.00002,
+      change24h: -8.5,
+      migrationTime: Date.now() - 7200000 // 2 hours ago
+    },
+    {
+      id: '3',
+      name: 'Dogwifhat',
+      symbol: 'WIF',
+      logo: '🐶',
+      currentPrice: 3.10,
+      change24h: 12.3,
+      migrationTime: Date.now() - 1800000 // 30 minutes ago
+    },
+    {
+      id: '4',
+      name: 'Popcat',
+      symbol: 'POPCAT',
+      logo: '🐱',
+      currentPrice: 0.05,
+      change24h: -2.0,
+      migrationTime: Date.now() - 5400000 // 1.5 hours ago
+    },
+    {
+      id: '5',
+      name: 'Marinade Staked SOL',
+      symbol: 'mSOL',
+      logo: '☀️',
+      currentPrice: 195.50,
+      change24h: 2.8,
+      migrationTime: Date.now() - 900000 // 15 minutes ago
+    }
+  ];
+  
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 600));
+  
+  return tokens;
+};
+
+// Mock function to fetch bets by token
+export const fetchBetsByToken = async (tokenId: string): Promise<Bet[]> => {
+  console.log(`Fetching bets for token: ${tokenId}`);
+  
+  // Filter the trending bets to only include bets for the specified token
+  const trendingBets = await fetchTrendingBets();
+  const tokenBets = trendingBets.filter(bet => bet.tokenId === tokenId);
+  
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  return tokenBets;
+};
+
+// Mock function to accept a bet
+export const acceptBet = async (bet: Bet, counterPartyAddress: string, wallet: any): Promise<Bet> => {
+  console.log(`Accepting bet ${bet.id} by ${counterPartyAddress}`);
+  
+  // Simulate blockchain transaction delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  // Return the updated bet with the counter party
+  const updatedBet: Bet = {
+    ...bet,
+    counterParty: counterPartyAddress,
+    status: 'matched'
+  };
+  
+  // Dispatch a custom event to notify other components
+  const betAcceptedEvent = new CustomEvent('betAccepted', { 
+    detail: { 
+      betId: bet.id,
+      counterParty: counterPartyAddress
+    } 
+  });
+  
+  window.dispatchEvent(betAcceptedEvent);
+  
+  return updatedBet;
 };
