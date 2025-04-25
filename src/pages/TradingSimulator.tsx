@@ -100,7 +100,10 @@ const TradingSimulator = () => {
             </div>
 
             <div className="h-[400px] w-full mb-8">
-              <PriceChart tokenId={selectedToken} />
+              <PriceChart 
+                tokenId={selectedToken}
+                isLoading={false}
+              />
             </div>
 
             <div className="mt-8">
