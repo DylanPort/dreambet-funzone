@@ -1,17 +1,6 @@
 
 import { QueryClient } from '@tanstack/react-query';
 
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60, // 1 minute (reduced from 5 minutes for more frequent updates)
-      refetchOnWindowFocus: true, // Enable refetching when window regains focus
-      refetchInterval: 5000, // Refetch every 5 seconds in the background (reduced from 30 seconds)
-      retry: 3, // Retry failed requests 3 times
-    },
-  },
-});
-
 // Simple function for creating a query client with consistent settings
 export const createQueryClient = () => {
   return new QueryClient({
@@ -19,12 +8,15 @@ export const createQueryClient = () => {
       queries: {
         staleTime: 1000 * 60, // 1 minute
         refetchOnWindowFocus: true,
-        refetchInterval: 5000, // Refetch every 5 seconds (reduced from 30 seconds)
+        refetchInterval: 5000, // Refetch every 5 seconds
         retry: 3,
       },
     },
   });
 };
+
+// Create default instance
+export const queryClient = createQueryClient();
 
 // Helper function to invalidate token data
 export const invalidateTokenData = (tokenId: string) => {
