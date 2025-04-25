@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { usePumpPortal } from '@/hooks/usePumpPortal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { TrendingUp, Loader } from 'lucide-react';
 import { formatAddress } from '@/utils/betUtils';
+import { Link } from 'react-router-dom';
 
 const TradingSimulator = () => {
   const { rawTokens, isConnected } = usePumpPortal();
@@ -63,9 +63,11 @@ const TradingSimulator = () => {
                 
                 <Button 
                   className="bg-dream-accent1/20 hover:bg-dream-accent1/30 text-dream-accent1"
-                  onClick={() => console.log('Simulate trading for:', token.mint)}
+                  asChild
                 >
-                  Start Trading
+                  <Link to={`/token/${token.mint}`}>
+                    Start Trading
+                  </Link>
                 </Button>
               </div>
             </div>
