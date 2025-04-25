@@ -1,6 +1,6 @@
 
 declare module '@/types/bet' {
-  export type BetPrediction = 'up' | 'down' | 'buy' | 'sell';
+  export type BetPrediction = 'moon' | 'die' | 'migrate' | 'buy' | 'sell' | 'up' | 'down';
   export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed' | 'pending';
   
   export interface Bet {

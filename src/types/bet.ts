@@ -1,5 +1,5 @@
 
-export type BetPrediction = 'moon' | 'die' | 'migrate' | 'buy' | 'sell';
+export type BetPrediction = 'moon' | 'die' | 'migrate' | 'buy' | 'sell' | 'up' | 'down';
 export type BetStatus = 'open' | 'matched' | 'pending' | 'completed' | 'cancelled' | 'expired';
 
 export interface Bet {
