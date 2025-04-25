@@ -186,21 +186,6 @@ const CommunityPage = () => {
   const truncateAddress = (address: string) => {
     return address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
   };
-
-  // Add animation for new messages at the top
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  };
-
-  useEffect(() => {
-    if (messages.length > 0) {
-      scrollToTop();
-    }
-  }, [messages.length]);
-
   return <div className="min-h-screen bg-dream-background bg-[url('/lovable-uploads/de5a5440-6c74-4a87-af08-110c2e96ffbc.png')] bg-cover bg-center bg-no-repeat bg-fixed">
       <div className="absolute inset-0 bg-dream-background/80 backdrop-blur-sm"></div>
       
@@ -208,7 +193,7 @@ const CommunityPage = () => {
         <Navbar />
         
         <div className="flex flex-col md:flex-row max-w-7xl mx-auto pt-32 px-4 pb-20">
-          
+          {/* Mobile horizontal scrollable section */}
           <div className={`md:hidden w-full overflow-x-auto pb-4 horizontal-scroll`}>
             <div className="flex space-x-4" style={{
             minWidth: 'max-content'
@@ -299,7 +284,7 @@ const CommunityPage = () => {
               </div>
             </div>
             
-            
+            {/* Mobile scroll indicator */}
             <div className="flex justify-center mt-2 md:hidden">
               <div className="flex items-center space-x-1 text-xs text-dream-foreground/50">
                 <ChevronLeft className="w-4 h-4" />
@@ -309,7 +294,7 @@ const CommunityPage = () => {
             </div>
           </div>
           
-          
+          {/* Desktop sidebar */}
           <div className="hidden md:block w-72 mr-6 sticky top-24 self-start">
             <OnlineUsersSidebar />
             
@@ -369,24 +354,13 @@ const CommunityPage = () => {
             
           </div>
           
-          
+          {/* Main content area */}
           <div className="flex-1 flex flex-col space-y-8">
-            
-            <Card className="sticky top-24 z-10 p-6 glass-panel border border-dream-accent1/10 shadow-lg">
+            <Card className="sticky top-24 z-10 p-6 glass-panel">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="relative">
-                  <Textarea 
-                    value={message} 
-                    onChange={e => setMessage(e.target.value)} 
-                    placeholder={connected ? "What's on your mind?" : "Connect wallet to join the conversation"} 
-                    disabled={!connected} 
-                    className="w-full bg-dream-background/20 border border-dream-foreground/10 focus:border-dream-accent2/50 rounded-lg px-4 py-3 pr-12 min-h-24 placeholder:text-dream-foreground/30 focus:outline-none focus:ring-1 focus:ring-dream-accent2/50 transition-all resize-none" 
-                  />
-                  <Button 
-                    type="submit" 
-                    disabled={!connected || !message.trim()} 
-                    className="absolute bottom-3 right-3 p-2 rounded-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 text-white flex items-center gap-1"
-                  >
+                  <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={connected ? "What's on your mind?" : "Connect wallet to join the conversation"} disabled={!connected} className="w-full bg-dream-background/20 border border-dream-foreground/10 focus:border-dream-accent2/50 rounded-lg px-4 py-3 pr-12 min-h-24 placeholder:text-dream-foreground/30 focus:outline-none focus:ring-1 focus:ring-dream-accent2/50 transition-all resize-none" />
+                  <Button type="submit" disabled={!connected || !message.trim()} className="absolute bottom-3 right-3 p-2 rounded-full bg-gradient-to-r from-dream-accent1 to-dream-accent2 hover:from-dream-accent1/90 hover:to-dream-accent2/90 text-white flex items-center gap-1">
                     <img src="/lovable-uploads/abc92dca-55b1-439a-9c76-e221f2c38be8.png" alt="Post" className="w-4 h-4" />
                     <span>Post</span>
                   </Button>
@@ -481,5 +455,4 @@ const CommunityPage = () => {
       </div>
     </div>;
 };
-
 export default CommunityPage;

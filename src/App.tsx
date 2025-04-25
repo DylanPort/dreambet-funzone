@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,8 +7,6 @@ import { createQueryClient } from "./services/queryClient";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SolanaWalletProvider from "./providers/SolanaWalletProvider";
 import { PXBPointsProvider } from "./contexts/pxb/PXBPointsContext";
-import RouteGuard from "./components/RouteGuard";
-import Home from "./pages/Home";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
@@ -18,8 +17,8 @@ import PXBSpace from "./pages/MyBets";
 import BetDetails from "./pages/BetDetails";
 import UserProfile from "./pages/UserProfile";
 import Community from "./pages/Community";
-import TradingSimulator from "./pages/TradingSimulator";
 
+// Use the createQueryClient function for better error handling
 const queryClient = createQueryClient();
 
 function App() {
@@ -34,19 +33,15 @@ function App() {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Home />} />
-                
-                {/* Protected routes - will redirect to home */}
-                <Route path="/index" element={<RouteGuard><Index /></RouteGuard>} />
-                <Route path="/profile" element={<RouteGuard><Profile /></RouteGuard>} />
-                <Route path="/profile/:userId" element={<RouteGuard><UserProfile /></RouteGuard>} />
-                <Route path="/token/:id" element={<RouteGuard><TokenDetail /></RouteGuard>} />
-                <Route path="/betting" element={<RouteGuard><BettingDashboard /></RouteGuard>} />
-                <Route path="/betting/token/:id" element={<RouteGuard><TokenBetting /></RouteGuard>} />
-                <Route path="/betting/my-bets" element={<RouteGuard><PXBSpace /></RouteGuard>} />
-                <Route path="/betting/bet/:id" element={<RouteGuard><BetDetails /></RouteGuard>} />
-                <Route path="/community" element={<RouteGuard><Community /></RouteGuard>} />
-                <Route path="/simulator" element={<RouteGuard><TradingSimulator /></RouteGuard>} />
+                <Route path="/" element={<Index />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/:userId" element={<UserProfile />} />
+                <Route path="/token/:id" element={<TokenDetail />} />
+                <Route path="/betting" element={<BettingDashboard />} />
+                <Route path="/betting/token/:id" element={<TokenBetting />} />
+                <Route path="/betting/my-bets" element={<PXBSpace />} />
+                <Route path="/betting/bet/:id" element={<BetDetails />} />
+                <Route path="/community" element={<Community />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
