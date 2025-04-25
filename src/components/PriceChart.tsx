@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
+import { fetchGMGNChartData } from '@/services/gmgnChartService';
 
 interface PriceChartProps {
   tokenId?: string;
