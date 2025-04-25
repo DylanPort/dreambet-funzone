@@ -1,5 +1,5 @@
 
-export type BetPrediction = 'up' | 'down';
+export type BetPrediction = 'up' | 'down' | 'buy' | 'sell';
 
 export type BetStatus = 'open' | 'matched' | 'completed' | 'expired' | 'closed' | 'pending';
 
