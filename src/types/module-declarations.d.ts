@@ -1,3 +1,4 @@
+
 declare module 'sonner' {
   import { ReactNode } from 'react';
 
@@ -406,10 +407,10 @@ declare module 'tailwind-merge' {
   export function twJoin(...classLists: (string | undefined | null | false)[]): string;
 }
 
-import * as React from "react"
+import * as React from "react";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
-const THEMES = { light: "", dark: ".dark" } as const
+const THEMES = { light: "", dark: ".dark" } as const;
 
 export interface ChartConfig {
   [k in string]: {
@@ -418,7 +419,7 @@ export interface ChartConfig {
   } & (
     | { color?: string; theme?: never }
     | { color?: never; theme: Record<keyof typeof THEMES, string> }
-  )
+  );
 }
 
 declare module 'chart.js' {
@@ -428,6 +429,6 @@ declare module 'chart.js' {
       icon?: React.ComponentType;
       color?: string;
       theme?: Record<'light' | 'dark', string>;
-    }
+    };
   }
 }
