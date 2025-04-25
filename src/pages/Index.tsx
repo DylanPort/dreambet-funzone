@@ -7,11 +7,9 @@ import {
   Trophy, 
   Wallet, 
   Settings, 
-  Wrench,
-  Search
+  Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import PriceChart from '@/components/PriceChart';
 import TokenSearchBar from '@/components/TokenSearchBar';
 import {

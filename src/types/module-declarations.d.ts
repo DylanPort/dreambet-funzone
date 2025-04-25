@@ -175,7 +175,7 @@ declare module '@radix-ui/react-dropdown-menu' {
     asChild?: boolean;
   }
   
-  export interface DropdownMenuContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  export interface DropdownMenuContentProps {
     children?: ReactNode;
     asChild?: boolean;
     loop?: boolean;
