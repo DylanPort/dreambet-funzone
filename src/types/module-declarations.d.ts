@@ -81,11 +81,19 @@ declare module 'vaul' {
     asChild?: boolean;
   }
 
+  export interface DrawerContentProps extends React.HTMLAttributes<HTMLDivElement> {
+    children?: ReactNode;
+  }
+
+  export interface DrawerOverlayProps extends React.HTMLAttributes<HTMLDivElement> {
+    className?: string;
+  }
+
   export function Drawer(props: DrawerProps): JSX.Element;
   Drawer.Content = function Content(props: DrawerContentProps): JSX.Element;
   Drawer.Trigger = function Trigger(props: DrawerTriggerProps): JSX.Element;
   Drawer.Portal = function Portal(props: { children: ReactNode }): JSX.Element;
-  Drawer.Overlay = function Overlay(props: { className?: string }): JSX.Element;
+  Drawer.Overlay = function Overlay(props: DrawerOverlayProps): JSX.Element;
 
   export function useDrawer(): {
     open: boolean;
