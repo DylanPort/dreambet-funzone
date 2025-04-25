@@ -34,7 +34,7 @@ const AnimatedPumpButton = () => {
         <span className="relative z-10 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-purple-400 group-hover:text-cyan-400 transition-colors" />
           <span className="bg-gradient-to-r from-purple-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">
-            PumpXBounty V 1.0
+            PumpXBounty V 2.0
           </span>
         </span>
         <motion.div
