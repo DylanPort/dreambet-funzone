@@ -19,6 +19,7 @@ import PXBLeaderboard from "@/components/PXBLeaderboard";
 import PXBUserStats from "@/components/PXBUserStats";
 import PXBSupplyProgress from "@/components/PXBSupplyProgress";
 import Footer from '@/components/Footer';
+import AnimatedPumpButton from '@/components/AnimatedPumpButton';
 
 const Index = () => {
   const [latestTokens, setLatestTokens] = useState<any[]>([]);
@@ -105,7 +106,7 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-16 animate-fade-in relative z-10">
             <div className="flex flex-row-reverse md:flex-row flex-wrap md:flex-nowrap gap-6 w-full">
               <div className="w-full md:w-1/2 flex justify-center">
-                <InteractiveTour />
+                <AnimatedPumpButton />
               </div>
               
               <div className="hidden md:flex md:w-1/2 justify-center">
