@@ -344,7 +344,7 @@ const MigratingTokenList = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="text-xs gap-1.5 h-9">
                   <ArrowUpDown className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Sort: {sortBy.replace('-', ' ')}</span>
+                  
                   <span className="sm:hidden">Sort</span>
                   <ChevronDown className="w-3.5 h-3.5 ml-1" />
                 </Button>
