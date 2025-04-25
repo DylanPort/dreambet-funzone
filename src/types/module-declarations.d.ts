@@ -1,6 +1,4 @@
 
-// Declarations for modules without TypeScript definitions
-
 declare module 'sonner' {
   import { ReactNode } from 'react';
 
@@ -35,36 +33,38 @@ declare module 'sonner' {
     id: number;
     dismiss: () => void;
     update: (props: ToastProps) => void;
-  };
+  }
   
-  toast.success = function(
-    message: ReactNode | ToastProps,
-    options?: Omit<ToastProps, 'title'>
-  ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
-  
-  toast.error = function(
-    message: ReactNode | ToastProps,
-    options?: Omit<ToastProps, 'title'>
-  ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
-  
-  toast.info = function(
-    message: ReactNode | ToastProps,
-    options?: Omit<ToastProps, 'title'>
-  ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
-  
-  toast.warning = function(
-    message: ReactNode | ToastProps,
-    options?: Omit<ToastProps, 'title'>
-  ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
-  
-  toast.promise = function<T>(
-    promise: Promise<T>,
-    options: {
-      loading: ReactNode | ToastProps;
-      success: ReactNode | ToastProps | ((data: T) => ReactNode | ToastProps);
-      error: ReactNode | ToastProps | ((error: unknown) => ReactNode | ToastProps);
-    }
-  ): Promise<T>;
+  export namespace toast {
+    function success(
+      message: ReactNode | ToastProps, 
+      options?: Omit<ToastProps, 'title'>
+    ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
+    
+    function error(
+      message: ReactNode | ToastProps, 
+      options?: Omit<ToastProps, 'title'>
+    ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
+    
+    function info(
+      message: ReactNode | ToastProps, 
+      options?: Omit<ToastProps, 'title'>
+    ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
+    
+    function warning(
+      message: ReactNode | ToastProps, 
+      options?: Omit<ToastProps, 'title'>
+    ): { id: number; dismiss: () => void; update: (props: ToastProps) => void; };
+    
+    function promise<T>(
+      promise: Promise<T>,
+      options: {
+        loading: ReactNode | ToastProps;
+        success: ReactNode | ToastProps | ((data: T) => ReactNode | ToastProps);
+        error: ReactNode | ToastProps | ((error: unknown) => ReactNode | ToastProps);
+      }
+    ): Promise<T>;
+  }
 
   export function Toaster(props: ToasterProps): JSX.Element;
   
