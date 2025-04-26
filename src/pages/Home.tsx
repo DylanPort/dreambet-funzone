@@ -22,7 +22,6 @@ import Roadmap from '@/components/Roadmap';
 import UserSearch from '@/components/UserSearch';
 import SocialLinks from '@/components/SocialLinks';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import Footer from '@/components/Footer';
 import { usePXBTotalSupply } from '@/hooks/usePXBTotalSupply';
@@ -461,7 +460,7 @@ const Home = () => {
                                 Pool Information
                               </h4>
                               <div className="space-y-4">
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between mb-2">
                                   <span className="text-gray-400">Total Pool Value:</span>
                                   <span className="font-bold text-white">{data.pool} $POINTS</span>
                                 </div>
@@ -632,62 +631,6 @@ const Home = () => {
                 ))}
               </AnimatePresence>
             </Tabs>
-          </div>
-          
-          <div className="mt-16">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold">PXB Ecosystem Highlights</h2>
-              <p className="text-gray-400">Discover the key features of our platform</p>
-            </div>
-            
-            <Carousel className="w-full max-w-5xl mx-auto">
-              <CarouselContent>
-                {[
-                  {
-                    title: "Token Predictions",
-                    description: "Make predictions on token movement and earn PXB rewards when you're right",
-                    icon: <Sparkles className="h-8 w-8 text-yellow-400" />,
-                    color: "from-yellow-600 to-orange-700"
-                  },
-                  {
-                    title: "Community Learning",
-                    description: "Share insights, strategies, and learn from other successful traders",
-                    icon: <Users className="h-8 w-8 text-blue-400" />,
-                    color: "from-blue-600 to-indigo-700"
-                  },
-                  {
-                    title: "Reward System",
-                    description: "Earn PXB tokens through predictions, referrals and community contributions",
-                    icon: <Coins className="h-8 w-8 text-green-400" />,
-                    color: "from-green-600 to-teal-700"
-                  },
-                  {
-                    title: "Events Calendar",
-                    description: "Stay updated with important dates, launches and community events",
-                    icon: <Calendar className="h-8 w-8 text-purple-400" />,
-                    color: "from-purple-600 to-pink-700"
-                  }
-                ].map((item, index) => (
-                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                    <motion.div 
-                      className={`h-full p-6 rounded-xl bg-gradient-to-br ${item.color} text-white flex flex-col items-center text-center space-y-4`}
-                      whileHover={{ y: -5, scale: 1.02 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="bg-white/20 p-3 rounded-full">
-                        {item.icon}
-                      </div>
-                      <h3 className="text-xl font-bold">{item.title}</h3>
-                      <p className="text-white/80">{item.description}</p>
-                    </motion.div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <div className="hidden md:block">
-                <CarouselPrevious />
-                <CarouselNext />
-              </div>
-            </Carousel>
           </div>
         </section>
       </main>
