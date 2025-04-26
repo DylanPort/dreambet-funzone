@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => ({
   },
   // Add optimizeDeps section to improve dependency handling
   optimizeDeps: {
-    include: ['react', 'react-dom', '@solana/web3.js', 'date-fns', 'lucide-react'],
+    include: ['react', 'react-dom', '@solana/web3.js', 'date-fns', 'lucide-react', 'recharts'],
     esbuildOptions: {
       // Node.js global to browser globalThis
       define: {
