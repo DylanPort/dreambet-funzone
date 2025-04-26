@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { fetchTokenMetrics } from '@/services/tokenDataCache';
 import { usePXBPoints } from '@/contexts/PXBPointsContext';
 import { useToast } from '@/hooks/use-toast';
+import { isPayoutData } from '@/utils/typeCheckers';
 
 const PXBBetsList = () => {
   const { publicKey } = useWallet();
@@ -58,6 +59,14 @@ const PXBBetsList = () => {
         }
         if (data) {
           console.log("Raw PXB bets data:", data);
+
+          // Check if we're dealing with payout data instead of bets
+          if (data.length > 0 && isPayoutData(data[0])) {
+            console.log('Found payout data instead of bets');
+            // Handle payout data differently if needed
+            setLoading(false);
+            return;
+          }
 
           // Transform to PXBBet format
           const transformedBets: PXBBet[] = data.map(bet => {

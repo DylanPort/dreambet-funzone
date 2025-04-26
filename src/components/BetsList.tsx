@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Clock, Activity, Zap, Sparkles } from 'lucide-react';
 import { fetchUserBets } from '@/api/mockData';
@@ -7,6 +8,7 @@ import { Bet } from '@/types/bet';
 import { Link } from 'react-router-dom';
 import { formatTimeRemaining } from '@/utils/betUtils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isPayoutData } from '@/utils/typeCheckers';
 
 interface BetsListProps {
   title: string;
@@ -31,6 +33,14 @@ const BetsList: React.FC<BetsListProps> = ({ title, type }) => {
         console.log(`Fetching ${type} bets for user ${publicKey.toString()}`);
         const userBets = await fetchUserBets(publicKey.toString());
         console.log('Received user bets:', userBets);
+        
+        // Check if we have payout data
+        if (userBets.length > 0 && isPayoutData(userBets[0])) {
+          console.log('Found payout data instead of bets, handling appropriately');
+          setBets([]);
+          setLoading(false);
+          return;
+        }
         
         // Also check localStorage for any pending bets
         const storedBets = localStorage.getItem('pumpxbounty_fallback_bets');

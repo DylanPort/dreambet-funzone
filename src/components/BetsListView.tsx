@@ -4,6 +4,7 @@ import BetCard from './BetCard';
 import { Bet } from '@/types/bet';
 import { motion, AnimatePresence } from 'framer-motion';
 import PXBTokenCard from './PXBTokenCard';
+import { isPayoutData } from '@/utils/typeCheckers';
 
 interface BetsListViewProps {
   bets: Bet[];
@@ -31,6 +32,18 @@ const BetsListView: React.FC<BetsListViewProps> = ({
   }
 
   console.log('Rendering BetsListView with bets:', validBets);
+
+  // Check if we're dealing with payout data instead of bets
+  if (validBets.length > 0 && isPayoutData(validBets[0])) {
+    console.log('Found payout data, rendering appropriate cards');
+    // Handle payout data differently if needed
+    // This is a placeholder - you'll need to implement appropriate rendering for payout data
+    return (
+      <div className="space-y-5">
+        <p>Payout data detected - implement rendering for this type</p>
+      </div>
+    );
+  }
 
   // Limit to top 10 bets
   const topBets = validBets.slice(0, 10);
