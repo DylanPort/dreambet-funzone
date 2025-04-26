@@ -20,7 +20,6 @@ import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import Roadmap from '@/components/Roadmap';
 import UserSearch from '@/components/UserSearch';
-import SocialLinks from '@/components/SocialLinks';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import Footer from '@/components/Footer';
@@ -384,14 +383,6 @@ const Home = () => {
           )}
         </AnimatePresence>
 
-        <section className="py-10 mb-6">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold">Connect With Us</h2>
-            <p className="text-gray-400">Join our community and stay updated</p>
-          </div>
-          <SocialLinks />
-        </section>
-        
         <section className="py-10 mb-10">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-300 via-cyan-200 to-purple-300 bg-clip-text text-transparent">
