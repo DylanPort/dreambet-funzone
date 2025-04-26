@@ -154,6 +154,33 @@ const Home = () => {
               <AnimatedPumpButton />
             </div>
           </motion.div>
+
+          <motion.div 
+            className="flex flex-wrap justify-center gap-4 mt-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.5 }}
+          >
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setShowRoadmap(!showRoadmap)}
+              className="bg-black/30 border-purple-500/30 hover:bg-purple-500/10"
+            >
+              <Globe className="mr-2 h-5 w-5" />
+              {showRoadmap ? "Hide Roadmap" : "View Roadmap"}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setShowSearch(!showSearch)}
+              className="bg-black/30 border-cyan-500/30 hover:bg-cyan-500/10"
+            >
+              <Users className="mr-2 h-5 w-5" />
+              {showSearch ? "Hide User Search" : "User Search"}
+            </Button>
+          </motion.div>
         </section>
 
         <motion.section 
