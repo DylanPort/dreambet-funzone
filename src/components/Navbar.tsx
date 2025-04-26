@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Coins, MessageSquare } from 'lucide-react';
@@ -68,7 +69,11 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-1.5">
           <Link to="/" className="flex items-center py-2">
-            <img alt="PumpXBounty" className="h-14 filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" src="/lovable-uploads/e40f498f-c7e1-4571-9713-0a90008ed233.png" />
+            <img 
+              alt="PumpXBounty" 
+              className="h-14 filter drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" 
+              src="/lovable-uploads/43d05271-142a-4264-ba33-84dae447e6ed.png" 
+            />
           </Link>
           
           <nav className="hidden md:flex space-x-4 items-center">
