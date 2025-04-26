@@ -27,32 +27,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import Footer from '@/components/Footer';
 import { usePXBTotalSupply } from '@/hooks/usePXBTotalSupply';
 import { confetti } from '@/lib/utils';
-
-interface BaseExampleData {
-  title: string;
-  description: string;
-  users: Array<{
-    name: string;
-    deposit: number;
-    pxb: number;
-    change: number;
-    color: string;
-    rank?: number;
-    payout?: number;
-  }>;
-}
-
-interface PayoutExampleData extends BaseExampleData {
-  pool: number;
-  requested: number;
-  factor: number;
-}
-
-type ExampleDataType = BaseExampleData | PayoutExampleData;
-
-const isPayoutData = (data: ExampleDataType): data is PayoutExampleData => {
-  return 'pool' in data && 'requested' in data && 'factor' in data;
-};
+import AnimatedPumpButton from '@/components/AnimatedPumpButton';
 
 const Home = () => {
   const { supplyData, isLoading } = usePXBTotalSupply();
@@ -177,33 +152,9 @@ const Home = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.4 }}
           >
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white border-none"
-              onClick={() => {
-                setShowRoadmap(true);
-                setShowSearch(false);
-                setTimeout(() => {
-                  document.getElementById('roadmap-section')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }}
-            >
-              View Roadmap <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="border-purple-500/30 hover:bg-purple-950/30"
-              onClick={() => {
-                setShowSearch(true);
-                setShowRoadmap(false);
-                setTimeout(() => {
-                  document.getElementById('user-search-section')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }}
-            >
-              <Users className="mr-1 h-4 w-4" /> Find Users
-            </Button>
+            <div className="w-full max-w-md">
+              <AnimatedPumpButton />
+            </div>
           </motion.div>
         </section>
 
