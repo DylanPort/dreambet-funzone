@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 
 const AnimatedPumpButton = () => {
   const handleButtonClick = () => {
@@ -46,11 +45,12 @@ const AnimatedPumpButton = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Sparkle Icon and Text */}
+        {/* Logo and Text */}
         <span className="relative z-10 flex items-center gap-2">
-          <Sparkles 
-            className="w-5 h-5 text-purple-400 group-hover:text-cyan-400 transition-colors 
-                       animate-pulse group-hover:animate-spin"
+          <img 
+            src="/lovable-uploads/43d05271-142a-4264-ba33-84dae447e6ed.png"
+            alt="PumpXBounty"
+            className="w-6 h-6 object-contain animate-spin-slow"
           />
           <span className="bg-gradient-to-r from-purple-400 via-cyan-300 to-purple-400 
                            bg-clip-text text-transparent group-hover:from-cyan-300 
@@ -78,3 +78,4 @@ const AnimatedPumpButton = () => {
 };
 
 export default AnimatedPumpButton;
+
