@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +18,7 @@ import PXBSpace from "./pages/MyBets";
 import BetDetails from "./pages/BetDetails";
 import UserProfile from "./pages/UserProfile";
 import Community from "./pages/Community";
+import ImagePage from "./pages/ImagePage";
 
 // Use the createQueryClient function for better error handling
 const queryClient = createQueryClient();
@@ -36,6 +36,7 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/image" element={<ImagePage />} />
                 
                 {/* Protected routes - will redirect to home */}
                 <Route path="/index" element={<RouteGuard><Index /></RouteGuard>} />
