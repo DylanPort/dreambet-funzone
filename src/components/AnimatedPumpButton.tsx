@@ -4,6 +4,10 @@ import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 
 const AnimatedPumpButton = () => {
+  const handleButtonClick = () => {
+    window.location.href = 'https://pumpxbounty-tradingsim.fun';
+  };
+
   return (
     <motion.div
       className="relative group"
@@ -35,6 +39,7 @@ const AnimatedPumpButton = () => {
 
       {/* Main Button */}
       <motion.button
+        onClick={handleButtonClick}
         className="relative px-8 py-4 bg-black rounded-lg font-bold text-white border border-purple-500/30 
                    overflow-hidden group flex items-center gap-2 w-full justify-center"
         initial={{ opacity: 0, y: 20 }}
