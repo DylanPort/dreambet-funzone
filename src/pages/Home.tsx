@@ -99,8 +99,8 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[url('/lovable-uploads/dd5998b9-a3b2-4b3f-9ea5-818e8e5f5697.png')] bg-cover bg-center opacity-40"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black"></div>
+        <div className="absolute inset-0 bg-[url('/lovable-uploads/51e62c43-f3db-4e73-9385-a27c99fef42f.png')] bg-cover bg-center opacity-80"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/30"></div>
       </div>
 
       <Navbar />
