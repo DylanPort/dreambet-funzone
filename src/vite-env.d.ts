@@ -4,7 +4,9 @@
 // Add declarations for packages that might be missing type definitions
 declare module 'lucide-react';
 declare module 'date-fns';
-declare module 'recharts';
+declare module 'recharts' {
+  export * from '@types/recharts';
+}
 declare module 'sonner';
 declare module 'react-router-dom';
 declare module 'react-day-picker';
